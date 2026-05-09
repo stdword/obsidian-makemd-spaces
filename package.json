@@ -1,20 +1,17 @@
 {
-  "name": "make-md",
-  "version": "1.3.4",
-  "description": "make.md",
+  "name": "make-md-spaces",
+  "version": "1.0.0",
+  "description": "make.md :: spaces",
   "main": "main.js",
   "scripts": {
-    "sync-version": "node scripts/sync-version.mjs",
-    "dev": "npm run sync-version && node esbuild.config.mjs",
-    "build": "npm run sync-version && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-    "preview": "npm run sync-version && tsc -noEmit -skipLibCheck && node esbuild.config.mjs preview",
-    "demo": "npm run sync-version && node esbuild.config.mjs demo",
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "preview": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs preview",
+    "demo": "node esbuild.config.mjs demo",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "version": "npm run sync-version && git add manifest.json",
-    "publish": "node scripts/publish.mjs",
-    "release": "node scripts/release.mjs"
+    "version": "git add manifest.json"
   },
   "keywords": [],
   "author": "",
