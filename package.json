@@ -10,8 +10,7 @@
     "demo": "node esbuild.config.mjs demo",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
-    "version": "git add manifest.json"
+    "test:coverage": "jest --coverage"
   },
   "keywords": [],
   "author": "",

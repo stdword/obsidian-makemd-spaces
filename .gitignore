@@ -3,3 +3,6 @@ node_modules
 .DS_Store
 undefined
 .vscode
+
+data.json
+dev/screenshots/
