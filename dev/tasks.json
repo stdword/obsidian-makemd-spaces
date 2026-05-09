@@ -1,10 +1,9 @@
 {
   "agent_instructions": {
     "before_start": [
-      "Прочитай этот файл и git log -oneline -20",
+      "Прочитай этот файл и git log --oneline -20 1103edb^..",
       "Выбери ОДНУ задачу со статусом pending и наивысшим приоритетом",
       "Проверь, что все dependencies этой задачи имеют статус done",
-      "Прочитай dev/DEVELOPMENT_PLAN.md",
       "До отдельного подтверждения пользователя ничего не удаляй: только минимально отключай регистрации, команды, events или post-processors"
     ],
     "during_work": [
@@ -19,72 +18,10 @@
     "before_finish": [
       "Выполни ВСЕ test_steps из задачи",
       "Меняй status на done ТОЛЬКО после успешного прохождения всех тестов",
-      "Напиши summary в dev/progress.md",
       "ЗАПРЕЩЕНО удалять или редактировать задачи - только менять status"
     ]
   },
   "tasks": [
-    {
-      "id": "TASK-001",
-      "category": "infrastructure",
-      "priority": "critical",
-      "description": "Зафиксировать baseline сборки и запуска текущего плагина",
-      "acceptance_criteria": [
-        "В dev/progress.md записан результат npm run build",
-        "В dev/progress.md записан результат прямой esbuild-сборки",
-        "Зафиксированы текущие runtime-ошибки Obsidian, если они есть",
-        "Скриншот Navigator сохранен в dev/screenshots"
-      ],
-      "test_steps": [
-        "Шаг 1: выполнить npm run build",
-        "Шаг 2: выполнить env buildDir=. node esbuild.config.mjs production",
-        "Шаг 3: выполнить obsidian plugin:reload id=make-md-spaces",
-        "Шаг 4: открыть Navigator командой make-md-spaces:mk-spaces",
-        "Шаг 5: проверить app.workspace.getLeavesOfType('mk-path-view').length",
-        "Шаг 6: сохранить скриншот в dev/screenshots и записать результаты в dev/progress.md"
-      ],
-      "dependencies": [],
-      "status": "done"
-    },
-    {
-      "id": "TASK-002",
-      "category": "infrastructure",
-      "priority": "critical",
-      "description": "Исправить минимальным изменением TypeScript baseline-сборку",
-      "acceptance_criteria": [
-        "npm run build проходит без ошибки TS1501",
-        "Изменение минимально и не затрагивает функциональность Navigator",
-        "Причина изменения записана в dev/progress.md"
-      ],
-      "test_steps": [
-        "Шаг 1: проверить текущую ошибку npm run build",
-        "Шаг 2: внести минимальную правку конфигурации или кода",
-        "Шаг 3: повторно выполнить npm run build",
-        "Шаг 4: перезагрузить плагин через obsidian plugin:reload id=make-md-spaces",
-        "Шаг 5: проверить obsidian dev:errors"
-      ],
-      "dependencies": ["TASK-001"],
-      "status": "done"
-    },
-    {
-      "id": "TASK-003",
-      "category": "infrastructure",
-      "priority": "critical",
-      "description": "Стабилизировать способ dev-сборки в корень symlink-плагина",
-      "acceptance_criteria": [
-        "Документирован способ сборки, который обновляет main.js и styles.css в корне проекта",
-        "Не создано изменений вне корня проекта, кроме уже разрешенного symlink в vault",
-        "dev/progress.md содержит команду сборки для дальнейших агентов"
-      ],
-      "test_steps": [
-        "Шаг 1: проверить package.json scripts и esbuild.config.mjs",
-        "Шаг 2: выполнить команду сборки в корень проекта",
-        "Шаг 3: проверить наличие main.js, styles.css и manifest.json",
-        "Шаг 4: записать команду и результат в dev/progress.md"
-      ],
-      "dependencies": ["TASK-002"],
-      "status": "pending"
-    },
     {
       "id": "TASK-004",
       "category": "integration",
@@ -101,7 +38,6 @@
         "Шаг 3: записать карту в dev/progress.md",
         "Шаг 4: выполнить git diff и убедиться, что код не менялся"
       ],
-      "dependencies": ["TASK-001"],
       "status": "pending"
     },
     {
@@ -121,24 +57,6 @@
         "Шаг 4: выполнить git diff и убедиться, что код не менялся"
       ],
       "dependencies": ["TASK-004"],
-      "status": "pending"
-    },
-    {
-      "id": "TASK-006",
-      "category": "security",
-      "priority": "critical",
-      "description": "Зафиксировать защитные правила против преждевременного удаления",
-      "acceptance_criteria": [
-        "В dev/progress.md есть раздел с запретом удаления до подтверждения пользователя",
-        "dev/tasks.json содержит задачи только на отключение до этапа подтверждения",
-        "Ни один test_step до подтверждения не требует удаления файлов или npm dependencies"
-      ],
-      "test_steps": [
-        "Шаг 1: проверить dev/DEVELOPMENT_PLAN.md раздел Правила изменений",
-        "Шаг 2: проверить dev/tasks.json на слова удалить и удаление в ранних задачах",
-        "Шаг 3: записать результат проверки в dev/progress.md"
-      ],
-      "dependencies": ["TASK-001"],
       "status": "pending"
     },
     {
@@ -254,7 +172,6 @@
         "Шаг 4: выполнить obsidian dev:screenshot path=dev/screenshots/navigator-current.png",
         "Шаг 5: выполнить obsidian dev:errors и записать результат"
       ],
-      "dependencies": ["TASK-001"],
       "status": "pending"
     },
     {
@@ -566,26 +483,6 @@
       "status": "pending"
     },
     {
-      "id": "TASK-027",
-      "category": "infrastructure",
-      "priority": "low",
-      "description": "Обновить manifest metadata после стабилизации Navigator",
-      "acceptance_criteria": [
-        "manifest.json содержит финальные id, name и description",
-        "Изменение согласовано с пользователем",
-        "Obsidian видит плагин после reload"
-      ],
-      "test_steps": [
-        "Шаг 1: согласовать новые metadata с пользователем",
-        "Шаг 2: минимально обновить manifest.json",
-        "Шаг 3: выполнить сборку и reload с актуальным id",
-        "Шаг 4: проверить obsidian plugins filter=community",
-        "Шаг 5: записать результат в dev/progress.md"
-      ],
-      "dependencies": ["TASK-023", "TASK-035"],
-      "status": "pending"
-    },
-    {
       "id": "TASK-028",
       "category": "security",
       "priority": "low",
@@ -602,7 +499,7 @@
         "Шаг 3: проверить, что symlink в vault указывает на текущий проект",
         "Шаг 4: записать итоговый security review в dev/progress.md"
       ],
-      "dependencies": ["TASK-025", "TASK-026", "TASK-027"],
+      "dependencies": ["TASK-025", "TASK-026"],
       "status": "pending"
     },
     {
