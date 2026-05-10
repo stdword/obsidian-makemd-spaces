@@ -103,12 +103,12 @@ margin-left: 6px;
   position: relative;
   height: var(--spaceRowHeight);
   gap: 4px;
-  
+
 }
 
 .nav-file {
   overflow-y: inherit !important;
-  
+
 }
 
 .is-mobile .mk-tree-wrapper {
@@ -131,7 +131,7 @@ margin-left: 6px;
 
 .mk-focuses {
   position: relative;
-  
+
 }
 .mk-focuses > .mk-indicator {
   border-radius: 8px;
@@ -196,11 +196,11 @@ body:not(.mod-rtl).mk-folder-lines .mk-tree-item::before {
 
 .mk-tree-wrapper.mk-ghost {
   opacity: 0.5;
-  
+
 }
 
 .mk-nav-button {
-    
+
 }
 
 .mk-tree-section {
@@ -283,8 +283,7 @@ body:not(.is-mobile) .mk-tree-new {
 
 
 
-.mk-inline-button,
-.mk-folder-buttons button, .mk-folder-buttons div {
+.mk-inline-button {
   background: none;
   border: 0;
   box-shadow: none;
@@ -292,15 +291,7 @@ body:not(.is-mobile) .mk-tree-new {
   height: 24px;
   width: 24px;
   padding: 0 !important;
-  
-}
 
-.is-mobile .mk-tree-wrapper .mk-folder-buttons button {
-  margin-left: 8px;
-}
-
-body:not(.is-mobile) .mk-folder-buttons button:hover {
-  background: var(--nav-item-background-hover);
 }
 
 .mk-path-icon {
@@ -336,38 +327,12 @@ body:not(.is-mobile) .mk-tree-wrapper:hover .mk-drag-handle {
   visibility: visible;
 }
 
-.is-mobile .mk-folder-buttons {
-  display: flex;
-}
-
-.mk-folder-buttons div {
-  align-items: center;
-    justify-content: center;
-}
 body:not(.is-mobile) .mk-tree-wrapper .mk-path-link {
   opacity: 0;
 }
 
 body:not(.is-mobile) .mk-tree-wrapper:hover .mk-path-link {
   opacity: 1;
-}
-
-body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons button,
-body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons div {
-  display: none;
-}
-body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons button, 
-body:not(.is-mobile) .mk-tree-wrapper:hover .mk-folder-buttons div{
-  display: flex;
-}
-body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
-  display: flex;
-}
-
-.mk-tree-item .mk-folder-buttons svg {
-  width: 16px;
-  height: 16px;
-  color: var(--mk-ui-text-secondary);
 }
 
 .is-mobile .mk-tree-wrapper svg {
@@ -401,7 +366,7 @@ body:not(.is-mobile) .mk-tree-wrapper .mk-folder-buttons {
 
 .mk-path-link {
   vertical-align:middle;
-  
+
 }
 .mk-path-link svg {
   width: 12px;

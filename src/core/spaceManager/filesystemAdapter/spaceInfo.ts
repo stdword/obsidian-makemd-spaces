@@ -10,117 +10,92 @@ import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { folderPathToString } from "utils/path";
 import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
 
-
-
-export const fileSystemSpaceInfoFromTag = (
-  manager: SpaceManager,
-  tag: string,
-  readOnly?: boolean
-): FilesystemSpaceInfo => {
-  const path = tagSpacePathFromTag(tag.toLowerCase());
-  const folderPath = manager.superstate.settings.spacesFolder +
-    "/" +
-    tagToTagPath(tag);
-  return {
-    name: tag,
-    path,
-
-    isRemote: false,
-    readOnly: readOnly,
-    folderPath,
-    defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
-    notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
-    framePath: spaceFolderPathFromSpace(folderPath +
-      "/", manager) + SPACE_VIEWS_FILE,
-    dbPath: spaceFolderPathFromSpace(folderPath +
-      "/", manager) + SPACE_CONTEXT_FILE,
-      commandsPath: spaceFolderPathFromSpace(folderPath +
-        "/", manager) + "commands.mdb",
-  };
-};
-
-
-export const fileSystemSpaceInfoByPath = (
-  manager: SpaceManager,
-  contextPath: string
-): FilesystemSpaceInfo => {
-  if (!contextPath) return;
-  if (contextPath.startsWith(builtinSpacePathPrefix)) {
-    const builtinPath = contextPath.slice(builtinSpacePathPrefix.length);
-    
-    const folderPath = manager.superstate.settings.spacesFolder + "/$"+builtinPath;
-        return {
-          name: builtinSpaces[builtinPath].name,
-          path: contextPath,
-      
-          isRemote: false,
-          readOnly: false,
-          folderPath,
-          defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
-          notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
-          framePath: spaceFolderPathFromSpace(folderPath +
-            "/", manager) + SPACE_VIEWS_FILE,
-          dbPath: spaceFolderPathFromSpace(folderPath +
-            "/", manager)
-            + SPACE_CONTEXT_FILE,
-            commandsPath: spaceFolderPathFromSpace(folderPath +
-              "/", manager) + "commands.mdb",
-        }
-  }
-  const uri = manager.uriByString(contextPath);
-  if (!uri) return null;
-  const pathType = manager.spaceTypeByString(uri);
-  
-  if (pathType == "folder") {
-    return fileSystemSpaceInfoFromFolder(manager, removeTrailingSlashFromFolder(uri.path));
-  } else if (pathType == "tag") {
-    if (uri.path.length > 1) {
-      return fileSystemSpaceInfoFromTag(manager, uri.authority+'/'+uri.path);
-    }
-    return fileSystemSpaceInfoFromTag(manager, uri.authority);
-  } else if (pathType == 'vault') {
-    return fileSystemSpaceInfoFromFolder(manager, '/');
-  }
-  return null;
-};
-
-export const fileSystemSpaceInfoFromFolder = (
-  manager: SpaceManager,
-  folder: string,
-  readOnly?: boolean
-): FilesystemSpaceInfo => {
-  if (folder == '/') {
-    const vaultName =  "Vault";
-    const systemName = manager.superstate.settings.systemName;
+export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string, readOnly?: boolean): FilesystemSpaceInfo => {
+    const path = tagSpacePathFromTag(tag.toLowerCase());
+    const folderPath = manager.superstate.settings.spacesFolder + "/" + tagToTagPath(tag);
     return {
-      name: systemName,
+        name: tag.replace(/^#/, ''),
+        path,
 
-      path: folder,
-      isRemote: false,
-      readOnly: readOnly,
-      folderPath: folder,
-      defPath: SPACE_DEF_PATH,
-      notePath: vaultName + ".md",
-      dbPath: spaceFolderPathFromSpace(folder, manager)  + SPACE_CONTEXT_FILE,
-      framePath: spaceFolderPathFromSpace(folder, manager) + SPACE_VIEWS_FILE,
-      commandsPath: spaceFolderPathFromSpace(folder, manager) + "commands.mdb",
+        isRemote: false,
+        readOnly: readOnly,
+        folderPath,
+        defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
+        notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
+        framePath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_VIEWS_FILE,
+        dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
+        commandsPath: spaceFolderPathFromSpace(folderPath + "/", manager) + "commands.mdb",
     };
-  }
-  const folderName = folderPathToString(folder);
-  const folderNoteName = manager.superstate.settings.folderNoteName;
-  return {
-    name: folderName,
+};
 
-    path: folder,
-    isRemote: false,
-    readOnly: readOnly,
-    folderPath: folder,
-    defPath: folder + `/${SPACE_DEF_PATH}`,
-    notePath: folder + "/" + (folderNoteName.length > 0 ? folderNoteName : folderName) + ".md",
-    dbPath: spaceFolderPathFromSpace(folder +
-      "/", manager) +  SPACE_CONTEXT_FILE,
-    framePath: spaceFolderPathFromSpace(folder +
-      "/", manager) + SPACE_VIEWS_FILE,
-    commandsPath: spaceFolderPathFromSpace(folder + "/", manager) + "commands.mdb",
-  };
+export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: string): FilesystemSpaceInfo => {
+    if (!contextPath) return;
+    if (contextPath.startsWith(builtinSpacePathPrefix)) {
+        const builtinPath = contextPath.slice(builtinSpacePathPrefix.length);
+
+        const folderPath = manager.superstate.settings.spacesFolder + "/$" + builtinPath;
+        return {
+            name: builtinSpaces[builtinPath].name,
+            path: contextPath,
+
+            isRemote: false,
+            readOnly: false,
+            folderPath,
+            defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
+            notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
+            framePath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_VIEWS_FILE,
+            dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
+            commandsPath: spaceFolderPathFromSpace(folderPath + "/", manager) + "commands.mdb",
+        };
+    }
+    const uri = manager.uriByString(contextPath);
+    if (!uri) return null;
+    const pathType = manager.spaceTypeByString(uri);
+
+    if (pathType == "folder") {
+        return fileSystemSpaceInfoFromFolder(manager, removeTrailingSlashFromFolder(uri.path));
+    } else if (pathType == "tag") {
+        if (uri.path.length > 1) {
+            return fileSystemSpaceInfoFromTag(manager, uri.authority + "/" + uri.path);
+        }
+        return fileSystemSpaceInfoFromTag(manager, uri.authority);
+    } else if (pathType == "vault") {
+        return fileSystemSpaceInfoFromFolder(manager, "/");
+    }
+    return null;
+};
+
+export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: string, readOnly?: boolean): FilesystemSpaceInfo => {
+    if (folder == "/") {
+        const vaultName = "Vault";
+        const systemName = manager.superstate.settings.systemName;
+        return {
+            name: systemName,
+
+            path: folder,
+            isRemote: false,
+            readOnly: readOnly,
+            folderPath: folder,
+            defPath: SPACE_DEF_PATH,
+            notePath: vaultName + ".md",
+            dbPath: spaceFolderPathFromSpace(folder, manager) + SPACE_CONTEXT_FILE,
+            framePath: spaceFolderPathFromSpace(folder, manager) + SPACE_VIEWS_FILE,
+            commandsPath: spaceFolderPathFromSpace(folder, manager) + "commands.mdb",
+        };
+    }
+    const folderName = folderPathToString(folder);
+    const folderNoteName = manager.superstate.settings.folderNoteName;
+    return {
+        name: folderName,
+
+        path: folder,
+        isRemote: false,
+        readOnly: readOnly,
+        folderPath: folder,
+        defPath: folder + `/${SPACE_DEF_PATH}`,
+        notePath: folder + "/" + (folderNoteName.length > 0 ? folderNoteName : folderName) + ".md",
+        dbPath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_CONTEXT_FILE,
+        framePath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_VIEWS_FILE,
+        commandsPath: spaceFolderPathFromSpace(folder + "/", manager) + "commands.mdb",
+    };
 };

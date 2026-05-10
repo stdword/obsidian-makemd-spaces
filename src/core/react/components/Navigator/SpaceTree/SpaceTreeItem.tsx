@@ -251,7 +251,7 @@ export const TreeItem = (props: TreeItemProps) => {
     if (superstate.settings.overrideNativeMenu) {
       return superstate.ui.nativePathMenu(e, pathState.path);
     }
-   
+
     showPathContextMenu(
       superstate,
       data.path,
@@ -428,60 +428,9 @@ export const TreeItem = (props: TreeItemProps) => {
             {!isSpace && extension != "md" && (
               <span className="nav-file-tag">{extension}</span>
             )}
-
-            {!clone && !pathState?.readOnly ? (
-              <div className="mk-folder-buttons">
-                {pinType != PinType.Default && (
-                  <div
-                    aria-label={
-                      pinType == PinType.Linked
-                        ? t.labels.pinned
-                        : t.labels.joined
-                    }
-                    dangerouslySetInnerHTML={{
-                      __html: superstate.ui.getSticker(
-                        pinType == PinType.Linked ? "ui//pin" : "ui//merge"
-                      ),
-                    }}
-                  ></div>
-                )}
-                <button
-                  aria-label={t.buttons.moreOptions}
-                  onClick={(e) => {
-                    contextMenu(e);
-                    e.stopPropagation();
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: superstate.ui.getSticker("ui//options"),
-                  }}
-                ></button>
-                {isSpace && (
-                  <button
-                    aria-label={t.buttons.newNote}
-                    onClick={(e) => {
-                      newAction(e);
-                      e.stopPropagation();
-                    }}
-                    dangerouslySetInnerHTML={{
-                      __html: superstate.ui.getSticker("ui//plus"),
-                    }}
-                  ></button>
-                )}
-              </div>
-            ) : (
-              <></>
-            )}
           </div>
         </div>
       </div>
-      {/* {data.isFolder && !collapsed && data.children.length == 0 &&
-            <div className='mk-tree-empty'
-            style={
-              {
-                '--spacing': `${indentationWidth * (depth+1)}px`,
-              } as React.CSSProperties
-            }
-            >{i18n.labels.noNotesInside}</div>} */}
     </>
   );
 };

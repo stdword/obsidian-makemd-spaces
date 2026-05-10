@@ -35,40 +35,6 @@ export const SystemTree = (props: { superstate: Superstate }) => {
                 collapsed={true}
               ></CollapseToggle>
               <div className="mk-tree-text">{f}</div>
-              <div className="mk-folder-buttons">
-                <button
-                  onClick={(e) => {
-                    props.superstate.ui.openModal(
-                      i18n.labels.newAction,
-
-                      <InputModal
-                        value=""
-                        saveLabel={i18n.buttons.save}
-                        saveValue={(value) => {
-                          props.superstate.spaceManager.saveSystemCommand(f, {
-                            schema: {
-                              id: value,
-                              name: value,
-                              type: "action",
-                            },
-                            fields: [],
-                            code: "",
-                            codeType: "script",
-                          });
-                        }}
-                      ></InputModal>,
-                      windowFromDocument(e.view.document)
-                    );
-                  }}
-                >
-                  <div
-                    className="mk-icon-xsmall"
-                    dangerouslySetInnerHTML={{
-                      __html: props.superstate.ui.getSticker("ui//plus"),
-                    }}
-                  ></div>
-                </button>
-              </div>
             </div>
             {libraries.get(f).map((g, k) => (
               <div

@@ -48,22 +48,22 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
     }
     const schema = mdb[defaultContextSchemaID]?.schema ?? defaultContextDBSchema;
     const contextPaths = mdb[defaultContextSchemaID]?.rows?.map(f => f[PathPropertyName]) ?? [];
-    
+
     const missingPaths = paths.filter(f => !contextPaths.includes(f));
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
     const dependencies = propertyDependencies(cols);
     const spacePath = pathsIndex.get(space.path);
     let rows = mergeContextRows(paths, mdb[defaultContextSchemaID]?.rows ?? [], pathsIndex, spacesMap, spacePath)
-     
+
     rows = rows.map(f => syncContextRow(pathsIndex, f, cols, spacePath))
     if (options?.calculate) {
-     
+
       rows = rows.map(f => linkContextRow(runContext, pathsIndex, contextsIndex, spacesMap, f, cols, spacePath, settings, dependencies))
     }
 
     const contextTable : SpaceTable =  {
         schema,
-        cols, 
+        cols,
         rows: rows
     } as SpaceTable;
 
@@ -79,7 +79,7 @@ export const parseContextTableToCache = (space: SpaceInfo, mdb: SpaceTables, pat
         });
 
     })
-    
+
     const outlinks = uniq(contextTable.rows.reduce((p, c) => uniq([...p, ...[...contextCols, ...linkCols].flatMap(f => parseMultiString(c[f.name]).map(f => parseLinkString(f)))]), []))
     mdb[defaultContextSchemaID] = contextTable;
     const cache : ContextState = {
@@ -107,13 +107,13 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
     for (const [path, _pathCache] of fileCache) {
         const cachePath = settings.enableFolderNote ? spacesCache.get(path)?.space.notePath ?? path : path;
         const isFolderNote = settings.enableFolderNote && spacesCache.has(path);
-        
+
         const pathCache = fileCache.get(cachePath) ?? _pathCache;
         if (!pathCache)
             continue;
 
         if (isFolderNote) {
-          
+
           pathCache.file = _pathCache.file;
           pathCache.parent = _pathCache.parent;
           pathCache.subtype = _pathCache.subtype;
@@ -155,9 +155,8 @@ export const parseMetadata = (
         if (sticker?.length > 0) return sticker;
         if (type == 'space')
         {
-            if (path == 'Spaces/Home') return 'ui//home';
-            if (path == "/") return 'ui//vault';
-            if (path.startsWith('spaces://')) return "ui//tags";
+            if (path == "/") return 'ui//home';
+            if (path.startsWith('spaces://')) return "ui//hash";
             return "ui//folder";
         }
     return 'ui//file';
@@ -184,7 +183,7 @@ export const parseMetadata = (
     seen = new Set(),
   ) => {
     const keys: string[] = [];
-        
+
     for (const space of spaces) {
         const valList = (map.get(space)?.contexts as string[] ?? []).filter(f => f).map(f => f.toLowerCase());
 
@@ -203,7 +202,7 @@ export const parseMetadata = (
     }
     return keys;
   };
-  
+
     if (spacesCache.has(parent)) {
         for (const def of spacesCache.get(parent).contexts ?? []) {
             tags.filter(f => f).push(def.toLowerCase());
@@ -224,7 +223,7 @@ export const parseMetadata = (
   );
   const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
   const color = pathCache?.label?.color ?? parentDefaultColor ?? '';
-    
+
   const outlinks = pathCache?.resolvedLinks ?? [];
   const spaceNames = [];
     let isSpaceNote = false;
@@ -244,7 +243,7 @@ export const parseMetadata = (
             preview: pathCache?.label?.preview ?? '',
             thumbnail: pathCache?.label?.thumbnail ?? '',
         },
-        
+
         metadata: {
             ...pathCache,
         },
@@ -263,7 +262,7 @@ export const parseMetadata = (
     }
     const evaledSpaces = new Set<string>();
     const evalSpace = (s: string, space: SpaceState) => {
-      
+
         if (evaledSpaces.has(s)) return;
         evaledSpaces.add(s);
         if (space.dependencies?.length > 0) {
@@ -273,7 +272,7 @@ export const parseMetadata = (
                 }
             }
         }
-        
+
         if (space.space.notePath == path && space.path != space.space.notePath) {
             isSpaceNote = true;
             spacePath = space.path;
@@ -322,7 +321,7 @@ export const parseMetadata = (
   const newTags = getTagsFromCache(spacesCache, spaces);
   spaces.push(...newTags.map((f) => tagSpacePathFromTag(f)));
   spaceNames.push(...newTags);
-    
+
   pathState.tags.push(...newTags);
   if (isSpaceNote) {
             pathState.metadata.spacePath = spacePath;

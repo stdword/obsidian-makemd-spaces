@@ -31,7 +31,7 @@ import { safelyParseJSON } from "shared/utils/json";
 import { movePath } from "shared/utils/uri";
 import { excludeSpacesPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
-import { tagPathToTag, tagToTagPath } from "utils/tags";
+import { tagToTagPath } from "utils/tags";
 import { SpaceManager } from "../spaceManager";
 
 
@@ -52,11 +52,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         fileSystem.eventDispatch.addListener("onCacheUpdated", this.onMetadataChange, 0, this)
 
     }
-  
+
    public spaceManager: SpaceManager;
    public schemes = ['spaces', 'vault']
     public initiateAdapter(manager: SpaceManager) {
-      
+
       this.spaceManager = manager;
     }
 
@@ -116,7 +116,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         }, 'mdbTables') as Promise<MDBFrames>
       }
     }
-    
+
     public async readAllKits () : Promise<Kit[]> {
       const strings = (await this.childrenForPath(`${this.dataPath}/${defaultKitsFolder}`)).map(f => f.split('/').pop());
       const kits = Promise.all(strings.map(async f => {
@@ -151,7 +151,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         isFolder: false,
         extension: 'mdb'
       }, 'mdbTables') as Promise<MDBFrames>
-      
+
     }
     public async saveFrameKit (frames: MDBFrame, name: string) {
       const mdbFile = {
@@ -182,19 +182,19 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return;
       }
       const path = this.spaceManager.superstate.pathsIndex.get(payload.path);
-      
+
       if (path?.metadata.spacePath?.length > 0) {
         this.spaceManager.onPathPropertyChanged(path?.metadata.spacePath)
         return;
       }
       this.spaceManager.onPathPropertyChanged(payload.path)
     }
-    
+
     public uriByPath (path: string) {
       return this.spaceManager.uriByString(path);
     }
     public allPaths (type?: string[], hidden?: boolean) {
-      
+
       return [...this.fileSystem.allFiles(hidden).filter(f =>  type ? type.some(g =>  g == 'folder' ? f.isFolder : f.extension == g) : true).map(g => g.path).filter(f => !hidden && !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))];
     }
     public async pathExists (path: string) {
@@ -206,7 +206,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
               return true;
             }
           }
-            
+
           if (uri.authority.charAt(0) == '#')
           {
             return true;
@@ -214,7 +214,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
           if (path == '/') {
             return true;
           }
-        
+
       }
       return this.fileSystem.fileExists(path)
     }
@@ -267,7 +267,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     return file as Record<string, any>;
   }
 
-  
+
   public keysForCacheType (path: string) {
     return this.fileSystem.keysForCacheType(path)
   }
@@ -293,7 +293,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             } as FileCache
         }
       }
-        
+
       if (uri.authority.charAt(0) == '#')
       {
         return {
@@ -309,7 +309,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
           tags: [],
           readOnly: false
           } as FileCache
-        } 
+        }
       }
       if (path == '/') {
         return {
@@ -331,7 +331,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
           readOnly: false
           } as FileCache
       }
-    
+
     return this.fileSystem.getFileCache(path)
   }
   public async readPath (path: string) {
@@ -346,7 +346,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
   public async copyPath (path: string, newPath: string, newName?: string) {
     const uri = this.uriByPath(path);
     const file = await this.fileSystem.getFile(uri.path);
-    
+
     return this.fileSystem.copyFile(file.path, newPath, newName);
     }
   public async writeToPath (path: string, content: any, binary: boolean) {
@@ -361,7 +361,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     return this.fileSystem.writeTextToFile(path, content);
   }
-  
+
   public async childrenForPath (path: string, type?: string) {
     if (await this.fileSystem.fileExists(path))
     return this.fileSystem.childrenForFolder(path, type);
@@ -396,14 +396,14 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     return this.fileSystem.readFileFragments(mdbFile, 'mdbTables')
   }
-  
+
   public async readTable (path: string, schema: string) {
     const spaceInfo = this.spaceInfoForPath(path);
     const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath)
     let table : SpaceTable;
     if (!mdbFile && schema == defaultContextDBSchema.id) {
       table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-      
+
     } else {
       table = await this.fileSystem.readFileFragments(mdbFile, 'mdbTable', schema) as SpaceTable
       if (!table && schema == defaultContextDBSchema.id)
@@ -415,7 +415,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     const pathsIndexMap = this.spaceManager.superstate.pathsIndex;
     const contextsIndexMap = this.spaceManager.superstate.contextsIndex;
     const pathState = pathsIndexMap.get(path);
-    
+
     let rows = table.rows;
     if (schema == defaultContextDBSchema.id)
       rows = mergeContextRows(this.spaceManager.superstate.getSpaceItems(path).map(f => f.path), table.rows, pathsIndexMap, this.spaceManager.superstate.spacesMap, pathState).map(f => syncContextRow(pathsIndexMap, f, table.cols, pathState))
@@ -440,7 +440,7 @@ public async contextInitiated (path: string) {
       return defaultContextTable.rows
     }
     return schemas;
-    
+
   }
 private defaultDBTablesForContext (spaceInfo: SpaceInfo) {
   const table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
@@ -489,7 +489,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
           m_schema: defaultFramesTable,
 
     };
-    
+
       const dbPath = this.spaceInfoForPath(path).framePath
       const extension = dbPath.split('.').pop();
       const folder = dbPath.split('/').slice(0, -1).join('/');
@@ -504,7 +504,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     }
     return this.fileSystem.newFileFragment(mdbFile, 'schema', schema.id, schema)
   }
-  
+
   public async saveTableSchema (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
     let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath)
     if (!mdbFile) {
@@ -543,7 +543,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
       }
     }
     return this.fileSystem.readFileFragments(mdbFile, 'mdbTables', null);
-   
+
   }
 
   public async framesForSpace (path: string) {
@@ -554,7 +554,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     }
     return this.fileSystem.readFileFragments(mdbFile, 'schemas', null)
   }
-  
+
 
   public async createFrame (path: string, schema: SpaceTableSchema) {
     let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath)
@@ -574,9 +574,9 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     }
     return this.fileSystem.saveFileFragment(mdbFile, 'schema', schemaId, saveSchema)
   }
-  
+
   public async saveFrame (path: string, frame: SpaceTable) {
-    
+
     let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath)
     if (!mdbFile) {
       mdbFile = await this.createDefaultFrames(path)
@@ -637,9 +637,9 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     if (!mdbFile) {
       mdbFile = await this.createDefaultCommands(path)
     }
-    
+
     return this.fileSystem.newFileFragment(mdbFile, 'schema', schema.id, schema)
-  
+
   }
 
   public async readSystemCommands (): Promise<Library[]> {
@@ -663,7 +663,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
       isFolder: false,
       extension: 'mdb'
     }, 'mdbCommands') as Promise<Command[]>
-    
+
   }
 
   public async saveSystemCommand (lib: string, command: Command) {
@@ -715,7 +715,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     }
     return this.fileSystem.readFileFragments(mdbFile, 'mdbTable', defaultContextSchemaID)
   }
-  
+
   public async addSpaceProperty (path: string, property: SpaceProperty) {
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path)?.dbPath)
 
@@ -728,7 +728,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath)
     return this.fileSystem.deleteFileFragment(mdbFile, 'field', property)
   }
-  
+
   public async saveSpaceProperty (path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
     const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath)
     if (!mdbFile) {
@@ -747,7 +747,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
   }
 
   public async readLabel (path: string) {
-    
+
     const pathCache = this.fileSystem.getFileCache(path)?.label as PathLabel;
     if (!pathCache) {
       const file = await this.fileSystem.getFile(path);
@@ -761,7 +761,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
   }
 
   public async saveLabel (path: string, label: keyof PathLabel, value: any) {
-    
+
     if (this.spaceManager.superstate.spacesIndex.has(path)) {
       const spaceInfo = this.spaceInfoForPath(path);
       let defFile = await this.fileSystem.getFile(spaceInfo.defPath)
@@ -775,16 +775,16 @@ const defaultSpaceTemplate = this.defaultFrame(path);
           const extension = defPath.split('.').pop();
           const folder = defPath.split('/').slice(0, -1).join('/');
           const filename = defPath.split('/').pop().split('.')[0];
-  
+
           defFile = await this.fileSystem.newFile(folder, filename, extension)
         }
         noteFile = defFile;
       }
       await this.fileSystem.saveFileLabel(noteFile, label, value)
-      
+
       return;
     }
-    
+
     const file = await this.fileSystem.getFile(path)
     this.fileSystem.saveFileLabel(file, label, value)
   }
@@ -808,14 +808,14 @@ const defaultSpaceTemplate = this.defaultFrame(path);
   }
 
     onCreate = async (payload: {file: AFile}) => {
-      
+
       if (payload.file.isFolder){
         this.spaceManager.onSpaceCreated(payload.file.path)
       } else {
         this.spaceManager.onPathCreated(payload.file.path)
       }
       };
-    
+
       onDelete = (payload: {file: AFile}) => {
 
         if (!payload.file) return;
@@ -825,40 +825,39 @@ const defaultSpaceTemplate = this.defaultFrame(path);
           this.spaceManager.onSpaceDeleted(payload.file.path)
         }
       };
-      
+
       onRename = (payload: {file: AFile, oldPath: string}) => {
 
         if (!payload.file) return;
         if (!payload.file.isFolder && payload.file.extension != "mdb") {
           this.spaceManager.onPathChanged(payload.file.path, payload.oldPath)
-        } else if (payload.file.isFolder) 
+        } else if (payload.file.isFolder)
         {
           this.spaceManager.onSpaceRenamed(payload.file.path, payload.oldPath)
         }
         }
 
-      
+
     public authorities = ['vault'];
 
 
     public allSpaces (hidden?: boolean)  {
-      
           const getAllFolderContextFiles = () => {
             const folders = this.allPaths(['folder'], hidden).filter(f => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f) && !hidden)
-            
+
             return folders.map(f => fileSystemSpaceInfoFromFolder(this.spaceManager, f));
           }
-          
+
           const allFolders = getAllFolderContextFiles();
           if (this.spaceManager.superstate.settings.enableDefaultSpaces) {
             const builtins = Object.keys(builtinSpaces).map(f => this.spaceManager.spaceInfoForPath(`spaces://$${f}`));
-    
-            const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, tagPathToTag(f))) as SpaceInfo[] ?? [];
+
+            const getAllTagContextFiles = () : SpaceInfo[] => this.readTags().map(f => fileSystemSpaceInfoFromTag(this.spaceManager, f)) as SpaceInfo[] ?? [];
             const allTagSpaces = getAllTagContextFiles();
             return [...builtins, ...allTagSpaces, ...allFolders]
           }
           return allFolders;
-           
+
     }
 
     public readTags () {
@@ -877,7 +876,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     public async spaceDefForSpace (path: string) {
         const space = this.spaceInfoForPath(path)
         if (!space) return null;
-        
+
         const metaCache = space.defPath ? await this.fileSystem.readTextFromFile(space.defPath) : null;
         if (!metaCache) {
           const defFile = await this.fileSystem.getFile(space.notePath);
@@ -896,7 +895,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
       await this.fileSystem.createFolder(newPath);
       if (Object.keys(definition ?? {}).length > 0)
         return this.saveSpace(newPath, () => definition);
-      
+
     }
 
     public async saveSpace (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) {
@@ -904,7 +903,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
 
       const spaceInfo = this.spaceInfoForPath(path);
       let defFile = await this.fileSystem.getFile(spaceInfo.defPath)
-      
+
 
       if (!defFile) {
         const defPath = this.spaceInfoForPath(path).defPath
@@ -945,10 +944,10 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     }
 
     public renameSpace (oldPath: string, newPath: string) {
-      
+
       const spaceInfo = this.spaceInfoForPath(oldPath);
       const newSpaceInfo = this.spaceInfoForPath(newPath);
-      return this.fileSystem.renameFile(spaceInfo.folderPath, newSpaceInfo.folderPath).then(f => 
+      return this.fileSystem.renameFile(spaceInfo.folderPath, newSpaceInfo.folderPath).then(f =>
       {
         if (this.spaceManager.superstate.settings.enableFolderNote)
           this.fileSystem.renameFile(movePath(spaceInfo.notePath, newSpaceInfo.path), newSpaceInfo.notePath)
@@ -968,9 +967,9 @@ const defaultSpaceTemplate = this.defaultFrame(path);
 
     public async addTag (path: string, tag: string) {
       const fileCache = this.fileSystem.getFileCache(path);
-      
+
       if (fileCache.subtype == 'md' || fileCache.subtype == 'folder') {
-        
+
         this.fileSystem.addTagToFile(path, tag);
         return;
       }
@@ -981,12 +980,12 @@ const defaultSpaceTemplate = this.defaultFrame(path);
       if (!pathExists) {
         spaceExists.push(path)
       }
-      
+
       const newMetadata = {...metadata, links: spaceExists}
       await this.saveSpace(tagPath, (oldMetadata) => ({...oldMetadata, ...newMetadata}));
       await this.spaceManager.superstate.updateSpaceMetadata(tagPath, newMetadata)
       this.spaceManager.superstate.reloadPath(path, true).then(f => this.spaceManager.superstate.dispatchEvent("pathStateUpdated", {path: path}))
-      
+
     }
 
     public renameTag (path: string, tag: string, newTag: string) {
@@ -995,7 +994,7 @@ const defaultSpaceTemplate = this.defaultFrame(path);
 
     public deleteTag (path: string, tag: string) {
       this.fileSystem.removeTagFromFile(path, tag)
-      
+
     }
 
     public pathsForTag (tag: string) {
@@ -1005,5 +1004,5 @@ const defaultSpaceTemplate = this.defaultFrame(path);
     public resolvePath (path: string, source: string) {
       return this.fileSystem.resolvePath(path, source)
     }
-    
+
 }
