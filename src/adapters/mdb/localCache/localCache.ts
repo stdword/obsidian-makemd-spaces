@@ -45,10 +45,10 @@ export class LocalStorageCache implements LocalCachePersister {
     public isInitialized() {
         return this.initialized;
     }
-public reset() {
-    if (!this.initialized) return;
-    replaceDB(this.db, this.defaultTables);
-}
+    public reset() {
+        if (!this.initialized) return;
+        replaceDB(this.db, this.defaultTables);
+    }
     /** Store file metadata by path. */
     public async store(path: string, cache: string, type: string): Promise<void> {
         if (!this.initialized) return;
@@ -74,11 +74,12 @@ public reset() {
         return;
     }
     private debounceSaveSpaceDatabase = debounce(
-        () => {
-             saveZippedDBFile(this.mdbAdapter, this.storageDBPath, this.db.export().buffer as ArrayBuffer)
-    }, 5000,
-    {
-        leading: false,
+      () => {
+          saveZippedDBFile(this.mdbAdapter, this.storageDBPath, this.db.export().buffer as ArrayBuffer)
+      },
+      5000,
+      {
+          leading: false,
       })
 
     /** Obtain a list of all persisted files. */
@@ -87,5 +88,4 @@ public reset() {
         if (!this.db) return [];
         return selectDB(this.db, type)?.rows ?? []
     }
-
 }

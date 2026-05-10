@@ -113,8 +113,6 @@ export const en = {
     "openSpaces": "Open Navigator",
     "blink": "Blink",
     "revealFile": "Reveal File in Navigator",
-    "releaseNotes": "Release Notes",
-    "getStarted": "Get Started",
     "toggleBacklinks": "Toggle Backlinks",
     "pinActiveFileToSpace": "Pin Active File to Space",
     "closeExtraFileTabs": "Close Extra File Tabs",
@@ -1041,7 +1039,6 @@ export const en = {
       "previous": "Previous",
       "next": "Next",
       "skipTour": "Skip Tour",
-      "getStarted": "Get Started"
     },
     "categories": {
       "core": "Core",

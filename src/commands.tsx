@@ -16,8 +16,8 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
         i18n.labels.hiddenFiles,
         <HiddenPaths superstate={plugin.superstate}></HiddenPaths>,
         windowFromDocument(
-          plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
-        )
+          plugin.app.workspace.getLeaf()?.containerEl.ownerDocument,
+        ),
       );
     },
   });
@@ -45,16 +45,10 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
     // plugin.addCommand({
     //   id: "mk-release-notes",
     //   name: i18n.commandPalette.releaseNotes,
-    //   callback: () => {
-    //     plugin.releaseTheNotes();
-    //   },
     // });
     // plugin.addCommand({
     //   id: "mk-get-started",
     //   name: i18n.commandPalette.getStarted,
-    //   callback: () => {
-    //     plugin.getStarted();
-    //   },
     // });
     plugin.addCommand({
       id: "mk-reveal-file",
@@ -86,7 +80,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
     });
 
     plugin.addCommand({
-      id: "mk-spaces",
+      id: "mk-spaces", // Open Navigator
       name: i18n.commandPalette.openSpaces,
       callback: () => plugin.openFileTreeLeaf(true),
     });

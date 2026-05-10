@@ -14,10 +14,6 @@ import { DBTables, SpaceTables } from "shared/types/mdb";
 import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { safelyParseJSON } from "shared/utils/json";
-import { VERSION } from "version";
-
-// Use the centralized version from version.ts
-const manifest = { version: VERSION };
 
 export const installSpaceTemplate = async (plugin: MakeMDPlugin, superstate: Superstate, space: string, template: TemplateKit) => {
     
@@ -90,8 +86,8 @@ export const installSpaceKit = async (plugin: MakeMDPlugin, superstate: Supersta
     if (!kit) return;
 
     // Check version compatibility if version is specified in meta
-    if (kit.meta?.version && !isVersionCompatible(kit.meta.version, manifest.version)) {
-        console.warn(`SpaceKit version ${kit.meta.version} may not be fully compatible with app version ${manifest.version}`);
+    if (kit.meta?.version && !isVersionCompatible(kit.meta.version, plugin.manifest.version)) {
+        console.warn(`SpaceKit version ${kit.meta.version} may not be fully compatible with app version ${plugin.manifest.version}`);
     }
 
     const path = space == '/' ? kit.name : space + '/' + kit.name;
@@ -294,7 +290,7 @@ export const exportSpaceKit = async (plugin: MakeMDPlugin, superstate: Superstat
     
     const spaceKit: SpaceKit = {
         meta: {
-            version: manifest.version
+            version: plugin.manifest.version
         },
         name: name,
         path: absolutePathToRelativePath(space, root),

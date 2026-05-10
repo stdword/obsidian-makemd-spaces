@@ -10,11 +10,18 @@ export const parseURI = (uri: string): URI => {
     // export const uriByStr = (uri: string, source?: string) => {
       
       let refTypeChar = '';
+      const safeDecodeURIComponent = (value: string) => {
+        try {
+          return decodeURIComponent(value);
+        } catch {
+          return value;
+        }
+      };
       const parseQuery = (queryString: string) => {
         const query: { [key: string]: string } = {};
         queryString.split('&').forEach(param => {
           const [key, value] = param.split('=');
-          query[decodeURIComponent(key)] = decodeURIComponent(value);
+          query[safeDecodeURIComponent(key)] = safeDecodeURIComponent(value);
         });
         return query;
       };
@@ -37,8 +44,9 @@ export const parseURI = (uri: string): URI => {
       let refType: PathRefTypes= null;
       let query: { [key: string]: string } | null = null;
       let scheme: string | null = 'vault';
+      const hasExplicitScheme = fullPath.indexOf('://') != -1;
     
-      if (fullPath.indexOf('://') != -1) {
+      if (hasExplicitScheme) {
       scheme = uri.slice(0, uri.indexOf('://'))
       const spaceStr = uri.slice(uri.indexOf('://')+3);
         
@@ -71,7 +79,7 @@ export const parseURI = (uri: string): URI => {
       const lastPipeIndex = uri.lastIndexOf('|');
       const queryIndex = uri.lastIndexOf('?');
     let trailSlash = false;
-      if (queryIndex !== -1) {
+      if (hasExplicitScheme && queryIndex !== -1) {
         query = parseQuery(uri.slice(queryIndex + 1));
         uri = uri.slice(0, queryIndex);
       }
@@ -146,5 +154,3 @@ export const uriForFolder = (path: string) : URI => {
     trailSlash: true
   };
 }
-
-
