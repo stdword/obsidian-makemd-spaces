@@ -1,5 +1,4 @@
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
-import { addPathToSpaceAtIndex } from "core/superstate/utils/spaces";
 import { eventTypes } from "core/types/types";
 import MakeMDPlugin from "main";
 import i18n from "shared/i18n";
@@ -43,11 +42,22 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
       if (!file) return;
       const pathState = plugin.superstate.pathsIndex.get(file);
       if (!pathState) return;
-      plugin.quickOpen(plugin.superstate, BlinkMode.OpenSpaces, (space) => {
-        const spaceCache = plugin.superstate.spacesIndex.get(space);
-        if (spaceCache)
-          addPathToSpaceAtIndex(plugin.superstate, spaceCache, file, -1);
-      });
+      const currentFocusIndex = plugin.superstate.settings.currentWaypoint;
+      const currentFocus = plugin.superstate.focuses[currentFocusIndex] ?? {
+        name: i18n.labels.home,
+        sticker: "ui//home",
+        paths: [] as string[],
+      };
+      if (currentFocus.paths.includes(file)) return;
+      const nextFocuses = plugin.superstate.focuses.map((focus, index) =>
+        index == currentFocusIndex
+          ? { ...currentFocus, paths: [...currentFocus.paths, file] }
+          : focus,
+      );
+      if (currentFocusIndex >= plugin.superstate.focuses.length) {
+        nextFocuses.push({ ...currentFocus, paths: [file] });
+      }
+      plugin.superstate.spaceManager.saveFocuses(nextFocuses);
     },
   });
 
