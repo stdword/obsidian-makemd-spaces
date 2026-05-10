@@ -68,26 +68,27 @@ export const showMainMenu = (
         );
       },
     });
-  if (superstate.ui.getWarnings().length > 0) {
-    menuOptions.push({
-      name: i18n.menu.showWarnings,
-      icon: "ui//warning",
-      onClick: (e) => {
-        showWarningsModal(superstate, windowFromDocument(e.view.document));
-      },
-    });
-    menuOptions.push(menuSeparator);
-  }
-  if (!isPhone(superstate.ui)) {
-    menuOptions.push({
-      name: i18n.buttons.openOverview,
-      icon: "ui//columns",
-      onClick: () => {
-        plugin.openEverView();
-      },
-    });
-    menuOptions.push(menuSeparator);
-  }
+  // Navigator MVP excludes warning and overview entries from the sidebar menu.
+  // if (superstate.ui.getWarnings().length > 0) {
+  //   menuOptions.push({
+  //     name: i18n.menu.showWarnings,
+  //     icon: "ui//warning",
+  //     onClick: (e) => {
+  //       showWarningsModal(superstate, windowFromDocument(e.view.document));
+  //     },
+  //   });
+  //   menuOptions.push(menuSeparator);
+  // }
+  // if (!isPhone(superstate.ui)) {
+  //   menuOptions.push({
+  //     name: i18n.buttons.openOverview,
+  //     icon: "ui//columns",
+  //     onClick: () => {
+  //       plugin.openEverView();
+  //     },
+  //   });
+  //   menuOptions.push(menuSeparator);
+  // }
 
   menuOptions.push({
     name: i18n.menu.collapseAllSections,
@@ -137,33 +138,34 @@ export const showMainMenu = (
   //   })
   // );
 
-  menuOptions.push(menuSeparator);
+  // Navigator MVP excludes Obsidian/global Make.md entries from the sidebar menu.
+  // menuOptions.push(menuSeparator);
 
-  menuOptions.push({
-    name: i18n.menu.obSettings,
-    icon: "ui//settings",
-    onClick: () => {
-      plugin.app.commands.commands["app:open-settings"].callback();
-    },
-  });
+  // menuOptions.push({
+  //   name: i18n.menu.obSettings,
+  //   icon: "ui//settings",
+  //   onClick: () => {
+  //     plugin.app.commands.commands["app:open-settings"].callback();
+  //   },
+  // });
 
-  menuOptions.push({
-    name: i18n.menu.openVault,
-    icon: "ui//vault",
-    onClick: () => {
-      plugin.app.commands.commands["app:open-vault"].callback();
-    },
-  });
+  // menuOptions.push({
+  //   name: i18n.menu.openVault,
+  //   icon: "ui//vault",
+  //   onClick: () => {
+  //     plugin.app.commands.commands["app:open-vault"].callback();
+  //   },
+  // });
 
-  menuOptions.push(menuSeparator);
+  // menuOptions.push(menuSeparator);
 
-  menuOptions.push({
-    name: i18n.menu.getHelp,
-    icon: "ui//mk-logo",
-    onClick: () => {
-      window.open("https://make.md/community");
-    },
-  });
+  // menuOptions.push({
+  //   name: i18n.menu.getHelp,
+  //   icon: "ui//mk-logo",
+  //   onClick: () => {
+  //     window.open("https://make.md/community");
+  //   },
+  // });
 
   // if (isMouseEvent(e)) {
   const offset = el.getBoundingClientRect();

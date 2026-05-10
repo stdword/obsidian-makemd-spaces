@@ -152,10 +152,12 @@ public api: API;
     public focuses: Focus[];
     public searchIndex: FuseIndex<PathState>;
     public async search (path: string, query?: string, queries?: FilterGroupDef[]) {
+        const navigatorSearchResults = (paths: PathState[]) =>
+            paths.filter(f => !f.path.startsWith("spaces://"));
         if (query) {
-            return fastSearch(query, this.pathsIndex, 10, this.searchIndex)
+            return navigatorSearchResults(fastSearch(query, this.pathsIndex, 10, this.searchIndex))
         }
-        return searchPath({ queries: queries, pathsIndex: this.pathsIndex, count: 10 })
+        return navigatorSearchResults(searchPath({ queries: queries, pathsIndex: this.pathsIndex, count: 10 }))
     }
     public reindexSearch () {
         this.indexer.reload<Record<string, unknown>>({ type: 'index', path: ''}).then(r => {

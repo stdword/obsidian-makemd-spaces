@@ -191,11 +191,12 @@ loadSuperState() {
 
     this.app.metadataCache.on("changed", this.metadataChange);
 
-    if (makeMDVersion > this.superstate.settings.releaseNotesPrompt) {
-      this.releaseTheNotes();
-      this.superstate.settings.releaseNotesPrompt = makeMDVersion;
-      this.saveSettings();
-    }
+    // Navigator MVP disables the Make.md release notes startup autoaction.
+    // if (makeMDVersion > this.superstate.settings.releaseNotesPrompt) {
+    //   this.releaseTheNotes();
+    //   this.superstate.settings.releaseNotesPrompt = makeMDVersion;
+    //   this.saveSettings();
+    // }
     if (!this.superstate.settings.firstLaunch) {
       this.getStarted();
       this.superstate.settings.firstLaunch = true;
@@ -215,32 +216,38 @@ loadViews () {
     return new SpaceViewContainer(leaf, this.superstate, this.ui, SPACE_VIEW_TYPE);
   });
   
-  this.registerView(SPACE_FRAGMENT_VIEW_TYPE, (leaf) => {
-    return new SpaceFragmentView(leaf, this);
-  });
-  this.registerView(EMBED_SPACE_VIEW_TYPE, (leaf) => {
-    return new EmbedSpaceView(leaf, this);
-  });
+  // Navigator MVP excludes the standalone space fragment editor view.
+  // this.registerView(SPACE_FRAGMENT_VIEW_TYPE, (leaf) => {
+  //   return new SpaceFragmentView(leaf, this);
+  // });
+  // Navigator MVP excludes the standalone embedded space editor view.
+  // this.registerView(EMBED_SPACE_VIEW_TYPE, (leaf) => {
+  //   return new EmbedSpaceView(leaf, this);
+  // });
   if (this.superstate.settings.contextEnabled) {
       
-    this.registerView(LINK_VIEW_TYPE, (leaf) => {
-      return new FileLinkView(leaf, this.app, LINK_VIEW_TYPE, this.superstate);
-    });
+    // Navigator MVP excludes the standalone file link/context viewer.
+    // this.registerView(LINK_VIEW_TYPE, (leaf) => {
+    //   return new FileLinkView(leaf, this.app, LINK_VIEW_TYPE, this.superstate);
+    // });
     
+    // Navigator MVP excludes the standalone file context explorer view.
+    // this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
+    //   return new ContextExplorerLeafView(leaf, this.superstate, this.ui);
+    // });
     
-    this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
-      return new ContextExplorerLeafView(leaf, this.superstate, this.ui);
-    });
-    
-    this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
-      return new MDBFileViewer(leaf, this);
-    });
-    this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
-      return new HTMLFileViewer(leaf, this);
-    });
-    this.registerView(MKIT_FILE_VIEWER_TYPE, (leaf) => {
-      return new MKitFileViewer(leaf, this);
-    });
+    // Navigator MVP excludes the standalone MDB file viewer.
+    // this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
+    //   return new MDBFileViewer(leaf, this);
+    // });
+    // Navigator MVP excludes the standalone HTML file viewer.
+    // this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
+    //   return new HTMLFileViewer(leaf, this);
+    // });
+    // Navigator MVP excludes the standalone MKit file viewer.
+    // this.registerView(MKIT_FILE_VIEWER_TYPE, (leaf) => {
+    //   return new MKitFileViewer(leaf, this);
+    // });
   }
 }
 
@@ -402,33 +409,38 @@ loadViews () {
         }
       });
       
-      this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
-      try {
-      this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
-      } catch (e) {
-              }
-      try {
-      this.registerExtensions(["mkit"], MKIT_FILE_VIEWER_TYPE);
-      } catch (e) {
-              }
+      // Navigator MVP excludes the standalone MDB file viewer extension.
+      // this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
+      // Navigator MVP excludes the standalone HTML/HTM file viewer extension.
+      // try {
+      // this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
+      // } catch (e) {
+      //         }
+      // Navigator MVP excludes the standalone MKit file viewer extension.
+      // try {
+      // this.registerExtensions(["mkit"], MKIT_FILE_VIEWER_TYPE);
+      // } catch (e) {
+      //         }
       this.app.workspace.onLayoutReady(async () => {
 
-        if (this.superstate.settings.autoOpenFileContext) {
-          await this.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE);
-        }
+        // Navigator MVP excludes auto-opening the standalone file context explorer.
+        // if (this.superstate.settings.autoOpenFileContext) {
+        //   await this.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE);
+        // }
         setTimeout(() => this.activeFileChange(), 2000);
       });
       
     }
-    if (this.superstate.settings.inlineContext) {
-      this.registerMarkdownPostProcessor((element, context) => {
-        replaceInlineContext(this, element, context);
-      });
-      document.body.classList.toggle(
-        "mk-inline-context-enabled",
-        this.superstate.settings.inlineContext
-      );
-    }
+    // Navigator MVP excludes inline context markdown post-processing.
+    // if (this.superstate.settings.inlineContext) {
+    //   this.registerMarkdownPostProcessor((element, context) => {
+    //     replaceInlineContext(this, element, context);
+    //   });
+    //   document.body.classList.toggle(
+    //     "mk-inline-context-enabled",
+    //     this.superstate.settings.inlineContext
+    //   );
+    // }
   }
 
   openEverView () {
@@ -643,10 +655,11 @@ this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
       this.saveSettings();
     }
 
-    if (this.superstate.settings.basics) {
-    this.basics = new MakeBasicsPlugin(this);
-    this.basics.loadBasics();
-    }
+    // Navigator MVP excludes Make.md Basics editor integrations.
+    // if (this.superstate.settings.basics) {
+    //   this.basics = new MakeBasicsPlugin(this);
+    //   this.basics.loadBasics();
+    // }
     
     this.loadCommands();
     

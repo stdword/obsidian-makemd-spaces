@@ -42,13 +42,17 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       subCategories: Record<string, string[]>,
       settings: SettingObject[]
     } = {
-      categories: ['general', 'navigator',  'space', 'notes', 'performance', 'advanced'],
+      // Navigator MVP hides editor/note decoration settings without deleting them.
+      categories: ['general', 'navigator',  'space', 'performance', 'advanced'],
+      // categories: ['general', 'navigator',  'space', 'notes', 'performance', 'advanced'],
       subCategories: {
         general: ['label', 'tags'],
         navigator: ['appearance', 'interaction', 'advanced'],
         label: ['appearance'],
         notes: ['appearance', 'folderNote'],
-        space: ['appearance' , 'context'],
+        // Navigator MVP hides context-database settings without deleting them.
+        space: ['appearance'],
+        // space: ['appearance' , 'context'],
         performance: [],
         advanced: []
       },
@@ -500,11 +504,12 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       });
     });
 
-    if (this.plugin.superstate.settings.basics) {
-      containerEl.createEl("h1", { text: "Basics Settings" });
-    const basicsSettings = new MakeBasicsSettingsTab(this.app, this.plugin.basics);
-    basicsSettings.display(containerEl);
-    }
+    // Navigator MVP excludes Make.md Basics editor settings.
+    // if (this.plugin.superstate.settings.basics) {
+    //   containerEl.createEl("h1", { text: "Basics Settings" });
+    // const basicsSettings = new MakeBasicsSettingsTab(this.app, this.plugin.basics);
+    // basicsSettings.display(containerEl);
+    // }
 
   }
   }

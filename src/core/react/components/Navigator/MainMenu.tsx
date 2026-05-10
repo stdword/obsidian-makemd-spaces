@@ -94,7 +94,8 @@ export const MainMenu = (props: MainMenuComponentProps) => {
               }}
             ></div>
           </div>
-          {props.superstate.settings.blinkEnabled && (
+          {/* Navigator MVP hides the remaining main menu button controls. */}
+          {/* {props.superstate.settings.blinkEnabled && (
             <div
               className="mk-main-menu-button"
               onClick={(e) => props.superstate.ui.quickOpen(BlinkMode.Blink)}
@@ -106,10 +107,11 @@ export const MainMenu = (props: MainMenuComponentProps) => {
                 }}
               ></div>
             </div>
-          )}
+          )} */}
         </div>
 
-        <button
+        {/* Navigator MVP hides the New Note main menu button. */}
+        {/* <button
           aria-label={t.buttons.newNote}
           className="mk-main-menu-button"
           onClick={(e) =>
@@ -127,7 +129,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
               __html: props.superstate.ui.getSticker("ui//new-note"),
             }}
           ></div>
-        </button>
+        </button> */}
       </div>
     </div>
   );

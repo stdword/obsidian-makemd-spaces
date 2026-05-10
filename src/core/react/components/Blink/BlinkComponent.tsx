@@ -75,6 +75,12 @@ export const BlinkComponent = (props: {
       label: pathState.name,
     };
   };
+  const canShowPathInBlink = (pathState: PathState) =>
+    pathState &&
+    !pathState.hidden &&
+    !pathState.path.startsWith("spaces://") &&
+    (props.mode != BlinkMode.OpenSpaces ||
+      props.superstate.spacesIndex.has(pathState.path));
   const parentChildren = props.parentSpace
     ? [
         {
@@ -83,7 +89,8 @@ export const BlinkComponent = (props: {
         },
         ...[...props.superstate.spacesMap.getInverse(props.parentSpace)]
           .map((f) => props.superstate.pathsIndex.get(f))
-          .filter((f) => f && !f.hidden)
+          // Navigator search should not expose internal spaces:// paths.
+          .filter((f) => canShowPathInBlink(f))
           .map((f) => pathToBlinkItem(f)),
       ]
     : [];
@@ -95,12 +102,8 @@ export const BlinkComponent = (props: {
     ...props.superstate.ui
       .navigationHistory()
       .map((f) => props.superstate.pathsIndex.get(f))
-      .filter((f) => f && !f.hidden)
-      .filter(
-        (f) =>
-          props.mode != BlinkMode.OpenSpaces ||
-          props.superstate.spacesIndex.has(f.path)
-      )
+      // Navigator search should not expose internal spaces:// paths.
+      .filter((f) => canShowPathInBlink(f))
       .map((f) => pathToBlinkItem(f)),
   ];
 
@@ -142,7 +145,7 @@ export const BlinkComponent = (props: {
               type: "section",
               label: i18n.labels.blink.results,
             },
-            ...g.map((f) => pathToBlinkItem(f)),
+            ...g.filter((f) => canShowPathInBlink(f)).map((f) => pathToBlinkItem(f)),
             ...defaultSpaces,
           ])
         );
@@ -151,7 +154,11 @@ export const BlinkComponent = (props: {
 
       props.superstate
         .search(path, null, _queries)
-        .then((g) => setFilteredPaths(g.map((f) => pathToBlinkItem(f))));
+        .then((g) =>
+          setFilteredPaths(
+            g.filter((f) => canShowPathInBlink(f)).map((f) => pathToBlinkItem(f))
+          )
+        );
     };
     debounce(() => runQuery(query, queries), 300)();
 

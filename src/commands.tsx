@@ -46,52 +46,53 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
       defaultAddAction(plugin.superstate, null, window, false);
     },
   });
-  plugin.addCommand({
-    id: "show-warnings",
-    name: i18n.menu.showWarnings,
-    callback: () => {
-      showWarningsModal(plugin.superstate, window);
-    },
-  });
-  plugin.addCommand({
-    id: "logs",
-    name: i18n.commandPalette.toggleEnhancedLogs,
-    callback: () => {
-      plugin.superstate.settings.enhancedLogs =
-        !plugin.superstate.settings.enhancedLogs;
-      plugin.saveSettings();
-    },
-  });
-  plugin.addCommand({
-    id: "path-fixer",
-    name: i18n.commandPalette.fixPathCharacters,
-    callback: () => {
-      openPathFixer(plugin);
-    },
-  });
-  plugin.addCommand({
-    id: "move-space-folder",
-    name: i18n.commandPalette.moveSpaceDataFolder,
-    callback: () => {
-      const win = windowFromDocument(
-        plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
-      );
-      openInputModal(
-        plugin.superstate,
-        i18n.commandPalette.moveSpaceDataFolder,
-        plugin.superstate.settings.spaceSubFolder,
-        (path) => {
-          moveSpaceFiles(
-            plugin,
-            plugin.superstate.settings.spaceSubFolder,
-            path
-          );
-        },
-        i18n.buttons.move,
-        win
-      );
-    },
-  });
+  // Navigator MVP excludes diagnostics, logs, path fixing, and data-folder migration commands.
+  // plugin.addCommand({
+  //   id: "show-warnings",
+  //   name: i18n.menu.showWarnings,
+  //   callback: () => {
+  //     showWarningsModal(plugin.superstate, window);
+  //   },
+  // });
+  // plugin.addCommand({
+  //   id: "logs",
+  //   name: i18n.commandPalette.toggleEnhancedLogs,
+  //   callback: () => {
+  //     plugin.superstate.settings.enhancedLogs =
+  //       !plugin.superstate.settings.enhancedLogs;
+  //     plugin.saveSettings();
+  //   },
+  // });
+  // plugin.addCommand({
+  //   id: "path-fixer",
+  //   name: i18n.commandPalette.fixPathCharacters,
+  //   callback: () => {
+  //     openPathFixer(plugin);
+  //   },
+  // });
+  // plugin.addCommand({
+  //   id: "move-space-folder",
+  //   name: i18n.commandPalette.moveSpaceDataFolder,
+  //   callback: () => {
+  //     const win = windowFromDocument(
+  //       plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
+  //     );
+  //     openInputModal(
+  //       plugin.superstate,
+  //       i18n.commandPalette.moveSpaceDataFolder,
+  //       plugin.superstate.settings.spaceSubFolder,
+  //       (path) => {
+  //         moveSpaceFiles(
+  //           plugin,
+  //           plugin.superstate.settings.spaceSubFolder,
+  //           path
+  //         );
+  //       },
+  //       i18n.buttons.move,
+  //       win
+  //     );
+  //   },
+  // });
   if (plugin.superstate.settings.spacesEnabled) {
     plugin.addCommand({
       id: "mk-new-space",
@@ -101,13 +102,14 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
       },
     });
 
-    plugin.addCommand({
-      id: "mk-debug-close-tabs",
-      name: i18n.commandPalette.closeExtraFileTabs,
-      callback: () => {
-        plugin.closeExtraFileTabs();
-      },
-    });
+    // Navigator MVP excludes debug tab cleanup from the command palette.
+    // plugin.addCommand({
+    //   id: "mk-debug-close-tabs",
+    //   name: i18n.commandPalette.closeExtraFileTabs,
+    //   callback: () => {
+    //     plugin.closeExtraFileTabs();
+    //   },
+    // });
 
     plugin.addCommand({
       id: "mk-expand-folders",
@@ -130,20 +132,21 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
         plugin.saveSettings();
       },
     });
-    plugin.addCommand({
-      id: "mk-release-notes",
-      name: i18n.commandPalette.releaseNotes,
-      callback: () => {
-        plugin.releaseTheNotes();
-      },
-    });
-    plugin.addCommand({
-      id: "mk-get-started",
-      name: i18n.commandPalette.getStarted,
-      callback: () => {
-        plugin.getStarted();
-      },
-    });
+    // Navigator MVP excludes onboarding and release notes commands.
+    // plugin.addCommand({
+    //   id: "mk-release-notes",
+    //   name: i18n.commandPalette.releaseNotes,
+    //   callback: () => {
+    //     plugin.releaseTheNotes();
+    //   },
+    // });
+    // plugin.addCommand({
+    //   id: "mk-get-started",
+    //   name: i18n.commandPalette.getStarted,
+    //   callback: () => {
+    //     plugin.getStarted();
+    //   },
+    // });
     plugin.addCommand({
       id: "mk-reveal-file",
       name: i18n.commandPalette.revealFile,
@@ -179,30 +182,33 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
       callback: () => plugin.openFileTreeLeaf(true),
     });
   }
-  if (plugin.superstate.settings.enableFolderNote) {
-    plugin.addCommand({
-      id: "mk-convert-folder-note",
-      name: i18n.commandPalette.convertPathToSpace,
-      callback: () => plugin.convertPathToSpace(),
-    });
-  }
+  // Navigator MVP excludes folder-note conversion from the command palette.
+  // if (plugin.superstate.settings.enableFolderNote) {
+  //   plugin.addCommand({
+  //     id: "mk-convert-folder-note",
+  //     name: i18n.commandPalette.convertPathToSpace,
+  //     callback: () => plugin.convertPathToSpace(),
+  //   });
+  // }
   if (plugin.superstate.settings.contextEnabled) {
-    plugin.addCommand({
-      id: "mk-open-file-context",
-      name: i18n.commandPalette.openFileContext,
-      callback: () => plugin.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE, true),
-    });
+    // Navigator MVP excludes the standalone file context explorer command.
+    // plugin.addCommand({
+    //   id: "mk-open-file-context",
+    //   name: i18n.commandPalette.openFileContext,
+    //   callback: () => plugin.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE, true),
+    // });
   }
-  if (plugin.superstate.settings.inlineBacklinks) {
-    plugin.addCommand({
-      id: "mk-toggle-backlinks",
-      name: i18n.commandPalette.toggleBacklinks,
-      callback: () => {
-        const evt = new CustomEvent(eventTypes.toggleBacklinks);
-        window.dispatchEvent(evt);
-      },
-    });
-  }
+  // Navigator MVP excludes inline backlinks from the command palette.
+  // if (plugin.superstate.settings.inlineBacklinks) {
+  //   plugin.addCommand({
+  //     id: "mk-toggle-backlinks",
+  //     name: i18n.commandPalette.toggleBacklinks,
+  //     callback: () => {
+  //       const evt = new CustomEvent(eventTypes.toggleBacklinks);
+  //       window.dispatchEvent(evt);
+  //     },
+  //   });
+  // }
 
   if (plugin.superstate.settings.blinkEnabled) {
     plugin.addCommand({
@@ -218,18 +224,19 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
     });
   }
 
-  plugin.addCommand({
-    id: "mk-set-homepage",
-    name: "Set Current Space/Path as Homepage",
-    callback: () => {
-      const currentPath = plugin.superstate.ui.activePath;
-      if (currentPath) {
-        plugin.superstate.settings.homepagePath = currentPath;
-        plugin.saveSettings();
-        plugin.superstate.ui.notify(`Homepage set to: ${currentPath}`);
-      } else {
-        plugin.superstate.ui.notify("No active path to set as homepage");
-      }
-    },
-  });
+  // Navigator MVP excludes homepage management from the command palette.
+  // plugin.addCommand({
+  //   id: "mk-set-homepage",
+  //   name: "Set Current Space/Path as Homepage",
+  //   callback: () => {
+  //     const currentPath = plugin.superstate.ui.activePath;
+  //     if (currentPath) {
+  //       plugin.superstate.settings.homepagePath = currentPath;
+  //       plugin.saveSettings();
+  //       plugin.superstate.ui.notify(`Homepage set to: ${currentPath}`);
+  //     } else {
+  //       plugin.superstate.ui.notify("No active path to set as homepage");
+  //     }
+  //   },
+  // });
 };
