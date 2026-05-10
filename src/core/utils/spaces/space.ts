@@ -1,19 +1,22 @@
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { Superstate } from "makemd-core";
+import { SPACE_SUB_FOLDER } from "shared/constants";
 import { PathState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 
+export const pathInSpaceFolder = (basePath: string, path: string) =>
+    `${basePath}/${SPACE_SUB_FOLDER}/${path}`;
 
 export const pathIsSpace = (superstate: Superstate, path: string) => {
-    
-    if (!path)return false;
+    if (!path)
+        return false;
     return superstate.spacesIndex.has(path);
 }
 
 export const spaceFolderPathFromSpace = (path: string, manager: SpaceManager) => {
     if (manager.superstate.settings.spacesMDBInHidden) {
-        if (path == '/') return manager.superstate.settings.spaceSubFolder+'/';
-        return path + manager.superstate.settings.spaceSubFolder + '/'
+        if (path == '/') return SPACE_SUB_FOLDER+'/';
+        return path + SPACE_SUB_FOLDER + '/'
     }
     return path
 }
@@ -26,7 +29,7 @@ export const spaceFolderForMDBPath = (path: string, manager: SpaceManager) : str
     let parentPath = path.substring(0, indexOfLastSlash)
     if (manager.superstate.settings.spacesMDBInHidden) {
         const indexOfSecondLastSlash = parentPath.lastIndexOf('/')
-        if (parentPath.substring(indexOfSecondLastSlash+1) == manager.superstate.settings.spaceSubFolder)
+        if (parentPath.substring(indexOfSecondLastSlash+1) == SPACE_SUB_FOLDER)
         {
             parentPath = parentPath.substring(0, indexOfSecondLastSlash)
         } else {

@@ -8,7 +8,6 @@ export interface MakeMDSettings {
   filePreviewOnHover: boolean;
   blinkEnabled: boolean;
   datePickerTime: boolean;
-  spacesEnabled: boolean;
   navigatorEnabled: boolean;
   spacesDisablePatch: boolean;
   spacesPerformance: boolean;
@@ -46,8 +45,6 @@ export interface MakeMDSettings {
   newFileFolderPath: string;
   inlineContext: boolean;
   inlineContextProperties: boolean;
-  imageThumbnails: boolean;
-  noteThumbnails: boolean;
   inlineBacklinks: boolean;
   defaultDateFormat: string;
   defaultTimeFormat: string;
@@ -56,7 +53,6 @@ export interface MakeMDSettings {
   inlineContextSectionsExpanded: boolean;
   inlineContextNameLayout: InlineContextLayout;
   spacesUseAlias: boolean,
-  spaceSubFolder: string,
   fmKeyAlias: string;
   fmKeyBanner: string;
   fmKeyBannerOffset: string;

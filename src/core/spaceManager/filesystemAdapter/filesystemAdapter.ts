@@ -16,6 +16,8 @@ import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
 import { defaultFieldsForContext, fieldSchema } from "shared/schemas/fields";
+import { pathInSpaceFolder } from "core/utils/spaces/space";
+import { SPACE_CONTEXT_FILE, SPACE_SUB_FOLDER, SPACE_VIEWS_FILE } from "shared/constants";
 import { Command, CommandResult, Library } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
 import { Kit } from "shared/types/kits";
@@ -63,9 +65,9 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public onSpaceUpdated = (payload: {path: string, type: string}) => {
-      if (payload.type == 'views.mdb') {
+      if (payload.type == SPACE_VIEWS_FILE) {
         this.spaceManager.onSpaceUpdated(payload.path, 'frame')
-      } else if (payload.type == 'context.mdb') {
+      } else if (payload.type == SPACE_CONTEXT_FILE) {
         this.spaceManager.onSpaceUpdated(payload.path, 'context')
       } else if (payload.type == 'commands.mdb') {
         this.spaceManager.onSpaceUpdated(payload.path, 'action')
@@ -76,14 +78,14 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public async readTemplates (path: string) : Promise<string[]> {
-      return (await this.childrenForPath(`${path}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates`)).filter(f => !f.startsWith('.')).map(f => f.split('/').pop())
+      return (await this.childrenForPath(`${path}/${SPACE_SUB_FOLDER}/templates`)).filter(f => !f.startsWith('.')).map(f => f.split('/').pop())
     }
 
     public async saveTemplate (path: string, space: string) {
-      return this.copyPath(path, `${space}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates`)
+      return this.copyPath(path, `${space}/${SPACE_SUB_FOLDER}/templates`)
     }
     public deleteTemplate (path: string, space: string) {
-      return this.deletePath(`${space}/${this.spaceManager.superstate.settings.spaceSubFolder}/templates/${path}`)
+      return this.deletePath(`${space}/${SPACE_SUB_FOLDER}/templates/${path}`)
     }
     public async readFocuses () : Promise<Focus[]> {
       if (!await this.fileSystem.fileExists(this.dataPath)) {
@@ -105,9 +107,9 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
       const g = `${this.dataPath}/${defaultTemplatesFolder}/${name}`;
       if ( await this.fileSystem.fileExists(g)) {
         return this.fileSystem.readFileFragments({
-          path: `${g}/${this.spaceManager.superstate.settings.spaceSubFolder}/views.mdb`,
+          path: pathInSpaceFolder(g, SPACE_VIEWS_FILE),
           name: 'views',
-          filename: 'views.mdb',
+          filename: SPACE_VIEWS_FILE,
           parent: g,
           isFolder: false,
           extension: 'mdb'
@@ -169,7 +171,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         const paths = await this.childrenForPath(`${this.dataPath}/${defaultTemplatesFolder}/${name}`);
         templateName = uniqueNameFromString(templateName, paths)
       }
-      await this.fileSystem.newFile(`${this.dataPath}/${defaultTemplatesFolder}/${templateName}/${this.spaceManager.superstate.settings.spaceSubFolder}`, 'view', 'mdb', frames)
+      await this.fileSystem.newFile(`${this.dataPath}/${defaultTemplatesFolder}/${templateName}/${SPACE_SUB_FOLDER}`, 'view', 'mdb', frames)
     }
 
     private async onMetadataChange(payload: {path: string}) {

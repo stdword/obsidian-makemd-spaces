@@ -219,27 +219,6 @@ export const NotesSettings = ({ superstate }: SettingsProps) => {
           </div>
         </div>
 
-        <div className="mk-setting-item">
-          <div className="mk-setting-item-info">
-            <div className="mk-setting-item-name">
-              {i18n.settings.noteThumbnails.name}
-            </div>
-            <div className="mk-setting-item-description">
-              {i18n.settings.noteThumbnails.desc}
-            </div>
-          </div>
-          <div className="mk-setting-item-control">
-            <input
-              type="checkbox"
-              checked={superstate.settings.noteThumbnails}
-              onChange={(e) => {
-                superstate.settings.noteThumbnails = e.target.checked;
-                immediateSave();
-              }}
-            />
-          </div>
-        </div>
-
         <h3>{i18n.settings.sections.folderNote}</h3>
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">

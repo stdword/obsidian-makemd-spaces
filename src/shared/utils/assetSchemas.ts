@@ -17,28 +17,6 @@ export interface TableProperty {
   primary?: string;
 }
 
-
-
-// Icon Sets Schema
-export const ICONSETS_TABLE_SCHEMA: TableSchema = {
-  id: 'iconsets',
-  name: 'Icon Sets',
-  type: 'db',
-  primary: 'id',
-};
-
-export const ICONSETS_TABLE_PROPERTIES: TableProperty[] = [
-  { name: 'id', type: 'text', unique: 'true', primary: 'true' },
-  { name: 'name', type: 'text' },
-  { name: 'icons', type: 'object' },
-  { name: 'theme', type: 'text' },
-  { name: 'description', type: 'text' },
-  { name: 'tags', type: 'object' },
-  { name: 'format', type: 'text' },
-  { name: 'created', type: 'date' },
-  { name: 'modified', type: 'date' },
-];
-
 // Color Palettes Schema
 export const COLOR_PALETTES_TABLE_SCHEMA: TableSchema = {
   id: 'color-palettes',
@@ -64,7 +42,6 @@ export const COLOR_PALETTES_TABLE_PROPERTIES: TableProperty[] = [
 export const ASSETS_SPACE_CONFIG = {
   ASSETS_SPACE_PATH: '$assets',
   ASSETS_TABLE: 'assets',
-  ICONSETS_FOLDER: 'iconsets',
   TEXTURES_FOLDER: 'textures',
   AUDIO_FOLDER: 'audio',
   MODELS_FOLDER: 'models',

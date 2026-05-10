@@ -35,28 +35,6 @@ export const PerformanceSettings = ({ superstate }: SettingsProps) => {
         <div className="mk-setting-item">
           <div className="mk-setting-item-info">
             <div className="mk-setting-item-name">
-              {i18n.settings.imageThumbnails.name}
-            </div>
-            <div className="mk-setting-item-description">
-              {i18n.settings.imageThumbnails.desc}
-            </div>
-          </div>
-          <div className="mk-setting-item-control">
-            <input
-              type="checkbox"
-              checked={superstate.settings.imageThumbnails}
-              onChange={(e) => {
-                superstate.settings.imageThumbnails = e.target.checked;
-                immediateSave();
-              }}
-            />
-          </div>
-        </div>
-
-
-        <div className="mk-setting-item">
-          <div className="mk-setting-item-info">
-            <div className="mk-setting-item-name">
               {i18n.settings.hiddenExtensions.name}
             </div>
             <div className="mk-setting-item-description">

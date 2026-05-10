@@ -19,6 +19,7 @@ import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager }
 import { mkLogo } from "adapters/obsidian/ui/icons";
 import { patchFilesPlugin, patchWorkspace } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "shared/utils/json";
+import { SPACE_SUB_FOLDER } from "shared/constants";
 import { modifyFlowDom } from "./adapters/obsidian/inlineContextLoader";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
@@ -85,7 +86,6 @@ import "css/SpaceViewer/Nodes.css";
 import "css/SpaceViewer/SpaceView.css";
 import "css/SpaceViewer/TableView.css";
 import "css/SpaceViewer/Text.css";
-import "css/System/GlobalTemplateEditor.css";
 import "css/System/Settings.css";
 import "css/UI/Buttons.css";
 import { IMakeMDPlugin } from "shared/types/makemd";
@@ -113,20 +113,15 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     loadSuperState() {
         this.app.workspace.onLayoutReady(async () => {
-            if (this.superstate.settings.spacesEnabled) {
-                await this.superstate.initializeIndex();
-                this.obsidianAdapter.loadCacheFromObsidianCache();
-                if (this.superstate.settings.navigatorEnabled) {
-                    this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
-                }
+            await this.superstate.initializeIndex();
+            this.obsidianAdapter.loadCacheFromObsidianCache();
+            if (this.superstate.settings.navigatorEnabled) {
+                this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
+            }
 
-                if (this.superstate.settings.homepagePath) {
-                    const leaf = this.app.workspace.getLeaf(false);
-                    await this.openPath(leaf, this.superstate.settings.homepagePath);
-                }
-            } else {
-                await this.superstate.loadFromCache();
-                this.superstate.initialize();
+            if (this.superstate.settings.homepagePath) {
+                const leaf = this.app.workspace.getLeaf(false);
+                await this.openPath(leaf, this.superstate.settings.homepagePath);
             }
 
             this.registerEvent(this.app.vault.on("delete", this.onDelete));
@@ -186,22 +181,20 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
         document.body.classList.toggle("mk-readable-line", this.app.vault.getConfig("readableLineLength"));
         this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
-        if (this.superstate.settings.spacesEnabled) {
-            document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
+        document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
 
-            document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
-            document.body.classList.toggle("mk-hide-vault-selector", !this.superstate.settings.vaultSelector);
-            document.body.classList.toggle("mk-mobile-header", this.superstate.settings.mobileMakeHeader);
-            // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
-            document.body.classList.toggle("mk-folder-lines", this.superstate.settings.folderIndentationLines);
-            if (this.app.vault.config.cssTheme == "Minimal") {
-                document.body.classList.toggle("mk-minimal-fix", true);
-            }
-
-            document.body.classList.toggle("mk-spaces-enabled", this.superstate.settings.spacesEnabled);
-
-            if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
+        document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
+        document.body.classList.toggle("mk-hide-vault-selector", !this.superstate.settings.vaultSelector);
+        document.body.classList.toggle("mk-mobile-header", this.superstate.settings.mobileMakeHeader);
+        // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
+        document.body.classList.toggle("mk-folder-lines", this.superstate.settings.folderIndentationLines);
+        if (this.app.vault.config.cssTheme == "Minimal") {
+            document.body.classList.toggle("mk-minimal-fix", true);
         }
+
+        document.body.classList.toggle("mk-spaces-enabled", true);
+
+        if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
 
         this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.activeFileChange()));
         this.registerEvent(
@@ -410,7 +403,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     async onload() {
         const start = Date.now();
-        const settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
         this.mdbFileAdapter = new MDBFileTypeAdapter(this);
 
         this.files = FilesystemMiddleware.create();
@@ -425,7 +417,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files.initiateFiletypeAdapter(new ImageFileTypeAdapter(this));
         this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
 
-        const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, settings.spaceSubFolder);
+        const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_SUB_FOLDER);
         const webSpaceAdapter = new WebSpaceAdapter();
         this.ui = new ObsidianUI(this);
         const uiManager = UIManager.create(this.ui);
@@ -444,24 +436,12 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
         this.superstate.spaceManager.addSpaceAdapter(webSpaceAdapter);
 
-        // Load language customizations from .space/lang.json
-        try {
-            const langPath = ".space/lang.json";
-            const content = await this.obsidianAdapter.readTextFromFile(langPath);
-            if (content) {
-                const langData = JSON.parse(content);
-                i18nLoader.setOverridesFromFile(langData);
-            }
-        } catch (e) {
-            // File doesn't exist yet, that's ok
-        }
-
         addIcon("mk-logo", mkLogo);
 
         this.superstate.saveSettings = () => this.saveSettings();
         this.loadViews();
 
-        const cachePersister: LocalCachePersister = new LocalStorageCache(ObsidianFileSystem.statePath, this.mdbFileAdapter, ["path", "space", "frame", "context", "icon"]);
+        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space", "frame", "context", "icon"]);
 
         if (this.superstate.settings.cacheIndex) {
             await cachePersister.initialize();
@@ -592,8 +572,9 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     async saveSettings(refresh = true) {
         await this.saveData(this.superstate.settings);
-        this.obsidianAdapter.pathLastUpdated.set(this.obsidianAdapter.settingsPath, Date.now());
-        if (refresh) this.superstate.dispatchEvent("settingsChanged", null);
+        this.obsidianAdapter.setSettingsLastUpdatedDate();
+        if (refresh)
+            this.superstate.dispatchEvent("settingsChanged", null);
     }
 
     onunload() {

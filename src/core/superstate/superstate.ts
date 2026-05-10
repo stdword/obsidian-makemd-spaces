@@ -268,13 +268,12 @@ public api: API;
         this.initializeFocuses();
         this.initializeKits();
         this.initializeTemplates();
-        if (this.settings.spacesEnabled)
-                await this.initializeSpaces();
+        await this.initializeSpaces();
             
         await this.initializeBuiltins();
         await this.initializeTags();
         
-        // Initialize AssetManager to load iconset mappings before path loading
+        // Initialize AssetManager before path loading
         if (this.assets) {
             await this.assets.initialize();
         } else {

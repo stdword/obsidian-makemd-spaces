@@ -7,7 +7,6 @@ import { ColorPaletteSettings } from "./SettingsSections/ColorPaletteSettings";
 import { GeneralSettings } from "./SettingsSections/GeneralSettings";
 import { HiddenFilesSettings } from "./SettingsSections/HiddenFilesSettings";
 import { IconSettings } from "./SettingsSections/IconSettings";
-import { LanguageSettings } from "./SettingsSections/LanguageSettings";
 import { NavigatorSettings } from "./SettingsSections/NavigatorSettings";
 import { NotesSettings } from "./SettingsSections/NotesSettings";
 import { PerformanceSettings } from "./SettingsSections/PerformanceSettings";
@@ -87,13 +86,6 @@ export const Settings = ({ superstate }: SettingsProps) => {
       name: i18n.settings.sections.hidden || "Hidden Files",
       icon: "ui//eye-off",
       component: HiddenFilesSettings,
-      category: "system",
-    },
-    {
-      id: "language",
-      name: i18n.settings.sections.language || i18n.settings.language,
-      icon: "lucide//globe",
-      component: LanguageSettings,
       category: "system",
     },
     {

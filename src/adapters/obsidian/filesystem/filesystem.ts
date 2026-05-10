@@ -20,13 +20,14 @@ import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
+import { SPACE_SUB_FOLDER } from "shared/constants";
+
 
 export class ObsidianFileSystem implements FileSystemAdapter {
-    static cachePath = ".makemd/fileCache.mdc";
-    static statePath = ".makemd/superstate.mdc";
+    static cacheFileName = "fileCache.mdc";
+    static stateFileName = "superstate.mdc";
     
-    static settingsPath = "plugins/make-md-spaces/data.json";
-    public settingsPath: string;
+    protected settingsPath: string;
 
     public middleware: FilesystemMiddleware;
     public vaultDBLoaded: boolean;
@@ -52,9 +53,21 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public constructor(public plugin: MakeMDPlugin, middleware: FilesystemMiddleware) {
         this.middleware = middleware;
         this.plugin = plugin;
-        this.persister = new LocalStorageCache(ObsidianFileSystem.cachePath, this.plugin.mdbFileAdapter, ["file"]);
-        this.settingsPath = normalizePath(this.plugin.app.vault.configDir + "/" + ObsidianFileSystem.settingsPath)
+        this.persister = new LocalStorageCache(
+            SPACE_SUB_FOLDER + "/" + ObsidianFileSystem.cacheFileName,
+            this.plugin.mdbFileAdapter,
+            ["file"],
+        );
+
+        this.settingsPath = normalizePath(
+            this.plugin.app.vault.configDir + "/" + `plugins/${this.plugin.manifest.id}/data.json`
+        )
     }
+
+    public setSettingsLastUpdatedDate() {
+        this.pathLastUpdated.set(this.settingsPath, Date.now());
+    }
+
     public readAllTags() {
         return loadTags(this.plugin.app, this.plugin.superstate.settings);
     }
@@ -155,8 +168,8 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
         this.pathLastUpdated.set(path, fileStat.mtime);
         const parentPath = this.parentPathForPath(path);
-        if (parentPath.split("/").pop() == this.plugin.superstate.settings.spaceSubFolder) {
-            if (path == `${this.plugin.superstate.settings.spaceSubFolder}/${defaultFocusFile}`) {
+        if (parentPath.split("/").pop() == SPACE_SUB_FOLDER) {
+            if (path == `${SPACE_SUB_FOLDER}/${defaultFocusFile}`) {
                 this.middleware.onFocusesUpdated();
                 return;
             }

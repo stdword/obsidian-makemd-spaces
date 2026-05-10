@@ -439,8 +439,6 @@ export interface IAssetManager {
   getCoverImagesByTag(tag: string): CoverImage[];
   getCoverImagesByName(name: string): CoverImage[];
   getAllCoverImages(): CoverImage[];
-  saveCoverImages(): Promise<void>;
-  loadCoverImages(): Promise<void>;
 
   // Aliases
   deleteVisualization(id: string): Promise<boolean>;

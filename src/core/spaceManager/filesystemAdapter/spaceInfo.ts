@@ -1,9 +1,10 @@
-import { spaceFolderPathFromSpace } from "core/utils/spaces/space";
+import { pathInSpaceFolder, spaceFolderPathFromSpace } from "core/utils/spaces/space";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { builtinSpaces } from "core/types/space";
+import { SPACE_CONTEXT_FILE, SPACE_DEF_FILE, SPACE_DEF_PATH, SPACE_VIEWS_FILE } from "shared/constants";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { folderPathToString } from "utils/path";
@@ -27,12 +28,12 @@ export const fileSystemSpaceInfoFromTag = (
     isRemote: false,
     readOnly: readOnly,
     folderPath,
-    defPath: `${folderPath}/${manager.superstate.settings.spaceSubFolder}/def.json`,
+    defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
     notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
     framePath: spaceFolderPathFromSpace(folderPath +
-      "/", manager) + "views.mdb",
+      "/", manager) + SPACE_VIEWS_FILE,
     dbPath: spaceFolderPathFromSpace(folderPath +
-      "/", manager) + "context.mdb",
+      "/", manager) + SPACE_CONTEXT_FILE,
       commandsPath: spaceFolderPathFromSpace(folderPath +
         "/", manager) + "commands.mdb",
   };
@@ -55,13 +56,13 @@ export const fileSystemSpaceInfoByPath = (
           isRemote: false,
           readOnly: false,
           folderPath,
-          defPath: `${folderPath}/${manager.superstate.settings.spaceSubFolder}/def.json`,
+          defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
           notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
           framePath: spaceFolderPathFromSpace(folderPath +
-            "/", manager) + "views.mdb",
+            "/", manager) + SPACE_VIEWS_FILE,
           dbPath: spaceFolderPathFromSpace(folderPath +
             "/", manager)
-            + "context.mdb",
+            + SPACE_CONTEXT_FILE,
             commandsPath: spaceFolderPathFromSpace(folderPath +
               "/", manager) + "commands.mdb",
         }
@@ -98,10 +99,10 @@ export const fileSystemSpaceInfoFromFolder = (
       isRemote: false,
       readOnly: readOnly,
       folderPath: folder,
-      defPath: `${manager.superstate.settings.spaceSubFolder}/def.json`,
+      defPath: SPACE_DEF_PATH,
       notePath: vaultName + ".md",
-      dbPath: spaceFolderPathFromSpace(folder, manager)  + "context.mdb",
-      framePath: spaceFolderPathFromSpace(folder, manager) + "views.mdb",
+      dbPath: spaceFolderPathFromSpace(folder, manager)  + SPACE_CONTEXT_FILE,
+      framePath: spaceFolderPathFromSpace(folder, manager) + SPACE_VIEWS_FILE,
       commandsPath: spaceFolderPathFromSpace(folder, manager) + "commands.mdb",
     };
   }
@@ -114,12 +115,12 @@ export const fileSystemSpaceInfoFromFolder = (
     isRemote: false,
     readOnly: readOnly,
     folderPath: folder,
-    defPath: folder + `/${manager.superstate.settings.spaceSubFolder}/def.json`,
+    defPath: folder + `/${SPACE_DEF_PATH}`,
     notePath: folder + "/" + (folderNoteName.length > 0 ? folderNoteName : folderName) + ".md",
     dbPath: spaceFolderPathFromSpace(folder +
-      "/", manager) +  "context.mdb",
+      "/", manager) +  SPACE_CONTEXT_FILE,
     framePath: spaceFolderPathFromSpace(folder +
-      "/", manager) + "views.mdb",
+      "/", manager) + SPACE_VIEWS_FILE,
     commandsPath: spaceFolderPathFromSpace(folder + "/", manager) + "commands.mdb",
   };
 };

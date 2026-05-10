@@ -3,6 +3,7 @@ import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
 
 import { omit } from "lodash";
 import MakeMDPlugin from "main";
+import { SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
 import { safelyParseJSON } from "shared/utils/json";
 import { parseProperty } from "utils/parsers";
 
@@ -42,7 +43,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
         }}
         
         // const contents = safelyParseJSON(await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile))
-        if (file.parent.split('/').pop() == this.plugin.superstate.settings.spaceSubFolder && file.path.split('/').pop() == 'def.json') {
+        if (file.parent.split('/').pop() == SPACE_SUB_FOLDER && file.path.split('/').pop() == SPACE_DEF_FILE) {
             const spaceFolder = await this.middleware.getFile(file.parent)
             const name = spaceFolder.parent == '/' ? this.plugin.superstate.settings.systemName : spaceFolder.parent.split('/').pop();
             const label = await this.readContent(file, 'label', null);

@@ -1,4 +1,5 @@
 import { VaultItem } from "shared/types/afile";
+import { SPACE_SUB_FOLDER } from "shared/constants";
 
 import { Superstate } from "makemd-core";
 import { DBRows } from "shared/types/mdb";
@@ -37,7 +38,7 @@ export const excludeVaultItemPredicate =
   (settings: MakeMDSettings) =>
   (f: VaultItem, index: number, folder: VaultItem[]) =>
     !(
-      (f.path.endsWith('/'+settings.spaceSubFolder) || f.path == settings.spaceSubFolder ||
+      (f.path.endsWith('/'+SPACE_SUB_FOLDER) || f.path == SPACE_SUB_FOLDER ||
       settings.hiddenExtensions.find(
         (e) => (f.path).endsWith(e)
       ))
@@ -60,5 +61,3 @@ export const retrieveAllRecursiveChildren = (
       excludeVaultItemPredicate(settings)
     ) as VaultItem[];
 };
-
-

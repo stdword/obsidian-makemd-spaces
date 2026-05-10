@@ -107,17 +107,13 @@ export const en = {
     "noResult": "No result"
   },
   "commandPalette": {
-    "toggleEnhancedLogs": "Toggle Enhanced Logs",
     "openFlow": "Open Flow Blocks in Selection",
     "closeFlow": "Close Flow Blocks in Selection",
     "openSpaces": "Open Navigator",
     "blink": "Blink",
     "revealFile": "Reveal File in Navigator",
-    "toggleBacklinks": "Toggle Backlinks",
     "pinActiveFileToSpace": "Pin Active File to Space",
-    "closeExtraFileTabs": "Close Extra File Tabs",
-    "convertPathToSpace": "Convert Path to Space",
-    "openFileContext": "Open File Context"
+    "convertPathToSpace": "Convert Path to Space"
   },
   "frames": {
     "label": {
@@ -1090,14 +1086,6 @@ export const en = {
       "name": "Experimental",
       "desc": "Experimental features that are subject to change and may not be optimized for performance"
     },
-    "noteThumbnails": {
-      "name": "Note Thumbnails",
-      "desc": "Create thumbnails for notes"
-    },
-    "imageThumbnails": {
-      "name": "Image Thumbnails",
-      "desc": "Create thumbnails for images to speed up performance"
-    },
     "hiddenExtensions": {
       "name": "Hidden Extensions",
       "desc": "File extensions and names to hide from the navigator"
@@ -1181,10 +1169,6 @@ export const en = {
     "syncFormulaToFrontmatter": {
       "name": "Sync Formula Fields to Frontmatter",
       "desc": "Turn on to save calculated formula values to Frontmatter fields."
-    },
-    "spaceSubFolder": {
-      "name": "Space Folder Name",
-      "desc": "Name of the folder for spaces"
     },
     "basics": {
       "name": "Make.md Basics",

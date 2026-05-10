@@ -364,17 +364,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
       },
       
       {
-        name: 'noteThumbnails',
-        category: 'notes',
-        type: 'boolean',
-      },
-      {
-        name: 'imageThumbnails',
-        category: 'performance',
-        type: 'boolean',
-      },
-      
-      {
         name: 'cacheIndex',
         category: 'performance',
         type: 'boolean',
@@ -383,11 +372,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         name: 'experimental',
         category: 'advanced',
         type: 'boolean',
-      },
-      {
-        name: 'spaceSubFolder',
-        category: 'advanced',
-        type: 'text',
       },
       {
         name: 'spacesFolder',

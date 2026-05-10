@@ -8,14 +8,12 @@ export const AdvancedSettings = ({ superstate }: SettingsProps) => {
   const { debouncedSave, immediateSave } = useDebouncedSave(superstate);
   const [defaultDateFormat, setDefaultDateFormat] = useState(superstate.settings.defaultDateFormat);
   const [defaultTimeFormat, setDefaultTimeFormat] = useState(superstate.settings.defaultTimeFormat);
-  const [spaceSubFolder, setSpaceSubFolder] = useState(superstate.settings.spaceSubFolder);
   const [spacesFolder, setSpacesFolder] = useState(superstate.settings.spacesFolder);
   
   // Sync state with superstate.settings when component mounts or settings change
   useEffect(() => {
     setDefaultDateFormat(superstate.settings.defaultDateFormat);
     setDefaultTimeFormat(superstate.settings.defaultTimeFormat);
-    setSpaceSubFolder(superstate.settings.spaceSubFolder);
     setSpacesFolder(superstate.settings.spacesFolder);
   }, [superstate.settings]);
   return (
@@ -102,28 +100,6 @@ export const AdvancedSettings = ({ superstate }: SettingsProps) => {
               onChange={(e) => {
                 setDefaultTimeFormat(e.target.value);
                 superstate.settings.defaultTimeFormat = e.target.value;
-                debouncedSave();
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="mk-setting-item">
-          <div className="mk-setting-item-info">
-            <div className="mk-setting-item-name">
-              {i18n.settings.spaceSubFolder.name}
-            </div>
-            <div className="mk-setting-item-description">
-              {i18n.settings.spaceSubFolder.desc}
-            </div>
-          </div>
-          <div className="mk-setting-item-control">
-            <input
-              type="text"
-              value={spaceSubFolder}
-              onChange={(e) => {
-                setSpaceSubFolder(e.target.value);
-                superstate.settings.spaceSubFolder = e.target.value;
                 debouncedSave();
               }}
             />

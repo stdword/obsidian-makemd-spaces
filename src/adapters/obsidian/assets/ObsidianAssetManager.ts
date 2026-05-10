@@ -1,4 +1,5 @@
 import i18n from "shared/i18n";
+import { SPACE_SUB_FOLDER } from "shared/constants";
 
 import MakeMDPlugin from 'main';
 import { normalizePath } from 'obsidian';
@@ -27,18 +28,6 @@ import { SpaceManagerInterface } from 'shared/types/spaceManager';
 import { IUIManager } from 'shared/types/uiManager';
 import { ASSETS_SPACE_CONFIG } from 'shared/utils/assetSchemas';
 import { lucideIcons } from '../ui/icons';
-
-// Type for file content based on what readPath returns
-type FileContent = string | ArrayBuffer | null;
-
-// Type for parsed JSON content (IconsetData interface)
-interface IconsetData {
-  icons?: IconMetadata[];
-  theme?: 'light' | 'dark' | 'auto';
-  description?: string;
-  tags?: string[];
-  format?: 'mixed' | 'svg' | 'png' | 'emoji';
-}
 
 export class ObsidianAssetManager implements IAssetManager {
   private assets: Map<string, Asset> = new Map();
@@ -75,14 +64,8 @@ export class ObsidianAssetManager implements IAssetManager {
   public async initialize(): Promise<void> {
     try {
       
-      // Ensure .space directory exists
-      if (!await this.pathExists('.space')) {
-        await this.createDirectory('.space');
-      }
-      
-      // Ensure iconsets directory exists
-      if (!await this.pathExists('.space/iconsets')) {
-        await this.createDirectory('.space/iconsets');
+      if (!await this.pathExists(SPACE_SUB_FOLDER)) {
+        await this.createDirectory(SPACE_SUB_FOLDER);
       }
       
       await this.initializeAssets();
@@ -92,8 +75,6 @@ export class ObsidianAssetManager implements IAssetManager {
         await this.loadCachedIcons();
       }
       
-      // Load cover images
-      await this.loadCoverImages();
     } catch (error) {
       console.error('[ObsidianAssetManager] Failed to initialize:', error);
     }
@@ -143,7 +124,6 @@ export class ObsidianAssetManager implements IAssetManager {
 
       await this.discoverAssets();
       
-      // IMPORTANT: Load iconsets first to establish mappings before superstate loads
       await this.loadExistingAssets();
       
       // Migrate any existing icons from superstate cache
@@ -157,14 +137,10 @@ export class ObsidianAssetManager implements IAssetManager {
   // Load existing assets from JSON files and directories
   private async loadExistingAssets(): Promise<void> {
     try {
-      // Load iconsets from directories
-      await this.loadIconsetsFromDirectories();
-
       // Ensure default iconsets exist
       await this.ensureDefaultIconsets();
 
-      // Load color palettes from file
-      await this.loadColorPalettesFromTable();
+      await this.ensureDefaultPalettes(new Set());
 
     } catch (error) {
       console.error('Failed to load existing assets:', error);
@@ -292,132 +268,6 @@ export class ObsidianAssetManager implements IAssetManager {
     }
   }
 
-  // Load iconsets from .space/iconsets directories and iconsets.json mapping
-  private async loadIconsetsFromDirectories(): Promise<void> {
-    try {
-      const iconsetsDir = '.space/iconsets';
-      
-      // Check if the iconsets directory exists
-      const dirExists = await this.pathExists(iconsetsDir);
-      
-      if (dirExists) {
-        // First, load iconsets from iconsets.json mapping file
-        await this.loadIconsetsFromMapping();
-        
-        // Then, load iconsets from subdirectories
-        const children = await this.listChildren(iconsetsDir, 'folder');
-        
-        if (children) {
-          for (const childPath of children) {
-            const folderName = childPath.split('/').pop();
-            if (folderName) {
-              try {
-                // Skip if already loaded from mapping
-                if (this.assets.has(folderName)) {
-                  continue;
-                }
-                
-                // Load iconset metadata from directory
-                const iconsetPath = childPath;
-                const metadataPath = `${iconsetPath}/metadata.json`;
-                
-                let metadata: any = {};
-                const metadataExists = await this.pathExists(metadataPath);
-                if (metadataExists) {
-                  const metadataContent = await this.readPath(metadataPath);
-                  if (metadataContent) {
-                    metadata = typeof metadataContent === 'string' 
-                      ? JSON.parse(metadataContent) 
-                      : metadataContent;
-                  }
-                }
-                
-                // Scan for icon files in the directory
-                const iconFiles = await this.scanIconDirectory(iconsetPath);
-                
-                const iconsetAsset: IconsetAsset = {
-                  id: folderName,
-                  name: metadata.name || folderName,
-                  path: iconsetPath,
-                  type: 'iconset',
-                  icons: iconFiles,
-                  theme: metadata.theme || 'auto',
-                  description: metadata.description || '',
-                  tags: metadata.tags || [],
-                  format: metadata.format || 'mixed',
-                  created: metadata.created || Date.now(),
-                  modified: metadata.modified || Date.now(),
-                };
-                
-                this.assets.set(iconsetAsset.id, iconsetAsset);
-                
-                this.dispatchEvent('assetLoaded', iconsetAsset);
-                
-                // Create individual icon assets and establish path mappings
-                await this.createIconAssetsFromIconset(iconsetAsset);
-              } catch (error) {
-                console.warn(`Failed to load iconset from directory ${folderName}:`, error);
-              }
-            }
-          }
-        }
-      } else {
-        // Create the directory if it doesn't exist
-        await this.createDirectory('.space/iconsets');
-      }
-    } catch (error) {
-      console.error('Failed to load iconsets from directories:', error);
-    }
-  }
-
-  // Load iconsets from iconsets.json mapping file
-  private async loadIconsetsFromMapping(): Promise<void> {
-    try {
-      const iconsetJsonPath = '.space/iconsets/iconsets.json';
-      
-      if (await this.pathExists(iconsetJsonPath)) {
-        const mappingContent = await this.readPath(iconsetJsonPath);
-        if (mappingContent) {
-          const iconsetMapping = JSON.parse(mappingContent);
-          
-          for (const [iconsetId, mappingData] of Object.entries(iconsetMapping)) {
-            try {
-              const mapping = mappingData as any;
-              
-              // Scan the folder for actual icon files
-              const iconFiles = await this.scanIconDirectory(mapping.path);
-              
-              const iconsetAsset: IconsetAsset = {
-                id: iconsetId,
-                name: mapping.name || iconsetId,
-                path: mapping.path,
-                type: 'iconset',
-                icons: iconFiles,
-                theme: 'auto',
-                description: mapping.description || '',
-                tags: mapping.tags || ['custom'],
-                format: 'mixed',
-                created: mapping.created || Date.now(),
-                modified: mapping.modified || Date.now(),
-              };
-              
-              this.assets.set(iconsetAsset.id, iconsetAsset);
-              this.dispatchEvent('assetLoaded', iconsetAsset);
-              
-              // Create individual icon assets and establish path mappings
-              await this.createIconAssetsFromIconset(iconsetAsset);
-              
-            } catch (error) {
-              console.warn(`Failed to load iconset ${iconsetId} from mapping:`, error);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load iconsets from mapping:', error);
-    }
-  }
-
   // Scan icon directory for icon files
   protected async scanIconDirectory(directoryPath: string): Promise<IconMetadata[]> {
     const icons: IconMetadata[] = [];
@@ -463,67 +313,6 @@ export class ObsidianAssetManager implements IAssetManager {
           iconId: iconMetadata.id
         });
       }
-    }
-  }
-
-  // Load color palettes from .space/palettes.json file
-  private async loadColorPalettesFromTable(): Promise<void> {
-    try {
-      const palettesPath = '.space/palettes.json';
-      
-      // Check if the palettes file exists
-      const exists = await this.pathExists(palettesPath);
-      const loadedPaletteIds = new Set<string>();
-      
-      if (exists) {
-        // Read the palettes file
-        const palettesContent = await this.readPath(palettesPath);
-        
-        if (palettesContent) {
-          try {
-            const palettesData = typeof palettesContent === 'string' 
-              ? JSON.parse(palettesContent) 
-              : palettesContent;
-            
-            
-            // Load each palette from the file
-            if (palettesData.palettes && Array.isArray(palettesData.palettes)) {
-              for (const paletteData of palettesData.palettes) {
-                try {
-                  const colorPaletteAsset: ColorPaletteAsset = {
-                    id: paletteData.id || this.generateId(),
-                    name: paletteData.name || 'Unnamed Palette',
-                    path: `${this.ASSETS_SPACE_PATH}/color-palettes/${paletteData.id}`,
-                    type: 'colorpalette',
-                    colors: paletteData.colors || [],
-                    gradients: paletteData.gradients || [],
-                    designSystemMapping: paletteData.designSystemMapping || { baseTokens: {}, semanticTokens: {} },
-                    tags: paletteData.tags || [],
-                    category: paletteData.category || 'custom',
-                    description: paletteData.description || '',
-                    created: paletteData.created || Date.now(),
-                    modified: paletteData.modified || Date.now(),
-                  };
-                  
-                  this.assets.set(colorPaletteAsset.id, colorPaletteAsset);
-                  loadedPaletteIds.add(colorPaletteAsset.id);
-                  
-                  this.dispatchEvent('assetLoaded', colorPaletteAsset);
-                } catch (error) {
-                  console.warn(`Failed to load color palette from file data:`, error);
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Failed to parse palettes.json:', error);
-          }
-        }
-      }
-
-      // Ensure default palettes exist
-      await this.ensureDefaultPalettes(loadedPaletteIds);
-    } catch (error) {
-      console.error('Failed to load color palettes from file:', error);
     }
   }
 
@@ -1043,7 +832,6 @@ export class ObsidianAssetManager implements IAssetManager {
   public async saveColorPalette(palette: ColorPaletteAsset): Promise<boolean> {
     try {
       this.assets.set(palette.id, palette);
-      await this.saveColorPalettesToDisk();
       return true;
     } catch (error) {
       console.error('Failed to save color palette:', error);
@@ -1054,38 +842,10 @@ export class ObsidianAssetManager implements IAssetManager {
   public async deleteColorPalette(id: string): Promise<boolean> {
     try {
       const success = this.deleteAsset(id);
-      if (success) {
-        await this.saveColorPalettesToDisk();
-      }
       return success;
     } catch (error) {
       console.error('Failed to delete color palette:', error);
       return false;
-    }
-  }
-
-  private async saveColorPalettesToDisk(): Promise<void> {
-    try {
-      const palettes = this.getColorPalettes();
-      const customPalettes = palettes.filter(p => 
-        !['default-palette', 'monochrome-palette', 'default-gradient-palette', 'pastel-palette'].includes(p.id)
-      );
-      
-      const palettesPath = '.space/palettes.json';
-      const palettesData: Record<string, ColorPaletteAsset> = {};
-      
-      customPalettes.forEach(palette => {
-        palettesData[palette.id] = palette;
-      });
-      
-      // Ensure .space directory exists
-      await this.createDirectory('.space');
-      
-      // Write palettes to disk
-      await this.writePath(palettesPath, JSON.stringify(palettesData, null, 2));
-    } catch (error) {
-      console.error('Failed to save color palettes to disk:', error);
-      throw error;
     }
   }
 
@@ -1116,40 +876,6 @@ export class ObsidianAssetManager implements IAssetManager {
       // Store in memory
       this.assets.set(iconset.id, iconset);
       
-      // Only persist custom iconsets (not built-in ones)
-      if (iconset.tags?.includes('custom') || iconset.tags?.includes('user')) {
-        // Read existing iconsets mapping
-        const iconsetJsonPath = '.space/iconsets/iconsets.json';
-        let iconsetMapping: Record<string, any> = {};
-        
-        try {
-          const existingContent = await this.readPath(iconsetJsonPath);
-          if (existingContent) {
-            iconsetMapping = JSON.parse(existingContent);
-          }
-        } catch (e) {
-          // File doesn't exist yet, start with empty mapping
-        }
-        
-        // Add/update the iconset mapping
-        iconsetMapping[iconset.id] = {
-          name: iconset.name,
-          path: iconset.path,
-          type: 'folder',
-          description: iconset.description || '',
-          tags: iconset.tags || [],
-          icons: iconset.icons?.map(icon => icon.id) || []
-        };
-        
-        // Ensure directory exists
-        if (!await this.pathExists('.space/iconsets')) {
-          await this.createDirectory('.space/iconsets');
-        }
-        
-        // Write updated mapping
-        await this.writePath(iconsetJsonPath, JSON.stringify(iconsetMapping, null, 2));
-      }
-      
       // Create icon assets and mappings
       await this.createIconAssetsFromIconset(iconset);
       
@@ -1170,39 +896,6 @@ export class ObsidianAssetManager implements IAssetManager {
       
       // Remove from memory
       const deleted = this.deleteAsset(id);
-      
-      // Remove from iconsets.json if it's a custom iconset
-      if (iconset && (iconset.tags?.includes('custom') || iconset.tags?.includes('user'))) {
-        const iconsetJsonPath = '.space/iconsets/iconsets.json';
-        
-        try {
-          const existingContent = await this.readPath(iconsetJsonPath);
-          if (existingContent) {
-            const iconsetMapping = JSON.parse(existingContent);
-            
-            if (iconsetMapping[id]) {
-              delete iconsetMapping[id];
-              
-              // Write updated mapping
-              await this.writePath(iconsetJsonPath, JSON.stringify(iconsetMapping, null, 2));
-            }
-          }
-        } catch (error) {
-          console.error(`[ObsidianAssetManager] Failed to remove iconset ${id} from mapping:`, error);
-        }
-        
-        // Delete the iconset folder and all its assets
-        const iconsetFolderPath = `.space/iconsets/${id}`;
-        try {
-          const folderExists = await this.pathExists(iconsetFolderPath);
-          if (folderExists) {
-            await this.deletePath(iconsetFolderPath);
-            console.log(`[ObsidianAssetManager] Deleted iconset folder: ${iconsetFolderPath}`);
-          }
-        } catch (error) {
-          console.error(`[ObsidianAssetManager] Failed to delete iconset folder ${iconsetFolderPath}:`, error);
-        }
-      }
       
       // Clear iconset cache
       this.iconsetCaches.delete(id);
@@ -1353,7 +1046,6 @@ export class ObsidianAssetManager implements IAssetManager {
       };
       
       this.coverImages.set(url, coverImage);
-      await this.saveCoverImages();
       return true;
     } catch (error) {
       console.error(`[ObsidianAssetManager] Failed to add cover image ${url}:`, error);
@@ -1363,11 +1055,7 @@ export class ObsidianAssetManager implements IAssetManager {
 
   public async removeCoverImage(url: string): Promise<boolean> {
     try {
-      const deleted = this.coverImages.delete(url);
-      if (deleted) {
-        await this.saveCoverImages();
-      }
-      return deleted;
+      return this.coverImages.delete(url);
     } catch (error) {
       console.error(`[ObsidianAssetManager] Failed to remove cover image ${url}:`, error);
       return false;
@@ -1403,40 +1091,4 @@ export class ObsidianAssetManager implements IAssetManager {
     return Array.from(this.coverImages.values());
   }
 
-  public async saveCoverImages(): Promise<void> {
-    try {
-      const coverImagesPath = '.space/coverImages.json';
-      const coverImagesData: CoverImage[] = Array.from(this.coverImages.values());
-      
-      // Ensure .space directory exists
-      if (!await this.pathExists('.space')) {
-        await this.createDirectory('.space');
-      }
-      
-      await this.writeJSONFile(coverImagesPath, { images: coverImagesData });
-    } catch (error) {
-      console.error('[ObsidianAssetManager] Failed to save cover images:', error);
-      throw error;
-    }
-  }
-
-  public async loadCoverImages(): Promise<void> {
-    try {
-      const coverImagesPath = '.space/coverImages.json';
-      
-      if (await this.pathExists(coverImagesPath)) {
-        const content = await this.readJSONFile(coverImagesPath);
-        if (content && content.images && Array.isArray(content.images)) {
-          this.coverImages.clear();
-          for (const image of content.images) {
-            if (image.url) {
-              this.coverImages.set(image.url, image);
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[ObsidianAssetManager] Failed to load cover images:', error);
-    }
-  }
 }

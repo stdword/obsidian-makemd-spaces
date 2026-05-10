@@ -5,6 +5,7 @@ import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } fr
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
+import { SPACE_SUB_FOLDER } from "shared/constants";
 import i18n from "shared/i18n";
 import { SpaceProperty } from "shared/types/mdb";
 import { MDBFrame } from "shared/types/mframe";
@@ -460,11 +461,11 @@ export const newTemplateInSpace = async (
     }
   } catch (e) {
   }
-  if (!(await superstate.spaceManager.pathExists(`${space.path}/${superstate.settings.spaceSubFolder}/templates/${name}`))) {
+  if (!(await superstate.spaceManager.pathExists(`${space.path}/${SPACE_SUB_FOLDER}/templates/${name}`))) {
     newPathInSpace(superstate, space, "md", null, false, null, location);
     return;
   }
-const newPath = await superstate.spaceManager.copyPath(`${space.path}/${superstate.settings.spaceSubFolder}/templates/${name}`, space.path, newName)
+const newPath = await superstate.spaceManager.copyPath(`${space.path}/${SPACE_SUB_FOLDER}/templates/${name}`, space.path, newName)
 if (newPath)
 superstate.ui.openPath(newPath, location)
 }
