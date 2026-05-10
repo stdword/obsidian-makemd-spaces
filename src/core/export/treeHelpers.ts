@@ -1,4 +1,3 @@
-import { absolutePathToRelativePath } from "adapters/obsidian/ui/kit/kits";
 import { DefaultFolderNoteMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { filterReturnForCol } from "core/utils/contexts/predicate/filter";
@@ -32,6 +31,24 @@ export const resolvePath = (superstate: Superstate, oldPath: string, path: strin
 }
 
 
+export const absolutePathToRelativePath = (path: string, absolutePath: string) => {
+    const relativePath = path.replace(absolutePath, '');
+    if (relativePath.startsWith('/')) {
+        return '.' + relativePath;
+    } else {
+        const absolutePathParts = absolutePath.split('/');
+        const relativePathParts = relativePath.split('/');
+        let i = 0;
+        while (i < absolutePathParts.length && i < relativePathParts.length && absolutePathParts[i] == relativePathParts[i]) {
+            i++;
+        }
+        const levelsUp = absolutePathParts.length - i;
+        const relativePrefix = levelsUp > 0 ? '../'.repeat(levelsUp) : '';
+        return relativePrefix + relativePathParts.slice(i).join('/');
+    }
+}
+
+
 export const transformPath = (superstate: Superstate, oldPath: string, path: string, absolute?: boolean) => {
   if (oldPath.startsWith('http')) return oldPath;
   let transformedPath = resolvePath(superstate, oldPath, path);
@@ -50,9 +67,9 @@ export const transformPath = (superstate: Superstate, oldPath: string, path: str
   }
   if (absolute) return transformedPath;
     
-return absolutePathToRelativePath(transformedPath, path);
+  return absolutePathToRelativePath(transformedPath, path);
 }
-
+ 
 export const getFrameInstanceFromPath = async (superstate: Superstate, path: string, schema: string, props: FrameTreeProp, context: FrameContexts, styleAst?: StyleAst) => {
     const frameSchema = await superstate.spaceManager.readFrame(path, schema);
     const root = await buildRoot(mdbSchemaToFrameSchema(frameSchema.schema), [], frameSchema.rows.map(row => frameToNode(row)), superstate);

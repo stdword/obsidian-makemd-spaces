@@ -1,23 +1,18 @@
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
-import { App, MarkdownView, Platform, Plugin, TAbstractFile, TFile, TFolder, WorkspaceLeaf, WorkspaceSplit, addIcon, normalizePath } from "obsidian";
+import { App, MarkdownView, Platform, Plugin, TAbstractFile, TFile, TFolder, WorkspaceLeaf, WorkspaceSplit, addIcon } from "obsidian";
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import { HTMLFileViewer, HTML_FILE_VIEWER_TYPE } from "adapters/obsidian/ui/editors/HTMLFileViewer";
-import { MKitFileViewer, MKIT_FILE_VIEWER_TYPE } from "adapters/obsidian/ui/editors/MKitFileViewer";
-import { MDBFileViewer, MDB_FILE_VIEWER_TYPE } from "adapters/obsidian/ui/editors/MDBFileViewer";
-import { FileLinkView, LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
 import { ContextExplorerLeafView, FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
 
-import i18n, { i18nLoader } from "shared/i18n";
+import i18n from "shared/i18n";
 
-import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTFolder, openTagContext, openURL } from "adapters/obsidian/utils/file";
-import { replaceInlineContext } from "adapters/obsidian/utils/markdownPost";
+import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTFolder, openTagContext } from "adapters/obsidian/utils/file";
 import { convertPathToSpace } from "core/superstate/utils/path";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
-import { patchFilesPlugin, patchWorkspace } from "adapters/obsidian/utils/patches";
+import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "shared/utils/json";
 import { SPACE_SUB_FOLDER } from "shared/constants";
 import { modifyFlowDom } from "./adapters/obsidian/inlineContextLoader";
@@ -33,7 +28,6 @@ import { ObsidianUI } from "adapters/obsidian/ui/ui";
 import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 
 import { IconFileTypeAdapter } from "adapters/icons/iconsAdapter";
-import { MobileCachePersister } from "adapters/mdb/localCache/localCacheMobile";
 import { ObsidianCommands } from "adapters/obsidian/commands/obsidianCommands";
 import { CLIManager } from "core/middleware/commands";
 import { openBlinkModal } from "core/react/components/Blink/Blink";
@@ -43,7 +37,7 @@ import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
-import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
+import { SPACE_FRAGMENT_VIEW_TYPE } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
 import MakeBasicsPlugin from "basics/basics";
 import { attachCommands } from "commands";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
@@ -336,15 +330,17 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
                 const file = space ? (getAbstractFileAtPath(this.app, space) as TFile) : null;
                 if (file) await openTFile(leaf, file, this.app);
                 return;
-            } else if (this.superstate.pathsIndex.has(path)) {
-                const viewType = LINK_VIEW_TYPE;
-                this.app.workspace.setActiveLeaf(leaf, { focus: true });
-                await leaf.setViewState({
-                    type: viewType,
-                    state: { path: path, flow },
-                });
-                return;
             }
+            // Navigator MVP
+            // else if (this.superstate.pathsIndex.has(path)) {
+            //     const viewType = LINK_VIEW_TYPE;
+            //     this.app.workspace.setActiveLeaf(leaf, { focus: true });
+            //     await leaf.setViewState({
+            //         type: viewType,
+            //         state: { path: path, flow },
+            //     });
+            //     return;
+            // }
             window.open(uri.fullPath, "_blank");
             return;
         }

@@ -1,4 +1,3 @@
-import { LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
 import MakeMDPlugin from "main";
 import { AFile } from "makemd-core";
 import {
@@ -205,15 +204,17 @@ export const openURL = async (url: string,app: App,  location?: TargetLocation) 
     return;
   }
   const leaf = getLeaf(app, location)
-  if (url.endsWith(".md")) {
-    const viewType = LINK_VIEW_TYPE;
-    app.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: viewType,
-      state: { path: url },
-    });
-    await app.workspace.requestSaveLayout();
-  } else if (url.endsWith(".mdb")) {
+  // Navigator MVP
+  // if (url.endsWith(".md")) {
+  //   const viewType = LINK_VIEW_TYPE;
+  //   app.workspace.setActiveLeaf(leaf, { focus: true });
+  //   await leaf.setViewState({
+  //     type: viewType,
+  //     state: { path: url },
+  //   });
+  //   await app.workspace.requestSaveLayout();
+  // } else
+    if (url.endsWith(".mdb")) {
     const file = getAbstractFileAtPath(app, url);
     if (file instanceof TFile) await openTFile(leaf, file, app);
   } else {
@@ -339,7 +340,3 @@ export const createNewMarkdownFile = async (
   plugin.superstate.ui.setActivePath(newFile.path)
   return newFile;
 };
-
-
-
-
