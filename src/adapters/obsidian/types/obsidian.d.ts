@@ -35,6 +35,10 @@ declare module "obsidian" {
     embedRegistry: {
       embedByExtension: Record<string, any>;
     };
+    setting: {
+      open(): void;
+      openTabById(id: string): void;
+    };
     mobileToolbar: {
       containerEl: HTMLElement;
     };

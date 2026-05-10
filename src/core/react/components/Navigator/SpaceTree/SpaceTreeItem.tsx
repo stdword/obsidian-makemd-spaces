@@ -143,18 +143,12 @@ export const TreeItem = (props: TreeItemProps) => {
         }
       }
     }
-    const targetEver =
-      superstate.spacesIndex.has(path.item.path) &&
-      superstate.ui.isEverViewOpen();
-
     superstate.ui.openPath(
       path.item.path,
       e.ctrlKey || e.metaKey || e.button == 1
         ? e.altKey
           ? "split"
           : "tab"
-        : targetEver
-        ? "overview"
         : false
     );
     setActivePath(path.item.path);

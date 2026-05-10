@@ -23,8 +23,6 @@ import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
 
 
-const illegalCharacters = ['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'];
-
 export class ObsidianFileSystem implements FileSystemAdapter {
     public middleware: FilesystemMiddleware;
     public vaultDBLoaded : boolean;
@@ -35,8 +33,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public persister: LocalCachePersister;
     public pathLastUpdated: Map<string, number> = new Map();
 
-    public fileNameWarnings: Set<string> = new Set();
-    
     public updateFileCache(path: string, cache: FileTypeCache, refresh: boolean) {
         
         if (!cache) return;
@@ -97,15 +93,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public spacesDBPath  = normalizePath(
     this.plugin.app.vault.configDir + "/plugins/make-md/Spaces.mdb"
   );
-  public checkIllegalCharacters (file: {name: string, path: string}) {
-    if (illegalCharacters.some(f => file.name.includes(f)))
-    {
-            this.fileNameWarnings.add(file.path);
-        } else {
-            this.fileNameWarnings.delete(file.path);
-        }
-
-  }
     public async loadCacheFromObsidianCache () {
         //Load Spaces Database File
         await this.persister.initialize();
@@ -119,7 +106,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         })).filter(f => !excludePathPredicate(this.plugin.superstate.settings, f.path));
 
         const allPaths = await this.persister.loadAll('file');
-        this.fileNameWarnings = new Set();
         // this.persister.reset();
         this.vaultDBCache.forEach(f => {
             const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f.path))
@@ -127,7 +113,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                 file.name = "Vault"
                 f.name = "Vault"
             }
-            this.checkIllegalCharacters(file);
             if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
             let cache : Partial<FileCache> = {
                 metadata: {},
@@ -260,7 +245,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     onCreate = async (file: TAbstractFile) => {
 
         if (!file) return;
-        this.checkIllegalCharacters(file);
         if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
         const afile = tFileToAFile(file);
         
@@ -286,16 +270,11 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
         if (!file) return;
 
-        this.fileNameWarnings.delete(file.path);
-        
         this.middleware.onDelete(tFileToAFile(file))
       };
       
       onRename = async (file: TAbstractFile, oldPath: string) => {
         if (!file) return;
-        this.checkIllegalCharacters(file);
-        this.fileNameWarnings.delete(oldPath);
-        
     const newFile = tFileToAFile(file);
 const oldCache = this.cache.get(oldPath);
     this.cache.set(newFile.path, {...this.cache.get(oldPath), 

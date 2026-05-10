@@ -1,10 +1,9 @@
-import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
 import {
   defaultMenu,
   menuSeparator,
 } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
-import { isPhone, isTouchScreen } from "core/utils/ui/screen";
+import { isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
 import { SelectOption, Superstate } from "makemd-core";
 import { WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
@@ -16,7 +15,7 @@ import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
 export const showMainMenu = (
   el: HTMLElement,
   superstate: Superstate,
-  plugin: MakeMDPlugin
+  plugin: MakeMDPlugin,
 ) => {
   const toggleSections = (collapse: boolean) => {
     const spaces =
@@ -64,31 +63,10 @@ export const showMainMenu = (
         superstate.saveSettings();
         document.body.classList.toggle(
           "mk-mobile-header",
-          superstate.settings.mobileMakeHeader
+          superstate.settings.mobileMakeHeader,
         );
       },
     });
-  // Navigator MVP excludes warning and overview entries from the sidebar menu.
-  // if (superstate.ui.getWarnings().length > 0) {
-  //   menuOptions.push({
-  //     name: i18n.menu.showWarnings,
-  //     icon: "ui//warning",
-  //     onClick: (e) => {
-  //       showWarningsModal(superstate, windowFromDocument(e.view.document));
-  //     },
-  //   });
-  //   menuOptions.push(menuSeparator);
-  // }
-  // if (!isPhone(superstate.ui)) {
-  //   menuOptions.push({
-  //     name: i18n.buttons.openOverview,
-  //     icon: "ui//columns",
-  //     onClick: () => {
-  //       plugin.openEverView();
-  //     },
-  //   });
-  //   menuOptions.push(menuSeparator);
-  // }
 
   menuOptions.push({
     name: i18n.menu.collapseAllSections,
@@ -115,7 +93,7 @@ export const showMainMenu = (
       superstate.ui.openModal(
         i18n.labels.hiddenFiles,
         <HiddenPaths superstate={superstate}></HiddenPaths>,
-        windowFromDocument(e.view.document)
+        windowFromDocument(e.view.document),
       );
     },
   });
@@ -128,44 +106,15 @@ export const showMainMenu = (
     },
   });
 
-  // leafs.map((l) =>
-  //   menuOptions.push({
-  //     name: l.getDisplayText(),
-  //     icon: "lucide//" + l.view.icon,
-  //     onClick: () => {
-  //       plugin.app.workspace.revealLeaf(l);
-  //     },
-  //   })
-  // );
-
-  // Navigator MVP excludes Obsidian/global Make.md entries from the sidebar menu.
-  // menuOptions.push(menuSeparator);
-
-  // menuOptions.push({
-  //   name: i18n.menu.obSettings,
-  //   icon: "ui//settings",
-  //   onClick: () => {
-  //     plugin.app.commands.commands["app:open-settings"].callback();
-  //   },
-  // });
-
-  // menuOptions.push({
-  //   name: i18n.menu.openVault,
-  //   icon: "ui//vault",
-  //   onClick: () => {
-  //     plugin.app.commands.commands["app:open-vault"].callback();
-  //   },
-  // });
-
-  // menuOptions.push(menuSeparator);
-
-  // menuOptions.push({
-  //   name: i18n.menu.getHelp,
-  //   icon: "ui//mk-logo",
-  //   onClick: () => {
-  //     window.open("https://make.md/community");
-  //   },
-  // });
+  leafs.map((l) =>
+    menuOptions.push({
+      name: l.getDisplayText(),
+      icon: "lucide//" + l.view.icon,
+      onClick: () => {
+        plugin.app.workspace.revealLeaf(l);
+      },
+    }),
+  );
 
   // if (isMouseEvent(e)) {
   const offset = el.getBoundingClientRect();
@@ -173,6 +122,6 @@ export const showMainMenu = (
     offset,
     defaultMenu(superstate.ui, menuOptions),
     windowFromDocument(el.ownerDocument),
-    "bottom"
+    "bottom",
   );
 };

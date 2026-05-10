@@ -27,7 +27,5 @@ export { MarkdownHeaderView } from "core/react/components/MarkdownEditor/Markdow
 export { MDBViewer } from "core/react/components/MDBView/MDBViewer";
 export { Navigator } from "core/react/components/Navigator/Navigator";
 export { NoteView } from "core/react/components/PathView/NoteView";
-export { SpaceView } from "core/react/components/SpaceView/Contexts/SpaceView";
 export { SpaceFragmentViewComponent } from "core/react/components/SpaceView/Editor/EmbedView/SpaceFragmentView";
 export { SpaceFragmentWrapper } from "core/react/components/SpaceView/Editor/EmbedView/SpaceFragmentWrapper";
-

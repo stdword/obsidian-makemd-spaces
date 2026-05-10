@@ -1,16 +1,6 @@
-import { moveSpaceFiles } from "adapters/obsidian/filesystem/spaceFileOps";
-import { openPathFixer } from "adapters/obsidian/fileSystemPathFixer";
-import { FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
-import { showWarningsModal } from "core/react/components/Navigator/SyncWarnings";
-import {
-  defaultAddAction,
-  newSpaceModal,
-} from "core/react/components/UI/Menus/navigator/showSpaceAddMenu";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
-import { openInputModal } from "core/react/components/UI/Modals/InputModal";
 import { addPathToSpaceAtIndex } from "core/superstate/utils/spaces";
 import { eventTypes } from "core/types/types";
-import { isPhone } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
 import i18n from "shared/i18n";
 import React from "react";
@@ -18,14 +8,6 @@ import { BlinkMode } from "shared/types/blink";
 import { windowFromDocument } from "shared/utils/dom";
 
 export const attachCommands = (plugin: MakeMDPlugin) => {
-  if (!isPhone(plugin.superstate.ui))
-    plugin.addCommand({
-      id: "open-ever-view",
-      name: i18n.buttons.openOverview,
-      callback: () => {
-        plugin.openEverView();
-      },
-    });
   plugin.addCommand({
     id: "open-hidden",
     name: i18n.labels.manageHiddenFiles,
@@ -39,21 +21,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
       );
     },
   });
-  plugin.addCommand({
-    id: "new-note",
-    name: i18n.buttons.newNote,
-    callback: () => {
-      defaultAddAction(plugin.superstate, null, window, false);
-    },
-  });
-  // Navigator MVP excludes diagnostics, logs, path fixing, and data-folder migration commands.
-  // plugin.addCommand({
-  //   id: "show-warnings",
-  //   name: i18n.menu.showWarnings,
-  //   callback: () => {
-  //     showWarningsModal(plugin.superstate, window);
-  //   },
-  // });
+  // Navigator MVP excludes diagnostics, logs, and data-folder migration commands.
   // plugin.addCommand({
   //   id: "logs",
   //   name: i18n.commandPalette.toggleEnhancedLogs,
@@ -63,45 +31,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   //     plugin.saveSettings();
   //   },
   // });
-  // plugin.addCommand({
-  //   id: "path-fixer",
-  //   name: i18n.commandPalette.fixPathCharacters,
-  //   callback: () => {
-  //     openPathFixer(plugin);
-  //   },
-  // });
-  // plugin.addCommand({
-  //   id: "move-space-folder",
-  //   name: i18n.commandPalette.moveSpaceDataFolder,
-  //   callback: () => {
-  //     const win = windowFromDocument(
-  //       plugin.app.workspace.getLeaf()?.containerEl.ownerDocument
-  //     );
-  //     openInputModal(
-  //       plugin.superstate,
-  //       i18n.commandPalette.moveSpaceDataFolder,
-  //       plugin.superstate.settings.spaceSubFolder,
-  //       (path) => {
-  //         moveSpaceFiles(
-  //           plugin,
-  //           plugin.superstate.settings.spaceSubFolder,
-  //           path
-  //         );
-  //       },
-  //       i18n.buttons.move,
-  //       win
-  //     );
-  //   },
-  // });
   if (plugin.superstate.settings.spacesEnabled) {
-    plugin.addCommand({
-      id: "mk-new-space",
-      name: i18n.buttons.createFolder,
-      callback: () => {
-        newSpaceModal(plugin.superstate);
-      },
-    });
-
     // Navigator MVP excludes debug tab cleanup from the command palette.
     // plugin.addCommand({
     //   id: "mk-debug-close-tabs",
@@ -111,27 +41,6 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
     //   },
     // });
 
-    plugin.addCommand({
-      id: "mk-expand-folders",
-      name: i18n.menu.expandAllSections,
-      callback: () => {
-        const spaces =
-          plugin.superstate.focuses[plugin.superstate.settings.currentWaypoint]
-            .paths;
-        const newSections = spaces;
-        plugin.superstate.settings.expandedSpaces = newSections;
-        plugin.superstate.saveSettings();
-      },
-    });
-
-    plugin.addCommand({
-      id: "mk-collapse-folders",
-      name: i18n.menu.collapseAllFolders,
-      callback: () => {
-        plugin.superstate.settings.expandedSpaces = [];
-        plugin.saveSettings();
-      },
-    });
     // Navigator MVP excludes onboarding and release notes commands.
     // plugin.addCommand({
     //   id: "mk-release-notes",

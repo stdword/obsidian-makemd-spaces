@@ -1,10 +1,8 @@
-import { EMBED_SPACE_VIEW_TYPE } from "adapters/obsidian/ui/editors/EmbedSpaceView";
 import { LINK_VIEW_TYPE } from "adapters/obsidian/ui/editors/markdownView/FileView";
 import MakeMDPlugin from "main";
 import { AFile } from "makemd-core";
 import {
   App,
-  Platform,
   TAbstractFile,
   TFile,
   TFolder,
@@ -12,14 +10,11 @@ import {
   normalizePath
 } from "obsidian";
 
-import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
-import { isTouchScreen } from "core/utils/ui/screen";
 import { TargetLocation } from "shared/types/path";
 import { selectElementContents } from "shared/utils/dom";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";
 import { folderPathToString } from "utils/path";
-import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
   
 
 export const tFileToAFile = (file: TAbstractFile | TFile) : AFile => {
@@ -176,27 +171,18 @@ export const openSpace = async (
   plugin: MakeMDPlugin,
   newLeaf: TargetLocation
 ) => {
-// if (spacePath == tagsSpacePath) return;
-  if (!plugin.superstate.settings.spaceViewEnabled) {
-    if (!plugin.superstate.settings.enableFolderNote) {
-      return;
-    }
-    const space = plugin.superstate.spacesIndex.get(spacePath)?.space.notePath;
-    plugin.superstate.ui.openPath(space, newLeaf);
+  if (!plugin.superstate.settings.enableFolderNote) {
     return;
   }
   const leaf = getLeaf(plugin.app, newLeaf);
-  const viewType = SPACE_VIEW_TYPE;
-  plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({
-    type: viewType,
-    state: { path: spacePath },
-  });
-  await plugin.app.workspace.requestSaveLayout();
-  if (isTouchScreen(plugin.superstate.ui)) {
-    plugin.app.workspace.leftSplit.collapse();
+  const space = plugin.superstate.spacesIndex.get(spacePath)?.space.notePath;
+  const spaceFile = space
+    ? (getAbstractFileAtPath(plugin.app, space) as TFile)
+    : null;
+  if (spaceFile) {
+    await openTFile(leaf, spaceFile, plugin.app);
+    plugin.superstate.ui.setActivePath(spaceFile.path);
   }
-  plugin.superstate.ui.setActivePath(spacePath);
 }
 
 export const getLeaf = (app: App, location: TargetLocation) => {
@@ -208,8 +194,6 @@ export const getLeaf = (app: App, location: TargetLocation) => {
     leaf = app.workspace.getRightLeaf(false);
   } else if (location == 'left') {
     leaf = app.workspace.getLeftLeaf(false);
-  } else if (location == 'overview') {
-    leaf = app.workspace.getLeavesOfType(EVER_VIEW_TYPE)[0];
   } else {
     leaf = app.workspace.getLeaf(location)
   }
@@ -230,23 +214,10 @@ export const openURL = async (url: string,app: App,  location?: TargetLocation) 
     });
     await app.workspace.requestSaveLayout();
   } else if (url.endsWith(".mdb")) {
-    const viewType = SPACE_VIEW_TYPE;
-    app.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: viewType,
-      state: { path: url },
-    });
-    await app.workspace.requestSaveLayout();
+    const file = getAbstractFileAtPath(app, url);
+    if (file instanceof TFile) await openTFile(leaf, file, app);
   } else {
-    app.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: EMBED_SPACE_VIEW_TYPE,
-      state: { path: url },
-    });
-  }
-
-  if (Platform.isMobile) {
-    app.workspace.leftSplit.collapse();
+    window.open(url, "_blank");
   }
 };
 
@@ -289,35 +260,14 @@ export const openTFolder = async (
   flow: boolean
 ) => {
   // if (!plugin.superstate.settings.contextEnabled) return;
-  if (!plugin.superstate.settings.spaceViewEnabled) {
-    if (!plugin.superstate.settings.enableFolderNote) {
-      return;
-    }
-    const space = plugin.superstate.spacesIndex.get(file.path)?.space.notePath;
-    if (!space) return;
-    const spaceFile = getAbstractFileAtPath(plugin.app, space) as TFile;
-    if (!spaceFile) return;
-    plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-    leaf.openFile(spaceFile);
+  if (!plugin.superstate.settings.enableFolderNote) {
     return;
   }
-  
-  if (flow) {
-    await leaf.setViewState({
-      type: EMBED_SPACE_VIEW_TYPE,
-      state: { path: file.path },
-    });
-  } else {
-    plugin.app.workspace.setActiveLeaf(leaf, { focus: true });
-    await leaf.setViewState({
-      type: SPACE_VIEW_TYPE,
-      state: { path: file.path },
-    });
-    await plugin.app.workspace.requestSaveLayout();
-    if (Platform.isMobile) {
-      plugin.app.workspace.leftSplit.collapse();
-    }
-  }
+  const space = plugin.superstate.spacesIndex.get(file.path)?.space.notePath;
+  if (!space) return;
+  const spaceFile = getAbstractFileAtPath(plugin.app, space) as TFile;
+  if (!spaceFile) return;
+  await openTFile(leaf, spaceFile, plugin.app);
 
   // const fileCache = plugin.superstate.pathsIndex.get(file.path);
   // if (fileCache?.label.sticker && leaf.tabHeaderInnerIconEl) {
@@ -333,13 +283,7 @@ export const openTagContext = async (
   tag: string,
   app: App,
 ) => {
-  const viewType = SPACE_VIEW_TYPE;
-  app.workspace.setActiveLeaf(leaf, { focus: true });
-  await leaf.setViewState({ type: viewType, state: { path:tag} });
-  await app.workspace.requestSaveLayout();
-  if (Platform.isMobile) {
-    app.workspace.leftSplit.collapse();
-  }
+  return;
 };
 
 export const openArbitraryView = async (
@@ -395,8 +339,6 @@ export const createNewMarkdownFile = async (
   plugin.superstate.ui.setActivePath(newFile.path)
   return newFile;
 };
-
-
 
 
 

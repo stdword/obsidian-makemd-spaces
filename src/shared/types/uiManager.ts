@@ -8,7 +8,6 @@ import { SpaceState } from "./PathState";
 import { Anchors, Pos, Rect } from "./Pos";
 import { ISuperstate } from "./superstate";
 import { InteractionType, ScreenType, Sticker } from "./ui";
-import { Warning } from "./Warning";
 
 export interface IUIManager {
     inputManager: InputManager;
@@ -35,9 +34,7 @@ export interface IUIManager {
     navigationHistory: () => string[];
     allViews: () => ViewAdapter[];
     viewsByPath: (path: string) => ViewAdapter[];
-    isEverViewOpen: () => boolean;
     adapters: UIAdapter[];
-    getWarnings: () => Warning[];
     createRoot: (container: Element | DocumentFragment, options?: RootOptions) => Root;
     openMenu: (rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor?: Anchors, onHide?: () => void, force?: boolean) => MenuObject;
     openCustomMenu: (rect: Rect, fc: JSX.Element, props: any, win: Window, defaultAnchor?: Anchors, onHide?: () => void, className?: string, onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject) => MenuObject;
@@ -73,7 +70,6 @@ export interface UIAdapter {
     openPopover: (position: Pos, popover: JSX.Element) => void;
     getScreenType: () => ScreenType;
     getOS: () => string;
-    getWarnings: () => Warning[];
     primaryInteractionType: () => InteractionType;
     getSticker: (icon: string, options?: Record<string, any>) => string;
     allStickers: () => Sticker[];
@@ -90,7 +86,6 @@ export interface UIAdapter {
         offset?: Rect,
         win?: Window,
         onSelect?: (link: string) => void, source?: string) => void;
-    isEverViewOpen: () => boolean;
 }export type UIManagerEventTypes = {
     'activePathChanged': string;
     'activeStateChanged': null;
@@ -103,4 +98,3 @@ export abstract class ViewAdapter {
     parent: ViewAdapter;
     children: ViewAdapter[];
 }
-

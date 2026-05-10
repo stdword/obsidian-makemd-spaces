@@ -1,4 +1,3 @@
-import { Warning } from "shared/types/Warning";
 import { InteractionType, ScreenType } from "shared/types/ui";
 
 import MakeMDPlugin from "main";
@@ -25,7 +24,6 @@ import { removeSpace } from "core/superstate/utils/spaces";
 import { BlinkMode } from "shared/types/blink";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
 import { getLineRangeFromRef } from "shared/utils/obsidian";
-import { SPACE_VIEW_TYPE } from "../SpaceViewContainer";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
@@ -204,43 +202,6 @@ export class ObsidianUI implements UIAdapter {
 
   public dragEnded = (e: React.DragEvent<HTMLDivElement>) => {};
 
-  public getWarnings = () => {
-    const warnings: Warning[] = [];
-    if (this.plugin.obsidianAdapter.fileNameWarnings.size > 0) {
-      warnings.push({
-        id: "obsidian-sync-space-folder",
-        message: i18n.labels.someFilesHaveInvalidNames,
-        description:
-          "Files contain invalid characters which may cause issues during sync, use alias to display these characters to prevent the issue",
-        command: "obsidian://make-md:path-fixer",
-      });
-    }
-    if (this.plugin.app.internalPlugins.config.sync) {
-      if (this.plugin.superstate.settings.spaceSubFolder.startsWith(".")) {
-        warnings.push({
-          id: "obsidian-sync-space-folder",
-          message: i18n.labels.obsidianSyncCurrentlyWontSyncYourSpaces,
-          description: "Change the space folder name to a non-hidden folder",
-          command: "obsidian://make-md:move-space-folder",
-        });
-      }
-      const allowedTypes = this.plugin.app.internalPlugins.plugins?.sync
-        ?.instance?.allowTypes as Set<string>;
-      if (allowedTypes && ![...allowedTypes].some((f) => f == "unsupported")) {
-        warnings.push({
-          id: "obsidian-sync-space-config",
-          message:
-            i18n.labels.obsidianSyncCurrentlyWontSyncYourSpaceViewsOrContext,
-          description:
-            i18n.descriptions
-              .changeTheSyncSettingsToIncludeUnsupportedFileTypes,
-          command: "obsidian://app:open-settings",
-        });
-      }
-    }
-    return warnings;
-  };
-
   public allStickers = () => {
     const allLucide: Sticker[] = lucideIcons.map((f) => ({
       name: f,
@@ -406,29 +367,8 @@ export class ObsidianUI implements UIAdapter {
             children: [] as any[],
           };
         });
-    } else {
-      return this.plugin.app.workspace
-        .getLeavesOfType(SPACE_VIEW_TYPE)
-        .filter((f) => {
-          return f.view.getState().path == path;
-        })
-        .map((f) => {
-          return {
-            path: f.view.getState().path as string,
-            openPath: (path: string) => {
-              f.setViewState({
-                type: SPACE_VIEW_TYPE,
-                state: { path: path },
-              });
-            },
-            parent: null as any,
-            children: [] as any[],
-          };
-        });
     }
-  };
-  public isEverViewOpen = () => {
-    return this.plugin.app.workspace.getLeavesOfType("mk-ever-view").length > 0;
+    return [];
   };
   public openPath = (
     path: string,
@@ -440,17 +380,6 @@ export class ObsidianUI implements UIAdapter {
       // @ts-ignore
       this.plugin.app.showInFolder(path);
       return;
-    }
-    if (newLeaf == "overview") {
-      const everLeaves =
-        this.plugin.app.workspace.getLeavesOfType("mk-ever-view");
-      if (everLeaves.length > 0) {
-        everLeaves[0].setViewState({
-          type: "mk-ever-view",
-          state: { path: path },
-        });
-        return;
-      }
     }
 
     if (newLeaf == "hover") {

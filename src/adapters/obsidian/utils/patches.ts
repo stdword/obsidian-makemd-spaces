@@ -3,9 +3,7 @@ import { around } from "monkey-around";
 import {
   OpenViewState, PaneType,
   Workspace,
-  WorkspaceLeaf
 } from "obsidian";
-import { EVER_VIEW_TYPE } from "../ui/navigator/EverLeafView";
 import { FILE_TREE_VIEW_TYPE } from "../ui/navigator/NavigatorView";
 
 export const patchFilesPlugin = (plugin: MakeMDPlugin) => {
@@ -30,23 +28,13 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
       //Patch get leaf to always return root leaf if leaf is a flow block
       return function (newLeaf?: PaneType | boolean) {
 
-        let leaf: WorkspaceLeaf = old.call(this, newLeaf);
-
-        if (leaf.view.getViewType() == EVER_VIEW_TYPE) {
-          if (leaf.getContainer() == plugin.app.workspace.rootSplit) {
-            leaf = plugin.app.workspace.getLeaf("split");
-            return leaf;
-          }
-        }
-
-
-        return leaf;
+        return old.call(this, newLeaf);
       };
     },
   openLinkText(old) {
     return function openLinkText(linkText: string, sourcePath: string, newLeaf?: PaneType | boolean, openViewState?: OpenViewState) {
 
-      if (plugin.superstate.settings.enableFolderNote && plugin.superstate.settings.spaceViewEnabled) {
+      if (plugin.superstate.settings.enableFolderNote) {
         const resolvedPath = plugin.app.metadataCache.getFirstLinkpathDest(linkText, sourcePath);
         const pathState = plugin.superstate.pathsIndex.get(resolvedPath?.path);
         if (pathState?.metadata.spacePath?.length > 0) {
@@ -66,5 +54,3 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
 });
 plugin.register(uninstaller);
 }
-
-

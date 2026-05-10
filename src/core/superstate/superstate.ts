@@ -19,7 +19,7 @@ import { rootToFrame } from "schemas/frames";
 import { visualizationNode } from "schemas/kits";
 import { dataNode } from "schemas/kits/base";
 import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
-import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemButton, newItemNode, overviewItem, rowGroup, taskListItem } from "schemas/kits/list";
+import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemButton, newItemNode, rowGroup, taskListItem } from "schemas/kits/list";
 import { buttonNode, callout, circularProgressNode, dividerNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
@@ -105,7 +105,6 @@ public api: API;
          linkNode(), 
          imageListItem,
         detailItem,
-        overviewItem, 
         flowListItem, 
         cardListItem, 
         cardsListItem,

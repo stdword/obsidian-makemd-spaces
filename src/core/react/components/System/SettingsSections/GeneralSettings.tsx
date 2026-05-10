@@ -9,7 +9,6 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
   const [systemName, setSystemName] = useState(superstate.settings.systemName || "");
   const [homepagePath, setHomepagePath] = useState(superstate.settings.homepagePath || "");
   const [navigatorEnabled, setNavigatorEnabled] = useState(Boolean(superstate.settings.navigatorEnabled));
-  const [spaceViewEnabled, setSpaceViewEnabled] = useState(Boolean(superstate.settings.spaceViewEnabled));
   const [blinkEnabled, setBlinkEnabled] = useState(Boolean(superstate.settings.blinkEnabled));
   const [spacesUseAlias, setSpacesUseAlias] = useState(Boolean(superstate.settings.spacesUseAlias));
   const [enableDefaultSpaces, setEnableDefaultSpaces] = useState(Boolean(superstate.settings.enableDefaultSpaces));
@@ -20,7 +19,6 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
     setSystemName(superstate.settings.systemName || "");
     setHomepagePath(superstate.settings.homepagePath || "");
     setNavigatorEnabled(Boolean(superstate.settings.navigatorEnabled));
-    setSpaceViewEnabled(Boolean(superstate.settings.spaceViewEnabled));
     setBlinkEnabled(Boolean(superstate.settings.blinkEnabled));
     setSpacesUseAlias(Boolean(superstate.settings.spacesUseAlias));
     setEnableDefaultSpaces(Boolean(superstate.settings.enableDefaultSpaces));
@@ -88,28 +86,6 @@ export const GeneralSettings = ({ superstate }: SettingsProps) => {
               onChange={(e) => {
                 setNavigatorEnabled(e.target.checked);
                 superstate.settings.navigatorEnabled = e.target.checked;
-                immediateSave();
-              }}
-            />
-          </div>
-        </div>
-
-        <div className="mk-setting-item">
-          <div className="mk-setting-item-info">
-            <div className="mk-setting-item-name">
-              {i18n.settings.spaceViewEnabled.name}
-            </div>
-            <div className="mk-setting-item-description">
-              {i18n.settings.spaceViewEnabled.desc}
-            </div>
-          </div>
-          <div className="mk-setting-item-control">
-            <input
-              type="checkbox"
-              checked={spaceViewEnabled}
-              onChange={(e) => {
-                setSpaceViewEnabled(e.target.checked);
-                superstate.settings.spaceViewEnabled = e.target.checked;
                 immediateSave();
               }}
             />

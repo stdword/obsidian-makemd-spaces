@@ -108,8 +108,6 @@ export const en = {
   },
   "commandPalette": {
     "toggleEnhancedLogs": "Toggle Enhanced Logs",
-    "fixPathCharacters": "Fix Path Characters",
-    "moveSpaceDataFolder": "Move Space Data Folder",
     "openFlow": "Open Flow Blocks in Selection",
     "closeFlow": "Close Flow Blocks in Selection",
     "openSpaces": "Open Navigator",
@@ -256,12 +254,8 @@ export const en = {
     "duplicate": "Make a copy",
     "edit": "Edit",
     "delete": "Delete",
-    "getHelp": "Make.md Community",
-    "openVault": "Open Another Vault",
-    "obSettings": "Obsidian Settings",
     "collapseAllSections": "Collapse All Spaces",
     "expandAllSections": "Expand All Spaces",
-    "collapseAllFolders": "Collapse All Folders",
     "settings": "Settings",
     "none": "None",
     "tableView": "Table View",
@@ -309,7 +303,6 @@ export const en = {
     "insertBelow": "Insert Below",
     "toggleReadMode": "Toggle Read Mode",
     "toggleFullWidth": "Toggle Full Width",
-    "showWarnings": "Show Warnings",
     "openFilePane": "Open File Pane",
     "openNativeMenu": "More Options",
     "revealInDefault": "Reveal in Finder",
@@ -417,7 +410,6 @@ export const en = {
     "run": "Run",
     "export": "Export",
     "move": "Move",
-    "openOverview": "Open Overview",
     "addTime": "Add Time",
     "addFromExisting": "Add from Existing"
   },
@@ -571,7 +563,6 @@ export const en = {
     "base100": "Base100",
     "installSpaceKit": "Install Space Kit",
     "filesCount": "{$1} Files",
-    "someFilesHaveInvalidNames": "Some Files Have Invalid Names",
     "placeholder": "Type '${1}' for commands",
     "toAppendLinkToTheFile": "to append link to the file",
     "notePlaceholder": "New Note for ${1}",
@@ -867,8 +858,6 @@ export const en = {
     "nineToOne": "9 → 1",
     "xField": "X-Field",
     "yField": "Y-Field",
-    "obsidianSyncCurrentlyWontSyncYourSpaces": "Obsidian Sync currently won't sync your Spaces",
-    "obsidianSyncCurrentlyWontSyncYourSpaceViewsOrContext": "Obsidian Sync currently won't sync your Space Views or Context",
     "visualization": "Visualization",
     "blink": {
       "items": "Items",
@@ -1095,7 +1084,6 @@ export const en = {
     "sectionStickers": "Labels",
     "sectionNavigator": "Navigator",
     "sectionDefault": "Default Spaces",
-    "sectionSpaceView": "Space View",
     "sectionBlink": "Blink",
     "sectionInlineContext": "Inline Context",
     "sectionFlowBlock": "Flow Block",
@@ -1167,7 +1155,7 @@ export const en = {
     },
     "newNotePlaceholder": {
       "name": "New Note Placeholder",
-      "desc": "Default name for new notes, applies to the Navigator buttons and the New Note command"
+      "desc": "Default name for new notes, applies to the Navigator buttons"
     },
     "folderIndentationLines": {
       "name": "Show Folder Indentation Lines",
@@ -1298,10 +1286,6 @@ export const en = {
       "name": "Vault Selector",
       "desc": "Show/hide the vault selector at the bottom"
     },
-    "spaceViewEnabled": {
-      "name": "Spaces",
-      "desc": "Customize your folders and tags with properties and views"
-    },
     "defaultSpaces": {
       "name": "Default Spaces",
       "desc": "Recommended Spaces for quickly organizing your vault"
@@ -1413,10 +1397,6 @@ export const en = {
     "contextCreateUseModal": {
       "name": "Use Modal for Creating Items",
       "desc": "Use a modal to create new items in contexts"
-    },
-    "changeTheSyncSettingsToIncludeUnsupportedFileTypes": {
-      "name": "Change the sync settings to include unsupported file types",
-      "desc": "Change the sync settings to include unsupported file types"
     },
     "noVisualizationConfigured": {
       "name": "No visualization configured",

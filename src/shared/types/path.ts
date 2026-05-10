@@ -16,5 +16,4 @@ export type URI = {
   query?: {[key: string]: string}
   isRemote?: boolean;
   trailSlash: boolean;
-};export type TargetLocation = "split" | "overview" | "window" | "tab" | "left" | "right" | 'system' | 'hover' | boolean;
-
+};export type TargetLocation = "split" | "window" | "tab" | "left" | "right" | 'system' | 'hover' | boolean;

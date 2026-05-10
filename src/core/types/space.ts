@@ -53,12 +53,6 @@ export const builtinSpaces : Record<string, BuiltinSpace> = {
     readOnly: false,
     hidden: false
   },
-  overview: {
-    name: "Overview",
-    icon: "ui//overview",
-    readOnly: true,
-    hidden: true
-  },
 };
 
 export const spaceContextsKey = "_contexts";
@@ -68,4 +62,3 @@ export const spaceJoinsKey = "_joins";
 export const spaceLinksKey = "_links";
 export const spaceSortKey = "_sort";
 export const spaceRecursiveKey = "_subfolders";
-

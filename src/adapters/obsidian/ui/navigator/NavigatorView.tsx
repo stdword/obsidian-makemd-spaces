@@ -4,9 +4,6 @@ export const FILE_TREE_VIEW_TYPE = "mk-path-view";
 export const VIEW_DISPLAY_TEXT = "Navigator";
 export const ICON = "layout-grid";
 
-import { SPACE_VIEW_TYPE } from "adapters/obsidian/SpaceViewContainer";
-
-import { getLeaf } from "adapters/obsidian/utils/file";
 import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
 import { eventTypes } from "core/types/types";
 import { Navigator, Superstate } from "makemd-core";
@@ -28,12 +25,7 @@ export class FileTreeView extends ItemView {
 
   revealInFolder(file: TAbstractFile) {
     if (file instanceof TFolder) {
-      const leaf = getLeaf(this.leaf.view.app, false);
-      leaf.setViewState({
-        type: SPACE_VIEW_TYPE,
-        state: { path: file.path },
-      });
-      this.leaf.view.app.workspace.requestSaveLayout();
+      this.superstate.ui.openPath(file.path, false);
     } else {
       const evt = new CustomEvent(eventTypes.revealPath, {
         detail: { path: file.path },

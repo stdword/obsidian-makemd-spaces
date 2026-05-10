@@ -93,12 +93,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         
       },
       {
-        name: 'spaceViewEnabled',
-        category: 'general',
-        type: 'boolean',
-        
-      },
-      {
         name: 'basics',
         category: 'notes',
         type: 'boolean',

@@ -1,5 +1,4 @@
 
-import { SPACE_VIEW_TYPE, SpaceViewContainer } from "adapters/obsidian/SpaceViewContainer";
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
 import {
   App, MarkdownView,
@@ -21,10 +20,6 @@ import {
   FileTreeView
 } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import {
-  EMBED_SPACE_VIEW_TYPE,
-  EmbedSpaceView
-} from "adapters/obsidian/ui/editors/EmbedSpaceView";
 import {
   HTMLFileViewer,
   HTML_FILE_VIEWER_TYPE
@@ -83,10 +78,8 @@ import { LocalCachePersister } from "shared/types/persister";
 import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
-import { openPathFixer } from "adapters/obsidian/fileSystemPathFixer";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 import { SPACE_FRAGMENT_VIEW_TYPE, SpaceFragmentView } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
-import { EVER_VIEW_TYPE, EverLeafView } from "adapters/obsidian/ui/navigator/EverLeafView";
 import MakeBasicsPlugin from "basics/basics";
 import { attachCommands } from "commands";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
@@ -118,7 +111,6 @@ import "css/Obsidian/Mods.css";
 import "css/Panels/Blink.css";
 import "css/Panels/ContextBuilder.css";
 import "css/Panels/FileContext.css";
-import "css/Panels/Navigator/EverView.css";
 import "css/Panels/Navigator/FileTree.css";
 import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
@@ -206,23 +198,13 @@ loadSuperState() {
 }
   
 loadViews () {
-  this.registerView(EVER_VIEW_TYPE, (leaf) => {
-    return new EverLeafView(leaf, this.superstate, this.ui);
-  });
   this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
     return new FileTreeView(leaf, this.superstate, this.ui);
-  });
-  this.registerView(SPACE_VIEW_TYPE, (leaf) => {
-    return new SpaceViewContainer(leaf, this.superstate, this.ui, SPACE_VIEW_TYPE);
   });
   
   // Navigator MVP excludes the standalone space fragment editor view.
   // this.registerView(SPACE_FRAGMENT_VIEW_TYPE, (leaf) => {
   //   return new SpaceFragmentView(leaf, this);
-  // });
-  // Navigator MVP excludes the standalone embedded space editor view.
-  // this.registerView(EMBED_SPACE_VIEW_TYPE, (leaf) => {
-  //   return new EmbedSpaceView(leaf, this);
   // });
   if (this.superstate.settings.contextEnabled) {
       
@@ -315,19 +297,11 @@ loadViews () {
     let filePath = null;
     let state = null;
     let leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
-    if (!leaf) {
-      leaf = this.app.workspace.getActiveViewOfType(SpaceViewContainer)?.leaf;
-    }
     
     const activeView = leaf?.view;
     //@ts-ignore
     if (!activeView || leaf.isFlowBlock) return null;
-    if (activeView.getViewType() == SPACE_VIEW_TYPE ) {
-      modifyTabSticker(this)
-      state = activeView.getState();
-      filePath =  activeView.getState().path as string
-      
-    } else if (activeView.getViewType() == "markdown") {
+    if (activeView.getViewType() == "markdown") {
       filePath = activeView.file.path;
       state = activeView.getState();
       modifyFlowDom(this)
@@ -340,10 +314,6 @@ loadViews () {
     };
   }
 
-  fixFileWarnings () {
-    openPathFixer(this);
-  }
-  
   activeFileChange() {
     
     const activeFile = this.getActiveFile();
@@ -443,28 +413,6 @@ loadViews () {
     // }
   }
 
-  openEverView () {
-    const leafs = this.app.workspace.getLeavesOfType(EVER_VIEW_TYPE);
-    if (leafs.length == 0) {
-      const leaf = this.app.workspace.createLeafBySplit(this.app.workspace.getLeaf(), "vertical", true);
-      leaf.setViewState({ type: EVER_VIEW_TYPE });
-      leaf.setPinned(true);
-    } else {
-        leafs.forEach((oldLeaf) => {
-          if (oldLeaf.getRoot() != this.app.workspace.rootSplit)
-          {
-            oldLeaf.detach();
-          }
-            const leaf = this.app.workspace.createLeafBySplit(this.app.workspace.getLeaf(), "vertical", true);
-            leaf.setViewState({ type: EVER_VIEW_TYPE });
-            leaf.setPinned(true);
-        });
-    }
-    patchWorkspace(this)
-  }
-  
-
-  
 public basics: MakeBasicsPlugin;    
   
   
@@ -480,12 +428,9 @@ public basics: MakeBasicsPlugin;
     if (!uri) return;
     if (uri.scheme == 'https' || uri.scheme == 'http') {
       if (this.superstate.spacesIndex.has(path)) {
-        const viewType = SPACE_VIEW_TYPE;
-        this.app.workspace.setActiveLeaf(leaf, { focus: true });
-        await leaf.setViewState({
-          type: viewType,
-          state: { path: path, flow },
-        });
+        const space = this.superstate.spacesIndex.get(path)?.space.notePath;
+        const file = space ? getAbstractFileAtPath(this.app, space) as TFile : null;
+        if (file) await openTFile(leaf, file, this.app);
         return;
       } else if (this.superstate.pathsIndex.has(path)) {
         const viewType = LINK_VIEW_TYPE;
@@ -505,22 +450,20 @@ public basics: MakeBasicsPlugin;
         });
       return;
     }
+    if (uri.scheme == 'mk-core' && uri.authority == 'settings') {
+      this.app.setting.open();
+      this.app.setting.openTabById(this.manifest.id);
+      return;
+    }
   
     if (uri.ref) {
       const cache = this.superstate.pathsIndex.get(uri.path);
   
       if (cache?.type == "space" || uri.scheme == 'spaces') {
-        if (flow && uri.ref == 'main') {
-        await leaf.setViewState({
-          type: EMBED_SPACE_VIEW_TYPE,
-          state: { path: uri.fullPath },
-        });
-      } else {
         await leaf.setViewState({
           type: SPACE_FRAGMENT_VIEW_TYPE,
           state: { path: uri.fullPath, flow },
         });
-      }
       return;
     }
     }

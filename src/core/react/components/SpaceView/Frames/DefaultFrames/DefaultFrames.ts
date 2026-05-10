@@ -1,10 +1,8 @@
 import i18n from "shared/i18n";
-import { Predicate } from "shared/types/predicate";
 
 import { nodeToFrame } from "core/utils/frames/nodes";
 import { contextNode, flowNode, groupNode } from "schemas/kits/base";
 import { defaultFrameListViewID, defaultFrameListViewSchema, defaultMainFrameSchema, mainFrameID } from "schemas/mdb";
-import { defaultContextSchemaID } from "shared/schemas/context";
 import { defaultContextFields } from "shared/schemas/fields";
 import { SpaceProperty } from "shared/types/mdb";
 import { FrameNode, MDBFrames } from "shared/types/mframe";
@@ -103,19 +101,6 @@ const folderNoteMainFrame : FrameNode[] = [
     },
   ];
 
-  export const DefaultEverViewTables : MDBFrames = {
-
-  [defaultFrameListViewID]: {
-    schema: {id: defaultFrameListViewID,
-      name: i18n.labels.all,
-      type: "view",
-      def: JSON.stringify({db: defaultContextSchemaID, icon: 'ui//file-stack'}),
-    predicate: JSON.stringify({listView:"spaces://$kit/#*listView", listGroup: "spaces://$kit/#*listGroup", listItem: "spaces://$kit/#*overviewItem", view: 'list' } as Predicate)},
-    cols: defaultContextFields.rows as SpaceProperty[],
-  rows: []
-  }
-  };
-  
   export const DefaultFolderNoteMDBTables : MDBFrames = {
     main: { schema: defaultMainFrameSchema(mainFrameID),
     cols: [],

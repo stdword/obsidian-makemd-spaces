@@ -17,7 +17,6 @@ export interface MakeMDSettings {
   spacesStickers: boolean;
   banners: boolean;
   bannerHeight: number;
-  spaceViewEnabled: boolean;
   sidebarTabs: boolean;
   vaultSelector: boolean;
   showRibbon: boolean;
@@ -58,7 +57,6 @@ export interface MakeMDSettings {
   inlineContextNameLayout: InlineContextLayout;
   spacesUseAlias: boolean,
   spaceSubFolder: string,
-  suppressedWarnings: string[],
   fmKeyAlias: string;
   fmKeyBanner: string;
   fmKeyBannerOffset: string;

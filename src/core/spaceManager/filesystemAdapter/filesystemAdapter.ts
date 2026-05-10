@@ -5,7 +5,7 @@ import { FileCache, FilesystemMiddleware } from "core/middleware/filesystem";
 import { AFile } from "shared/types/afile";
 import { PathLabel } from "shared/types/caches";
 
-import { DefaultEverViewTables, DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
+import { DefaultFolderNoteMDBTables, DefaultMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
 import { builtinSpaces, spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
@@ -14,7 +14,6 @@ import { runFormulaWithContext } from "core/utils/formula/parser";
 import { executeCode } from "core/utils/frames/runner";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
-import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
 import { defaultFieldsForContext, fieldSchema } from "shared/schemas/fields";
 import { Command, CommandResult, Library } from "shared/types/commands";
@@ -462,11 +461,6 @@ private defaultDBTablesForContext (spaceInfo: SpaceInfo) {
     };
 }
   public defaultFrame  (path: string): MDBFrames {
-    if (path.startsWith(builtinSpacePathPrefix)) {
-      if (path == builtinSpacePathPrefix + 'overview') {
-        return DefaultEverViewTables
-      }
-    }
     if (this.spaceManager.superstate.settings.defaultSpaceTemplate.length > 0 && this.spaceManager.superstate.templateCache.has(this.spaceManager.superstate.settings.defaultSpaceTemplate)) {
       return this.spaceManager.superstate.templateCache.get(this.spaceManager.superstate.settings.defaultSpaceTemplate)
     }

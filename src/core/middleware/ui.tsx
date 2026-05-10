@@ -132,9 +132,6 @@ export class UIManager implements IUIManager {
   public static create(adapter: UIAdapter, adapters?: UIAdapter[]): UIManager {
     return new UIManager(adapter, adapters);
   }
-  public isEverViewOpen() {
-    return this.mainFrame.isEverViewOpen();
-  }
   public adapters: UIAdapter[] = [];
   private constructor(primaryAdapter: UIAdapter, adapters: UIAdapter[]) {
     this.adapters = adapters ?? [];
@@ -143,10 +140,6 @@ export class UIManager implements IUIManager {
     this.mainFrame = primaryAdapter;
     this.inputManager = new InputManager();
   }
-  public getWarnings() {
-    return this.mainFrame.getWarnings();
-  }
-
   public createRoot(
     container: Element | DocumentFragment,
     options?: RootOptions
