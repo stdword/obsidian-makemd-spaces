@@ -9,7 +9,6 @@ import {
 import {
   TreeNode,
   removePathsFromSpace,
-  saveSpaceTemplate,
 } from "core/superstate/utils/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import {
@@ -327,13 +326,6 @@ export const showPathContextMenu = (
     },
   });
 
-  menuOptions.push({
-    name: i18n.buttons.saveTemplate,
-    icon: "ui//clipboard-add",
-    onClick: (e) => {
-      saveSpaceTemplate(superstate, path, space);
-    },
-  });
   if (superstate.ui.hasNativePathMenu(path)) {
     menuOptions.push({
       name: i18n.menu.openNativeMenu,

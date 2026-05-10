@@ -1,37 +1,21 @@
 import { MakeBasicsSettings } from "basics/types/settings";
 
 export type DeleteFileOption = "trash" | "permanent" | "system-trash";
-export type InlineContextLayout = "horizontal" | "vertical";
 
 export interface MakeMDSettings {
   defaultInitialization: boolean;
   filePreviewOnHover: boolean;
-  blinkEnabled: boolean;
-  datePickerTime: boolean;
-  navigatorEnabled: boolean;
-  spacesDisablePatch: boolean;
-  spacesPerformance: boolean;
   spaceRowHeight: number;
-  mobileSpaceRowHeight: number;
   spacesStickers: boolean;
   banners: boolean;
   bannerHeight: number;
-  sidebarTabs: boolean;
-  vaultSelector: boolean;
-  showRibbon: boolean;
   deleteFileOption: DeleteFileOption;
-  autoOpenFileContext: boolean;
   expandFolderOnClick: boolean;
   expandedSpaces: string[];
-  contextEnabled: boolean;
-  saveAllContextToFrontmatter: boolean;
   activeView: string;
   currentWaypoint: number;
   activeSpace: string;
-  hideFrontmatter: boolean;
-  spacesFolder: string;
   spacesMDBInHidden: boolean;
-  autoAddContextsToSubtags: boolean;
   folderNoteInsideFolder: boolean;
   folderNoteName: string;
   enableFolderNote: boolean;
@@ -43,15 +27,8 @@ export interface MakeMDSettings {
   hiddenExtensions: string[];
   newFileLocation: string;
   newFileFolderPath: string;
-  inlineContext: boolean;
-  inlineContextProperties: boolean;
   inlineBacklinks: boolean;
-  defaultDateFormat: string;
-  defaultTimeFormat: string;
   inlineBacklinksExpanded: boolean;
-  inlineContextExpanded: boolean;
-  inlineContextSectionsExpanded: boolean;
-  inlineContextNameLayout: InlineContextLayout;
   spacesUseAlias: boolean,
   fmKeyAlias: string;
   fmKeyBanner: string;
@@ -62,27 +39,16 @@ export interface MakeMDSettings {
   spacesRightSplit: boolean;
   indexSVG: boolean;
   readableLineWidth: boolean;
-  syncFormulaToFrontmatter: boolean;
   releaseNotesPrompt: number;
   firstLaunch: boolean;
-  enableDefaultSpaces: boolean;
   showSpacePinIcon: boolean;
   experimental: boolean;
-  systemName: string;
-  defaultSpaceTemplate: string;
   selectedKit: string;
   actionMaxSteps: number;
-  contextPagination: number;
-  newNotePlaceholder: string;
   cacheIndex: boolean;
   enhancedLogs: boolean;
-  basics: boolean;
-  basicsSettings: MakeBasicsSettings;
-  notesPreview: boolean;
+  basicsSettings?: MakeBasicsSettings;
   editStickerInSidebar: boolean;
   overrideNativeMenu: boolean;
   onboardingCompleted: boolean;
-  contextCreateUseModal: boolean;
-  homepagePath: string;
-  mobileMakeHeader: boolean;
 }

@@ -393,7 +393,6 @@ export const en = {
     "hideFlow": "Hide Flow",
     "addToSpace": "Pin File to...",
     "addToSpaceShort": "Pin",
-    "saveTemplate": "Make into template",
     "tag": "Tag",
     "convertTable": "Convert to Markdown",
     "cutTable": "Cut Table",
@@ -590,7 +589,6 @@ export const en = {
     "properties": "Properties",
     "newAction": "Action",
     "newTable": "New Table",
-    "template": "New Template",
     "rename": "Rename",
     "default": "Default",
     "style": "Style",
@@ -608,15 +606,10 @@ export const en = {
     "includingSubfolders": "Including subfolders",
     "createNewItemsUsing": "Create new items using",
     "withName": "with name",
-    "createTemplate": "Create Template",
-    "editTemplate": "Edit Template",
-    "noTemplatesFound": "No templates found",
-    "createFirstTemplate": "Create your first global template",
     "syncWarnings": "The following issues may affect the synchronization of your files. Please review and resolve them.",
     "noWarnings": "No warnings",
     "resolve": "Resolve",
     "ignore": "Ignore",
-    "loadingTemplates": "Loading templates...",
     "selectNote": "Select Note",
     "selectIcon": "Select Sticker",
     "selectSpace": "Select Space",
@@ -661,7 +654,6 @@ export const en = {
     "hiddenFiles": "Hidden Files",
     "colors": "Colors",
     "stickers": "Stickers",
-    "globalTemplates": "Global Templates",
     "loadingPalettes": "Loading palettes...",
     "loadingStickerSets": "Loading sticker sets...",
     "manageHiddenFiles": "Manage Hidden Files",
@@ -697,7 +689,6 @@ export const en = {
     "namePlaceholder": "Name",
     "insert": "Insert",
     "allDay": "all day",
-    "templates": "Templates",
     "invalidMKitFile": "Invalid MKit File",
     "noFramesAvailable": "No frames available in this space kit",
     "calculate": "Calculate",
@@ -722,7 +713,6 @@ export const en = {
     "editPins": "Edit Pins",
     "editJoins": "Edit Joins",
     "editTables": "Edit Tables",
-    "editTemplates": "Edit Templates",
     "exportToHTML": "Export to HTML",
     "applyToItems": "Apply to Items",
     "resetView": "Reset View",
@@ -877,7 +867,6 @@ export const en = {
     "creating": "Creating",
     "pasteUrlsHereOnePerLine": "Paste Urls Here One Per Line",
     "pasteYourPaletteJsonHere": "Paste Your Palette Json Here",
-    "createAndEditGlobalTemplatesStoredInSpacetemplatesFolder": "Create And Edit Global Templates Stored In Spacetemplates Folder",
     "searchForImagesInYourVaultOrPasteAUrl": "Search For Images In Your Vault Or Paste A Url",
     "getPropertyColor": "Get Property Color",
     "getTheColorForAPropertyValue": "Get The Color For A Property Value",
@@ -928,12 +917,10 @@ export const en = {
     "getARangeOfDates": "Get A Range Of Dates",
     "spaceActions": "Create actions that run when you press a button",
     "spaceLists": "Create lists to track data and organize them in your space",
-    "spaceTemplates": "Create templates to quickly add items to your space",
     "smartSearch": "Automatically pin notes to this space based on a set of searches",
     "deleteSpace": "Deleting the space will also delete the folder and its contents.",
     "deleteFiles": "Delete ${1} files/folders and their contents?",
     "spaceProperties": "Define Properties for your Space Items",
-    "templateNameFormula": "Template Name Formula",
     "hiddenFileOptions": "Hidden File Options",
     "maxStepsReachedYouCanChangeThisInSettings": "Max steps reached, you can change this in settings."
   },
@@ -965,7 +952,6 @@ export const en = {
     "color1": "Color1",
     "dropColorPaletteHereToImport": "Drop Color Palette Here To Import",
     "nameOfYourSystem": "Name Of Your System",
-    "manageGlobalTemplates": "Manage Global Templates",
     "stickerPack": "Sticker Pack",
     "other": "Other",
     "dropLanguagePackHereToImport": "Drop Language Pack Here To Import",
@@ -1082,10 +1068,6 @@ export const en = {
     "sectionFlowBlock": "Flow Block",
     "sectionFlowMenu": "Flow Menu",
     "sectionFlowStyler": "Flow Styler",
-    "experimental": {
-      "name": "Experimental",
-      "desc": "Experimental features that are subject to change and may not be optimized for performance"
-    },
     "hiddenExtensions": {
       "name": "Hidden Extensions",
       "desc": "File extensions and names to hide from the navigator"
@@ -1110,37 +1092,13 @@ export const en = {
       "name": "Edit Stickers in Sidebar",
       "desc": "Edit stickers directly in the sidebar"
     },
-    "notesPreview": {
-      "name": "Notes Preview",
-      "desc": "Show a preview of notes, may cause performance issues"
-    },
     "spacesRightSplit": {
       "name": "Navigator on Right Side",
       "desc": "Open the Navigator in the right panel"
     },
-    "defaultSpaceTemplate": {
-      "name": "Default Space Template",
-      "desc": "Select the default template for new spaces"
-    },
-    "datePickerTime": {
-      "name": "Date Picker Time",
-      "desc": "Select time by default in the date picker"
-    },
-    "defaultDateFormat": {
-      "name": "Default Date Format",
-      "desc": "Set the default date format, example: yyyy-MM-dd (see https://date-fns.org/v2.30.0/docs/format)"
-    },
-    "defaultTimeFormat": {
-      "name": "Default Time Format",
-      "desc": "Set the default time format, example: h:mm a (see https://date-fns.org/v2.30.0/docs/format)"
-    },
     "autoAddContextsToSubtags": {
       "name": "Apply Properties to Subtags",
       "desc": "Automatically apply context properties to subtags"
-    },
-    "newNotePlaceholder": {
-      "name": "New Note Placeholder",
-      "desc": "Default name for new notes, applies to the Navigator buttons"
     },
     "folderIndentationLines": {
       "name": "Show Folder Indentation Lines",
@@ -1162,49 +1120,9 @@ export const en = {
       "name": "Show Stickers on Links",
       "desc": "Turn on to toggle stickers shown directly by beside internal links"
     },
-    "saveAllContextToFrontmatter": {
-      "name": "Sync Context Fields to Frontmatter",
-      "desc": "Turn on to automatically save all context fields to Frontmatter fields, not just existing Frontmatter fields."
-    },
-    "syncFormulaToFrontmatter": {
-      "name": "Sync Formula Fields to Frontmatter",
-      "desc": "Turn on to save calculated formula values to Frontmatter fields."
-    },
-    "basics": {
-      "name": "Make.md Basics",
-      "desc": "Enable features from Make.md Basics including styler and flow blocks"
-    },
-    "spacesFolder": {
-      "name": "Tag Space Folder",
-      "desc": "Name of the folder for tag spaces"
-    },
-    "inlineContext": {
-      "name": "Notes Header",
-      "desc": "Show a header to display labels and properties"
-    },
     "banners": {
       "name": "Cover Image",
       "desc": "Show a cover image for notes and spaces"
-    },
-    "inlineContextProperties": {
-      "name": "Show Context Properties in Header",
-      "desc": "Show the properties in the header for notes and spaces"
-    },
-    "inlineContextExpanded": {
-      "name": "Auto Expand Context Properties",
-      "desc": "Expand the inline context sections when opening a note"
-    },
-    "inlineContextNameLayout": {
-      "name": "Title and Sticker Layout",
-      "desc": "Layout for inline title and sticker in Inline Context"
-    },
-    "hideFrontmatter": {
-      "name": "Hide Context Properties",
-      "desc": "Hide properties you have added in context from the Obsidian properties panel"
-    },
-    "autoOpenFileContext": {
-      "name": "Auto Open Explorer",
-      "desc": "Automatically open explorer panel in the right panel"
     },
     "enableFolderNote": {
       "name": "Enable Folder Note",
@@ -1226,10 +1144,6 @@ export const en = {
       "name": "Reveal Active File",
       "desc": "Automatically reveal the active file in Navigator"
     },
-    "contextEnabled": {
-      "name": "Contexts",
-      "desc": "Contexts allows you to have full control over the metadata of your files"
-    },
     "navigatorEnabled": {
       "name": "Navigator",
       "desc": "The navigator lets you create and organize your spaces"
@@ -1242,10 +1156,6 @@ export const en = {
       "name": "Alias",
       "desc": "Use the alias metadata to show in Navigator"
     },
-    "spacesDisablePatch": {
-      "name": "Compatibility Mode",
-      "desc": "This will improve the compatibility of plugins while using the Navigator, however will turn off linking to spaces from breadcrumbs"
-    },
     "deleteFileOption": {
       "name": "Delete File Option",
       "desc": "Select how you want files to be deleted"
@@ -1254,18 +1164,6 @@ export const en = {
       "permanent": "Delete Permanently",
       "trash": "Move to Obsidian Trash",
       "system-trash": "Move to System Trash"
-    },
-    "flowState": {
-      "name": "Flow State",
-      "desc": "Toggle the flow state"
-    },
-    "showRibbon": {
-      "name": "App Ribbon",
-      "desc": "Show/hide the left menu aka. ribbon"
-    },
-    "vaultSelector": {
-      "name": "Vault Selector",
-      "desc": "Show/hide the vault selector at the bottom"
     },
     "defaultSpaces": {
       "name": "Default Spaces",
@@ -1282,14 +1180,6 @@ export const en = {
     "readableLineWidth": {
       "name": "Readable Line Width",
       "desc": "Use Readable Line Width"
-    },
-    "sidebarTabs": {
-      "name": "Sidebar Tabs",
-      "desc": "Show/hide other sidebar tabs"
-    },
-    "spacesPerformance": {
-      "name": "Navigator Scroll Performance",
-      "desc": "Turn on performance mode for Navigator, may affect scrolling appearance. Requires Restart"
     },
     "indexSVG": {
       "name": "Use SVGs as Stickers",
@@ -1324,14 +1214,6 @@ export const en = {
     "spaceRowHeight": {
       "name": "Row Height",
       "desc": "The height for each row in navigator (in pixels), default is 29"
-    },
-    "mobileSpaceRowHeight": {
-      "name": "Row Height - Mobile",
-      "desc": "The height for each row in navigator for mobile (in pixels), default is 40"
-    },
-    "contextPagination": {
-      "name": "Table View Pagination",
-      "desc": "Number of items per page in table view"
     },
     "bannerHeight": {
       "name": "Cover Height",
@@ -1374,10 +1256,6 @@ export const en = {
       "desc": "Select a theme for your flow block",
       "seamless": "Seamless",
       "minimal": "Minimal"
-    },
-    "contextCreateUseModal": {
-      "name": "Use Modal for Creating Items",
-      "desc": "Use a modal to create new items in contexts"
     },
     "noVisualizationConfigured": {
       "name": "No visualization configured",

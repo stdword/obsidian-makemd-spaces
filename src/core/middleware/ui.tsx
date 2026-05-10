@@ -6,7 +6,6 @@ import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import {
   defaultSpace,
   newPathInSpace,
-  newTemplateInSpace,
 } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
 import _ from "lodash";
@@ -69,25 +68,15 @@ export class UIManager implements IUIManager {
         win
       );
     } else if (space) {
-      if (space?.metadata.template?.length > 0) {
-        newTemplateInSpace(
-          this.superstate,
-          space,
-          space.metadata.template,
-          location
-        );
-        return;
-      } else {
-        newPathInSpace(
-          this.superstate,
-          space,
-          "md",
-          null,
-          false,
-          null,
-          location
-        );
-      }
+      newPathInSpace(
+        this.superstate,
+        space,
+        "md",
+        null,
+        false,
+        null,
+        location
+      );
     } else {
       defaultSpace(
         this.superstate,

@@ -51,23 +51,6 @@ export const showMainMenu = (
   const { spaceActive, leafs } = refreshLeafs();
   const menuOptions: SelectOption[] = [];
 
-  if (isMobile)
-    menuOptions.push({
-      name: superstate.settings.mobileMakeHeader
-        ? i18n.menu.showHeader
-        : i18n.menu.hideHeader,
-      icon: "ui//expand",
-      onClick: () => {
-        superstate.settings.mobileMakeHeader =
-          !superstate.settings.mobileMakeHeader;
-        superstate.saveSettings();
-        document.body.classList.toggle(
-          "mk-mobile-header",
-          superstate.settings.mobileMakeHeader,
-        );
-      },
-    });
-
   menuOptions.push({
     name: i18n.menu.collapseAllSections,
     icon: "ui//chevrons-down-up",

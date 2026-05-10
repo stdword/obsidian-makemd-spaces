@@ -1,7 +1,6 @@
 import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
 import { PathState } from "shared/types/PathState";
-import { SpaceFragmentViewComponent } from "../SpaceView/Editor/EmbedView/SpaceFragmentView";
 import { NoteView } from "./NoteView";
 
 export const PathView = (props: {
@@ -52,14 +51,6 @@ export const PathView = (props: {
         ) : (
           <iframe src={props.path}></iframe>
         )
-      ) : pathState?.type == "space" ? (
-        <SpaceFragmentViewComponent
-          id={props.id}
-          showTitle={true}
-          containerRef={ref}
-          superstate={props.superstate}
-          path={props.path}
-        ></SpaceFragmentViewComponent>
       ) : props.superstate.ui
           .availableViews()
           .some((f) => f == props.path?.split(".").pop()) ? (

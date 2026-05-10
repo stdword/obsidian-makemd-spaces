@@ -75,18 +75,7 @@ export class ObsidianUI implements UIAdapter {
       );
       return;
     }
-    if (this.manager.superstate.settings.blinkEnabled) {
-      this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
-    } else {
-      if (!offset) {
-        return;
-      }
-      if (mode == BlinkMode.Open) {
-        showLinkMenu(offset, win, this.manager.superstate, onSelect);
-      } else {
-        showSpacesMenu(offset, win, this.manager.superstate, onSelect);
-      }
-    }
+    this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
   };
   public mainMenu = (el: HTMLElement, superstate: Superstate) => {
     showMainMenu(el, superstate, this.plugin);

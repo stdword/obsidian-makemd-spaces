@@ -2,7 +2,6 @@ import {
   createSpace,
   defaultSpace,
   newPathInSpace,
-  newTemplateInSpace,
   pinPathToSpaceAtIndex,
 } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
@@ -10,6 +9,7 @@ import { isString } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
 import { default as i18n } from "shared/i18n";
+import { DEFAULT_NEW_NOTE_NAME } from "shared/constants";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { TargetLocation } from "shared/types/path";
 import { SpaceState } from "shared/types/PathState";
@@ -87,12 +87,7 @@ export const defaultAddAction = async (
       superstate.pathsIndex.get(superstate.ui.activePath)
     );
   }
-  if (space?.metadata.template?.length > 0) {
-    newTemplateInSpace(superstate, space, space.metadata.template, location);
-    return;
-  } else {
-    newPathInSpace(superstate, space, "md", null, false, null, location);
-  }
+  newPathInSpace(superstate, space, "md", null, false, null, location);
 };
 
 export const showSpaceAddMenu = (
@@ -129,7 +124,7 @@ export const showSpaceAddMenu = (
           superstate,
           space,
           "md",
-          superstate.settings.newNotePlaceholder,
+          DEFAULT_NEW_NOTE_NAME,
           dontOpen
         );
       },
@@ -203,18 +198,6 @@ export const showSpaceAddMenu = (
           e.stopPropagation();
         },
       });
-    }
-    if (space.templates.length > 0) {
-      menuOptions.push(menuSeparator);
-      for (const template of space.templates) {
-        menuOptions.push({
-          name: template,
-          icon: "ui//clipboard-pen",
-          onClick: (e) => {
-            newTemplateInSpace(superstate, space, template);
-          },
-        });
-      }
     }
   }
   return superstate.ui.openMenu(

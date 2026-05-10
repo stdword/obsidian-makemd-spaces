@@ -1,4 +1,3 @@
-import { DefaultFolderNoteMDBTables } from "core/react/components/SpaceView/Frames/DefaultFrames/DefaultFrames";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { filterReturnForCol } from "core/utils/contexts/predicate/filter";
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
@@ -8,7 +7,7 @@ import { frameToNode } from "core/utils/frames/nodes";
 import { executeTreeNode } from "core/utils/frames/runner";
 import { initiateString } from "core/utils/strings";
 import { SelectOption, Superstate } from "makemd-core";
-import { defaultFrameListViewID } from "schemas/mdb";
+import { defaultFrameListViewID, defaultFrameListViewSchema } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { defaultPredicate } from "shared/schemas/predicate";
 import { FrameContexts, FrameRunInstance, StyleAst } from "shared/types/frameExec";
@@ -103,7 +102,11 @@ export const contextNodeToInstances = async (superstate: Superstate, node: Frame
 
     let contextView : MDBFrame = await superstate.spaceManager.readFrame(uri.basePath, uri.ref ?? defaultFrameListViewID);
     if (!contextView) {
-      contextView = DefaultFolderNoteMDBTables[defaultFrameListViewID];
+      contextView = {
+        schema: defaultFrameListViewSchema,
+        cols: [],
+        rows: [],
+      };
     }
     const schema = mdbSchemaToFrameSchema(contextView.schema);
     const db = schema.def?.db ?? defaultContextSchemaID;

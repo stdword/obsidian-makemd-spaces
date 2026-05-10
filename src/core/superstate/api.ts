@@ -1,9 +1,6 @@
-import { showRowContextMenu } from "core/react/components/UI/Menus/contexts/rowContextMenu";
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
-import { openContextCreateItemModal } from "core/react/components/UI/Modals/ContextCreateItemModal";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/contexts/context";
-import { formatDate } from "core/utils/date";
 import { runFormulaWithContext } from "core/utils/formula/parser";
 import { parseContextNode, parseLinkedNode } from "core/utils/frames/frame";
 import { SelectOption, SpaceManager } from "makemd-core";
@@ -39,276 +36,200 @@ export class API implements IAPI {
         this.spaceManager = spaceManager || superstate.spaceManager;
     }
     public frame = {
-update: (property: string, value: string, path: string, saveState: (state: any) => void) => {
+        update: (property: string, value: string, path: string, saveState: (state: any) => void) => {
             if (property.startsWith("$contexts")) {
-                const {context, prop} = parseContextNode(property)
-                if (context && prop)
-                this.context.update(context, path, prop, value)
+                const { context, prop } = parseContextNode(property);
+                if (context && prop) this.context.update(context, path, prop, value);
             } else {
-                const linkedNode = parseLinkedNode(property)
-                if (linkedNode.node && linkedNode.prop)
-                {
+                const linkedNode = parseLinkedNode(property);
+                if (linkedNode.node && linkedNode.prop) {
                     saveState({
-                    [linkedNode.node]: {
-                        props: {
-                        [linkedNode.prop] : value
-                        }
-                    }
-                })
+                        [linkedNode.node]: {
+                            props: {
+                                [linkedNode.prop]: value,
+                            },
+                        },
+                    });
+                }
             }
-            }
-        }
-    }
+        },
+    };
     public properties = {
         color: (property: SpaceProperty, value: string) => {
-            if (property?.type?.includes('option')) {
+            if (property?.type?.includes("option")) {
                 const fields = parseFieldValue(property.value, property.type);
-                const option = (fields.options as SelectOption[])?.find(f => f.value == value);
-                if (option?.color.length > 0)
-                return option.color
+                const option = (fields.options as SelectOption[])?.find((f) => f.value == value);
+                if (option?.color.length > 0) return option.color;
             }
-            return 'var(--mk-ui-background-contrast)'
+            return "var(--mk-ui-background-contrast)";
         },
         sticker: (property: SpaceProperty) => property && stickerForField(property),
-        value: ( type: string, value: string) => {
-            if (!type) return value
-            return parseMDBStringValue(type, value, false)
-        }
-    }
+        value: (type: string, value: string) => {
+            if (!type) return value;
+            return parseMDBStringValue(type, value, false);
+        },
+    };
 
-    public path = 
-    {
-        label:  (path: string) => {
+    public path = {
+        label: (path: string) => {
             return this.spaceManager.getPathState(path)?.label;
         },
         thumbnail: (path: string) => {
             // If path is a URL, return it directly
-            if (path && (path.startsWith('http://') || path.startsWith('https://'))) {
+            if (path && (path.startsWith("http://") || path.startsWith("https://"))) {
                 return path;
             }
             // Otherwise get thumbnail from path label
             return this.spaceManager.getPathState(path)?.label?.thumbnail;
         },
         open: (path: string, target?: TargetLocation, source?: string) => {
-            const resolvedPath = source 
-                ? this.spaceManager.resolvePath(path, source) 
-                : path;
-            this.superstate.ui.openPath(resolvedPath, target)
+            const resolvedPath = source ? this.spaceManager.resolvePath(path, source) : path;
+            this.superstate.ui.openPath(resolvedPath, target);
         },
         create: (name: string, space: string, type: string, content?: Promise<string> | string) => {
             if (content instanceof Promise) {
-                return content.then(c => {
-                    newPathInSpace(this.superstate, this.superstate.spacesIndex.get(space), type, name, true, c)
-                })
+                return content.then((c) => {
+                    newPathInSpace(this.superstate, this.superstate.spacesIndex.get(space), type, name, true, c);
+                });
             }
-            return newPathInSpace(this.superstate, this.superstate.spacesIndex.get(space), type, name, true, content)
+            return newPathInSpace(this.superstate, this.superstate.spacesIndex.get(space), type, name, true, content);
         },
-        setProperty: (path: string, property: string, value:  Promise<string> | string) => {
+        setProperty: (path: string, property: string, value: Promise<string> | string) => {
             if (value instanceof Promise) {
-                value.then(v => {
+                value.then((v) => {
                     saveProperties(this.superstate, path, {
-                        [property]: v
-                    })
-                })
-                return
+                        [property]: v,
+                    });
+                });
+                return;
             }
             saveProperties(this.superstate, path, {
-                    [property]: value
-                })
+                [property]: value,
+            });
         },
         contextMenu: (e: React.MouseEvent, path: string) => {
-            showPathContextMenu(this.superstate, path, null, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document))
-        }
-    }
+            showPathContextMenu(this.superstate, path, null, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document));
+        },
+    };
     public commands = {
-        run : (action: string, parameters?: { [key: string]: any; }, contexts?: FrameContexts) => {
+        run: (action: string, parameters?: { [key: string]: any }, contexts?: FrameContexts) => {
             // Get the command to check parameter types
 
             const command = this.superstate.cli.commandForAction(action);
-            let resolvedParameters = {...parameters};
-            
+            let resolvedParameters = { ...parameters };
+
             if (command && contexts?.$space?.path) {
                 // Resolve link-type parameters using the context source
-                command.fields.forEach(field => {
-                    if (field.type === 'link' && parameters?.[field.name]) {
-                        resolvedParameters[field.name] = this.spaceManager.resolvePath(
-                            parameters[field.name], 
-                            contexts.$space.path
-                        );
+                command.fields.forEach((field) => {
+                    if (field.type === "link" && parameters?.[field.name]) {
+                        resolvedParameters[field.name] = this.spaceManager.resolvePath(parameters[field.name], contexts.$space.path);
                     }
                 });
             }
-            
-            return this.superstate.cli.runCommand(action,  {instanceProps: {...resolvedParameters, $api: this, $contexts: contexts}, props: {}, iterations: 0})
+
+            return this.superstate.cli.runCommand(action, { instanceProps: { ...resolvedParameters, $api: this, $contexts: contexts }, props: {}, iterations: 0 });
         },
-        formula: (formula: string, parameters: { [key: string]: any; }, contexts?: FrameContexts) => {
-            return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, this.superstate.spacesMap, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path)
-        }
-    }
+        formula: (formula: string, parameters: { [key: string]: any }, contexts?: FrameContexts) => {
+            return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, this.superstate.spacesMap, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path);
+        },
+    };
 
     public buttonCommand = (action: string, parameters: { [key: string]: any }, contexts: FrameContexts, saveState: (state: any) => void) => {
         // Handle button commands by delegating to the regular command runner
         this.commands.run(action, parameters, contexts);
-    }
-    
-    
-    
+    };
+
     public table = {
         select: (path: string, table: string) => {
-            return this.spaceManager.readTable(path, table)?.then(f => f?.rows)
+            return this.spaceManager.readTable(path, table)?.then((f) => f?.rows);
         },
-        update: (path: string, table:string, index: number, row: DBRow) => {
-            const space = this.superstate.spacesIndex.get(path)
-            if (space)
-            return updateTableRow(this.spaceManager as SpaceManager, space.space, table, index, row)
+        update: (path: string, table: string, index: number, row: DBRow) => {
+            const space = this.superstate.spacesIndex.get(path);
+            if (space) return updateTableRow(this.spaceManager as SpaceManager, space.space, table, index, row);
         },
         insert: (path: string, schema: string, _row: DBRow) => {
             const row: DBRow = Object.keys(_row).reduce((f, g) => {
-                if (g == 'undefined' || g == 'null') return f
+                if (g == "undefined" || g == "null") return f;
                 return {
-                    ...f, [g]: _row[g]}
+                    ...f,
+                    [g]: _row[g],
+                };
             }, {});
             if (schema == defaultContextSchemaID) {
-                this.context.insert(path, schema, row[PathPropertyName], row)
+                this.context.insert(path, schema, row[PathPropertyName], row);
                 return;
             }
-            const space = this.superstate.spacesIndex.get(path)
-            if (space)
-            return addRowInTable(this.spaceManager as SpaceManager, row, space.space, schema)
-        return Promise.resolve()
+            const space = this.superstate.spacesIndex.get(path);
+            if (space) return addRowInTable(this.spaceManager as SpaceManager, row, space.space, schema);
+            return Promise.resolve();
         },
-        
-         create: (path: string, table: string, properties: SpaceProperty[]) => {
+
+        create: (path: string, table: string, properties: SpaceProperty[]) => {
             const newSchema: SpaceTableSchema = {
                 id: sanitizeTableName(table),
                 name: table,
                 type: "db",
-              };
-            this.spaceManager.createTable(
-                path,
-                newSchema
-              );
+            };
+            this.spaceManager.createTable(path, newSchema);
         },
         open: async (space: string, table: string, index: number, target?: TargetLocation) => {
-            const context = await this.spaceManager.readTable(space, table)
+            const context = await this.spaceManager.readTable(space, table);
             if (table == defaultContextSchemaID) {
-                const path = this.spaceManager.resolvePath(context?.rows[index]?.[PathPropertyName], space)
-                this.superstate.ui.openPath(path, target)
+                const path = this.spaceManager.resolvePath(context?.rows[index]?.[PathPropertyName], space);
+                this.superstate.ui.openPath(path, target);
             } else {
                 // For non-default schemas, open the edit modal instead of a path
-                this.table.editModal(space, table, index)
+                this.table.editModal(space, table, index);
             }
         },
         contextMenu: async (e: React.MouseEvent, space: string, table: string, index: number) => {
             const context = await this.spaceManager.readTable(space, table);
             if (table == defaultContextSchemaID) {
-                const path = context?.rows[index]?.[PathPropertyName]
-                showPathContextMenu(this.superstate, path, space, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document))
-            } else {
-                showRowContextMenu(e, this.superstate, space, table, index)
+                const path = context?.rows[index]?.[PathPropertyName];
+                showPathContextMenu(this.superstate, path, space, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document));
             }
         },
         editModal: async (space: string, table: string, index: number, properties?: DBRow, win?: Window) => {
-            const context = await this.spaceManager.readTable(space, table);
-            const rowData = {...(properties ?? {}), ...context?.rows[index]};
-            
-            // Open modal in edit mode when index >= 0, create mode when index = -1
-            openContextCreateItemModal(
-                this.superstate,
-                space,
-                table,
-                undefined, // frameSchema
-                win,
-                index, // Row index: -1 for new, >= 0 for edit
-                rowData // Initial data for editing
-            );
+            return;
         },
-        createModal: async (space: string, table: string, properties?:  DBRow, win?: Window) => {
+        createModal: async (space: string, table: string, properties?: DBRow, win?: Window) => {
             // Open modal in create mode with index = -1
             await this.table.editModal(space, table, -1, properties, win);
-        }
-    }
+        },
+    };
     public context = {
         select: (path: string, table: string) => {
-            return this.spaceManager.readTable(path, table).then(f => f?.rows)
+            return this.spaceManager.readTable(path, table).then((f) => f?.rows);
         },
         update: (path: string, file: string, field: string, value: string) => {
-
-            const space = this.superstate.spacesIndex.get(path)
-            if (space)
-            updateValueInContext(this.spaceManager as SpaceManager, file, field, value, space.space)
+            const space = this.superstate.spacesIndex.get(path);
+            if (space) updateValueInContext(this.spaceManager as SpaceManager, file, field, value, space.space);
         },
         insert: async (path: string, schema: string, name: string, row: DBRow) => {
-            if (schema == defaultContextSchemaID)
-            {
-                newPathInSpace(this.superstate, this.superstate.spacesIndex.get(path), "md", name, true).then(f =>
-                {
-                    if (row)
-                    {
-                        delete row[PathPropertyName]
+            if (schema == defaultContextSchemaID) {
+                newPathInSpace(this.superstate, this.superstate.spacesIndex.get(path), "md", name, true).then((f) => {
+                    if (row) {
+                        delete row[PathPropertyName];
                         saveProperties(this.superstate, f, {
-                        ...(row ?? {}),
-                    })
+                            ...(row ?? {}),
+                        });
+                    }
+                });
+            } else {
+                const table = await this.spaceManager.readTable(path, schema);
+
+                if (table) {
+                    const prop = table.cols.find((f) => f.primary == "true");
+
+                    const newRow = prop
+                        ? {
+                              ...(row ?? {}),
+                              [prop.name]: name,
+                          }
+                        : row;
+                    this.table.insert(path, schema, newRow);
                 }
-                })
-        } else {
-            const table = await this.spaceManager.readTable(path, schema)
-            
-            if (table) {
-                const prop = table.cols.find(f => f.primary == "true")
-                
-                const newRow = prop ? {
-                    ...(row ?? {}), 
-                    [prop.name]: name
-                } : row
-                this.table.insert(path, schema, newRow)
             }
-                
-        }
-    }
-    }
-
-public date = {
-    parse: (date: string) => {
-        return new Date(date?.replace(/-/g, '\/').replace(/T.+/, ''));
-    },
-    daysInMonth: (date: Date) => {
-        return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    },
-    format: (date: Date, format?: string) => {
-        return formatDate(this.superstate.settings, date, format ?? 'yyyy-MM-dd')
-    },
-    component: (date: Date, component: string) => {
-        if (component == 'year') return date.getFullYear()
-        if (component == 'month') return date.getMonth() + 1
-        if (component == 'day') return date.getDate()
-        if (component == 'dayOfWeek') return date.getDay()
-        if (component == "hour") return date.getHours()
-        if (component == "minute") return date.getMinutes()
-        if (component == "second") return date.getSeconds()
-    },
-    offset: (date: Date, offset: number, type: string) => {
-        const newDate = new Date(date)
-        if (type == 'day') newDate.setDate(newDate.getDate() + offset)
-        if (type == 'month') newDate.setMonth(newDate.getMonth() + offset)
-        if (type == 'year') newDate.setFullYear(newDate.getFullYear() + offset)
-        return newDate
-    },
-    now: () => {
-        return new Date();
-    },
-    range: (start: Date, end: Date, format?: string) => {
-        const dates = []
-        const current = new Date(start)
-        while (current <= end) {
-            dates.push(formatDate(this.superstate.settings, current, format ?? 'yyyy-MM-dd'))
-            current.setDate(current.getDate() + 1)
-        }
-        return dates;
-    }
-}
-
-    
-
-    
+        },
+    };
 }

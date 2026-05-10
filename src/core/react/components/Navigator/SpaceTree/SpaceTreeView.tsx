@@ -276,9 +276,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   const treeRef = useRef<HTMLDivElement>(null);
   const nextTreeScrollPath = useRef(null);
   const [presetRowHeight, setPresetRowHeight] = useState<number>(
-    isTouchScreen(props.superstate.ui)
-      ? props.superstate.settings.mobileSpaceRowHeight
-      : props.superstate.settings.spaceRowHeight
+      props.superstate.settings.spaceRowHeight
   );
 
   // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
@@ -339,11 +337,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
   useEffect(() => {
     const settingsChanged = () => {
       setExpandedSpaces(superstate.settings.expandedSpaces);
-      setPresetRowHeight(
-        isTouchScreen(props.superstate.ui)
-          ? props.superstate.settings.mobileSpaceRowHeight
-          : props.superstate.settings.spaceRowHeight
-      );
+      setPresetRowHeight(props.superstate.settings.spaceRowHeight);
     };
     superstate.eventsDispatcher.addListener("settingsChanged", settingsChanged);
 

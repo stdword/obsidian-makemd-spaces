@@ -28,7 +28,6 @@ export type WorkerJobType = {
 export type SpaceState = {
     name: string;
     path: string;
-    templates?: string[];
     metadata?: SpaceDefinition;
     dependencies?: string[];
     space?: SpaceInfo;

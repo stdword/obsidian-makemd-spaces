@@ -9,7 +9,7 @@ import { IAPI } from "shared/types/api";
 import { Command } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
-import { MDBFrame, MDBFrames } from "shared/types/mframe";
+import { MDBFrame } from "shared/types/mframe";
 import { URI } from "shared/types/path";
 import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
@@ -69,9 +69,6 @@ export class SpaceManager implements SpaceManagerInterface {
 
     public saveFrameKit (frames: MDBFrame, name: string) {
       return this.primarySpaceAdapter.saveFrameKit(frames, name);
-    }
-    public saveSpaceTemplate (frames: MDBFrames, name: string) {
-      return this.primarySpaceAdapter.saveSpaceTemplate(frames, name);
     }
 
     public onPathCreated = async (path: string) => {
@@ -235,9 +232,6 @@ export class SpaceManager implements SpaceManagerInterface {
       return this.primarySpaceAdapter.readAllKits();
     }
 
-    public readAllTemplates () {
-      return this.primarySpaceAdapter.readAllTemplates();
-    }
     public readAllTables (path: string) {
       return this.adapterForPath(path).readAllTables(path);
     }
@@ -430,14 +424,5 @@ export class SpaceManager implements SpaceManagerInterface {
       this.superstate.focuses = focuses;
       this.superstate.dispatchEvent("focusesChanged", null)
         return this.primarySpaceAdapter.saveFocuses(focuses);
-    }
-    public readTemplates (path:string) {
-        return this.adapterForPath(path).readTemplates(path);
-    }
-    public saveTemplate (path: string, space: string) {
-        return this.adapterForPath(path).saveTemplate(path, space).then(f => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then(f => f.path);
-    }
-    public deleteTemplate (template: string, space: string): Promise<void> {
-        return this.primarySpaceAdapter.deleteTemplate(template, space).then((f: any) => this.superstate.reloadSpace(this.spaceInfoForPath(space), null, true)).then((f: any) => {});
     }
 }

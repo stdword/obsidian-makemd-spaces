@@ -29,10 +29,6 @@ export class WebSpaceAdapter implements SpaceAdapter {
       this.spaceManager = manager;
     }
 
-    public async readTemplates (path: string) : Promise<string[]> {
-      return []
-    }
-
     onNoteCreate = async (path: string, content: string) => {
 
         this.spaceManager.onPathCreated(path)
@@ -46,12 +42,6 @@ export class WebSpaceAdapter implements SpaceAdapter {
       await this.spaceManager.superstate.reloadContext(space, { force: true, calculate: true });
       };
 
-    public async saveTemplate (path: string, space: string) : Promise<string> {
-        return null
-    }
-    public deleteTemplate (path: string, space: string) : Promise<void> {
-      return
-    }
     public async readFocuses () : Promise<Focus[]> {
       return []
     }
@@ -59,17 +49,10 @@ export class WebSpaceAdapter implements SpaceAdapter {
       return
     }
 
-    public async readTemplate (name: string) {
-      return
-    }
-    
     public async readAllKits () : Promise<Kit[]> {
       return []
     }
 
-    public async readAllTemplates () : Promise<{[key: string]: MDBFrames}> {
-      return {}
-    }
     public async readKitFrames (name: string) : Promise<MDBFrames> {
       return {}
       
@@ -77,10 +60,6 @@ export class WebSpaceAdapter implements SpaceAdapter {
     public async saveFrameKit (frames: MDBFrame, name: string) {
       return;
     }
-    public async saveSpaceTemplate (frames: MDBFrames, name: string) {
-      return;
-    }
-
     
     
     public allPaths (type?: string[]) : string[] {

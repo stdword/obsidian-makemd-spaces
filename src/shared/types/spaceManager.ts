@@ -27,7 +27,6 @@ getContextsIndexMap: () => Map<string, ContextState>
     onSpaceUpdated(path: string, type: SpaceFragmentType): void;
     onFocusesUpdated(): void;
     saveFrameKit(frames: MDBFrame, name: string): Promise<void>;
-    saveSpaceTemplate(frames: MDBFrames, name: string): Promise<void>;
     onPathCreated(path: string): Promise<void>;
     onPathDeleted(path: string): Promise<void>;
     onPathChanged(path: string, oldPath: string): Promise<void>;
@@ -58,7 +57,6 @@ getContextsIndexMap: () => Map<string, ContextState>
     saveTable(path: string, table: SpaceTable, force?: boolean): Promise<boolean>;
     deleteTable(path: string, name: string): Promise<boolean>;
     readAllKits(): Promise<Kit[]>;
-    readAllTemplates(): Promise<{ [key: string]: MDBFrames }>;
     readAllTables(path: string): Promise<SpaceTables>;
     framesForSpace(path: string): Promise<SpaceTableSchema[]>;
     readFrame(path: string, schema: string): Promise<MDBFrame>;
@@ -103,9 +101,6 @@ getContextsIndexMap: () => Map<string, ContextState>
     childrenForPath(path: string, type?: string): Promise<string[]>;
     readFocuses(): Promise<Focus[]>;
     saveFocuses(focuses: Focus[]): Promise<void>;
-    readTemplates(path: string): Promise<string[]>;
-    saveTemplate(path: string, space: string): Promise<string>;
-    deleteTemplate(template: string, space: string): Promise<void>;
   }
 //Space Manager creates an abstraction that manipulates Spaces and their Items
 //Works both on local systems, non-local systems, ACLed systems and cloud systems
@@ -197,15 +192,10 @@ export abstract class SpaceAdapter {
 
   public pathsForTag: (tag: string) => string[];
   public readAllKits: () => Promise<Kit[]>;
-  public readAllTemplates: () => Promise<{ [key: string]: MDBFrames; }>;
   public saveFrameKit: (frames: MDBFrame, name: string) => Promise<void>;
-  public saveSpaceTemplate: (frames: MDBFrames, name: string) => Promise<void>;
   public childrenForPath: (path: string, type?: string) => Promise<string[]>;
 
   public readFocuses: () => Promise<Focus[]>;
   public saveFocuses: (focuses: Focus[]) => Promise<void>;
-  public readTemplates: (path: string) => Promise<string[]>;
-  public saveTemplate: (path: string, space: string) => Promise<string>;
-  public deleteTemplate: (path: string, space: string) => Promise<void>;
 }
   

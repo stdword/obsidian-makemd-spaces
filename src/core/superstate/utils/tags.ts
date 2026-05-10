@@ -19,5 +19,5 @@ export const addTagToPath = (superstate: Superstate, path: string, tag: string) 
 };
 
 export const addTag = (superstate: Superstate, tag: string) => {
-    return superstate.spaceManager.createSpace(ensureTag(tag), superstate.settings.spacesFolder, null);
+    return superstate.spaceManager.createSpace(ensureTag(tag), '', null);
 }

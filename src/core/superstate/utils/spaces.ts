@@ -1,11 +1,9 @@
-import { spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey } from "core/types/space";
+import { spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey } from "core/types/space";
 import { reorderPathsInContext } from "core/utils/contexts/context";
-import { runFormulaWithContext } from "core/utils/formula/parser";
 import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
-import { SPACE_SUB_FOLDER } from "shared/constants";
 import i18n from "shared/i18n";
 import { SpaceProperty } from "shared/types/mdb";
 import { MDBFrame } from "shared/types/mframe";
@@ -67,8 +65,6 @@ export const parseSpaceMetadata = (metadata: Record<string, any>, settings: Make
       joins: ensureArray(metadata[spaceJoinsKey]).map(f => parseSpaceJoinGroup(f)),
       contexts: ensureArray(metadata[spaceContextsKey]), 
       links: ensureArray(metadata[spaceLinksKey]), 
-      template: ensureString(metadata[spaceTemplateKey]),
-      templateName: ensureString(metadata[spaceTemplateNameKey]),
       defaultSticker: ensureString(metadata.defaultSticker),
       defaultColor: ensureString(metadata.defaultColor),
       readMode: ensureBoolean(metadata.readMode),
@@ -238,16 +234,6 @@ export const movePathToNewSpaceAtIndex = async (
     
   
 };
-
-export const setTemplateInSpace = (superstate: Superstate, path: string, template: string) => {
-  saveSpaceMetadataValue(superstate, path, "template", template)
-
-}
-
-export const setTemplateNameInSpace = (superstate: Superstate, path: string, templateName: string) => {
-  saveSpaceMetadataValue(superstate, path, "templateName", templateName)
-
-}
 
 export const insertContextInSpace = (superstate: Superstate, path: string, newTag: string) => {
   const spaceCache = superstate.spacesIndex.get(path);
@@ -419,17 +405,6 @@ export const metadataPathForSpace = (superstate: Superstate, space: SpaceInfo) =
   return space.defPath 
 }
 
-export const saveSpaceTemplate = async (
-  superstate: Superstate,
-  path: string,
-  space: string
-) => {
-  const spaceCache = superstate.spacesIndex.get(space);
-  if (!spaceCache) return;
-  await superstate.spaceManager.saveTemplate(path, spaceCache.path)
-  superstate.ui.notify(i18n.notice.templateSaved + spaceCache.name)
-}
-
 export const removePathsFromSpace = async (
   superstate: Superstate,
   spacePath: string,
@@ -446,30 +421,6 @@ if (!space) return;
   
 }
 }
-
-export const newTemplateInSpace = async (
-  superstate: Superstate,
-  space: SpaceState,
-  name: string,
-  location?: TargetLocation
-) => {
-  let newName: string;
-  try {
-    if (space.metadata.templateName?.length > 0) {
-      const result = runFormulaWithContext(superstate.formulaContext,superstate.pathsIndex, superstate.spacesMap, space.metadata.templateName, {}, {}, superstate.pathsIndex.get(space.path))
-      if (result?.length> 0) newName = result
-    }
-  } catch (e) {
-  }
-  if (!(await superstate.spaceManager.pathExists(`${space.path}/${SPACE_SUB_FOLDER}/templates/${name}`))) {
-    newPathInSpace(superstate, space, "md", null, false, null, location);
-    return;
-  }
-const newPath = await superstate.spaceManager.copyPath(`${space.path}/${SPACE_SUB_FOLDER}/templates/${name}`, space.path, newName)
-if (newPath)
-superstate.ui.openPath(newPath, location)
-}
-
 
 export const newPathInSpace = async (
   superstate: Superstate,

@@ -17,8 +17,9 @@ import React, {
 import i18n from "shared/i18n";
 import { URI } from "shared/types/path";
 import { windowFromDocument } from "shared/utils/dom";
-import { InputModifier } from "../SpaceView/Frames/Setters/StepSetter";
 import { defaultMenu } from "../UI/Menus/menu/SelectionMenu";
+
+type InputModifier = "metaKey" | "shiftKey" | "ctrlKey" | "altKey" | null;
 
 export const BannerView = (props: {
   superstate: Superstate;
@@ -313,9 +314,7 @@ export const BannerView = (props: {
               (
                 (isTouchScreen(props.superstate.ui) ? 1 : 0) * 26 +
                 (props.superstate.settings.bannerHeight - 62) +
-                (!props.superstate.settings.spacesStickers ||
-                props.superstate.settings.inlineContextNameLayout ==
-                  "horizontal"
+                (!props.superstate.settings.spacesStickers
                   ? 50
                   : hasSticker
                   ? 0

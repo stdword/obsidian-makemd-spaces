@@ -5,6 +5,7 @@ import { IndexMap } from "shared/types/indexMap";
 import { uniq } from "shared/utils/array";
 import { parseMultiDisplayString, parseProperty } from "utils/parsers";
 import { ensureTag } from "utils/tags";
+import { DEFAULT_NEW_NOTE_NAME } from "shared/constants";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 import { frontMatterForFile } from "./frontmatter/fm";
 import { frontMatterKeys } from "./frontmatter/frontMatterKeys";
@@ -23,71 +24,6 @@ type CachedMetadataContentTypes = {
     frontmatterLinks: string;
     blocks: string;
     label: string;
-}
-
-const removeMarkdown = (str: string) => {
-    let output = str || "";
-    output = output.replace(/^(-\s*?|\*\s*?|_\s*?){3,}\s*/gm, '');
-
-  try {
-        output = output.replace(/^([\s\t]*)([\*\-\+]|\d+\.)\s+/gm, '$1');
-      output = output
-      // Header
-        .replace(/\n={2,}/g, '\n')
-        // Fenced codeblocks
-        .replace(/~{3}.*\n/g, '')
-        // Strikethrough
-        .replace(/~~/g, '')
-        // Fenced codeblocks
-        .replace(/`{3}.*\n/g, '');
-    
-    output = output
-    // Remove HTML tags
-      .replace(/<[^>]*>/g, '')
-
-    const htmlReplaceRegex = new RegExp('<[^>]*>', 'g');
-    
-
-    output = output
-      // Remove HTML tags
-      .replace(htmlReplaceRegex, '')
-      // Remove setext-style headers
-      .replace(/^[=\-]{2,}\s*$/g, '')
-      // Remove footnotes?
-      .replace(/\[\^.+?\](\: .*?$)?/g, '')
-      .replace(/\s{0,2}\[.*?\]: .*?$/g, '')
-      // Remove images
-      .replace(/\!\[(.*?)\][\[\(].*?[\]\)]/g, '')
-      // Remove inline links
-      .replace(/\[([^\]]*?)\][\[\(].*?[\]\)]/g, '$1')
-      // Remove blockquotes
-      .replace(/^(\n)?\s{0,3}>\s?/gm, '$1')
-      // .replace(/(^|\n)\s{0,3}>\s?/g, '\n\n')
-      // Remove reference-style links?
-      .replace(/^\s{1,2}\[(.*?)\]: (\S+)( ".*?")?\s*$/g, '')
-      // Remove atx-style headers
-      .replace(/^(\n)?\s{0,}#{1,6}\s*( (.+))? +#+$|^(\n)?\s{0,}#{1,6}\s*( (.+))?$/gm, '$1$3$4$6')
-      // Remove * emphasis
-      .replace(/([\*]+)(\S)(.*?\S)??\1/g, '$2$3')
-      // Remove _ emphasis. Unlike *, _ emphasis gets rendered only if 
-      //   1. Either there is a whitespace character before opening _ and after closing _.
-      //   2. Or _ is at the start/end of the string.
-      .replace(/(^|\W)([_]+)(\S)(.*?\S)??\2($|\W)/g, '$1$3$4$5')
-      // Remove code blocks
-      .replace(/(`{3,})(.*?)\1/gm, '$2')
-      // Remove inline code
-      .replace(/`(.+?)`/g, '$1')
-      // // Replace two or more newlines with exactly two? Not entirely sure this belongs here...
-      // .replace(/\n{2,}/g, '\n\n')
-      // // Remove newlines in a paragraph
-      // .replace(/(\S+)\n\s*(\S+)/g, '$1 $2')
-      // Replace strike through
-      .replace(/~(.*?)~/g, '$1');
-  } catch(e) {
-    console.error(e);
-    return output;
-  }
-  return output.replace(/^\s*\n/gm, '');
 }
 
 type CleanCachedMetadata = Omit<CachedMetadata, 'tags'> & { tags: string[], resolvedLinks: string[], label: PathLabel, inlinks: string[], property: any, tasks: { text: string, status: string }[] }
@@ -164,25 +100,11 @@ public app: App;
             label: {
             name: file.name,
             cover: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
-            thumbnail: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyBanner],
+            thumbnail: "",
             sticker: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeySticker],
             color: fCache.frontmatter?.[this.plugin.superstate.settings.fmKeyColor],
 
         },
-        }
-        
-        
-        if (this.plugin.superstate.settings.notesPreview) {
-            const contents = await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile)
-            const newContent = removeMarkdown(contents.slice(fCache.frontmatterPosition?.end.offset ?? 0, 1000));
-            updatedCache.label.preview = newContent;
-            const tasks = this.plugin.app.metadataCache.getFileCache(getAbstractFileAtPath(this.plugin.app, file.path) as TFile)?.listItems?.filter(f => f.task);
-            if (tasks) {
-                updatedCache.tasks = tasks.map(f => ({
-                    text: contents.slice(f.position.start.offset, f.position.end.offset),
-                    status: f.task,
-                }));
-            }
         }
         // if (currentCache) {
             
@@ -279,7 +201,7 @@ public app: App;
             await this.middleware.createFolder(parent);
             parentFolder = getAbstractFileAtPath(this.app, parent);
         }
-        const fileName = name?.length > 0 ? name : this.plugin.superstate.settings.newNotePlaceholder
+        const fileName = name?.length > 0 ? name : DEFAULT_NEW_NOTE_NAME
         return this.app.fileManager.createNewMarkdownFile(
         parentFolder ? (parentFolder instanceof TFolder) ? parentFolder : parentFolder.parent : this.app.vault.getRoot(),
         fileName).then(async f => {

@@ -3,8 +3,6 @@ import { App, MarkdownView, Platform, Plugin, TAbstractFile, TFile, TFolder, Wor
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import { ContextExplorerLeafView, FILE_CONTEXT_VIEW_TYPE } from "adapters/obsidian/ui/explorer/ContextExplorerLeafView";
-
 import i18n from "shared/i18n";
 
 import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTFolder, openTagContext } from "adapters/obsidian/utils/file";
@@ -15,7 +13,6 @@ import { mkLogo } from "adapters/obsidian/ui/icons";
 import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "shared/utils/json";
 import { SPACE_SUB_FOLDER } from "shared/constants";
-import { modifyFlowDom } from "./adapters/obsidian/inlineContextLoader";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { ObsidianAssetManager } from "adapters/obsidian/assets/ObsidianAssetManager";
@@ -37,7 +34,6 @@ import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
-import { SPACE_FRAGMENT_VIEW_TYPE } from "adapters/obsidian/ui/editors/SpaceFragmentViewComponent";
 import MakeBasicsPlugin from "basics/basics";
 import { attachCommands } from "commands";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
@@ -72,14 +68,6 @@ import "css/Panels/FileContext.css";
 import "css/Panels/Navigator/FileTree.css";
 import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
-import "css/Panels/SpaceEditor.css";
-import "css/SpaceViewer/Calendar.css";
-import "css/SpaceViewer/Frame.css";
-import "css/SpaceViewer/Layout.css";
-import "css/SpaceViewer/Nodes.css";
-import "css/SpaceViewer/SpaceView.css";
-import "css/SpaceViewer/TableView.css";
-import "css/SpaceViewer/Text.css";
 import "css/System/Settings.css";
 import "css/UI/Buttons.css";
 import { IMakeMDPlugin } from "shared/types/makemd";
@@ -109,14 +97,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.app.workspace.onLayoutReady(async () => {
             await this.superstate.initializeIndex();
             this.obsidianAdapter.loadCacheFromObsidianCache();
-            if (this.superstate.settings.navigatorEnabled) {
-                this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
-            }
-
-            if (this.superstate.settings.homepagePath) {
-                const leaf = this.app.workspace.getLeaf(false);
-                await this.openPath(leaf, this.superstate.settings.homepagePath);
-            }
+            this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
 
             this.registerEvent(this.app.vault.on("delete", this.onDelete));
             this.registerEvent(this.app.vault.on("rename", this.onRename));
@@ -144,28 +125,22 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         // this.registerView(SPACE_FRAGMENT_VIEW_TYPE, (leaf) => {
         //   return new SpaceFragmentView(leaf, this);
         // });
-        if (this.superstate.settings.contextEnabled) {
-            // Navigator MVP excludes the standalone file link/context viewer.
-            // this.registerView(LINK_VIEW_TYPE, (leaf) => {
-            //   return new FileLinkView(leaf, this.app, LINK_VIEW_TYPE, this.superstate);
-            // });
-            // Navigator MVP excludes the standalone file context explorer view.
-            // this.registerView(FILE_CONTEXT_VIEW_TYPE, (leaf) => {
-            //   return new ContextExplorerLeafView(leaf, this.superstate, this.ui);
-            // });
-            // Navigator MVP excludes the standalone MDB file viewer.
-            // this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
-            //   return new MDBFileViewer(leaf, this);
-            // });
-            // Navigator MVP excludes the standalone HTML file viewer.
-            // this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
-            //   return new HTMLFileViewer(leaf, this);
-            // });
-            // Navigator MVP excludes the standalone MKit file viewer.
-            // this.registerView(MKIT_FILE_VIEWER_TYPE, (leaf) => {
-            //   return new MKitFileViewer(leaf, this);
-            // });
-        }
+        // Navigator MVP excludes the standalone file link/context viewer.
+        // this.registerView(LINK_VIEW_TYPE, (leaf) => {
+        //   return new FileLinkView(leaf, this.app, LINK_VIEW_TYPE, this.superstate);
+        // });
+        // Navigator MVP excludes the standalone MDB file viewer.
+        // this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
+        //   return new MDBFileViewer(leaf, this);
+        // });
+        // Navigator MVP excludes the standalone HTML file viewer.
+        // this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
+        //   return new HTMLFileViewer(leaf, this);
+        // });
+        // Navigator MVP excludes the standalone MKit file viewer.
+        // this.registerView(MKIT_FILE_VIEWER_TYPE, (leaf) => {
+        //   return new MKitFileViewer(leaf, this);
+        // });
     }
 
     async loadSpaces() {
@@ -175,20 +150,13 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
         document.body.classList.toggle("mk-readable-line", this.app.vault.getConfig("readableLineLength"));
         this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
-        document.body.classList.toggle("mk-hide-tabs", !this.superstate.settings.sidebarTabs);
 
-        document.body.classList.toggle("mk-hide-ribbon", !this.superstate.settings.showRibbon);
-        document.body.classList.toggle("mk-hide-vault-selector", !this.superstate.settings.vaultSelector);
-        document.body.classList.toggle("mk-mobile-header", this.superstate.settings.mobileMakeHeader);
-        // document.body.classList.toggle("mk-flow-state", this.superstate.settings.flowState);
         document.body.classList.toggle("mk-folder-lines", this.superstate.settings.folderIndentationLines);
         if (this.app.vault.config.cssTheme == "Minimal") {
             document.body.classList.toggle("mk-minimal-fix", true);
         }
 
-        document.body.classList.toggle("mk-spaces-enabled", true);
-
-        if (!this.superstate.settings.spacesDisablePatch && this.superstate.settings.navigatorEnabled) patchFilesPlugin(this);
+        patchFilesPlugin(this);
 
         this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.activeFileChange()));
         this.registerEvent(
@@ -224,7 +192,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         if (activeView.getViewType() == "markdown") {
             filePath = activeView.file.path;
             state = activeView.getState();
-            modifyFlowDom(this);
             modifyTabSticker(this);
         }
         if (!filePath || !state) return null;
@@ -277,44 +244,26 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         attachCommands(this);
     }
     loadContext() {
-        if (this.superstate.settings.contextEnabled) {
-            this.app.workspace.onLayoutReady(async () => {
-                this.closeExtraFileTabs();
-                if (this.superstate.settings.enableDefaultSpaces) {
-                    await this.files.createFolder(this.superstate.settings.spacesFolder);
-                }
-            });
+        // this.app.workspace.onLayoutReady(async () => {
+        //     this.closeExtraFileTabs();
+        //     await this.files.createFolder(this.superstate.settings.spacesFolder);
+        // });
 
-            // Navigator MVP excludes the standalone MDB file viewer extension.
-            // this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
-            // Navigator MVP excludes the standalone HTML/HTM file viewer extension.
-            // try {
-            // this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
-            // } catch (e) {
-            //         }
-            // Navigator MVP excludes the standalone MKit file viewer extension.
-            // try {
-            // this.registerExtensions(["mkit"], MKIT_FILE_VIEWER_TYPE);
-            // } catch (e) {
-            //         }
-            this.app.workspace.onLayoutReady(async () => {
-                // Navigator MVP excludes auto-opening the standalone file context explorer.
-                // if (this.superstate.settings.autoOpenFileContext) {
-                //   await this.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE);
-                // }
-                setTimeout(() => this.activeFileChange(), 2000);
-            });
-        }
-        // Navigator MVP excludes inline context markdown post-processing.
-        // if (this.superstate.settings.inlineContext) {
-        //   this.registerMarkdownPostProcessor((element, context) => {
-        //     replaceInlineContext(this, element, context);
-        //   });
-        //   document.body.classList.toggle(
-        //     "mk-inline-context-enabled",
-        //     this.superstate.settings.inlineContext
-        //   );
-        // }
+        // Navigator MVP excludes the standalone MDB file viewer extension.
+        // this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
+        // Navigator MVP excludes the standalone HTML/HTM file viewer extension.
+        // try {
+        // this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
+        // } catch (e) {
+        //         }
+        // Navigator MVP excludes the standalone MKit file viewer extension.
+        // try {
+        // this.registerExtensions(["mkit"], MKIT_FILE_VIEWER_TYPE);
+        // } catch (e) {
+        //         }
+        this.app.workspace.onLayoutReady(async () => {
+            setTimeout(() => this.activeFileChange(), 2000);
+        });
     }
 
     public basics: MakeBasicsPlugin;
@@ -354,18 +303,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
             this.app.setting.open();
             this.app.setting.openTabById(this.manifest.id);
             return;
-        }
-
-        if (uri.ref) {
-            const cache = this.superstate.pathsIndex.get(uri.path);
-
-            if (cache?.type == "space" || uri.scheme == "spaces") {
-                await leaf.setViewState({
-                    type: SPACE_FRAGMENT_VIEW_TYPE,
-                    state: { path: uri.fullPath, flow },
-                });
-                return;
-            }
         }
 
         if (uri.scheme == "spaces" || uri.scheme == "mk-core") {
@@ -453,26 +390,13 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         await this.loadSpaces();
         this.loadContext();
 
-        if (Object.keys(this.superstate.settings as Record<string, any>).some((f) => f == "makerMode")) {
-            this.superstate.settings.basics = (this.superstate.settings as any).makerMode;
-            delete (this.superstate.settings as any).makerMode;
-            this.saveSettings();
-        }
-
         // Navigator MVP excludes Make.md Basics editor integrations.
-        // if (this.superstate.settings.basics) {
-        //   this.basics = new MakeBasicsPlugin(this);
-        //   this.basics.loadBasics();
-        // }
+        // this.basics = new MakeBasicsPlugin(this);
+        // this.basics.loadBasics();
 
         this.loadCommands();
 
         this.superstate.ui.notify(`Make.md - Plugin loaded in ${(Date.now() - start) / 1000} seconds`, "console");
-
-        if (this.superstate.settings.systemName == "Vault") {
-            this.superstate.settings.systemName = this.app.vault.getName();
-            this.saveSettings();
-        }
     }
 
     //Spaces Listeners
@@ -528,33 +452,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         }
     };
 
-    detachFileContextLeafs = () => {
-        const leafs = this.app.workspace.getLeavesOfType(FILE_CONTEXT_VIEW_TYPE);
-        for (const leaf of leafs) {
-            if (leaf.view instanceof ContextExplorerLeafView) leaf.view.destroy();
-            leaf.detach();
-        }
-    };
-
-    openFileContextLeaf = async (view: string, reveal?: boolean) => {
-        const leafs = this.app.workspace.getLeavesOfType(view);
-        if (leafs.length == 0) {
-            const leaf = this.app.workspace.getRightLeaf(false);
-            await leaf.setViewState({ type: view });
-            this.app.workspace.revealLeaf(leaf);
-        } else {
-            leafs.forEach((leaf) => this.app.workspace.revealLeaf(leaf));
-        }
-        if (isTouchScreen(this.superstate.ui) && !reveal) {
-            this.app.workspace.rightSplit.collapse();
-        }
-    };
-
-    refreshFileContextLeafs = () => {
-        this.detachFileContextLeafs();
-        this.openFileContextLeaf(FILE_CONTEXT_VIEW_TYPE);
-    };
-
     async loadSettings() {
         this.superstate.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
         if (this.superstate.settings.hiddenExtensions.length == 1 && this.superstate.settings.hiddenExtensions[0] == ".mdb") {
@@ -569,8 +466,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     async saveSettings(refresh = true) {
         await this.saveData(this.superstate.settings);
         this.obsidianAdapter.setSettingsLastUpdatedDate();
-        if (refresh)
-            this.superstate.dispatchEvent("settingsChanged", null);
+        if (refresh) this.superstate.dispatchEvent("settingsChanged", null);
     }
 
     onunload() {

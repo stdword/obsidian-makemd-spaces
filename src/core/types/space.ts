@@ -8,7 +8,7 @@ import { MakeMDSettings } from "../../shared/types/settings"
 
 
 export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset,
-  spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey, spaceTemplateKey, spaceTemplateNameKey
+  spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey
 ]
   export const createVaultSpace  = (manager: SpaceManager) : SpaceState => ({
     name: "Vault",
@@ -56,8 +56,6 @@ export const builtinSpaces : Record<string, BuiltinSpace> = {
 };
 
 export const spaceContextsKey = "_contexts";
-export const spaceTemplateKey = "_template";
-export const spaceTemplateNameKey = "_templateName";
 export const spaceJoinsKey = "_joins";
 export const spaceLinksKey = "_links";
 export const spaceSortKey = "_sort";

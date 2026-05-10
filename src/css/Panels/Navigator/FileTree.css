@@ -1,51 +1,3 @@
-.mk-hide-tabs
-  .mod-left-split
-  .mod-top-left-space
-  .workspace-tab-header-container-inner {
-  visibility: hidden;
-}
-
-.is-phone .mod-root .workspace-tabs:not(.mod-visible) {
-  display: flex !important;
-  }
-
-  .mk-mobile-sidepanel.is-mobile.mk-hide-ribbon:not(.mk-spaces-right)
-  .workspace-drawer.mod-left
-  .workspace-drawer-inner, .mk-mobile-sidepanel.is-mobile.mk-hide-ribbon.mk-spaces-right
-  .workspace-drawer.mod-right
-  .workspace-drawer-inner {
-  padding-left: 0 !important;
-}
-
-.mk-hide-vault-selector:not(.is-mobile) .workspace-sidedock-vault-profile {
-  display: none !important;
-}
-
-.is-mobile.mk-mobile-header .workspace-drawer-inner:has(.workspace-leaf-content[data-type="mk-path-view"]) .workspace-drawer-header,
-.is-mobile.mk-mobile-header .workspace-drawer-inner:has(.workspace-leaf-content[data-type="mk-path-view"]) .workspace-drawer-active-tab-header {
-  display: none !important;
-}
-
-.mk-hide-ribbon .workspace-ribbon {
-  display: none;
-}
-
-.mk-hide-ribbon.is-hidden-frameless:not(.is-fullscreen)
-  .workspace-tabs.mod-top-left-space
-  .workspace-tab-header-container:before {
-  width: calc(var(--frame-left-space) + var(--ribbon-width));
-}
-
-.mk-hide-ribbon.is-hidden-frameless:not(.is-fullscreen)
-  .workspace-tabs.mod-top-left-space
-  .workspace-tab-header-container {
-  padding-left: calc(var(--frame-left-space) + var(--ribbon-width));
-}
-
-.mk-mobile-sidepanel.is-mobile.mk-hide-ribbon .workspace-drawer-ribbon {
-  display: none;
-}
-
 .mk-mobile-sidepanel.is-mobile:not(.mk-spaces-right)
   .workspace-drawer.mod-left
   .workspace-drawer-inner
@@ -98,10 +50,6 @@
   display: none;
 }
 
-.is-mobile .mk-sidebar button:not(.clickable-icon) {
-
-}
-
 .is-mobile .mk-sidebar .mk-path-icon button {
   font-size: 16px;
   margin: 0;
@@ -148,7 +96,7 @@ body.mk-mobile-sidepanel.is-mobile .sidebar-toggle-button {
 }
 .mk-path-tree-focus .mk-focuses-item {
   background: var(--mk-ui-background)
-  
+
 }
 
 .mk-path-tree-focus input {
@@ -202,5 +150,3 @@ body.mk-mobile-sidepanel.is-mobile .sidebar-toggle-button {
 .mk-context-tree .mk-tree-wrapper {
   padding: 0px !important;
 }
-
-

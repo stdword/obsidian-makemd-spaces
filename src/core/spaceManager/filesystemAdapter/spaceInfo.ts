@@ -4,7 +4,7 @@ import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { builtinSpaces } from "core/types/space";
-import { SPACE_CONTEXT_FILE, SPACE_DEF_FILE, SPACE_DEF_PATH, SPACE_VIEWS_FILE } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME, SPACE_CONTEXT_FILE, SPACE_DEF_FILE, SPACE_DEF_PATH, SPACE_VIEWS_FILE } from "shared/constants";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { folderPathToString } from "utils/path";
@@ -12,9 +12,9 @@ import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
 
 export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string, readOnly?: boolean): FilesystemSpaceInfo => {
     const path = tagSpacePathFromTag(tag.toLowerCase());
-    const folderPath = manager.superstate.settings.spacesFolder + "/" + tagToTagPath(tag);
+    const folderPath = tagToTagPath(tag);
     return {
-        name: tag.replace(/^#/, ''),
+        name: tag.replace(/^#/, ""),
         path,
 
         isRemote: false,
@@ -33,7 +33,7 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
     if (contextPath.startsWith(builtinSpacePathPrefix)) {
         const builtinPath = contextPath.slice(builtinSpacePathPrefix.length);
 
-        const folderPath = manager.superstate.settings.spacesFolder + "/$" + builtinPath;
+        const folderPath = "$" + builtinPath;
         return {
             name: builtinSpaces[builtinPath].name,
             path: contextPath,
@@ -68,9 +68,8 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
 export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: string, readOnly?: boolean): FilesystemSpaceInfo => {
     if (folder == "/") {
         const vaultName = "Vault";
-        const systemName = manager.superstate.settings.systemName;
         return {
-            name: systemName,
+            name: DEFAULT_SYSTEM_NAME,
 
             path: folder,
             isRemote: false,

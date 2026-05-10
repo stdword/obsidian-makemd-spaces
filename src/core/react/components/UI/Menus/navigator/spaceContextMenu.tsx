@@ -4,7 +4,6 @@ import {
   addPathToSpaceAtIndex,
   removePathsFromSpace,
   removeSpace,
-  saveSpaceTemplate,
   updateSpaceSort,
 } from "core/superstate/utils/spaces";
 import { removePathIcon } from "core/utils/emoji";
@@ -434,18 +433,6 @@ export const showSpaceContextMenu = (
       superstate.spaceManager.copyPath(path.path, `${path.parent}`);
     },
   });
-  if (
-    parentSpaceCache &&
-    (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
-  ) {
-    menuOptions.push({
-      name: i18n.buttons.saveTemplate,
-      icon: "ui//clipboard-add",
-      onClick: (e) => {
-        saveSpaceTemplate(superstate, space.path, parentSpace);
-      },
-    });
-  }
   if (superstate.ui.hasNativePathMenu(space.path)) {
     menuOptions.push({
       name: i18n.menu.openNativeMenu,

@@ -31,8 +31,6 @@ export type SpaceDefinition = {
   joins?: JoinDefGroup[];
   links?: string[];
   tags?: string[];
-  template?: string;
-  templateName?: string;
   defaultSticker?: string;
   defaultColor?: string;
   readMode?: boolean;

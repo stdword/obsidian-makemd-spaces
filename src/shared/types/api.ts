@@ -38,13 +38,4 @@ export interface IAPI {
         update: (path: string, file: string, field: string, value: string) => void;
         insert: (path: string, schema: string, name: string, row: DBRow) => Promise<void>;
     };
-    date: {
-        parse: (date: string) => Date;
-        daysInMonth: (date: Date) => number;
-        format: (date: Date, format?: string) => string;
-        component: (date: Date, component: string) => number | undefined;
-        offset: (date: Date, offset: number, type: string) => Date;
-        now: () => Date;
-        range: (start: Date, end: Date, format?: string) => string[];
-    };
 }

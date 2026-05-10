@@ -11,7 +11,6 @@ describe("FilesystemSpaceAdapter", () => {
       superstate: {
         settings: {
           enableDefaultSpaces: true,
-          spacesFolder: "Spaces",
         },
       },
       spaceInfoForPath: (path: string) => ({ path, name: path }),
@@ -26,6 +25,6 @@ describe("FilesystemSpaceAdapter", () => {
       .allSpaces()
       .find((space) => space.path == "spaces://#book/types/psy");
 
-    expect(tagSpace?.name).toBe("#book/types/psy");
+    expect(tagSpace?.name).toBe("book/types/psy");
   });
 });

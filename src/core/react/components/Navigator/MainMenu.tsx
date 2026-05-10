@@ -3,6 +3,7 @@ import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "makemd-core";
 import React, { useContext, useRef } from "react";
+import { DEFAULT_SYSTEM_NAME } from "shared/constants";
 import { default as t } from "shared/i18n";
 import { BlinkMode } from "shared/types/blink";
 import { windowFromDocument } from "shared/utils/dom";
@@ -20,14 +21,14 @@ export const MainMenu = (props: MainMenuComponentProps) => {
       <div className="mk-main-menu-inner">
         <div className={classNames("mk-main-menu")}>
           <div
-            aria-label={props.superstate.settings.systemName}
+            aria-label={DEFAULT_SYSTEM_NAME}
             className={`mk-main-menu-button mk-main-menu-button-primary`}
             ref={ref}
             onClick={(e) => {
               props.superstate.ui.mainMenu(ref.current, superstate);
             }}
           >
-            <span>{props.superstate.settings.systemName}</span>
+            <span>{DEFAULT_SYSTEM_NAME}</span>
             <div
               className="mk-icon-xsmall"
               dangerouslySetInnerHTML={{

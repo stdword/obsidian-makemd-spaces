@@ -12,7 +12,7 @@ import { IAssetManager } from "./assets";
 import { Command } from "./commands";
 import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
-import { FrameRoot, MDBFrames } from "./mframe";
+import { FrameRoot } from "./mframe";
 import { ContextState, PathState, SpaceState, SuperstateEvent } from "./PathState";
 import { FilterGroupDef, SpaceDefinition } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
@@ -43,7 +43,6 @@ export abstract class ISuperstate {
     actions: Map<string, Command[]>;
     selectedKit: Kit;
     kitFrames: Map<string, FrameExecutable>;
-    templateCache: Map<string, MDBFrames>;
     kit: FrameRoot[];
     iconsCache: Map<string, string>;
     imagesCache: Map<string, string>;
@@ -64,7 +63,6 @@ export abstract class ISuperstate {
     initializePaths: () => Promise<void>;
     initializeActions: () => Promise<void>;
     initializeKits: () => Promise<void>;
-    initializeTemplates: () => Promise<void>;
     initializeSpaces:() => Promise<void>;
     getSpaceItems: (spacePath: string, filesOnly?: boolean)=> PathStateWithRank[];
     loadFromCache: () => Promise<void>;
@@ -92,8 +90,7 @@ export abstract class ISuperstate {
     reloadPath:(path: string, force?: boolean) => Promise<boolean>;
     onPathReloaded:(path: string) => Promise<boolean>;
     search:(path: string, query?: string, queries?: FilterGroupDef[]) => Promise<PathStateWithRank[]>;
-    
+
 }
 
 export type PathStateWithRank = PathState & { rank?: number; };
-

@@ -3,6 +3,7 @@ import classNames from "classnames";
 import { Platform } from "obsidian";
 import React, { useRef } from "react";
 import { uiIconSet } from "shared/assets/icons";
+import { DEFAULT_SYSTEM_NAME } from "shared/constants";
 import i18n from "shared/i18n";
 
 import { BlinkMode } from "shared/types/blink";
@@ -47,7 +48,7 @@ export const ObsidianMobileMainMenu = (props: {
               props.superstate.ui.mainMenu(ref.current, props.superstate);
             }}
           >
-            {props.superstate.settings.systemName}
+            {DEFAULT_SYSTEM_NAME}
             <div
               className="mk-icon-xsmall"
               dangerouslySetInnerHTML={{
@@ -56,19 +57,17 @@ export const ObsidianMobileMainMenu = (props: {
             ></div>
           </div>
 
-          {props.superstate.settings.blinkEnabled && (
+          <div
+            className="mk-main-menu-button"
+            onClick={(e) => props.superstate.ui.quickOpen(BlinkMode.Blink)}
+          >
             <div
-              className="mk-main-menu-button"
-              onClick={(e) => props.superstate.ui.quickOpen(BlinkMode.Blink)}
-            >
-              <div
-                className="mk-icon-small"
-                dangerouslySetInnerHTML={{
-                  __html: uiIconSet["search"],
-                }}
-              ></div>
-            </div>
-          )}
+              className="mk-icon-small"
+              dangerouslySetInnerHTML={{
+                __html: uiIconSet["search"],
+              }}
+            ></div>
+          </div>
         </div>
 
         <button

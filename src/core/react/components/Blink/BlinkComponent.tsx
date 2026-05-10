@@ -16,7 +16,6 @@ import {
 } from "core/superstate/utils/spaces";
 import { BlinkMode } from "../../../../shared/types/blink";
 import { PathView } from "../PathView/PathView";
-import { SpaceQuery } from "../SpaceEditor/SpaceQuery";
 import { PathCrumb } from "../UI/Crumbs/PathCrumb";
 
 type BlinkItem = {
@@ -345,23 +344,6 @@ export const BlinkComponent = (props: {
           </>
         )}
       </div>
-      {showFilters && (
-        <div className="mk-blink-filters">
-          <div
-            className="mk-icon-xsmall"
-            dangerouslySetInnerHTML={{
-              __html: props.superstate.ui.getSticker("ui//filter"),
-            }}
-          ></div>
-          <SpaceQuery
-            superstate={props.superstate}
-            filters={filters}
-            setFilters={setFilters}
-            fields={allOptions}
-            sections={allSections}
-          ></SpaceQuery>
-        </div>
-      )}
       <div className={`mk-blink-suggester`} style={{} as React.CSSProperties}>
         <div className="mk-blink-suggestions">
           {suggestions.map((f, i) => (

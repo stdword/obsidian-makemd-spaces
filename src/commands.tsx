@@ -74,19 +74,17 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
   //     callback: () => plugin.convertPathToSpace(),
   //   });
   // }
-  if (plugin.superstate.settings.blinkEnabled) {
-    plugin.addCommand({
-      id: "mk-blink",
-      name: i18n.commandPalette.blink,
-      callback: () => plugin.quickOpen(plugin.superstate, BlinkMode.Blink),
-      hotkeys: [
-        {
-          modifiers: ["Mod"],
-          key: "o",
-        },
-      ],
-    });
-  }
+  plugin.addCommand({
+    id: "mk-blink",
+    name: i18n.commandPalette.blink,
+    callback: () => plugin.quickOpen(plugin.superstate, BlinkMode.Blink),
+    hotkeys: [
+      {
+        modifiers: ["Mod"],
+        key: "o",
+      },
+    ],
+  });
 
   // Navigator MVP excludes homepage management from the command palette.
   // plugin.addCommand({

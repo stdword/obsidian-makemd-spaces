@@ -25,7 +25,6 @@ export const SystemTree = (props: { superstate: Superstate }) => {
     <div>
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div className="mk-tree-item">Kit</div>
-        <div className="mk-tree-item">{i18n.labels.templates}</div>
         <div className="mk-tree-item">{i18n.labels.actions}</div>
         {[...libraries.keys()].map((f, i) => (
           <React.Fragment key={i}>
