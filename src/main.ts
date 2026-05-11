@@ -76,7 +76,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     files: FilesystemMiddleware;
     obsidianAdapter: ObsidianFileSystem;
     mdbFileAdapter: MDBFileTypeAdapter;
-    markdownAdapter: ObsidianMarkdownFiletypeAdapter;
 
     activeEditorView?: MarkdownView;
 
@@ -231,12 +230,9 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files.initiateFileSystemAdapter(this.obsidianAdapter, true);
         this.files.initiateFiletypeAdapter(this.mdbFileAdapter);
 
-        this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
-        this.files.initiateFiletypeAdapter(this.markdownAdapter);
-
+        this.files.initiateFiletypeAdapter(new ObsidianMarkdownFiletypeAdapter(this));
         this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
         this.files.initiateFiletypeAdapter(new JSONFiletypeAdapter(this));
-        this.files.initiateFiletypeAdapter(new ImageFileTypeAdapter(this));
         this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
 
         const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_SUB_FOLDER);

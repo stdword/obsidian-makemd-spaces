@@ -538,7 +538,7 @@ export const en = {
     }
   },
   "views": {
-    "navigator": "Navigator",
+    "navigator": "Spaces",
     "explorer": "Explorer"
   },
   "labels": {
@@ -1004,7 +1004,7 @@ export const en = {
       "welcomeDesc": "Welcome to Make.md! Let's configure your essential settings to get you started.",
       "walkthrough": "We'll walk through the most important options to customize your experience.",
       "coreFeatures": "Core Features",
-      "enableNavigator": "Enable Navigator (sidebar file browser)",
+      "enableNavigator": "Enable Spaces (sidebar file browser)",
       "enableNavigatorDesc": "Show the enhanced file navigator in the sidebar",
       "enableSpaceViews": "Enable Space Views",
       "enableSpaceViewsDesc": "Create custom views and organize content in spaces",
@@ -1028,7 +1028,7 @@ export const en = {
     },
     "sections": {
       "general": "General",
-      "navigator": "Navigator",
+      "navigator": "Spaces",
       "appearance": "Appearance",
       "coverImage": "Cover Image",
       "interaction": "Preferences",
@@ -1060,7 +1060,7 @@ export const en = {
     "sectionDataview": "Dataview",
     "sectionContext": "Context",
     "sectionStickers": "Labels",
-    "sectionNavigator": "Navigator",
+    "sectionNavigator": "Spaces",
     "sectionDefault": "Default Spaces",
     "sectionBlink": "Blink",
     "sectionInlineContext": "Inline Context",
@@ -1069,7 +1069,7 @@ export const en = {
     "sectionFlowStyler": "Flow Styler",
     "hiddenExtensions": {
       "name": "Hidden Extensions",
-      "desc": "File extensions and names to hide from the navigator"
+      "desc": "File extensions and names to hide from the Spaces"
     },
     "minimalThemeFix": {
       "name": "Minimal Theme Fix",
@@ -1141,11 +1141,7 @@ export const en = {
     },
     "revealActiveFile": {
       "name": "Reveal Active File",
-      "desc": "Automatically reveal the active file in Navigator"
-    },
-    "navigatorEnabled": {
-      "name": "Navigator",
-      "desc": "The navigator lets you create and organize your spaces"
+      "desc": "Automatically reveal the active file in Spaces"
     },
     "spacesStickers": {
       "name": "Stickers",
@@ -1153,7 +1149,7 @@ export const en = {
     },
     "spacesUseAlias": {
       "name": "Alias",
-      "desc": "Use the alias metadata to show in Navigator"
+      "desc": "Use the alias metadata to show in Spaces"
     },
     "deleteFileOption": {
       "name": "Delete File Option",
