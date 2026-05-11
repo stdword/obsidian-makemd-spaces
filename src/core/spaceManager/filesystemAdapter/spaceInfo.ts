@@ -24,7 +24,6 @@ export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string, r
         notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
         framePath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_VIEWS_FILE,
         dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
-        commandsPath: spaceFolderPathFromSpace(folderPath + "/", manager) + "commands.mdb",
     };
 };
 
@@ -45,7 +44,6 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
             notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
             framePath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_VIEWS_FILE,
             dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
-            commandsPath: spaceFolderPathFromSpace(folderPath + "/", manager) + "commands.mdb",
         };
     }
     const uri = manager.uriByString(contextPath);
@@ -79,7 +77,6 @@ export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: str
             notePath: vaultName + ".md",
             dbPath: spaceFolderPathFromSpace(folder, manager) + SPACE_CONTEXT_FILE,
             framePath: spaceFolderPathFromSpace(folder, manager) + SPACE_VIEWS_FILE,
-            commandsPath: spaceFolderPathFromSpace(folder, manager) + "commands.mdb",
         };
     }
     const folderName = folderPathToString(folder);
@@ -95,6 +92,5 @@ export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: str
         notePath: folder + "/" + (folderNoteName.length > 0 ? folderNoteName : folderName) + ".md",
         dbPath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_CONTEXT_FILE,
         framePath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_VIEWS_FILE,
-        commandsPath: spaceFolderPathFromSpace(folder + "/", manager) + "commands.mdb",
     };
 };

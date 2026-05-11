@@ -14,7 +14,7 @@ This file documents non-obvious pitfalls, gotchas, and project-specific conventi
 - Fully ignore the `.obsidian` folder in root
 - ALWAYS remove files via `trash` util. NEVER use `rm`.
 - Никогда не читай файлы из папки `node_modules`
-- Не трогай файлы `main.js` и `style.css`, т.к. это файлы билдов
+- Не читай, не модифицируй и не перемещай файлы `main.js` и `style.css`, т.к. это файлы билдов. Единственный доступный сценарий взаимодействия с ними: билдить их через `npm run build`
 
 
 ## Формат ссылок в ответах LLM

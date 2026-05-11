@@ -1,4 +1,3 @@
-import { FrameContexts } from "shared/types/frameExec";
 import { PathLabel } from "./caches";
 import { DBRow, SpaceProperty } from "./mdb";
 import { TargetLocation } from "./path";
@@ -20,11 +19,6 @@ export interface IAPI {
         setProperty: (path: string, property: string, value: Promise<string> | string) => void;
         contextMenu: (e: React.MouseEvent, path: string) => void;
     };
-    commands: {
-        run: (action: string, parameters?: { [key: string]: any }, contexts?: FrameContexts) => void;
-        formula: (formula: string, parameters: { [key: string]: any }, contexts?: FrameContexts) => void;
-    };
-    buttonCommand: (action: string, parameters: { [key: string]: any }, contexts: FrameContexts, saveState: (state: any) => void) => void;
     table: {
         select: (path: string, table: string) => Promise<DBRow[] | undefined>;
         update: (path: string, table: string, index: number, row: DBRow) => void;

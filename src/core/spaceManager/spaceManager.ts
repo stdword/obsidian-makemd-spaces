@@ -4,9 +4,7 @@ import { serializeOptionValue } from "core/utils/serializer";
 import { ensureString } from "core/utils/strings";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { defaultContextSchemaID } from "shared/schemas/context";
-import { ActionInstance } from "shared/types/actions";
 import { IAPI } from "shared/types/api";
-import { Command } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
 import { MDBFrame } from "shared/types/mframe";
@@ -28,13 +26,6 @@ export class SpaceManager implements SpaceManagerInterface {
     public api: IAPI;
 
  
-    public readSystemCommands = () => {
-      return this.primarySpaceAdapter.readSystemCommands();
-    }
-    public saveSystemCommand = (lib: string, action: Command) => {
-      return this.primarySpaceAdapter.saveSystemCommand(lib, action).then(f => this.superstate.reloadSystemActions());
-    }
-
     public onSpaceUpdated (path: string, type: SpaceFragmentType) {
       if (!this.superstate.spacesIndex.has(path)) {
         return;
@@ -44,9 +35,6 @@ export class SpaceManager implements SpaceManagerInterface {
       }
       if (type == 'frame') {
         this.superstate.dispatchEvent("frameStateUpdated", {path})
-      }
-      if (type == 'action') {
-        this.superstate.reloadActions(this.spaceInfoForPath(path));
       }
 
     }
@@ -65,10 +53,6 @@ export class SpaceManager implements SpaceManagerInterface {
         this.superstate.focuses = f    
         this.superstate.dispatchEvent("focusesChanged", null)
       });
-    }
-
-    public saveFrameKit (frames: MDBFrame, name: string) {
-      return this.primarySpaceAdapter.saveFrameKit(frames, name);
     }
 
     public onPathCreated = async (path: string) => {
@@ -228,10 +212,6 @@ export class SpaceManager implements SpaceManagerInterface {
         return this.superstate.reloadContextByPath(path, { force: true, calculate: true })});
     }
 
-    public readAllKits () {
-      return this.primarySpaceAdapter.readAllKits();
-    }
-
     public readAllTables (path: string) {
       return this.adapterForPath(path).readAllTables(path);
     }
@@ -264,24 +244,6 @@ export class SpaceManager implements SpaceManagerInterface {
      this.superstate.dispatchEvent("frameStateUpdated", {path: this.spaceInfoForPath(path).path, schemaId: frame.schema.id}))
     }
  
-    public commandsForSpace (path: string) {
-      return this.adapterForPath(path).commandsForSpace(path);
-    }
-    public runCommand (path: string, name: string, instance: ActionInstance) {
-      return this.adapterForPath(path).runCommand(path, name, instance);
-    }
-    public createCommand (path: string, schema: SpaceTableSchema) {
-      return this.adapterForPath(path).createCommand(path, schema).then(f => 
-        this.superstate.reloadActions(this.spaceInfoForPath(path)));
-    }
-    public deleteCommand (path: string, name: string) {
-      return this.adapterForPath(path).deleteCommand(path, name).then(f => 
-        this.superstate.reloadActions(this.spaceInfoForPath(path)));
-    }
-    public saveCommand (path: string, schemaId: string, saveCommand: (prev: Command) => Command) {
-      return this.adapterForPath(path).saveCommand(path, schemaId, saveCommand).then(f => 
-        this.superstate.reloadActions(this.spaceInfoForPath(path)));
-    }
      //basic item operations
      public allPaths (type?: string[]) {
       return this.spaceAdapters.flatMap(f => f.allPaths(type));

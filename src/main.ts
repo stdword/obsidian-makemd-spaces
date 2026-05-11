@@ -22,33 +22,16 @@ import { ObsidianUI } from "adapters/obsidian/ui/ui";
 import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 
 import { IconFileTypeAdapter } from "adapters/icons/iconsAdapter";
-import { ObsidianCommands } from "adapters/obsidian/commands/obsidianCommands";
-import { CLIManager } from "core/middleware/commands";
 import { openBlinkModal } from "core/react/components/Blink/Blink";
 import { LocalCachePersister } from "shared/types/persister";
 
-import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
-
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
+
 import { attachCommands } from "commands";
-import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
 import { Superstate } from "core/superstate/superstate";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
 import "css/DefaultVibe.css";
-// import "css/Editor/Actions/Actions.css";
-// import "css/Editor/Context/ContextList.css";
-// import "css/Editor/Context/FilterBar.css";
-// import "css/Editor/Flow/FlowEditor.css";
-// import "css/Editor/Flow/FlowState.css";
-// import "css/Editor/Flow/Properties.css";
-// import "css/Editor/Frames/Insert.css";
-// import "css/Editor/Frames/Node.css";
-// import "css/Editor/Frames/Overlay.css";
-// import "css/Editor/Frames/Page.css";
-// import "css/Editor/Frames/Slides.css";
-// import "css/Editor/Properties/DatePicker.css";
-// import "css/Editor/MKitViewer.css";
 import "css/Menus/ColorPicker.css";
 import "css/Menus/InlineMenu.css";
 import "css/Menus/MainMenu.css";
@@ -236,10 +219,8 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
 
         const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_SUB_FOLDER);
-        const webSpaceAdapter = new WebSpaceAdapter();
         this.ui = new ObsidianUI(this);
         const uiManager = UIManager.create(this.ui);
-        const commandsManager = CLIManager.create(new ObsidianCommands(this));
         this.superstate = Superstate.create(
             "0.9",
             () => {
@@ -247,12 +228,10 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
             },
             new SpaceManager(),
             uiManager,
-            commandsManager,
         );
         await this.loadSettings();
 
         this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
-        this.superstate.spaceManager.addSpaceAdapter(webSpaceAdapter);
 
         addIcon("mk-logo", mkLogo);
 
@@ -317,8 +296,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     detachFileTreeLeaves = () => {
         const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
         for (const leaf of leafs) {
-            if (leaf.view instanceof FileTreeView)
-                leaf.view.destroy();
+            if (leaf.view instanceof FileTreeView) leaf.view.destroy();
             leaf.detach();
         }
     };
@@ -336,8 +314,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     async saveSettings(refresh = true) {
         await this.saveData(this.superstate.settings);
         this.obsidianAdapter.setSettingsLastUpdatedDate();
-        if (refresh)
-            this.superstate.dispatchEvent("settingsChanged", null);
+        if (refresh) this.superstate.dispatchEvent("settingsChanged", null);
     }
 
     onunload() {

@@ -111,34 +111,6 @@ export class API implements IAPI {
             showPathContextMenu(this.superstate, path, null, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document));
         },
     };
-    public commands = {
-        run: (action: string, parameters?: { [key: string]: any }, contexts?: FrameContexts) => {
-            // Get the command to check parameter types
-
-            const command = this.superstate.cli.commandForAction(action);
-            let resolvedParameters = { ...parameters };
-
-            if (command && contexts?.$space?.path) {
-                // Resolve link-type parameters using the context source
-                command.fields.forEach((field) => {
-                    if (field.type === "link" && parameters?.[field.name]) {
-                        resolvedParameters[field.name] = this.spaceManager.resolvePath(parameters[field.name], contexts.$space.path);
-                    }
-                });
-            }
-
-            return this.superstate.cli.runCommand(action, { instanceProps: { ...resolvedParameters, $api: this, $contexts: contexts }, props: {}, iterations: 0 });
-        },
-        formula: (formula: string, parameters: { [key: string]: any }, contexts?: FrameContexts) => {
-            return runFormulaWithContext(this.superstate.formulaContext, this.superstate.pathsIndex, this.superstate.spacesMap, formula, contexts.$properties, parameters, contexts?.$contexts?.$space?.path);
-        },
-    };
-
-    public buttonCommand = (action: string, parameters: { [key: string]: any }, contexts: FrameContexts, saveState: (state: any) => void) => {
-        // Handle button commands by delegating to the regular command runner
-        this.commands.run(action, parameters, contexts);
-    };
-
     public table = {
         select: (path: string, table: string) => {
             return this.spaceManager.readTable(path, table)?.then((f) => f?.rows);

@@ -44,7 +44,6 @@ export interface MakeMDSettings {
   firstLaunch: boolean;
   showSpacePinIcon: boolean;
   experimental: boolean;
-  selectedKit: string;
   actionMaxSteps: number;
   cacheIndex: boolean;
   enhancedLogs: boolean;

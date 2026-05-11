@@ -46,7 +46,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   releaseNotesPrompt: 0.8,
   showSpacePinIcon: true,
   experimental: false,
-  selectedKit: "default",
   actionMaxSteps: 100,
   skipFolders: [],
   skipFolderNames: [],

@@ -1,6 +1,5 @@
 import _ from "lodash";
 import { Superstate } from "makemd-core";
-import { rootToFrame } from "schemas/frames";
 import { FrameDragMode, FrameDropMode, FrameEditorMode, FrameEditorProps, FrameExecutable, FrameResizeMode, FrameState, FrameTreeNode, defaultFrameEditorProps } from "shared/types/frameExec";
 import { SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameRoot, FrameSchema, FrameTreeProp, MDBFrame } from "shared/types/mframe";
@@ -79,11 +78,6 @@ const getFrameNodesByPath = async (
   ): Promise<MDBFrame> => {
     const path = superstate.spaceManager.uriByString(ref)
     if (!path) return;
-    if (path.authority == '$kit') {
-      const kit = superstate.kit.find(f => f.def.id == path.ref)
-      if (!kit) return;
-      return rootToFrame(kit)
-    }
     const context = await superstate.spaceManager.readFrame(path.basePath, path.ref);
     return context as MDBFrame;
   };

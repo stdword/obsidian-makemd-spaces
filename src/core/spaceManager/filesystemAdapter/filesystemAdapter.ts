@@ -9,17 +9,13 @@ import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpa
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
 import { builtinSpaces, spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey } from "core/types/space";
 import { linkContextRow, mergeContextRows, propertyDependencies, syncContextRow } from "core/utils/contexts/linkContextRow";
-import { runFormulaWithContext } from "core/utils/formula/parser";
-import { executeCode } from "core/utils/frames/runner";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
-import { defaultFieldsForContext, fieldSchema } from "shared/schemas/fields";
+import { defaultFieldsForContext } from "shared/schemas/fields";
 import { SPACE_CONTEXT_FILE, SPACE_VIEWS_FILE } from "shared/constants";
 import { DEFAULT_SYSTEM_NAME } from "shared/constants";
-import { Command, CommandResult, Library } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
-import { Kit } from "shared/types/kits";
 import { DBTables, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
 import { MDBFrame, MDBFrames } from "shared/types/mframe";
 import { SpaceDefinition } from "shared/types/spaceDef";
@@ -33,8 +29,6 @@ import { tagToTagPath } from "utils/tags";
 import { SpaceManager } from "../spaceManager";
 
 //Space Adapter that works on a generic filesystem middleware
-const defaultKitsFolder = "kits";
-const defaultActionsFolder = "actions";
 export const defaultFocusFile = "waypoints.json";
 
 export class FilesystemSpaceAdapter implements SpaceAdapter {
@@ -65,8 +59,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             this.spaceManager.onSpaceUpdated(payload.path, "frame");
         } else if (payload.type == SPACE_CONTEXT_FILE) {
             this.spaceManager.onSpaceUpdated(payload.path, "context");
-        } else if (payload.type == "commands.mdb") {
-            this.spaceManager.onSpaceUpdated(payload.path, "action");
         }
     };
     public loadPath = async (path: string) => {
@@ -89,47 +81,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.writeTextToFile(`${this.dataPath}/${defaultFocusFile}`, JSON.stringify(focuses));
     }
 
-    public async readAllKits(): Promise<Kit[]> {
-        const strings = (await this.childrenForPath(`${this.dataPath}/${defaultKitsFolder}`)).map((f) => f.split("/").pop());
-        const kits = Promise.all(
-            strings.map(async (f) => {
-                const frames = await this.readKitFrames(f);
-                return {
-                    id: f,
-                    name: f,
-                    colors: {},
-                    frames: Object.values(frames ?? {}),
-                };
-            }),
-        );
-        return kits;
-    }
-
-    public async readKitFrames(name: string): Promise<MDBFrames> {
-        return this.fileSystem.readFileFragments(
-            {
-                path: `${this.dataPath}/${defaultKitsFolder}/${name}/kit.mdb`,
-                name: "kit",
-                filename: "kit.mdb",
-                parent: `${this.dataPath}/${defaultKitsFolder}/${name}`,
-                isFolder: false,
-                extension: "mdb",
-            },
-            "mdbTables",
-        ) as Promise<MDBFrames>;
-    }
-    public async saveFrameKit(frames: MDBFrame, name: string) {
-        const mdbFile = {
-            path: `${this.dataPath}/${defaultKitsFolder}/${name}/kit.mdb`,
-            name: "kit",
-            filename: "kit.mdb",
-            parent: `${this.dataPath}/${defaultKitsFolder}/${name}`,
-            isFolder: false,
-            extension: "mdb",
-        };
-        await this.fileSystem.saveFileFragment(mdbFile, "schema", frames.schema.id, () => frames.schema);
-        this.fileSystem.saveFileFragment(mdbFile, "mdbFrame", frames.schema.id, () => frames);
-    }
     private async onMetadataChange(payload: { path: string }) {
         if (!payload.path) return;
         if (payload.path.endsWith(".json")) {
@@ -524,136 +475,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             mdbFile = await this.createDefaultFrames(path);
         }
         return this.fileSystem.saveFileFragment(mdbFile, "mdbFrame", frame.schema.id, () => frame);
-    }
-
-    public async createDefaultCommands(path: string) {
-        const dbField: DBTables = {
-            m_fields: {
-                uniques: fieldSchema.uniques,
-                cols: fieldSchema.cols,
-                rows: [],
-            },
-            m_schema: { uniques: [], cols: ["id", "name", "type", "def", "predicate", "primary"], rows: [] },
-        };
-        const dbPath = this.spaceInfoForPath(path).commandsPath;
-        const extension = dbPath.split(".").pop();
-        const folder = dbPath.split("/").slice(0, -1).join("/");
-        const filename = dbPath.split("/").pop().split(".")[0];
-        return this.fileSystem.newFile(folder, filename, extension, dbField);
-    }
-
-    public async commandsForSpace(path: string): Promise<Command[]> {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).commandsPath);
-        if (!mdbFile) {
-            return [];
-        }
-        return this.fileSystem.readFileFragments(mdbFile, "mdbCommands", null);
-    }
-
-    public async runCommand(path: string, name: string, args: any): Promise<CommandResult> {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).commandsPath);
-        if (!mdbFile) {
-            return { result: null, error: "No commands file found" };
-        }
-        const command = (await this.fileSystem.readFileFragments(mdbFile, "mdbCommand", name)) as Command;
-        if (!command) {
-            return { result: null, error: "No command found" };
-        }
-        let result;
-        let error;
-        try {
-            if (command.schema.type == "script") result = executeCode(command.code, args);
-            if (command.schema.type == "formula")
-                result = runFormulaWithContext(
-                    this.spaceManager.superstate.formulaContext,
-                    this.spaceManager.superstate.pathsIndex,
-                    this.spaceManager.superstate.spacesMap,
-                    command.code,
-                    command.fields.reduce((p, c) => ({ ...p, [c.name]: c }), {}),
-                    args,
-                    this.spaceManager.superstate.pathsIndex.get(path),
-                );
-        } catch (e) {
-            error = e;
-        }
-        return { result, error };
-    }
-    public async createCommand(path: string, schema: SpaceTableSchema) {
-        let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).commandsPath);
-
-        if (!mdbFile) {
-            mdbFile = await this.createDefaultCommands(path);
-        }
-
-        return this.fileSystem.newFileFragment(mdbFile, "schema", schema.id, schema);
-    }
-
-    public async readSystemCommands(): Promise<Library[]> {
-        const strings = (await this.childrenForPath(`${this.dataPath}/${defaultActionsFolder}`, "folder")).map((f) => f.split("/").pop());
-        const kits = Promise.all(
-            strings.map(async (f) => {
-                const frames = await this.readLibraryCommands(f);
-                return {
-                    name: f,
-                    commands: Object.values(frames ?? {}),
-                };
-            }),
-        );
-        return kits;
-    }
-
-    public async readLibraryCommands(name: string): Promise<Command[]> {
-        return this.fileSystem.readFileFragments(
-            {
-                path: `${this.dataPath}/${defaultActionsFolder}/${name}/commands.mdb`,
-                name: "commands",
-                filename: "commands.mdb",
-                parent: `${this.dataPath}/${defaultActionsFolder}/${name}`,
-                isFolder: false,
-                extension: "mdb",
-            },
-            "mdbCommands",
-        ) as Promise<Command[]>;
-    }
-
-    public async saveSystemCommand(lib: string, command: Command) {
-        const mdbFile = {
-            path: `${this.dataPath}/${defaultActionsFolder}/${lib}/commands.mdb`,
-            name: "commands",
-            filename: "commands.mdb",
-            parent: `${this.dataPath}/${defaultActionsFolder}/${lib}`,
-            isFolder: false,
-            extension: "mdb",
-        };
-        if (command) {
-            await this.fileSystem.saveFileFragment(mdbFile, "schema", command.schema.id, () => command.schema);
-            await this.fileSystem.saveFileFragment(mdbFile, "mdbCommand", command.schema.id, () => command);
-        } else {
-            const dbField: DBTables = {
-                m_fields: {
-                    uniques: fieldSchema.uniques,
-                    cols: fieldSchema.cols,
-                    rows: [],
-                },
-                m_schema: { uniques: [], cols: ["id", "name", "type", "def", "predicate", "primary"], rows: [] },
-            };
-            const dbPath = mdbFile.path;
-            const extension = dbPath.split(".").pop();
-            const folder = dbPath.split("/").slice(0, -1).join("/");
-            const filename = dbPath.split("/").pop().split(".")[0];
-            await this.fileSystem.newFile(folder, filename, extension, dbField);
-        }
-    }
-    public async deleteCommand(path: string, name: string) {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).commandsPath);
-        return this.fileSystem.deleteFileFragment(mdbFile, "mdbCommand", name);
-    }
-    public async saveCommand(path: string, schemaId: string, saveCommand: (prev: Command) => Command) {
-        let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).commandsPath);
-        if (!mdbFile) {
-            mdbFile = await this.createDefaultCommands(path);
-        }
-        return this.fileSystem.saveFileFragment(mdbFile, "mdbCommand", schemaId, saveCommand);
     }
 
     public async contextForSpace(path: string): Promise<SpaceTable> {

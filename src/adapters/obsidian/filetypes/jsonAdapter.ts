@@ -14,7 +14,7 @@ type CachedMetadataContentTypes = {
 }
 
 export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>, CachedMetadataContentTypes> {
-    public supportedFileTypes: string[] = ['json', 'mkit'];
+    public supportedFileTypes: string[] = ['json'];
     public id = 'json.make.md';
     public constructor (public plugin: MakeMDPlugin) {
         this.plugin = plugin;

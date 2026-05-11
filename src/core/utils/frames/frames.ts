@@ -3,7 +3,7 @@ import i18n from "shared/i18n";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { isInteger, isString } from "lodash";
-import { DBRow, SpaceProperty } from "shared/types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { FrameNode, FrameRoot, FrameTreeProp, MFrame } from "shared/types/mframe";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { uniqueNameFromString } from "shared/utils/array";
@@ -53,33 +53,6 @@ export const stringIsConst = (str: string): boolean => {
   return hasQuotesAtStartEndOnly || isNumber || fixedStr.startsWith('[') && fixedStr.endsWith(']') || fixedStr == 'false' || fixedStr == 'true' || str == null || str == "";
 }
 
-export const kitWithProps = (root: FrameRoot,
-  props: DBRow,
-  styles?: FrameTreeProp,
-  actions?: FrameTreeProp,
-  interactions?: FrameTreeProp) => {
-    if (!root) {
-      return {} as FrameRoot;
-    }
-    
-    const safeRoot = {
-      ...root,
-      node: {
-        ...(root.node || { id: '', schemaId: '', parentId: '', name: '', rank: 0, type: 'frame' }),
-        type: "frame",
-        ref: "spaces://$kit/#*" + (root.id || ''),
-        id: root.node?.id || '',
-        schemaId: root.node?.schemaId || '',
-        parentId: root.node?.parentId || '',
-        name: root.node?.name || '',
-        rank: root.node?.rank || 0
-      },
-      children: [] as FrameRoot[]
-    };
-    
-    return frameRootWithProps(safeRoot, props, styles, actions, interactions);
-  }
-
 export const frameRootWithProps = (
   root: FrameRoot,
   props: FrameTreeProp,
@@ -93,7 +66,7 @@ export const frameRootWithProps = (
       def: root?.def || { id: 'unknown' },
       node: {
         type: 'frame',
-        ref: 'spaces://$kit/#*unknown',
+        ref: '',
         id: root?.id || '',
         schemaId: '',
         parentId: '',
@@ -180,7 +153,6 @@ export const newUniqueNodes = (
     parentId: parent,
   };
 };
-
 
 
 

@@ -1,13 +1,11 @@
 import i18n from "shared/i18n";
 
-import { CLIManager } from "core/middleware/commands";
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { defaultSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
 import { formulas } from "core/utils/formula/formulas";
-import { buildRootFromMDBFrame } from "core/utils/frames/ast";
 import { pathByJoins } from "core/utils/spaces/query";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
@@ -15,22 +13,13 @@ import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _, { debounce } from "lodash";
 import * as math from "mathjs";
-import { rootToFrame } from "schemas/frames";
-import { visualizationNode } from "schemas/kits";
-import { dataNode } from "schemas/kits/base";
-import { calendarView, dateGroup, eventItem } from "schemas/kits/calendar";
-import { cardListItem, cardsListItem, columnGroup, columnView, coverListItem, detailItem, fieldsView, flowListItem, gridGroup, imageListItem, listGroup, listItem, listView, masonryGroup, newItemButton, newItemNode, rowGroup, taskListItem } from "schemas/kits/list";
-import { buttonNode, callout, circularProgressNode, dividerNode, linkNode, previewNode, progressNode, ratingNode, tabsNode, toggleNode } from "schemas/kits/ui";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
-import { Command } from "shared/types/commands";
 import { PathPropertyName } from "shared/types/context";
 import { Focus } from "shared/types/focus";
-import { defaultFrameEditorProps, FrameExecutable } from "shared/types/frameExec";
 import { IndexMap } from "shared/types/indexMap";
-import { Kit } from "shared/types/kits";
 import { SpaceProperty } from "shared/types/mdb";
-import { FrameRoot, MDBFrames } from "shared/types/mframe";
+import { MDBFrames } from "shared/types/mframe";
 import { ContextState, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
 import { MakeMDSettings } from "shared/types/settings";
@@ -39,12 +28,10 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { safelyParseJSON } from "shared/utils/json";
-import { mdbSchemaToFrameSchema } from "shared/utils/makemd/schema";
 import { parseMultiString } from "utils/parsers";
 import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";
-import { SpacesCommandsAdapter } from "./commands";
 
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import { allMetadata } from "core/utils/metadata";
@@ -64,8 +51,8 @@ export type SuperProperty = {
 };
 
 export class Superstate implements ISuperstate {
-    public static create(indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager, commandsManager: CLIManager): Superstate {
-        return new Superstate(indexVersion, onChange, spaceManager, uiManager, commandsManager);
+    public static create(indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager): Superstate {
+        return new Superstate(indexVersion, onChange, spaceManager, uiManager);
     }
     public formulaContext: math.MathJsInstance;
     public initialized: boolean;
@@ -76,53 +63,11 @@ export class Superstate implements ISuperstate {
     public api: API;
 
     public ui: UIManager;
-    public cli: CLIManager;
     public assets: IAssetManager | null;
     //Index
     public pathsIndex: Map<string, PathState>;
     public spacesIndex: Map<string, SpaceState>;
     public contextsIndex: Map<string, ContextState>;
-    public actionsIndex: Map<string, Command[]>;
-    public kits: Map<string, Kit>;
-    public actions: Map<string, Command[]>;
-    public selectedKit: Kit;
-    public kitFrames: Map<string, FrameExecutable>;
-
-    public kit: FrameRoot[] = [
-        buttonNode(),
-        dividerNode,
-        progressNode(),
-        circularProgressNode,
-        callout(),
-        toggleNode(),
-        eventItem,
-        previewNode(),
-        linkNode(),
-        imageListItem,
-        detailItem,
-        flowListItem,
-        cardListItem,
-        cardsListItem,
-        listItem,
-        taskListItem(),
-        listGroup,
-        columnGroup,
-        masonryGroup,
-        listView,
-        calendarView,
-        dateGroup,
-        tabsNode(),
-        dataNode,
-        gridGroup,
-        newItemNode,
-        newItemButton,
-        ratingNode(),
-        fieldsView,
-        rowGroup,
-        coverListItem,
-        columnView,
-        visualizationNode,
-    ];
 
     //Persistant Cache
     public iconsCache: Map<string, string>;
@@ -165,7 +110,6 @@ export class Superstate implements ISuperstate {
         public onChange: () => void,
         spaceManager: SpaceManager,
         uiManager: UIManager,
-        commandsManager: CLIManager,
     ) {
         this.eventsDispatcher = new EventDispatcher<SuperstateEvent>();
 
@@ -210,11 +154,6 @@ export class Superstate implements ISuperstate {
         this.spaceManager.superstate = this;
         this.ui = uiManager;
         this.ui.superstate = this;
-        this.cli = commandsManager;
-        const spaceCommands = new SpacesCommandsAdapter(this.cli, this);
-        this.cli.superstate = this;
-        this.cli.terminals.splice(0, 0, spaceCommands);
-        this.cli.mainTerminal = spaceCommands;
 
         this.allMetadata = {};
         this.api = new API(this);
@@ -228,10 +167,6 @@ export class Superstate implements ISuperstate {
         this.pathsIndex = new Map();
         this.spacesIndex = new Map();
         this.contextsIndex = new Map();
-        this.actionsIndex = new Map();
-        this.kitFrames = new Map();
-        this.kits = new Map();
-        this.actions = new Map();
         this.focuses = [];
         //Initiate Maps
         this.spacesMap = new IndexMap();
@@ -276,9 +211,7 @@ export class Superstate implements ISuperstate {
         }
         const start = Date.now();
 
-        this.initializeActions();
         this.initializeFocuses();
-        this.initializeKits();
         await this.initializeSpaces();
 
         await this.initializeBuiltins();
@@ -301,40 +234,6 @@ export class Superstate implements ISuperstate {
         this.persister.cleanType("path");
         this.persister.cleanType("context");
         this.persister.cleanType("frame");
-    }
-
-    public async reloadSystemActions() {
-        const libraries = await this.spaceManager.readSystemCommands();
-        libraries.forEach((f) => this.actions.set(f.name, f.commands));
-        this.dispatchEvent("actionStateUpdated", { path: "spaces://$actions" });
-    }
-    public async initializeActions() {
-        await this.reloadSystemActions();
-        const promises = this.allSpaces()
-            .filter((f) => f.type != "default")
-            .map((f) => f.space)
-            .map((l) => this.reloadActions(l));
-        await Promise.all(promises);
-    }
-    public async initializeKits() {
-        const kits = await this.spaceManager.readAllKits();
-        kits.forEach((f) => this.kits.set(f.id, f));
-        if (kits.length == 0) {
-            this.kits.set("default", {
-                id: "default",
-                name: i18n.labels.default,
-                colors: {},
-                frames: [],
-            });
-        }
-        this.selectedKit = this.kits.get(this.settings.selectedKit) ?? this.kits.get("default");
-        this.selectedKit.frames = [...this.selectedKit.frames, ...this.kit.map((f) => rootToFrame(f)).filter((f) => !this.selectedKit.frames.some((g) => g.schema.id == f.schema.id))];
-        for (const v of this.selectedKit.frames) {
-            const kitID = mdbSchemaToFrameSchema(v.schema).def.id;
-            const frame = await buildRootFromMDBFrame(this, v, { ...defaultFrameEditorProps, screenType: this.ui.getScreenType() });
-            this.kitFrames.set(kitID, frame);
-        }
-        this.dispatchEvent("frameStateUpdated", { path: `spaces://$kit` });
     }
 
     public async initializeSpaces() {
@@ -707,10 +606,8 @@ export class Superstate implements ISuperstate {
             this.spacesMap.renameInverse(oldPath, newSpaceInfo.path);
             this.spacesIndex.delete(oldPath);
             this.contextsIndex.delete(oldPath);
-            this.actionsIndex.delete(oldPath);
             await this.reloadSpace(newSpaceInfo, oldmetadata).then((f) => this.onSpaceDefinitionChanged(f, oldmetadata));
             await this.reloadContext(newSpaceInfo, { force: true, calculate: true });
-            await this.reloadActions(newSpaceInfo);
         }
     }
     public onSpaceDeleted(space: string) {
@@ -723,14 +620,6 @@ export class Superstate implements ISuperstate {
         this.persister.remove(space, "space");
 
         this.dispatchEvent("spaceDeleted", { path: space });
-    }
-
-    public async reloadActions(space: SpaceInfo) {
-        if (!space) return false;
-        this.spaceManager.commandsForSpace(space.path).then((r) => {
-            this.actionsIndex.set(space.path, r);
-            this.dispatchEvent("actionStateUpdated", { path: space.path });
-        });
     }
 
     public async reloadContextByPath(

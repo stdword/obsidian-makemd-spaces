@@ -14,9 +14,6 @@ export const pathDisplayName = (path: string, superstate: Superstate) => {
             return "";
         }
 
-        if (uri.refType == "action") {
-            return superstate.actionsIndex.get(uri.basePath)?.find((s) => s.schema.id == uri.ref)?.schema.name;
-        }
         return uri.ref;
     }
     return superstate.pathsIndex.get(uri.basePath)?.name || path;

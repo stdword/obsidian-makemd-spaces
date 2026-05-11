@@ -6,8 +6,6 @@ import { ContextState } from "shared/types/superstate";
 
 type NavigatorSpaceManager = SpaceManagerInterface & {
     isPreviewMode: boolean;
-    isMKitPath: (path: string) => boolean;
-    convertMKitPath: (path: string) => string;
     getPathState: (path: string) => PathState | null;
     getPathsIndexMap: () => Map<string, PathState>;
     getContextsIndexMap: () => Map<string, ContextState>;
@@ -20,8 +18,6 @@ export const SpaceManagerProvider: React.FC<React.PropsWithChildren<{ superstate
         const manager = superstate.spaceManager as NavigatorSpaceManager;
 
         manager.isPreviewMode = false;
-        manager.isMKitPath = () => false;
-        manager.convertMKitPath = (path: string) => path;
         manager.getPathState = (path: string) => superstate.pathsIndex.get(path) ?? null;
         manager.getPathsIndexMap = () => superstate.pathsIndex;
         manager.getContextsIndexMap = () => superstate.contextsIndex;
@@ -35,5 +31,3 @@ export const SpaceManagerProvider: React.FC<React.PropsWithChildren<{ superstate
 export const useSpaceManager = (): NavigatorSpaceManager | null => {
     return useContext(SpaceManagerContext);
 };
-
-export const MKitSpaceManagerProvider = SpaceManagerProvider;

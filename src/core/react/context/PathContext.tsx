@@ -28,7 +28,6 @@ export const PathProvider: React.FC<
         readMode: boolean;
     }>
 > = (props) => {
-    // SpaceManager handles MKit context internally
     const spaceManager = useSpaceManager() || props.superstate.spaceManager;
 
     const [pathState, setPathState] = useState<PathState>(() => {

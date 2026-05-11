@@ -1,9 +1,6 @@
-import { ActionInstance } from "shared/types/actions";
 import { IAPI } from "shared/types/api";
 import { PathLabel } from "shared/types/caches";
-import { Command, CommandResult, Library } from "shared/types/commands";
 import { Focus } from "shared/types/focus";
-import { Kit } from "shared/types/kits";
 import { URI } from "shared/types/path";
 import { PathCache } from "./caches";
 import { SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "./mdb";
@@ -21,12 +18,9 @@ export interface SpaceManagerInterface {
   getPathState: (path: string) => PathState;
 getPathsIndexMap: () => Map<string, PathState>;
 getContextsIndexMap: () => Map<string, ContextState>
-  loadPath: (path: string) => Promise<PathCache | void>;
-    readSystemCommands(): Promise<Library[]>;
-    saveSystemCommand(lib: string, action: Command): Promise<void>;
+    loadPath: (path: string) => Promise<PathCache | void>;
     onSpaceUpdated(path: string, type: SpaceFragmentType): void;
     onFocusesUpdated(): void;
-    saveFrameKit(frames: MDBFrame, name: string): Promise<void>;
     onPathCreated(path: string): Promise<void>;
     onPathDeleted(path: string): Promise<void>;
     onPathChanged(path: string, oldPath: string): Promise<void>;
@@ -56,7 +50,6 @@ getContextsIndexMap: () => Map<string, ContextState>
     saveTableSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema): Promise<boolean>;
     saveTable(path: string, table: SpaceTable, force?: boolean): Promise<boolean>;
     deleteTable(path: string, name: string): Promise<boolean>;
-    readAllKits(): Promise<Kit[]>;
     readAllTables(path: string): Promise<SpaceTables>;
     framesForSpace(path: string): Promise<SpaceTableSchema[]>;
     readFrame(path: string, schema: string): Promise<MDBFrame>;
@@ -65,11 +58,6 @@ getContextsIndexMap: () => Map<string, ContextState>
     deleteFrame(path: string, name: string): Promise<void>;
     saveFrameSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema): Promise<void>;
     saveFrame(path: string, frame: MDBFrame): Promise<void>;
-    commandsForSpace(path: string): Promise<Command[]>;
-    runCommand(path: string, name: string, instance: ActionInstance): Promise<CommandResult>;
-    createCommand(path: string, schema: SpaceTableSchema): Promise<boolean>;
-    deleteCommand(path: string, name: string): Promise<boolean>;
-    saveCommand(path: string, schemaId: string, saveCommand: (prev: Command) => Command): Promise<boolean>;
     allPaths(type?: string[]): string[];
     createItemAtPath(parent: string, type: string, name: string, content?: any): Promise<string>;
     renamePath(oldPath: string, newPath: string): Promise<string>;
@@ -145,15 +133,6 @@ export abstract class SpaceAdapter {
   public saveFrameSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;
   public saveFrame: (path: string, frame: MDBFrame) => Promise<boolean>;
 
-  //Commands
-  public commandsForSpace: (path: string) => Promise<Command[]>;
-  public runCommand: (path: string, name: string, instance: ActionInstance) => Promise<CommandResult>;
-  public createCommand: (path: string, schema: SpaceTableSchema) => Promise<void>;
-  public deleteCommand: (path: string, name: string) => Promise<void>;
-  public saveCommand: (path: string, schemaId: string, saveCommand: (prev: Command) => Command) => Promise<boolean>;
-  public readSystemCommands: () => Promise<Library[]>;
-  public saveSystemCommand: (lib: string, action: Command) => Promise<void>;
-
   //basic item operations
   public resolvePath: (path: string, source: string) => string;
   public pathExists: (path: string) => Promise<boolean>;
@@ -191,8 +170,6 @@ export abstract class SpaceAdapter {
   public readTags: () => string[];
 
   public pathsForTag: (tag: string) => string[];
-  public readAllKits: () => Promise<Kit[]>;
-  public saveFrameKit: (frames: MDBFrame, name: string) => Promise<void>;
   public childrenForPath: (path: string, type?: string) => Promise<string[]>;
 
   public readFocuses: () => Promise<Focus[]>;
