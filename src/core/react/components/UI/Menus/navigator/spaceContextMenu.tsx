@@ -34,19 +34,11 @@ export const showSpaceContextMenu = (
   win: Window,
   parentSpace?: string,
   onClose?: () => void,
-  
+
 ) => {
   const space = superstate.spacesIndex.get(path.path);
   if (!space) return;
   const menuOptions: SelectOption[] = [];
-  menuOptions.push({
-    name: i18n.menu.openFilePane,
-    icon: "ui//go-to-file",
-    onClick: () => {
-      superstate.ui.openPath(path.path, true);
-    },
-  });
-  menuOptions.push(menuSeparator);
 
   menuOptions.push({
     name: i18n.menu.new,
@@ -361,7 +353,7 @@ export const showSpaceContextMenu = (
       ),
   });
 
-  
+
   if (space.type != "default") {
     menuOptions.push(menuSeparator);
 
@@ -383,7 +375,7 @@ export const showSpaceContextMenu = (
   }
 
   const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
-  
+
   if (space.type == "folder") {
     menuOptions.push({
       name: i18n.buttons.addToSpace,
@@ -460,12 +452,12 @@ export const showSpaceContextMenu = (
     });
   }
   menuOptions.push(menuSeparator);
-  
+
   if (
     parentSpaceCache &&
     (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")
   ) {
-    
+
     if (parentSpace != path.parent) {
       const spaceCache = superstate.spacesIndex.get(parentSpace);
       if (spaceCache) {

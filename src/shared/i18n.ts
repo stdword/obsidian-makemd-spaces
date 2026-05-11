@@ -18,24 +18,24 @@ class I18nLoader {
     // Apply overrides on top of default strings
     const applyOverrides = (base: any, overrides: Record<string, any>): any => {
       const result = { ...base };
-      
+
       for (const [key, value] of Object.entries(overrides)) {
         const keys = key.split('.');
         let current = result;
-        
+
         for (let i = 0; i < keys.length - 1; i++) {
           if (!current[keys[i]]) {
             current[keys[i]] = {};
           }
           current = current[keys[i]];
         }
-        
+
         current[keys[keys.length - 1]] = value;
       }
-      
+
       return result;
     };
-    
+
     return applyOverrides(this.strings.en, this.overrides);
   }
 

@@ -43,3 +43,4 @@ This file documents non-obvious pitfalls, gotchas, and project-specific conventi
 ## Known Gotchas
 
 - NEVER use Write to edit already existing non-empty files — always use Edit instead.
+- Никогда не изменяй и не откатывай `main.js` и `styles.css`, даже если их поменяла сборка.

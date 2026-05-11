@@ -1,22 +1,9 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { savePathColor } from "core/superstate/utils/label";
-import {
-  convertPathToSpace,
-  hidePath,
-  hidePaths,
-  renamePathByName,
-} from "core/superstate/utils/path";
-import {
-  TreeNode,
-  removePathsFromSpace,
-} from "core/superstate/utils/spaces";
+import { hidePath, hidePaths, renamePathByName } from "core/superstate/utils/path";
+import { TreeNode, removePathsFromSpace } from "core/superstate/utils/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
-import {
-  removePathIcon,
-  saveColorForPaths,
-  saveIconsForPaths,
-  savePathIcon,
-} from "core/utils/emoji";
+import { removePathIcon, saveColorForPaths, saveIconsForPaths, savePathIcon } from "core/utils/emoji";
 import React from "react";
 import StickerModal from "shared/components/StickerModal";
 import { default as i18n } from "shared/i18n";
@@ -34,373 +21,272 @@ import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
 
-export const triggerMultiPathMenu = (
-  superstate: Superstate,
-  selectedPaths: TreeNode[],
-  e: React.MouseEvent | React.TouchEvent
-) => {
-  const paths = selectedPaths.map((s) => s.item.path);
-  const menuOptions: SelectOption[] = [];
+export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
+    const paths = selectedPaths.map((s) => s.item.path);
+    const menuOptions: SelectOption[] = [];
 
-  // Open in a New Pane
-  menuOptions.push({
-    name: i18n.menu.openFilePane,
-    icon: "ui//go-to-file",
-    onClick: (e) => {
-      paths.forEach((path) => superstate.ui.openPath(path, true));
-    },
-  });
-
-  if (superstate.settings.spacesStickers) {
-    menuOptions.push(menuSeparator);
-    // Rename Item
+    // Open in a New Pane
     menuOptions.push({
-      name: i18n.menu.changeColor,
-      icon: "ui//palette",
-      type: SelectOptionType.Submenu,
-      onSubmenu: (offset) => {
-        return showColorPickerMenu(
-          superstate,
-          offset,
-          windowFromDocument(e.view.document),
-          "",
-          (value) => saveColorForPaths(superstate, paths, value),
-          false,
-          true
-        );
-      },
-    });
-
-    menuOptions.push({
-      name: i18n.buttons.changeIcon,
-      icon: "ui//sticker",
-      onClick: (e) => {
-        superstate.ui.openPalette(
-          <StickerModal
-            ui={superstate.ui}
-            selectedSticker={(emoji) =>
-              saveIconsForPaths(superstate, paths, emoji)
-            }
-          />,
-          windowFromDocument(e.view.document)
-        );
-      },
-    });
-    menuOptions.push({
-      name: i18n.buttons.removeIcon,
-      icon: "ui//file-minus",
-      onClick: (e) => {
-        removeIconsForPaths(superstate, paths);
-      },
-    });
-  }
-
-  menuOptions.push(menuSeparator);
-
-  // Move Item
-  menuOptions.push({
-    name: i18n.menu.moveFile,
-    icon: "ui//paper-plane",
-    onClick: (e) => {
-      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-      showSpacesMenu(
-        offset,
-        windowFromDocument(e.view.document),
-        superstate,
-        (link) => {
-          paths.forEach((f) => {
-            movePathToSpace(superstate, f, link);
-          });
-        }
-      );
-    },
-  });
-
-  menuOptions.push({
-    name: i18n.buttons.addToSpace,
-    icon: "ui//pin",
-    onClick: (e) => {
-      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-      showSpacesMenu(
-        offset,
-        windowFromDocument(e.view.document),
-        superstate,
-        (link) => {
-          dropPathsInSpaceAtIndex(
-            superstate,
-            selectedPaths.map((f) => f.path),
-            link,
-            -1,
-            "link"
-          );
+        name: i18n.menu.openFilePane,
+        icon: "ui//go-to-file",
+        onClick: (e) => {
+            paths.forEach((path) => superstate.ui.openPath(path, true));
         },
-        true
-      );
-    },
-  });
+    });
 
-  menuOptions.push(menuSeparator);
+    if (superstate.settings.spacesStickers) {
+        menuOptions.push(menuSeparator);
+        // Rename Item
+        menuOptions.push({
+            name: i18n.menu.changeColor,
+            icon: "ui//palette",
+            type: SelectOptionType.Submenu,
+            onSubmenu: (offset) => {
+                return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, paths, value), false, true);
+            },
+        });
 
-  menuOptions.push({
-    name: i18n.menu.hide,
-    icon: "ui//eye-off",
-    onClick: (e) => {
-      hidePaths(superstate, paths);
-    },
-  });
+        menuOptions.push({
+            name: i18n.buttons.changeIcon,
+            icon: "ui//sticker",
+            onClick: (e) => {
+                superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => saveIconsForPaths(superstate, paths, emoji)} />, windowFromDocument(e.view.document));
+            },
+        });
+        menuOptions.push({
+            name: i18n.buttons.removeIcon,
+            icon: "ui//file-minus",
+            onClick: (e) => {
+                removeIconsForPaths(superstate, paths);
+            },
+        });
+    }
 
-  // Delete Item
-  menuOptions.push({
-    name: i18n.menu.delete,
-    icon: "ui//trash",
-    onClick: (e) => {
-      superstate.ui.openModal(
-        i18n.labels.deleteFiles,
-        <ConfirmationModal
-          confirmAction={() => {
-            paths.forEach((f) => {
-              deletePath(superstate, f);
+    menuOptions.push(menuSeparator);
+
+    // Move Item
+    menuOptions.push({
+        name: i18n.menu.moveFile,
+        icon: "ui//paper-plane",
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showSpacesMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                paths.forEach((f) => {
+                    movePathToSpace(superstate, f, link);
+                });
             });
-          }}
-          confirmLabel={i18n.buttons.delete}
-          message={i18n.descriptions.deleteFiles.replace(
-            "${1}",
-            paths.length.toString()
-          )}
-        ></ConfirmationModal>,
-        windowFromDocument(e.view.document)
-      );
-    },
-  });
+        },
+    });
 
-  superstate.ui.openMenu(
-    (e.target as HTMLElement).getBoundingClientRect(),
-    defaultMenu(superstate.ui, menuOptions),
-    windowFromDocument(e.view.document)
-  );
+    menuOptions.push({
+        name: i18n.buttons.addToSpace,
+        icon: "ui//pin",
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showSpacesMenu(
+                offset,
+                windowFromDocument(e.view.document),
+                superstate,
+                (link) => {
+                    dropPathsInSpaceAtIndex(
+                        superstate,
+                        selectedPaths.map((f) => f.path),
+                        link,
+                        -1,
+                        "link",
+                    );
+                },
+                true,
+            );
+        },
+    });
 
-  return false;
+    menuOptions.push(menuSeparator);
+
+    menuOptions.push({
+        name: i18n.menu.hide,
+        icon: "ui//eye-off",
+        onClick: (e) => {
+            hidePaths(superstate, paths);
+        },
+    });
+
+    // Delete Item
+    menuOptions.push({
+        name: i18n.menu.delete,
+        icon: "ui//trash",
+        onClick: (e) => {
+            superstate.ui.openModal(
+                i18n.labels.deleteFiles,
+                <ConfirmationModal
+                    confirmAction={() => {
+                        paths.forEach((f) => {
+                            deletePath(superstate, f);
+                        });
+                    }}
+                    confirmLabel={i18n.buttons.delete}
+                    message={i18n.descriptions.deleteFiles.replace("${1}", paths.length.toString())}
+                ></ConfirmationModal>,
+                windowFromDocument(e.view.document),
+            );
+        },
+    });
+
+    superstate.ui.openMenu((e.target as HTMLElement).getBoundingClientRect(), defaultMenu(superstate.ui, menuOptions), windowFromDocument(e.view.document));
+
+    return false;
 };
 
-export const showPathContextMenu = (
-  superstate: Superstate,
-  path: string,
-  space: string,
-  rect: Rect,
-  win: Window,
-  anchor?: Anchors,
-  onClose?: () => void
-) => {
-  const cache = superstate.pathsIndex.get(path);
-   
-  if (cache.type == 'space') {
-    
-    showSpaceContextMenu(superstate, cache, rect, win, space, onClose)
-    return
-  }
-  if (!cache) return;
-  const menuOptions: SelectOption[] = [];
+export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void) => {
+    const cache = superstate.pathsIndex.get(path);
 
-  menuOptions.push({
-    name: i18n.menu.openFilePane,
-    icon: "ui//go-to-file",
-    onClick: (e) => {
-      superstate.ui.openPath(path, true);
-    },
-  });
-  menuOptions.push(menuSeparator);
-
-  if (superstate.settings.spacesStickers) {
-    menuOptions.push(menuSeparator);
-    // Rename Item
-    menuOptions.push({
-      name: i18n.menu.changeColor,
-      icon: "ui//palette",
-      type: SelectOptionType.Submenu,
-      onSubmenu: (offset) => {
-        return showColorPickerMenu(
-          superstate,
-          offset,
-          win,
-          "",
-          (value) => savePathColor(superstate, path, value),
-          false,
-          true
-        );
-      },
-    });
-
-    menuOptions.push({
-      name: i18n.buttons.changeIcon,
-      icon: "ui//sticker",
-      onClick: (e) => {
-        superstate.ui.openPalette(
-          <StickerModal
-            ui={superstate.ui}
-            selectedSticker={(emoji) => savePathIcon(superstate, path, emoji)}
-          />,
-          windowFromDocument(e.view.document)
-        );
-      },
-    });
-    menuOptions.push({
-      name: i18n.buttons.removeIcon,
-      icon: "ui//file-minus",
-      onClick: (e) => {
-        removePathIcon(superstate, path);
-      },
-    });
-  }
-  
-
-  menuOptions.push(menuSeparator);
-
-  if (cache.type == "file" && cache.subtype == "md")
-    menuOptions.push({
-      name: i18n.menu.changeToFolderNote,
-      icon: "ui//file-plus-2",
-      onClick: (e) => {
-        convertPathToSpace(superstate, path, false);
-      },
-    });
-
-  menuOptions.push({
-    name: i18n.menu.rename,
-    icon: "ui//edit",
-    onClick: (e) => {
-      superstate.ui.openModal(
-        i18n.labels.rename,
-        <InputModal
-          saveLabel={i18n.buttons.rename}
-          value={cache.name}
-          saveValue={(v) => renamePathByName(superstate, path, v)}
-        ></InputModal>,
-        windowFromDocument(e.view.document)
-      );
-    },
-  });
-
-  menuOptions.push({
-    name: i18n.buttons.addToSpace,
-    icon: "ui//pin",
-    onClick: (e) => {
-      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-      showSpacesMenu(
-        offset,
-        windowFromDocument(e.view.document),
-        superstate,
-        (link) => {
-          dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
-        },
-        true
-      );
-    },
-  });
-
-  menuOptions.push({
-    name: i18n.menu.moveFile,
-    icon: "ui//paper-plane",
-    onClick: (e) => {
-      const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-      showSpacesMenu(
-        offset,
-        windowFromDocument(e.view.document),
-        superstate,
-        (link) => {
-          const item = superstate.pathsIndex.get(path);
-          superstate.spaceManager.renamePath(path, movePath(path, link));
-        }
-      );
-    },
-  });
-
-  menuOptions.push({
-    name: i18n.menu.duplicate,
-    icon: "ui//documents",
-    onClick: (e) => {
-      superstate.spaceManager.copyPath(
-        path,
-        `${cache.parent}`,
-        `${cache.name}`
-      );
-    },
-  });
-
-  if (superstate.ui.hasNativePathMenu(path)) {
-    menuOptions.push({
-      name: i18n.menu.openNativeMenu,
-      icon: "ui//options",
-      onClick: (e) => {
-        superstate.ui.nativePathMenu(e, path);
-      },
-    });
-  }
-
-  // Move Item
-
-  menuOptions.push(menuSeparator);
-  if (!isTouchScreen(superstate.ui)) {
-    menuOptions.push({
-      name:
-        superstate.ui.getOS() == "mac"
-          ? i18n.menu.revealInDefault
-          : i18n.menu.revealInExplorer,
-      icon: "ui//arrow-up-right",
-      onClick: (e) => {
-        superstate.ui.openPath(path, "system");
-      },
-    });
-    menuOptions.push(menuSeparator);
-  }
-
-  
-  if (onClose) {
-    menuOptions.push({
-      name: i18n.menu.closeSpace,
-      icon: "ui//close",
-      onClick: (e) => {
-        onClose();
-      },
-    });
-    
-  }
-
-  if (space && space != cache.parent) {
-    const spaceCache = superstate.spacesIndex.get(space);
-    if (spaceCache) {
-      menuOptions.push({
-        name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
-        icon: "ui//pin-off",
-        onClick: (e) => {
-          removePathsFromSpace(superstate, spaceCache.path, [path]);
-        },
-      });
+    if (cache.type == "space") {
+        showSpaceContextMenu(superstate, cache, rect, win, space, onClose);
+        return;
     }
-  }
+    if (!cache) return;
+    const menuOptions: SelectOption[] = [];
 
+    if (superstate.settings.spacesStickers) {
+        menuOptions.push(menuSeparator);
 
-  menuOptions.push({
-    name: i18n.menu.hide,
-    icon: "ui//eye-off",
-    onClick: (e) => {
-      hidePath(superstate, path);
-    },
-  });
+        // Rename Item
+        menuOptions.push({
+            name: i18n.menu.changeColor,
+            icon: "ui//palette",
+            type: SelectOptionType.Submenu,
+            onSubmenu: (offset) => {
+                return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
+            },
+        });
 
-  menuOptions.push({
-    name: i18n.menu.delete,
-    icon: "ui//trash",
-    onClick: (e) => {
-      deletePath(superstate, path);
-    },
-  });
+        menuOptions.push({
+            name: i18n.buttons.changeIcon,
+            icon: "ui//sticker",
+            onClick: (e) => {
+                superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => savePathIcon(superstate, path, emoji)} />, windowFromDocument(e.view.document));
+            },
+        });
+        menuOptions.push({
+            name: i18n.buttons.removeIcon,
+            icon: "ui//file-minus",
+            onClick: (e) => {
+                removePathIcon(superstate, path);
+            },
+        });
+    }
 
-  superstate.ui.openMenu(
-    rect,
-    defaultMenu(superstate.ui, menuOptions),
-    win,
-    anchor
-  );
+    menuOptions.push(menuSeparator);
 
-  return false;
+    menuOptions.push({
+        name: i18n.menu.rename,
+        icon: "ui//edit",
+        onClick: (e) => {
+            superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={cache.name} saveValue={(v) => renamePathByName(superstate, path, v)}></InputModal>, windowFromDocument(e.view.document));
+        },
+    });
+
+    menuOptions.push({
+        name: i18n.buttons.addToSpace,
+        icon: "ui//pin",
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showSpacesMenu(
+                offset,
+                windowFromDocument(e.view.document),
+                superstate,
+                (link) => {
+                    dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
+                },
+                true,
+            );
+        },
+    });
+
+    menuOptions.push({
+        name: i18n.menu.moveFile,
+        icon: "ui//paper-plane",
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showSpacesMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                const item = superstate.pathsIndex.get(path);
+                superstate.spaceManager.renamePath(path, movePath(path, link));
+            });
+        },
+    });
+
+    menuOptions.push({
+        name: i18n.menu.duplicate,
+        icon: "ui//documents",
+        onClick: (e) => {
+            superstate.spaceManager.copyPath(path, `${cache.parent}`, `${cache.name}`);
+        },
+    });
+
+    if (superstate.ui.hasNativePathMenu(path)) {
+        menuOptions.push({
+            name: i18n.menu.openNativeMenu,
+            icon: "ui//options",
+            onClick: (e) => {
+                superstate.ui.nativePathMenu(e, path);
+            },
+        });
+    }
+
+    // Move Item
+    menuOptions.push(menuSeparator);
+
+    if (!isTouchScreen(superstate.ui)) {
+        menuOptions.push({
+            name: superstate.ui.getOS() == "mac" ? i18n.menu.revealInDefault : i18n.menu.revealInExplorer,
+            icon: "ui//arrow-up-right",
+            onClick: (e) => {
+                superstate.ui.openPath(path, "system");
+            },
+        });
+        menuOptions.push(menuSeparator);
+    }
+
+    if (onClose) {
+        menuOptions.push({
+            name: i18n.menu.closeSpace,
+            icon: "ui//close",
+            onClick: (e) => {
+                onClose();
+            },
+        });
+    }
+
+    if (space && space != cache.parent) {
+        const spaceCache = superstate.spacesIndex.get(space);
+        if (spaceCache) {
+            menuOptions.push({
+                name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
+                icon: "ui//pin-off",
+                onClick: (e) => {
+                    removePathsFromSpace(superstate, spaceCache.path, [path]);
+                },
+            });
+        }
+    }
+
+    menuOptions.push({
+        name: i18n.menu.hide,
+        icon: "ui//eye-off",
+        onClick: (e) => {
+            hidePath(superstate, path);
+        },
+    });
+
+    menuOptions.push({
+        name: i18n.menu.delete,
+        icon: "ui//trash",
+        onClick: (e) => {
+            deletePath(superstate, path);
+        },
+    });
+
+    superstate.ui.openMenu(rect, defaultMenu(superstate.ui, menuOptions), win, anchor);
+
+    return false;
 };

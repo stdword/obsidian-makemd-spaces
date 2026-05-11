@@ -12,6 +12,8 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
   spacesRightSplit: false,
   activeView: "/",
   activeSpace: "",
+  defaultDateFormat: "MMM dd yyyy",
+  defaultTimeFormat: "h:mm a",
   currentWaypoint: 0,
   enableFolderNote: true,
   folderIndentationLines: true,

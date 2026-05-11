@@ -35,4 +35,5 @@
     "src/core/utils/color/gradientParser.js",
     "src/core/react/components/SpaceEditor/ts.worker.js",
   ],
+  "exclude": ["src/basics/**"],
 }

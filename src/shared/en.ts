@@ -7,7 +7,7 @@ export const en = {
     "createListItem": "Create List Item",
     "dragDropProperties": "Drag and drop to reorder properties",
     "dragDropModifierKeys": "Hold Alt to copy",
-    "hiddenExtensionsPlaceholder": "e.g., .mdb, _assets, _blocks"
+    "hiddenExtensionsPlaceholder": "e.g., .mdb, _assets"
   },
   "timeUnits": {
     "hour": "Hour",
@@ -109,9 +109,9 @@ export const en = {
   "commandPalette": {
     "openFlow": "Open Flow Blocks in Selection",
     "closeFlow": "Close Flow Blocks in Selection",
-    "openSpaces": "Open Navigator",
+    "openSpaces": "Open Spaces",
     "blink": "Blink",
-    "revealFile": "Reveal File in Navigator",
+    "revealFile": "Reveal File in Spaces",
     "pinActiveFileToSpace": "Pin Active File to Space",
     "convertPathToSpace": "Convert Path to Space"
   },
@@ -243,7 +243,6 @@ export const en = {
     "setNone": "None",
     "applyItems": "Apply to Items in Folder",
     "rename": "Rename",
-    "changeToFolderNote": "Convert to Folder Note",
     "moveFile": "Move File to...",
     "duplicate": "Make a copy",
     "edit": "Edit",
@@ -1081,8 +1080,8 @@ export const en = {
       "desc": "Add inline stickers by typing :"
     },
     "openSpacesOnLaunch": {
-      "name": "Open Navigator as Default Tab",
-      "desc": "Open the Navigator tab when Obsidian launches"
+      "name": "Open Spaces as Default Tab",
+      "desc": "Open the Spaces tab when Obsidian launches"
     },
     "overrideNativeMenu": {
       "name": "Use Obsidian Context Menu",
@@ -1093,8 +1092,8 @@ export const en = {
       "desc": "Edit stickers directly in the sidebar"
     },
     "spacesRightSplit": {
-      "name": "Navigator on Right Side",
-      "desc": "Open the Navigator in the right panel"
+      "name": "Spaces on Right Side",
+      "desc": "Open the Spaces in the right panel"
     },
     "autoAddContextsToSubtags": {
       "name": "Apply Properties to Subtags",

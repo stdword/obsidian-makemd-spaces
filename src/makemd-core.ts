@@ -21,7 +21,5 @@ export type { Sticker } from "shared/types/ui";
 export type { UIAdapter } from "shared/types/uiManager";
 
 //Views
-export { Backlinks } from "core/react/components/MarkdownEditor/Backlinks";
-export { MarkdownHeaderView } from "core/react/components/MarkdownEditor/MarkdownHeaderView";
 export { Navigator } from "core/react/components/Navigator/Navigator";
 export { NoteView } from "core/react/components/PathView/NoteView";

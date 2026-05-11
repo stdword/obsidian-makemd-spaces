@@ -1,12 +1,9 @@
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
-import { App, MarkdownView, Platform, Plugin, TAbstractFile, TFile, TFolder, WorkspaceLeaf, WorkspaceSplit, addIcon } from "obsidian";
+import { App, MarkdownView, Plugin, TAbstractFile, TFile, TFolder, WorkspaceLeaf, addIcon } from "obsidian";
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import i18n from "shared/i18n";
-
 import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTFolder, openTagContext } from "adapters/obsidian/utils/file";
-import { convertPathToSpace } from "core/superstate/utils/path";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
@@ -34,26 +31,24 @@ import { ImageFileTypeAdapter } from "adapters/image/imageAdapter";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
-import MakeBasicsPlugin from "basics/basics";
 import { attachCommands } from "commands";
 import { WebSpaceAdapter } from "core/spaceManager/webAdapter/webAdapter";
 import { Superstate } from "core/superstate/superstate";
 import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
-import { isTouchScreen } from "core/utils/ui/screen";
 import "css/DefaultVibe.css";
-import "css/Editor/Actions/Actions.css";
-import "css/Editor/Context/ContextList.css";
-import "css/Editor/Context/FilterBar.css";
-import "css/Editor/Flow/FlowEditor.css";
-import "css/Editor/Flow/FlowState.css";
-import "css/Editor/Flow/Properties.css";
-import "css/Editor/Frames/Insert.css";
-import "css/Editor/Frames/Node.css";
-import "css/Editor/Frames/Overlay.css";
-import "css/Editor/Frames/Page.css";
-import "css/Editor/Frames/Slides.css";
-import "css/Editor/Properties/DatePicker.css";
-import "css/Editor/MKitViewer.css";
+// import "css/Editor/Actions/Actions.css";
+// import "css/Editor/Context/ContextList.css";
+// import "css/Editor/Context/FilterBar.css";
+// import "css/Editor/Flow/FlowEditor.css";
+// import "css/Editor/Flow/FlowState.css";
+// import "css/Editor/Flow/Properties.css";
+// import "css/Editor/Frames/Insert.css";
+// import "css/Editor/Frames/Node.css";
+// import "css/Editor/Frames/Overlay.css";
+// import "css/Editor/Frames/Page.css";
+// import "css/Editor/Frames/Slides.css";
+// import "css/Editor/Properties/DatePicker.css";
+// import "css/Editor/MKitViewer.css";
 import "css/Menus/ColorPicker.css";
 import "css/Menus/InlineMenu.css";
 import "css/Menus/MainMenu.css";
@@ -89,6 +84,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     ui: ObsidianUI;
 
     quickOpen(superstate: ISuperstate, mode?: number, onSelect?: (link: string) => void, source?: string) {
+        console.log("TRACE", "quickOpen", { superstate, mode, onSelect, source });
         const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument);
         openBlinkModal(superstate, mode, win, onSelect, source);
     }
@@ -101,109 +97,52 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
             this.registerEvent(this.app.vault.on("delete", this.onDelete));
             this.registerEvent(this.app.vault.on("rename", this.onRename));
-
-            this.app.metadataCache.on("changed", this.metadataChange);
-
-            // Navigator MVP disables the Make.md release notes startup autoaction.
-            // if (makeMDVersion > this.superstate.settings.releaseNotesPrompt) {
-            //   this.superstate.settings.releaseNotesPrompt = makeMDVersion;
-            //   this.saveSettings();
-            // }
-            // if (!this.superstate.settings.firstLaunch) {
-            //     this.superstate.settings.firstLaunch = true;
-            //     this.saveSettings();
-            // }
         });
     }
-
     loadViews() {
         this.registerView(FILE_TREE_VIEW_TYPE, (leaf) => {
             return new FileTreeView(leaf, this.superstate, this.ui);
         });
-
-        // Navigator MVP excludes the standalone space fragment editor view.
-        // this.registerView(SPACE_FRAGMENT_VIEW_TYPE, (leaf) => {
-        //   return new SpaceFragmentView(leaf, this);
-        // });
-        // Navigator MVP excludes the standalone file link/context viewer.
-        // this.registerView(LINK_VIEW_TYPE, (leaf) => {
-        //   return new FileLinkView(leaf, this.app, LINK_VIEW_TYPE, this.superstate);
-        // });
-        // Navigator MVP excludes the standalone MDB file viewer.
-        // this.registerView(MDB_FILE_VIEWER_TYPE, (leaf) => {
-        //   return new MDBFileViewer(leaf, this);
-        // });
-        // Navigator MVP excludes the standalone HTML file viewer.
-        // this.registerView(HTML_FILE_VIEWER_TYPE, (leaf) => {
-        //   return new HTMLFileViewer(leaf, this);
-        // });
-        // Navigator MVP excludes the standalone MKit file viewer.
-        // this.registerView(MKIT_FILE_VIEWER_TYPE, (leaf) => {
-        //   return new MKitFileViewer(leaf, this);
-        // });
     }
-
     async loadSpaces() {
         document.body.querySelector(".app-container").setAttribute("vaul-drawer-wrapper", "");
 
         document.body.classList.toggle("mk-spaces-right", this.superstate.settings.spacesRightSplit);
 
-        document.body.classList.toggle("mk-readable-line", this.app.vault.getConfig("readableLineLength"));
         this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
+        document.body.classList.toggle("mk-readable-line", this.superstate.settings.readableLineWidth);
 
         document.body.classList.toggle("mk-folder-lines", this.superstate.settings.folderIndentationLines);
-        if (this.app.vault.config.cssTheme == "Minimal") {
-            document.body.classList.toggle("mk-minimal-fix", true);
-        }
 
         patchFilesPlugin(this);
 
         this.registerEvent(this.app.workspace.on("active-leaf-change", () => this.activeFileChange()));
-        this.registerEvent(
-            this.app.workspace.on("layout-change", () => {
-                this.activeFileChange();
-            }),
-        );
+        this.registerEvent(this.app.workspace.on("layout-change", () => this.activeFileChange()));
     }
 
-    convertPathToSpace() {
-        const activeLeaf = this.app.workspace.activeLeaf;
-        if (activeLeaf?.view.getViewType() == "markdown") {
-            const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-            if (view instanceof MarkdownView && view.file instanceof TFile) {
-                convertPathToSpace(this.superstate, view.file.path, true);
-            }
-        } else {
-            this.superstate.ui.notify(i18n.notice.cantConvertNoteToSpace);
-        }
-    }
-    toggleExperimental() {
-        this.superstate.settings.experimental = !this.superstate.settings.experimental;
-        this.saveSettings();
-    }
     getActiveFile() {
         let filePath = null;
         let state = null;
-        let leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
+        const leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
 
         const activeView = leaf?.view;
-        //@ts-ignore
-        if (!activeView || leaf.isFlowBlock) return null;
+        if (!activeView) return null;
+
         if (activeView.getViewType() == "markdown") {
             filePath = activeView.file.path;
             state = activeView.getState();
             modifyTabSticker(this);
         }
+
         if (!filePath || !state) return null;
+
         return {
             path: filePath,
             state: state,
         };
     }
-
     activeFileChange() {
         const activeFile = this.getActiveFile();
-
         if (activeFile) {
             if (this.superstate.ui.activePath == activeFile?.path) {
                 this.superstate.ui.setActiveState(activeFile.state);
@@ -214,65 +153,23 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         }
     }
 
-    closeExtraFileTabs() {
-        let filesFound = false;
-        if (Platform.isMobile) {
-            this.app.workspace.leftSplit?.children.forEach((g: any) => {
-                if (g.view.getViewType() == "file-explorer") {
-                    if (!filesFound) {
-                        filesFound = true;
-                    } else {
-                        this.app.workspace.leftSplit.removeChild(g);
-                    }
-                }
-            });
-            return;
-        }
-        this.app.workspace.leftSplit?.children.forEach((f: WorkspaceSplit) => {
-            f?.children.forEach((g) => {
-                if (g.view.getViewType() == "file-explorer") {
-                    if (!filesFound) {
-                        filesFound = true;
-                    } else {
-                        f.removeChild(g);
-                    }
-                }
-            });
-        });
-    }
     loadCommands() {
         attachCommands(this);
     }
     loadContext() {
-        // this.app.workspace.onLayoutReady(async () => {
-        //     this.closeExtraFileTabs();
-        //     await this.files.createFolder(this.superstate.settings.spacesFolder);
-        // });
-
-        // Navigator MVP excludes the standalone MDB file viewer extension.
-        // this.registerExtensions(["mdb"], MDB_FILE_VIEWER_TYPE);
-        // Navigator MVP excludes the standalone HTML/HTM file viewer extension.
-        // try {
-        // this.registerExtensions(["html", "htm"], HTML_FILE_VIEWER_TYPE);
-        // } catch (e) {
-        //         }
-        // Navigator MVP excludes the standalone MKit file viewer extension.
-        // try {
-        // this.registerExtensions(["mkit"], MKIT_FILE_VIEWER_TYPE);
-        // } catch (e) {
-        //         }
         this.app.workspace.onLayoutReady(async () => {
             setTimeout(() => this.activeFileChange(), 2000);
         });
     }
 
-    public basics: MakeBasicsPlugin;
-
+    public basics: unknown;
     private debouncedRefresh: () => void = () => null;
 
     openPath = async (leaf: WorkspaceLeaf, path: string, flow?: boolean) => {
         const uri = this.superstate.spaceManager.uriByString(path);
+        console.log("TRACE", "openPath", path);
         if (!uri) return;
+
         if (uri.scheme == "https" || uri.scheme == "http") {
             if (this.superstate.spacesIndex.has(path)) {
                 const space = this.superstate.spacesIndex.get(path)?.space.notePath;
@@ -280,28 +177,19 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
                 if (file) await openTFile(leaf, file, this.app);
                 return;
             }
-            // Navigator MVP
-            // else if (this.superstate.pathsIndex.has(path)) {
-            //     const viewType = LINK_VIEW_TYPE;
-            //     this.app.workspace.setActiveLeaf(leaf, { focus: true });
-            //     await leaf.setViewState({
-            //         type: viewType,
-            //         state: { path: path, flow },
-            //     });
-            //     return;
-            // }
             window.open(uri.fullPath, "_blank");
+            return;
+        }
+
+        if (uri.scheme == "obsidian" && uri.authority == "settings") {
+            this.app.setting.open();
+            this.app.setting.openTabById(this.manifest.id);
             return;
         }
         if (uri.scheme == "obsidian") {
             await leaf.setViewState({
                 type: uri.authority,
             });
-            return;
-        }
-        if (uri.scheme == "mk-core" && uri.authority == "settings") {
-            this.app.setting.open();
-            this.app.setting.openTabById(this.manifest.id);
             return;
         }
 
@@ -341,8 +229,9 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files = FilesystemMiddleware.create();
         this.obsidianAdapter = new ObsidianFileSystem(this, this.files);
         this.files.initiateFileSystemAdapter(this.obsidianAdapter, true);
-        this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
         this.files.initiateFiletypeAdapter(this.mdbFileAdapter);
+
+        this.markdownAdapter = new ObsidianMarkdownFiletypeAdapter(this);
         this.files.initiateFiletypeAdapter(this.markdownAdapter);
 
         this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
@@ -390,25 +279,14 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         await this.loadSpaces();
         this.loadContext();
 
-        // Navigator MVP excludes Make.md Basics editor integrations.
-        // this.basics = new MakeBasicsPlugin(this);
-        // this.basics.loadBasics();
-
         this.loadCommands();
 
         this.superstate.ui.notify(`Make.md - Plugin loaded in ${(Date.now() - start) / 1000} seconds`, "console");
     }
 
-    //Spaces Listeners
-
-    metadataChange = (file: TFile) => {
-        this.markdownAdapter.metadataChange(file);
-    };
-
     onDelete = async (file: TAbstractFile) => {
         this.activeFileChange();
     };
-
     onRename = async (file: TAbstractFile, oldPath: string) => {
         this.activeFileChange();
     };
@@ -431,23 +309,20 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
                 this.app.workspace.revealLeaf(leaf);
             }
         }
-        if (isTouchScreen(this.superstate.ui)) {
-            this.app.workspace.leftSplit.collapse();
-        }
 
-        this.closeDuplicateTabs();
+        this.closeDuplicateFileTreeLeaves();
     };
-
-    closeDuplicateTabs = () => {
+    closeDuplicateFileTreeLeaves = () => {
         try {
             //@ts-ignore
             this.app.workspace.leftSplit.children[0].children.filter((f, i, a) => i != a.findIndex((g) => g.view.getViewType() == f.view.getViewType())).forEach((g) => this.app.workspace.leftSplit.children[0].removeChild(g));
         } catch {}
     };
-    detachFileTreeLeafs = () => {
+    detachFileTreeLeaves = () => {
         const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
         for (const leaf of leafs) {
-            if (leaf.view instanceof FileTreeView) leaf.view.destroy();
+            if (leaf.view instanceof FileTreeView)
+                leaf.view.destroy();
             leaf.detach();
         }
     };
@@ -462,15 +337,15 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.settings.newFileLocation = userConfig.newFileLocation;
         this.saveSettings();
     }
-
     async saveSettings(refresh = true) {
         await this.saveData(this.superstate.settings);
         this.obsidianAdapter.setSettingsLastUpdatedDate();
-        if (refresh) this.superstate.dispatchEvent("settingsChanged", null);
+        if (refresh)
+            this.superstate.dispatchEvent("settingsChanged", null);
     }
 
     onunload() {
         this.superstate.persister.unload();
-        this.detachFileTreeLeafs();
+        this.detachFileTreeLeaves();
     }
 }

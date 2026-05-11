@@ -1,6 +1,5 @@
-import { MakeBasicsSettings } from "basics/types/settings";
-
 export type DeleteFileOption = "trash" | "permanent" | "system-trash";
+type MakeBasicsSettings = Record<string, any>;
 
 export interface MakeMDSettings {
   defaultInitialization: boolean;
@@ -27,6 +26,8 @@ export interface MakeMDSettings {
   hiddenExtensions: string[];
   newFileLocation: string;
   newFileFolderPath: string;
+  defaultDateFormat: string;
+  defaultTimeFormat: string;
   inlineBacklinks: boolean;
   inlineBacklinksExpanded: boolean;
   spacesUseAlias: boolean,
