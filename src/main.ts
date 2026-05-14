@@ -22,7 +22,7 @@ import { ObsidianUI } from "adapters/obsidian/ui/ui";
 import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 
 import { IconFileTypeAdapter } from "adapters/icons/iconsAdapter";
-import { openBlinkModal } from "core/react/components/Blink/Blink";
+// import { openBlinkModal } from "core/react/components/Blink/Blink";
 import { LocalCachePersister } from "shared/types/persister";
 
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
@@ -68,7 +68,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     quickOpen(superstate: ISuperstate, mode?: number, onSelect?: (link: string) => void, source?: string) {
         console.log("TRACE", "quickOpen", { superstate, mode, onSelect, source });
         const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument);
-        openBlinkModal(superstate, mode, win, onSelect, source);
+        // openBlinkModal(superstate, mode, win, onSelect, source);
     }
 
     loadSuperState() {
@@ -88,8 +88,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     }
     async loadSpaces() {
         document.body.querySelector(".app-container").setAttribute("vaul-drawer-wrapper", "");
-
-        document.body.classList.toggle("mk-spaces-right", this.superstate.settings.spacesRightSplit);
 
         this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
         document.body.classList.toggle("mk-readable-line", this.superstate.settings.readableLineWidth);
@@ -269,17 +267,18 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     openFileTreeLeaf = async (showAfterAttach: boolean) => {
         const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
         if (leafs.length == 0) {
-            const leaf = this.superstate.settings.spacesRightSplit ? this.app.workspace.getRightLeaf(false) : this.app.workspace.getLeftLeaf(false);
+            const leaf = this.app.workspace.getLeftLeaf(false) || this.app.workspace.getRightLeaf(false);
             await leaf.setViewState({ type: FILE_TREE_VIEW_TYPE });
-            if (showAfterAttach && !this.app.workspace.leftSplit.collapsed) this.app.workspace.revealLeaf(leaf);
+            if (showAfterAttach && !this.app.workspace.leftSplit.collapsed)
+                this.app.workspace.revealLeaf(leaf);
         } else {
             if (!this.app.workspace.leftSplit.collapsed && showAfterAttach) {
-                const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
                 for (const leaf of leafs) {
-                    if (leaf.view instanceof FileTreeView) leaf.view.destroy();
+                    if (leaf.view instanceof FileTreeView)
+                        leaf.view.destroy();
                     leaf.detach();
                 }
-                const leaf = this.superstate.settings.spacesRightSplit ? this.app.workspace.getRightLeaf(false) : this.app.workspace.getLeftLeaf(false);
+                const leaf = this.app.workspace.getLeftLeaf(false) || this.app.workspace.getRightLeaf(false);
                 await leaf.setViewState({ type: FILE_TREE_VIEW_TYPE });
                 this.app.workspace.revealLeaf(leaf);
             }

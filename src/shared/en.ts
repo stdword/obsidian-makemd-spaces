@@ -364,7 +364,6 @@ export const en = {
     "togglePin": "Toggle Pin",
     "refresh": "Refresh",
     "showHidden": "Show Hidden",
-    "alias": "Alias",
     "addFilter": "Add Filter",
     "loadMore": "Load More",
     "addCondition": "Add Condition",
@@ -1078,10 +1077,6 @@ export const en = {
       "name": "Edit Stickers in Sidebar",
       "desc": "Edit stickers directly in the sidebar"
     },
-    "spacesRightSplit": {
-      "name": "Spaces on Right Side",
-      "desc": "Open the Spaces in the right panel"
-    },
     "autoAddContextsToSubtags": {
       "name": "Apply Properties to Subtags",
       "desc": "Automatically apply context properties to subtags"
@@ -1133,10 +1128,6 @@ export const en = {
     "spacesStickers": {
       "name": "Stickers",
       "desc": "Use Emojis to make it easier to find your notes"
-    },
-    "spacesUseAlias": {
-      "name": "Alias",
-      "desc": "Use the alias metadata to show in Spaces"
     },
     "deleteFileOption": {
       "name": "Delete File Option",

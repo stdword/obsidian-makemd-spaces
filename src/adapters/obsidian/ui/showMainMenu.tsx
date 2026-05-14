@@ -1,9 +1,7 @@
 import { defaultMenu, menuSeparator } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
-import { isTouchScreen } from "core/utils/ui/screen";
 import MakeMDPlugin from "main";
 import { SelectOption, Superstate } from "makemd-core";
-import { WorkspaceLeaf, WorkspaceMobileDrawer } from "obsidian";
 import React from "react";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "shared/utils/dom";
@@ -17,25 +15,6 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: Ma
         superstate.saveSettings();
     };
 
-    const isMobile = plugin.app.workspace.leftSplit && isTouchScreen(superstate.ui);
-
-    const refreshLeafs = () => {
-        const leafs = [];
-        let spaceActive = true;
-        if (isMobile) {
-            const mobileDrawer = (plugin.superstate.settings.spacesRightSplit ? plugin.app.workspace.rightSplit : plugin.app.workspace.leftSplit) as WorkspaceMobileDrawer;
-            const leaves = mobileDrawer.children as WorkspaceLeaf[];
-            const index = leaves.reduce((p: number, c, i) => {
-                return c.getViewState().type == FILE_TREE_VIEW_TYPE ? i : p;
-            }, -1);
-            spaceActive = index == mobileDrawer.currentTab;
-            leafs.push(...leaves.filter((l, i) => i != index));
-        }
-
-        return { leafs, spaceActive };
-    };
-
-    const { spaceActive, leafs } = refreshLeafs();
     const menuOptions: SelectOption[] = [];
 
     menuOptions.push({
@@ -72,6 +51,7 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: Ma
         },
     });
 
+    const leafs = plugin.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
     leafs.map((l) =>
         menuOptions.push({
             name: l.getDisplayText(),
@@ -82,7 +62,6 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: Ma
         }),
     );
 
-    // if (isMouseEvent(e)) {
     const offset = el.getBoundingClientRect();
     superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), windowFromDocument(el.ownerDocument), "bottom");
 };

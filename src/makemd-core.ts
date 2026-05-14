@@ -22,4 +22,4 @@ export type { UIAdapter } from "shared/types/uiManager";
 
 //Views
 export { Navigator } from "core/react/components/Navigator/Navigator";
-export { NoteView } from "core/react/components/PathView/NoteView";
+// export { NoteView } from "core/react/components/PathView/NoteView";

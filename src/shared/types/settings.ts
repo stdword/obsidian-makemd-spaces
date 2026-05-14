@@ -30,14 +30,12 @@ export interface MakeMDSettings {
   defaultTimeFormat: string;
   inlineBacklinks: boolean;
   inlineBacklinksExpanded: boolean;
-  spacesUseAlias: boolean,
   fmKeyAlias: string;
   fmKeyBanner: string;
   fmKeyBannerOffset: string;
   fmKeyColor: string;
   fmKeySticker: string;
   openSpacesOnLaunch: boolean;
-  spacesRightSplit: boolean;
   indexSVG: boolean;
   readableLineWidth: boolean;
   releaseNotesPrompt: number;

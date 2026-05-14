@@ -49,12 +49,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             },
             settings: [
                 {
-                    name: "spacesUseAlias",
-                    category: "navigator",
-                    subCategory: "appearance",
-                    type: "boolean",
-                },
-                {
                     name: "openSpacesOnLaunch",
                     category: "navigator",
                     subCategory: "interaction",
@@ -70,12 +64,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     name: "overrideNativeMenu",
                     category: "navigator",
                     subCategory: "interaction",
-                    type: "boolean",
-                },
-                {
-                    name: "spacesRightSplit",
-                    category: "navigator",
-                    subCategory: "appearance",
                     type: "boolean",
                 },
                 {
