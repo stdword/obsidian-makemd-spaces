@@ -1,9 +1,4 @@
-import {
-  createSpace,
-  defaultSpace,
-  newPathInSpace,
-  pinPathToSpaceAtIndex,
-} from "core/superstate/utils/spaces";
+import { createSpace, defaultSpace, newPathInSpace, pinPathToSpaceAtIndex } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
 import { isString } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";
@@ -20,190 +15,122 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showLinkMenu } from "../properties/linkMenu";
 
 export const newSpaceModal = (superstate: Superstate) => {
-  superstate.ui.openModal(
-    i18n.labels.createSection,
-    <InputModal
-      saveLabel={i18n.buttons.createFolder}
-      value={""}
-      saveValue={(v) => {
-        defaultSpace(
-          superstate,
-          superstate.pathsIndex.get(superstate.ui.activePath)
-        ).then((space) => {
-          let pathState = superstate.pathsIndex.get(space?.path);
-          if (!pathState) {
-            pathState = superstate.pathsIndex.get("/");
-          }
-          const newName = v.replace(/\//g, "");
-          const parentPath =
-            pathState?.subtype == "folder"
-              ? pathState.path
-              : pathState.parent
-              ? pathState.parent
-              : "/";
-
-          const newPath =
-            !parentPath || parentPath == "/"
-              ? newName
-              : parentPath + "/" + newName;
-          if (newName.length == 0) {
-            superstate.ui.notify(i18n.notice.newSpaceName);
-            return;
-          }
-          if (superstate.spacesIndex.has(newPath)) {
-            superstate.ui.notify(i18n.notice.duplicateSpaceName);
-            return;
-          }
-          createSpace(superstate, newPath, {});
-        });
-      }}
-    ></InputModal>,
-    window
-  );
-};
-
-export const defaultAddAction = async (
-  superstate: Superstate,
-  _space: SpaceState,
-  win: Window,
-  location?: TargetLocation
-) => {
-  let space = _space;
-  if (space?.path == tagsSpacePath) {
     superstate.ui.openModal(
-      "New Tag",
-      <InputModal
-        value=""
-        saveLabel={i18n.labels.saveView}
-        saveValue={(value) => addTag(superstate, value)}
-      ></InputModal>,
-      win
-    );
-    return;
-  }
-  if (!space || space.type == "tag") {
-    space = await defaultSpace(
-      superstate,
-      superstate.pathsIndex.get(superstate.ui.activePath)
-    );
-  }
-  newPathInSpace(superstate, space, "md", null, false, null, location);
-};
-
-export const showSpaceAddMenu = (
-  superstate: Superstate,
-  offset: Rect,
-  win: Window,
-  space: SpaceState,
-  dontOpen?: boolean,
-  isSubmenu?: boolean
-) => {
-  const menuOptions: SelectOption[] = [];
-  if (space.type == "default") {
-    menuOptions.push({
-      name: "New Tag",
-      icon: "ui//tags",
-      onClick: (e) => {
-        superstate.ui.openModal(
-          "New Tag",
-          <InputModal
-            value=""
-            saveLabel={i18n.labels.saveView}
-            saveValue={(value) => addTag(superstate, value)}
-          ></InputModal>,
-          windowFromDocument(e.view.document)
-        );
-      },
-    });
-  } else {
-    menuOptions.push({
-      name: i18n.labels.createNote,
-      icon: "ui//edit",
-      onClick: (e) => {
-        newPathInSpace(
-          superstate,
-          space,
-          "md",
-          DEFAULT_NEW_NOTE_NAME,
-          dontOpen
-        );
-      },
-    });
-    menuOptions.push({
-      name: i18n.buttons.createCanvas,
-      icon: "ui//layout-dashboard",
-      onClick: (e) => {
-        newPathInSpace(superstate, space, "canvas", null, dontOpen);
-      },
-    });
-    menuOptions.push({
-      name: i18n.labels.createSection,
-      icon: "ui//folder-plus",
-      onClick: (e) => {
-        superstate.ui.openModal(
-          i18n.labels.createSection,
-          <InputModal
+        i18n.labels.createSection,
+        <InputModal
             saveLabel={i18n.buttons.createFolder}
             value={""}
             saveValue={(v) => {
-              let pathState = superstate.pathsIndex.get(space?.path);
-              if (!pathState) {
-                pathState = superstate.pathsIndex.get("/");
-              }
-              const newName = v.replace(/\//g, "");
-              const parentPath =
-                pathState?.subtype == "folder"
-                  ? pathState.path
-                  : pathState.parent
-                  ? pathState.parent
-                  : "/";
+                defaultSpace(superstate, superstate.pathsIndex.get(superstate.ui.activePath)).then((space) => {
+                    let pathState = superstate.pathsIndex.get(space?.path);
+                    if (!pathState) {
+                        pathState = superstate.pathsIndex.get("/");
+                    }
+                    const newName = v.replace(/\//g, "");
+                    const parentPath = pathState?.subtype == "folder" ? pathState.path : pathState.parent ? pathState.parent : "/";
 
-              const newPath =
-                !parentPath || parentPath == "/"
-                  ? newName
-                  : parentPath + "/" + newName;
-              if (newName.length == 0) {
-                superstate.ui.notify(i18n.notice.newSpaceName);
-                return;
-              }
-              if (superstate.spacesIndex.has(newPath)) {
-                superstate.ui.notify(i18n.notice.duplicateSpaceName);
-                return;
-              }
-              createSpace(superstate, newPath, {});
+                    const newPath = !parentPath || parentPath == "/" ? newName : parentPath + "/" + newName;
+                    if (newName.length == 0) {
+                        superstate.ui.notify(i18n.notice.newSpaceName);
+                        return;
+                    }
+                    if (superstate.spacesIndex.has(newPath)) {
+                        superstate.ui.notify(i18n.notice.duplicateSpaceName);
+                        return;
+                    }
+                    createSpace(superstate, newPath, {});
+                });
             }}
-          ></InputModal>,
-          windowFromDocument(e.view.document)
-        );
-      },
-    });
-    if (space.type == "folder") {
-      menuOptions.push({
-        name: i18n.buttons.addIntoSpace,
-        icon: "ui//pin",
-        onClick: (e) => {
-          const offset = (
-            e.target as HTMLButtonElement
-          ).getBoundingClientRect();
-          showLinkMenu(
-            offset,
-            windowFromDocument(e.view.document),
-            superstate,
-            (link) => {
-              if (isString(link)) {
-                pinPathToSpaceAtIndex(superstate, space, link);
-              }
-            }
-          );
-          e.stopPropagation();
-        },
-      });
+        ></InputModal>,
+        window,
+    );
+};
+
+export const defaultAddAction = async (superstate: Superstate, _space: SpaceState, win: Window, location?: TargetLocation) => {
+    let space = _space;
+    if (space?.path == tagsSpacePath) {
+        superstate.ui.openModal("New Tag", <InputModal value="" saveLabel={i18n.labels.saveView} saveValue={(value) => addTag(superstate, value)}></InputModal>, win);
+        return;
     }
-  }
-  return superstate.ui.openMenu(
-    offset,
-    defaultMenu(superstate.ui, menuOptions),
-    win,
-    "right"
-  );
+    if (!space || space.type == "tag") {
+        space = await defaultSpace(superstate, superstate.pathsIndex.get(superstate.ui.activePath));
+    }
+    newPathInSpace(superstate, space, "md", null, false, null, location);
+};
+
+export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, isSubmenu?: boolean) => {
+    const menuOptions: SelectOption[] = [];
+    if (space.type == "default") {
+        menuOptions.push({
+            name: "New Tag",
+            icon: "ui//tags",
+            onClick: (e) => {
+                superstate.ui.openModal("New Tag", <InputModal value="" saveLabel={i18n.labels.saveView} saveValue={(value) => addTag(superstate, value)}></InputModal>, windowFromDocument(e.view.document));
+            },
+        });
+    } else {
+        menuOptions.push({
+            name: i18n.labels.createNote,
+            icon: "ui//edit",
+            onClick: (e) => {
+                newPathInSpace(superstate, space, "md", DEFAULT_NEW_NOTE_NAME, dontOpen);
+            },
+        });
+        menuOptions.push({
+            name: i18n.buttons.createCanvas,
+            icon: "ui//layout-dashboard",
+            onClick: (e) => {
+                newPathInSpace(superstate, space, "canvas", null, dontOpen);
+            },
+        });
+        menuOptions.push({
+            name: i18n.labels.createSection,
+            icon: "ui//folder-plus",
+            onClick: (e) => {
+                superstate.ui.openModal(
+                    i18n.labels.createSection,
+                    <InputModal
+                        saveLabel={i18n.buttons.createFolder}
+                        value={""}
+                        saveValue={(v) => {
+                            let pathState = superstate.pathsIndex.get(space?.path);
+                            if (!pathState) {
+                                pathState = superstate.pathsIndex.get("/");
+                            }
+                            const newName = v.replace(/\//g, "");
+                            const parentPath = pathState?.subtype == "folder" ? pathState.path : pathState.parent ? pathState.parent : "/";
+
+                            const newPath = !parentPath || parentPath == "/" ? newName : parentPath + "/" + newName;
+                            if (newName.length == 0) {
+                                superstate.ui.notify(i18n.notice.newSpaceName);
+                                return;
+                            }
+                            if (superstate.spacesIndex.has(newPath)) {
+                                superstate.ui.notify(i18n.notice.duplicateSpaceName);
+                                return;
+                            }
+                            createSpace(superstate, newPath, {});
+                        }}
+                    ></InputModal>,
+                    windowFromDocument(e.view.document),
+                );
+            },
+        });
+        if (space.type == "folder") {
+            menuOptions.push({
+                name: i18n.buttons.addIntoSpace,
+                icon: "ui//pin",
+                onClick: (e) => {
+                    const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+                    showLinkMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                        if (isString(link)) {
+                            pinPathToSpaceAtIndex(superstate, space, link);
+                        }
+                    });
+                    e.stopPropagation();
+                },
+            });
+        }
+    }
+    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), win, "right");
 };

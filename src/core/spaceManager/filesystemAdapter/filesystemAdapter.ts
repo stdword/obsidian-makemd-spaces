@@ -22,9 +22,7 @@ import { SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { SpaceAdapter } from "shared/types/spaceManager";
 import { safelyParseJSON } from "shared/utils/json";
-import { movePath } from "shared/utils/uri";
 import { excludeSpacesPredicate } from "utils/hide";
-import { pathToString } from "utils/path";
 import { tagToTagPath } from "utils/tags";
 import { SpaceManager } from "../spaceManager";
 
@@ -86,12 +84,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (payload.path.endsWith(".json")) {
             const spacePathFromDef = payload.path.split("/").slice(0, -2).join("/");
             this.spaceManager.onPathPropertyChanged(spacePathFromDef);
-            return;
-        }
-        const path = this.spaceManager.superstate.pathsIndex.get(payload.path);
-
-        if (path?.metadata.spacePath?.length > 0) {
-            this.spaceManager.onPathPropertyChanged(path?.metadata.spacePath);
             return;
         }
         this.spaceManager.onPathPropertyChanged(payload.path);
@@ -531,21 +523,15 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (this.spaceManager.superstate.spacesIndex.has(path)) {
             const spaceInfo = this.spaceInfoForPath(path);
             let defFile = await this.fileSystem.getFile(spaceInfo.defPath);
-            let noteFile = await this.fileSystem.getFile(spaceInfo.notePath);
-            if (this.spaceManager.superstate.settings.enableFolderNote) {
-                if (!noteFile) noteFile = await this.fileSystem.newFile(spaceInfo.folderPath, spaceInfo.name, "md");
-            } else {
-                if (!defFile) {
-                    const defPath = this.spaceInfoForPath(path).defPath;
-                    const extension = defPath.split(".").pop();
-                    const folder = defPath.split("/").slice(0, -1).join("/");
-                    const filename = defPath.split("/").pop().split(".")[0];
+            if (!defFile) {
+                const defPath = this.spaceInfoForPath(path).defPath;
+                const extension = defPath.split(".").pop();
+                const folder = defPath.split("/").slice(0, -1).join("/");
+                const filename = defPath.split("/").pop().split(".")[0];
 
-                    defFile = await this.fileSystem.newFile(folder, filename, extension);
-                }
-                noteFile = defFile;
+                defFile = await this.fileSystem.newFile(folder, filename, extension);
             }
-            await this.fileSystem.saveFileLabel(noteFile, label, value);
+            await this.fileSystem.saveFileLabel(defFile, label, value);
 
             return;
         }
@@ -629,10 +615,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
         const metaCache = space.defPath ? await this.fileSystem.readTextFromFile(space.defPath) : null;
         if (!metaCache) {
-            const defFile = await this.fileSystem.getFile(space.notePath);
-            const metaCache = defFile ? this.fileSystem.getFileCache(defFile.path)?.frontmatter : null;
-            const spaceDef = metaCache ?? {};
-            return parseSpaceMetadata(spaceDef, this.spaceManager.superstate.settings);
+            return parseSpaceMetadata({}, this.spaceManager.superstate.settings);
         }
         const spaceDef = safelyParseJSON(metaCache) ?? {};
         return parseSpaceMetadata(spaceDef, this.spaceManager.superstate.settings);
@@ -660,12 +643,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
             defFile = await this.fileSystem.newFile(folder, filename, extension);
         }
-        let noteFile = await this.fileSystem.getFile(spaceInfo.notePath);
-        if (this.spaceManager.superstate.settings.enableFolderNote) {
-            if (!noteFile) noteFile = await this.fileSystem.newFile(spaceInfo.folderPath, pathToString(spaceInfo.notePath), "md");
-        } else {
-            noteFile = defFile;
-        }
+        const noteFile = defFile;
         if (properties) {
             await this.fileSystem.saveFileFragment(noteFile, "property", null, (frontmatter) => ({
                 ...frontmatter,
@@ -691,7 +669,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         const spaceInfo = this.spaceInfoForPath(oldPath);
         const newSpaceInfo = this.spaceInfoForPath(newPath);
         return this.fileSystem.renameFile(spaceInfo.folderPath, newSpaceInfo.folderPath).then((f) => {
-            if (this.spaceManager.superstate.settings.enableFolderNote) this.fileSystem.renameFile(movePath(spaceInfo.notePath, newSpaceInfo.path), newSpaceInfo.notePath);
             return f;
         });
     }

@@ -109,19 +109,9 @@ export const parseContextTableToCache = (
 export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, oldCache: Map<string, PathState>): { [key: string]: { changed: boolean; cache: PathState } } => {
     const cache: { [key: string]: { changed: boolean; cache: PathState } } = {};
     for (const [path, _pathCache] of fileCache) {
-        const cachePath = settings.enableFolderNote ? (spacesCache.get(path)?.space.notePath ?? path) : path;
-        const isFolderNote = settings.enableFolderNote && spacesCache.has(path);
-
-        const pathCache = fileCache.get(cachePath) ?? _pathCache;
+        const pathCache = _pathCache;
         if (!pathCache) continue;
 
-        if (isFolderNote) {
-            pathCache.file = _pathCache.file;
-            pathCache.parent = _pathCache.parent;
-            pathCache.subtype = _pathCache.subtype;
-            pathCache.type = _pathCache.type;
-            pathCache.contentTypes = _pathCache.contentTypes;
-        }
         const parent = _pathCache?.parent ?? "";
         const type = _pathCache?.type ?? "";
         const subtype = _pathCache?.subtype ?? "";
@@ -199,8 +189,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
 
     const outlinks = pathCache?.resolvedLinks ?? [];
     const spaceNames = [];
-    let isSpaceNote = false;
-    let spacePath;
     const pathState: PathState = {
         ...cache,
         name,
@@ -245,11 +233,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             }
         }
 
-        if (space.space.notePath == path && space.path != space.space.notePath) {
-            isSpaceNote = true;
-            spacePath = space.path;
-            if (settings.enableFolderNote) hidden = true;
-        }
         if (subtype != "tag" && subtype != "default") {
             if (space.space && space.space.path == parent) {
                 spaces.push(s);
@@ -286,9 +269,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     spaceNames.push(...newTags);
 
     pathState.tags.push(...newTags);
-    if (isSpaceNote) {
-        pathState.metadata.spacePath = spacePath;
-    }
     const metadata: PathState = hidden
         ? { ...pathState, spaces: [], hidden }
         : {

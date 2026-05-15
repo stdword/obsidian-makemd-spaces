@@ -1,4 +1,4 @@
-import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
+import { fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 
 describe("FilesystemSpaceAdapter", () => {
   it("keeps nested Obsidian tag names intact when building tag spaces", () => {
@@ -17,5 +17,18 @@ describe("FilesystemSpaceAdapter", () => {
 
     expect(tagSpace.name).toBe("book/types/psy");
     expect(tagSpace.path).toBe("spaces://#book/types/psy");
+  });
+
+  it("uses the folder name for folder note paths without reading folder-note settings", () => {
+    const manager = {
+      superstate: {
+        settings: {},
+      },
+    };
+
+    const space = fileSystemSpaceInfoFromFolder(manager as any, "Projects/Alpha");
+
+    expect(space.defPath).toBe("Projects/Alpha/.space/def.json");
+    expect(space.notePath).toBe("Projects/Alpha/Alpha.md");
   });
 });

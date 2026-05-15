@@ -28,15 +28,6 @@ export const patchWorkspace = (plugin: MakeMDPlugin) => {
         },
         openLinkText(old) {
             return function openLinkText(linkText: string, sourcePath: string, newLeaf?: PaneType | boolean, openViewState?: OpenViewState) {
-                if (plugin.superstate.settings.enableFolderNote) {
-                    const resolvedPath = plugin.app.metadataCache.getFirstLinkpathDest(linkText, sourcePath);
-                    const pathState = plugin.superstate.pathsIndex.get(resolvedPath?.path);
-                    if (pathState?.metadata.spacePath?.length > 0) {
-                        plugin.ui.openPath(pathState.metadata.spacePath, newLeaf);
-                        return;
-                    }
-                }
-
                 if (plugin.superstate.spacesIndex.has(linkText)) {
                     plugin.ui.openPath(linkText, newLeaf);
                     return;

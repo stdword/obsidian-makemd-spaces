@@ -7,9 +7,6 @@ declare module "obsidian" {
         Hidden,
         Showing,
     }
-    interface WorkspaceMobileDrawer {
-        togglePinned(): void;
-    }
     interface WorkspaceSidedock {
         togglePinned(): void;
     }
@@ -90,10 +87,6 @@ declare module "obsidian" {
         startLoc?: Loc;
         endLoc?: Loc;
         scroll?: number;
-    }
-    interface WorkspaceMobileDrawer {
-        currentTab: number;
-        children: WorkspaceLeaf[];
     }
 
     interface HoverPopover {

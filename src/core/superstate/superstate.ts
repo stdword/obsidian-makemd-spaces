@@ -251,11 +251,7 @@ export class Superstate implements ISuperstate {
 
         return items
             .map<PathStateWithRank>((f, i) => {
-                if (this.spacesIndex.has(f)) {
-                    this.spaceManager.loadPath(this.spacesIndex.get(f).space.notePath);
-                } else {
-                    this.spaceManager.loadPath(f);
-                }
+                this.spaceManager.loadPath(f);
                 const pathCache = this.pathsIndex.get(f);
 
                 return {
@@ -557,11 +553,6 @@ export class Superstate implements ISuperstate {
 
     public async onPathCreated(path: string) {
         await this.reloadPath(path, true);
-        const parent = getParentPathFromString(path);
-        if (this.spacesIndex.has(parent) && this.spacesIndex.get(parent).space.notePath == path) {
-            await this.reloadSpace(this.spacesIndex.get(parent).space);
-            await this.reloadContextByPath(parent, { force: true });
-        }
         this.dispatchEvent("pathCreated", { path });
     }
 
@@ -758,39 +749,22 @@ export class Superstate implements ISuperstate {
 
         if (propertyTypes.length > 0) {
             if (!pathState) {
-                if (!this.settings.enableFolderNote) {
-                    const pathCache = await this.spaceManager.readPathCache(space.path);
-                    pathState = {
-                        path: space.path,
-                        name: space.name,
-                        tags: [],
-                        spaces: [],
-                        outlinks: [],
-                        readOnly: space.readOnly,
-                        hidden: false,
-                        metadata: pathCache?.metadata,
-                        type: "space",
-                        subtype: type,
-                        label: pathCache?.label,
-                    };
-                } else {
-                    const pathCache = await this.spaceManager.readPathCache(space.notePath);
-                    pathState = {
-                        path: space.path,
-                        name: space.name,
-                        tags: [],
-                        spaces: [],
-                        outlinks: [],
-                        readOnly: space.readOnly,
-                        hidden: false,
-                        metadata: pathCache?.metadata,
-                        type: "space",
-                        subtype: type,
-                        label: pathCache?.label,
-                    };
-                }
+                const pathCache = await this.spaceManager.readPathCache(space.path);
+                pathState = {
+                    path: space.path,
+                    name: space.name,
+                    tags: [],
+                    spaces: [],
+                    outlinks: [],
+                    readOnly: space.readOnly,
+                    hidden: false,
+                    metadata: pathCache?.metadata,
+                    type: "space",
+                    subtype: type,
+                    label: pathCache?.label,
+                };
             }
-            properties = await this.spaceManager.readProperties(space.notePath).then((f) => linkContextRow(this.formulaContext, this.pathsIndex, this.contextsIndex, this.spacesMap, f, propertyTypes, pathState, this.settings));
+            properties = await this.spaceManager.readProperties(space.defPath).then((f) => linkContextRow(this.formulaContext, this.pathsIndex, this.contextsIndex, this.spacesMap, f, propertyTypes, pathState, this.settings));
         }
 
         [...this.spacesMap.get(space.path)]

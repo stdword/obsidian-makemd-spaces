@@ -399,9 +399,6 @@ export const updateSpaceSort = (
 
 
 export const metadataPathForSpace = (superstate: Superstate, space: SpaceInfo) => {
-  if (superstate.settings.enableFolderNote) {
-    return space.notePath;
-  }
   return space.defPath 
 }
 

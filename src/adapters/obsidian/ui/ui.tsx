@@ -16,10 +16,8 @@ import { openPathInElement } from "shared/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 
-import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
-import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
 import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
-import ImageModal from "core/react/components/UI/Modals/ImageModal";
+// import ImageModal from "core/react/components/UI/Modals/ImageModal";
 import { removeSpace } from "core/superstate/utils/spaces";
 import { BlinkMode } from "shared/types/blink";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
@@ -58,10 +56,10 @@ export class ObsidianUI implements UIAdapter {
     };
 
     public quickOpen = (mode?: BlinkMode, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => {
-        if (mode == BlinkMode.Image) {
-            this.openPalette(<ImageModal superstate={this.manager.superstate} selectedPath={onSelect}></ImageModal>, win, null);
-            return;
-        }
+        // if (mode == BlinkMode.Image) {
+        //     this.openPalette(<ImageModal superstate={this.manager.superstate} selectedPath={onSelect}></ImageModal>, win, null);
+        //     return;
+        // }
         this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
     };
     public mainMenu = (el: HTMLElement, superstate: Superstate) => {

@@ -1024,7 +1024,6 @@ export const en = {
       "space": "Spaces",
       "performance": "Performance",
       "advanced": "Advanced",
-      "folderNote": "Folder Note",
       "notes": "Notes",
       "assets": "Assets",
       "language": "Language",
@@ -1085,14 +1084,6 @@ export const en = {
       "name": "Show Folder Indentation Lines",
       "desc": "Turn on to show a line on the left of folders to indicate indentation"
     },
-    "folderNoteLocation": {
-      "name": "Folder Note Location Inside Folder",
-      "desc": "Turn on to have folder notes inside the folder, turn off to have it outside"
-    },
-    "folderViewDefault": {
-      "name": "Show Folder Note by Default",
-      "desc": "Show the folder note by default when opening a folder"
-    },
     "internalLinkFlowEditor": {
       "name": "Show Toggles to Open Flow Editor on Links",
       "desc": "Turn on to toggle Flow Blocks directly in inline links"
@@ -1104,14 +1095,6 @@ export const en = {
     "banners": {
       "name": "Cover Image",
       "desc": "Show a cover image for notes and spaces"
-    },
-    "enableFolderNote": {
-      "name": "Enable Folder Note",
-      "desc": "Access the folder note in the folder page and hide the folder note from spaces"
-    },
-    "folderNoteName": {
-      "name": "Folder Note Name",
-      "desc": "Name of the folder note, keep blank to use the same name as the folder"
     },
     "expandFolderOnClick": {
       "name": "Auto Expand Folder",

@@ -76,14 +76,6 @@ export const renameFile = async (plugin: MakeMDPlugin, file: TAbstractFile, newN
     return await plugin.files.renameFile(file.path, newPath);
 };
 
-export const folderRenamed = async (plugin: MakeMDPlugin, oldPath: string, newPath: string) => {
-    if (plugin.superstate.settings.enableFolderNote) {
-        const oldSpaceInfo = plugin.superstate.spaceManager.spaceInfoForPath(oldPath);
-        const newSpaceInfo = plugin.superstate.spaceManager.spaceInfoForPath(newPath);
-        await plugin.files.renameFile(oldSpaceInfo.notePath, newSpaceInfo.notePath);
-    }
-};
-
 export function getAllAbstractFilesInVault(app: App): TAbstractFile[] {
     const files: TAbstractFile[] = [];
     const rootFolder = app.vault.getRoot();
@@ -119,19 +111,6 @@ export const deleteFiles = (plugin: MakeMDPlugin, files: string[]) => {
 };
 
 // Returns all parent folder paths
-
-export const openSpace = async (spacePath: string, plugin: MakeMDPlugin, newLeaf: TargetLocation) => {
-    if (!plugin.superstate.settings.enableFolderNote) {
-        return;
-    }
-    const leaf = getLeaf(plugin.app, newLeaf);
-    const space = plugin.superstate.spacesIndex.get(spacePath)?.space.notePath;
-    const spaceFile = space ? (getAbstractFileAtPath(plugin.app, space) as TFile) : null;
-    if (spaceFile) {
-        await openTFile(leaf, spaceFile, plugin.app);
-        plugin.superstate.ui.setActivePath(spaceFile.path);
-    }
-};
 
 export const getLeaf = (app: App, location: TargetLocation) => {
     let leaf;
@@ -193,23 +172,6 @@ export const openTFile = async (leaf: WorkspaceLeaf, file: TFile, app: App) => {
     app.workspace.setActiveLeaf(leaf, { focus: true });
 
     await leaf.openFile(file);
-};
-
-export const openTFolder = async (leaf: WorkspaceLeaf, file: TFolder, plugin: MakeMDPlugin, flow: boolean) => {
-    if (!plugin.superstate.settings.enableFolderNote) {
-        return;
-    }
-    const space = plugin.superstate.spacesIndex.get(file.path)?.space.notePath;
-    if (!space) return;
-    const spaceFile = getAbstractFileAtPath(plugin.app, space) as TFile;
-    if (!spaceFile) return;
-    await openTFile(leaf, spaceFile, plugin.app);
-
-    // const fileCache = plugin.superstate.pathsIndex.get(file.path);
-    // if (fileCache?.label.sticker && leaf.tabHeaderInnerIconEl) {
-    //   const icon = stickerFromString(fileCache.label.sticker, plugin)
-    //   leaf.tabHeaderInnerIconEl.innerHTML = icon
-    // }
 };
 
 export const openTagContext = async (leaf: WorkspaceLeaf, tag: string, app: App) => {

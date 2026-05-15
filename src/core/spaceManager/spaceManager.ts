@@ -278,13 +278,10 @@ export class SpaceManager implements SpaceManagerInterface {
        public async readPathCache (path: string) {
         const pathCache = await this.adapterForPath(path).readPathCache(path);
         if (pathCache && pathCache.type == 'space') {
-          const hasFolderNote =  await this.adapterForPath(path).pathExists(this.spaceInfoForPath(path).notePath)
-          if (!this.superstate.settings.enableFolderNote || !hasFolderNote) {
           const defPath = this.spaceInfoForPath(path).defPath
           
           pathCache.label = {...pathCache.label, ...(await this.readLabel(defPath))};
           pathCache.property = await this.readProperties(defPath)
-          }
         }
          return pathCache;
        }

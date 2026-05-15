@@ -1,11 +1,8 @@
 import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo"
 import { SpaceManager } from "makemd-core"
 
-
 import { PathState, SpaceState } from "shared/types/PathState"
 import { MakeMDSettings } from "../../shared/types/settings"
-
-
 
 export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset,
   spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey
@@ -16,13 +13,6 @@ export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanne
     space: fileSystemSpaceInfoFromFolder(manager, "/"),
     type: "default",
   });
-
-
-
-  
-
-
-  
 
   export const vaultPath: PathState = {
     name: "Vault",
@@ -36,8 +26,6 @@ export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanne
     },
     type: "default",
   };
-
-
 
 export type BuiltinSpace = {
   name: string;

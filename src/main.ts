@@ -1,9 +1,9 @@
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
-import { App, MarkdownView, Plugin, TAbstractFile, TFile, TFolder, WorkspaceLeaf, addIcon } from "obsidian";
+import { App, MarkdownView, Plugin, TAbstractFile, TFile, WorkspaceLeaf, addIcon } from "obsidian";
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTFolder, openTagContext } from "adapters/obsidian/utils/file";
+import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTagContext } from "adapters/obsidian/utils/file";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { mkLogo } from "adapters/obsidian/ui/icons";
@@ -180,7 +180,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files.getFile(path).then((f) => {
             if (f) {
                 if (f.isFolder) {
-                    openTFolder(leaf, getAbstractFileAtPath(this.app, f.path) as TFolder, this, flow);
+                    return;
                 } else if (f) {
                     openTFile(leaf, getAbstractFileAtPath(this.app, f.path) as TFile, this.app);
                 } else {

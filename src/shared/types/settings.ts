@@ -15,9 +15,6 @@ export interface MakeMDSettings {
   currentWaypoint: number;
   activeSpace: string;
   spacesMDBInHidden: boolean;
-  folderNoteInsideFolder: boolean;
-  folderNoteName: string;
-  enableFolderNote: boolean;
   folderIndentationLines: boolean;
   revealActiveFile: boolean;
   hiddenFiles: string[];
