@@ -7,7 +7,6 @@ import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components
 import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, pinPathToSpaceAtIndex, spaceRowHeight } from "core/superstate/utils/spaces";
-import { isTouchScreen } from "core/utils/ui/screen";
 import { isString } from "lodash";
 import { Superstate } from "makemd-core";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -222,7 +221,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const isSpace = pathState?.type == "space";
     const isFolder = pathState?.metadata?.isFolder || isSpace;
     const extension = pathState?.metadata?.file?.extension;
-    const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : isTouchScreen(props.superstate.ui) ? 30 : 20);
+    const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
     return (
         <>
             <div
@@ -255,7 +254,7 @@ export const TreeItem = (props: TreeItemProps) => {
                         ...style,
                         ...(dragActive ? { pointerEvents: "none" } : {}),
                     }}
-                    {...(!isTouchScreen(props.superstate.ui) ? getRootProps({ className: "dropzone" }) : {})}
+                    {...getRootProps({ className: "dropzone" })}
                 >
                     <input {...getInputProps()} />
                     <div

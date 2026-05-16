@@ -6,7 +6,6 @@ import { TreeNode, defaultSpaceSort, pathStateToTreeNode, spaceRowHeight, spaceS
 import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
 import { DragProjection, getDragDepth, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
-import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -116,7 +115,7 @@ const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], act
 
 export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const { superstate } = props;
-    const indentationWidth = isTouchScreen(props.superstate.ui) ? 20 : 16;
+    const indentationWidth = 16;
 
     const [expandedSpaces, setExpandedSpaces] = useState<string[]>(superstate.settings.expandedSpaces);
 
@@ -479,7 +478,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     activeIndex={activeIndex}
                 ></VirtualizedList>
             )}
-            {modifier && !isTouchScreen(props.superstate.ui) && (
+            {modifier && (
                 <div
                     className="mk-hint-dnd"
                     style={{
