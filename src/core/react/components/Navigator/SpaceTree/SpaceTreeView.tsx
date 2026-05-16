@@ -6,6 +6,7 @@ import { TreeNode, defaultSpaceSort, pathStateToTreeNode, spaceRowHeight, spaceS
 import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
 import { DragProjection, getDragDepth, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
+import { hideFolderNoteFileFromItems } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -28,7 +29,8 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     // This fixes the issue where folders with folder notes couldn't be expanded
     const spaceCollapsed = !expandedSpaces.includes(id);
     const spaceSort = space.metadata?.sort?.field && !sort.recursive ? space.metadata?.sort : (sort ?? defaultSpaceSort);
-    const children = superstate.getSpaceItems(space.path) ?? [];
+    let children = superstate.getSpaceItems(space.path) ?? [];
+    children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (!spaceCollapsed || root) {
         children.sort(spaceSortFn(spaceSort)).forEach((item) => {
             const _parentId = parentId ? parentId + "/" + space.path : space.path;
@@ -69,7 +71,8 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
     if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {
         return tree;
     }
-    const children = superstate.getSpaceItems(space.path) ?? [];
+    let children = superstate.getSpaceItems(space.path) ?? [];
+    children = hideFolderNoteFileFromItems(superstate, space.path, children);
     children.sort(spaceSortFn(spaceSort)).forEach((item) => {
         const _parentId = space.path;
         if (item.type != "space") {
