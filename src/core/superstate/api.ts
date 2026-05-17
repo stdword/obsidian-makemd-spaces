@@ -1,7 +1,6 @@
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/contexts/context";
-import { runFormulaWithContext } from "core/utils/formula/parser";
 import { parseContextNode, parseLinkedNode } from "core/utils/frames/frame";
 import { SelectOption, SpaceManager } from "makemd-core";
 import { SpaceManagerInterface } from "shared/types/spaceManager";
@@ -11,7 +10,6 @@ import { stickerForField } from "schemas/mdb";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { IAPI } from "shared/types/api";
 import { PathPropertyName } from "shared/types/context";
-import { FrameContexts } from "shared/types/frameExec";
 import { DBRow, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { TargetLocation } from "shared/types/path";
 import { windowFromDocument } from "shared/utils/dom";

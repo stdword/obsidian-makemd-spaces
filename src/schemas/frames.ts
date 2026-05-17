@@ -65,5 +65,3 @@ attrs: root.node.propsAttrs?.[f]
     rows: flattenToFrameNodes({...root, id: schemaId, node: {...root.node, id: schemaId}}, schemaId).map(f => nodeToFrame(relinkProps('$root', schemaId, f, schemaId)))
   }
 }
-  
-  

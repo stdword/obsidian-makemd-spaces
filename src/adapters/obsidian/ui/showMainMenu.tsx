@@ -51,17 +51,6 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: Ma
         },
     });
 
-    const leafs = plugin.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
-    leafs.map((l) =>
-        menuOptions.push({
-            name: l.getDisplayText(),
-            icon: "lucide//" + l.view.icon,
-            onClick: () => {
-                plugin.app.workspace.revealLeaf(l);
-            },
-        }),
-    );
-
     const offset = el.getBoundingClientRect();
     superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), windowFromDocument(el.ownerDocument), "bottom");
 };
