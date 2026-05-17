@@ -27,7 +27,7 @@
     margin-bottom: 1px;
     display: flex;
     align-items: center !important;
-    padding: 0 6px;
+    padding: 0;
     position: relative;
     height: var(--spaceRowHeight);
     gap: 4px;
@@ -35,6 +35,9 @@
 
 .nav-file {
     overflow-y: inherit !important;
+}
+.nav-file-tag {
+    font-size: 7px;
 }
 
 .mk-tree-wrapper > div {
@@ -101,9 +104,6 @@
 
 .mk-tree-wrapper.mk-ghost {
     opacity: 0.5;
-}
-
-.mk-nav-button {
 }
 
 .mk-tree-section {
@@ -198,13 +198,31 @@ body .mk-tree-new {
     height: var(--icon-size);
     color: var(--icon-color) !important;
 }
-.mk-path-icon button {
-    background: var(--label-color);
+.mk-path-icon > button {
     border: 0;
+    border-radius: 4px;
     box-shadow: none;
     height: var(--icon-container-size);
     width: var(--icon-container-size);
     padding: 0 !important;
+}
+
+.nav-folder-title > .mk-path-icon > button {
+    background: var(--label-color);
+}
+
+.nav-file-title > .mk-path-icon > button {
+    background: none;
+}
+.nav-file-title > .mk-path-icon > button > svg {
+    color: var(--label-color, var(--icon-color)) !important;
+}
+.nav-file-title.is-active > .mk-path-icon > button > svg {
+    color: var(--label-color, unset) !important;
+}
+
+.mk-tree-text.nav-file-title-content {
+    color: var(--label-color);
 }
 
 body .mk-tree-wrapper .mk-drag-handle {

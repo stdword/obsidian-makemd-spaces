@@ -16,23 +16,14 @@ export type FilterGroupDef = {
   trueFalse: boolean;
   filters: FilterDef[];
 };
-export type JoinDefGroup = {
-  recursive: boolean;
-  path: string;
-  type: 'any' | 'all';
-  groups: FilterGroupDef[];
-}
 export type SpaceType = 'folder' | 'tag' | 'vault' | 'default' | 'unknown';
 
 
 export type SpaceDefinition = {
   contexts?: string[];
   sort?: SpaceSort;
-  joins?: JoinDefGroup[];
   links?: string[];
   tags?: string[];
   defaultSticker?: string;
   defaultColor?: string;
-  readMode?: boolean;
-  fullWidth?: boolean;
 };

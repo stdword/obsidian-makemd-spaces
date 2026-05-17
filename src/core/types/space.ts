@@ -5,7 +5,7 @@ import { PathState, SpaceState } from "shared/types/PathState"
 import { MakeMDSettings } from "../../shared/types/settings"
 
 export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset,
-  spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey
+  spaceLinksKey, spaceSortKey
 ]
   export const createVaultSpace  = (manager: SpaceManager) : SpaceState => ({
     name: "Vault",
@@ -19,7 +19,6 @@ export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanne
     readOnly: false,
     path: "/",
     label: {
-      thumbnail: '',
       name: "Vault",
       sticker: "ui//vault",
       color: ''
@@ -43,8 +42,6 @@ export const builtinSpaces : Record<string, BuiltinSpace> = {
   },
 };
 
-export const spaceContextsKey = "_contexts";
-export const spaceJoinsKey = "_joins";
 export const spaceLinksKey = "_links";
 export const spaceSortKey = "_sort";
 export const spaceRecursiveKey = "_subfolders";

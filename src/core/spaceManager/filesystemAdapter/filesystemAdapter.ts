@@ -7,7 +7,7 @@ import { PathLabel } from "shared/types/caches";
 
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
-import { builtinSpaces, spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey } from "core/types/space";
+import { builtinSpaces, spaceLinksKey, spaceSortKey } from "core/types/space";
 import { linkContextRow, mergeContextRows, propertyDependencies, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
@@ -28,6 +28,17 @@ import { SpaceManager } from "../spaceManager";
 
 //Space Adapter that works on a generic filesystem middleware
 export const defaultFocusFile = "waypoints.json";
+export const defaultSpaceDefContent = () =>
+    JSON.stringify(
+        {
+            label: {
+                color: "",
+                sticker: "",
+            },
+        },
+        null,
+        2,
+    );
 
 export class FilesystemSpaceAdapter implements SpaceAdapter {
     public constructor(
@@ -529,7 +540,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                 const folder = defPath.split("/").slice(0, -1).join("/");
                 const filename = defPath.split("/").pop().split(".")[0];
 
-                defFile = await this.fileSystem.newFile(folder, filename, extension);
+                defFile = await this.fileSystem.newFile(folder, filename, extension, defaultSpaceDefContent());
             }
             await this.fileSystem.saveFileLabel(defFile, label, value);
 
@@ -641,7 +652,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             const folder = defPath.split("/").slice(0, -1).join("/");
             const filename = defPath.split("/").pop().split(".")[0];
 
-            defFile = await this.fileSystem.newFile(folder, filename, extension);
+            defFile = await this.fileSystem.newFile(folder, filename, extension, defaultSpaceDefContent());
         }
         const noteFile = defFile;
         if (properties) {
@@ -651,14 +662,10 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             }));
         }
         await this.fileSystem.saveFileFragment(defFile, "definition", null, (frontmatter) => ({
-            [spaceJoinsKey]: metadata.joins,
-            [spaceContextsKey]: metadata.contexts,
             [spaceLinksKey]: metadata.links,
             [spaceSortKey]: metadata.sort,
             defaultSticker: metadata.defaultSticker,
             defaultColor: metadata.defaultColor,
-            readMode: metadata.readMode,
-            fullWidth: metadata.fullWidth,
         }));
         // await this.spaceManager.onPathPropertyChanged(file.path);
         // await this.spaceManager.onSpaceCreated(path);

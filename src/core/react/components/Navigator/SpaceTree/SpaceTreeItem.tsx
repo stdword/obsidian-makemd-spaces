@@ -221,6 +221,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const isSpace = pathState?.type == "space";
     const isFolder = pathState?.metadata?.isFolder || isSpace;
     const extension = pathState?.metadata?.file?.extension;
+    const showFileTag = !isSpace && extension && !["md", "base", "canvas"].includes(extension);
     const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
     return (
         <>
@@ -301,7 +302,7 @@ export const TreeItem = (props: TreeItemProps) => {
                             ></CollapseToggle>
                         )}
                         <div className="mk-tree-span"></div>
-                        {!isSpace && extension != "md" && <span className="nav-file-tag">{extension}</span>}
+                        {showFileTag && <span className="nav-file-tag">{extension}</span>}
                     </div>
                 </div>
             </div>

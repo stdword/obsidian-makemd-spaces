@@ -1,7 +1,7 @@
 import { filterFnTypes } from "core/utils/contexts/predicate/filterFns/filterFnTypes";
 import { isString } from "lodash";
 import { PathState } from "shared/types/PathState";
-import { FilterDef, FilterGroupDef, JoinDefGroup } from "shared/types/spaceDef";
+import { FilterDef, FilterGroupDef } from "shared/types/spaceDef";
 import { parseProperty } from "utils/parsers";
 import { serializeMultiString } from "utils/serializers";
 
@@ -120,23 +120,6 @@ const filterPathProperties = (paths: PathState[], def: FilterDef, props: Record<
 }
 
 
-
-export const pathByJoins = ( joins: JoinDefGroup[], path: PathState,  props: Record<string, string>, inclusive?: boolean) => {
-  const pathInFilter = joins.reduce((p, c) => {
-    if (p || (c.path != '/' && !path.path.startsWith(inclusive ? c.path : c.path + '/')) || c.path.length == 0) return p;
-    if (!(path.path == c.path && inclusive)) {
-      if (!c.recursive) {
-        
-        if (path.parent != c.path) {
-            return false;
-        }
-      }
-    }
-    if (c.groups.length == 0) return true;
-    return pathByDef(c.groups, path, props, c.type == 'all')
-  }, false);
-  return pathInFilter;
-}
 
 export const pathByDef = ( filters: FilterGroupDef[], path: PathState,  props: Record<string, string>, all: boolean) => {
 

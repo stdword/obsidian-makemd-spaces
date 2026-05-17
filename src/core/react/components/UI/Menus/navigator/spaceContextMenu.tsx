@@ -6,7 +6,6 @@ import {
   removeSpace,
   updateSpaceSort,
 } from "core/superstate/utils/spaces";
-import { removePathIcon } from "core/utils/emoji";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
@@ -75,28 +74,23 @@ export const showSpaceContextMenu = (
         );
       },
     });
-    menuOptions.push({
-      name: i18n.buttons.changeIcon,
-      icon: "ui//sticker",
-      onClick: (e) => {
-        superstate.ui.openPalette(
-          <StickerModal
-            ui={superstate.ui}
-            selectedSticker={(emoji) =>
-              savePathSticker(superstate, space.path, emoji)
-            }
-          />,
-          win
-        );
-      },
-    });
-    menuOptions.push({
-      name: i18n.buttons.removeIcon,
-      icon: "ui//file-minus",
-      onClick: (e) => {
-        removePathIcon(superstate, space.path);
-      },
-    });
+    if (space.path !== "/") {
+      menuOptions.push({
+        name: i18n.buttons.changeIcon,
+        icon: "ui//sticker",
+        onClick: (e) => {
+          superstate.ui.openPalette(
+            <StickerModal
+              ui={superstate.ui}
+              selectedSticker={(emoji) =>
+                savePathSticker(superstate, space.path, emoji)
+              }
+            />,
+            win
+          );
+        },
+      });
+    }
   }
   if (space.metadata?.sort) {
     menuOptions.push(menuSeparator);

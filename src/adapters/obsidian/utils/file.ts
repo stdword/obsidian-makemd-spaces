@@ -7,7 +7,6 @@ import { DEFAULT_NEW_NOTE_NAME } from "shared/constants";
 import { selectElementContents } from "shared/utils/dom";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";
-import { folderPathToString } from "utils/path";
 
 export const tFileToAFile = (file: TAbstractFile | TFile): AFile => {
     if (!file) return null;
@@ -131,16 +130,6 @@ export const openURL = async (url: string, app: App, location?: TargetLocation) 
         return;
     }
     const leaf = getLeaf(app, location);
-    // Navigator MVP
-    // if (url.endsWith(".md")) {
-    //   const viewType = LINK_VIEW_TYPE;
-    //   app.workspace.setActiveLeaf(leaf, { focus: true });
-    //   await leaf.setViewState({
-    //     type: viewType,
-    //     state: { path: url },
-    //   });
-    //   await app.workspace.requestSaveLayout();
-    // } else
     if (url.endsWith(".mdb")) {
         const file = getAbstractFileAtPath(app, url);
         if (file instanceof TFile) await openTFile(leaf, file, app);

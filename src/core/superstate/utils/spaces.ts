@@ -1,6 +1,6 @@
-import { spaceContextsKey, spaceJoinsKey, spaceLinksKey, spaceSortKey } from "core/types/space";
+import { spaceLinksKey, spaceSortKey } from "core/types/space";
 import { reorderPathsInContext } from "core/utils/contexts/context";
-import { ensureArray, ensureBoolean, ensureString, ensureStringValueFromSet } from "core/utils/strings";
+import { ensureArray, ensureBoolean, ensureString } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
 import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
@@ -10,7 +10,7 @@ import { MDBFrame } from "shared/types/mframe";
 import { TargetLocation } from "shared/types/path";
 import { CacheState, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
-import { FilterDef, FilterGroupDef, JoinDefGroup, SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
+import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { PathStateWithRank } from "shared/types/superstate";
 import { sanitizeColumnName } from "shared/utils/sanitizers";
@@ -28,47 +28,12 @@ const parseSpaceSort = (value: any) : SpaceSort => {
   }
 }
 
-const fixSpaceDefType = (type: string) : string => {
-  if (type == 'fileprop') return 'file';
-  if (type == 'filemeta') return 'path';
-  return ensureString(type)
-}
-
-const parseSpaceFilterGroupFilter = (value: any) : FilterDef => {
-    return {
-        type: fixSpaceDefType(value['type']),
-        fType: ensureString(value['fType']),
-        field: ensureString(value['field']),
-        fn: ensureString(value['fn']),
-        value: ensureString(value['value']),
-    }
-}
-const parseSpaceFilterGroup = (value: any) : FilterGroupDef => {
-    return {type: ensureStringValueFromSet(value['type'], ['any', 'all'], 'any') as 'any' | 'all',
-    trueFalse: value['truefalse'] ? true : false,
-    filters: ensureArray(value['filters']).map(f => parseSpaceFilterGroupFilter(f))
-}
-}
-
-const parseSpaceJoinGroup = (value: any) : JoinDefGroup => {
-    return {
-        recursive: ensureBoolean(value['recursive']),
-        path: ensureString(value['path']),
-        type: ensureStringValueFromSet(value['type'], ['any', 'all'], 'any') as 'any' | 'all',
-        groups: ensureArray(value['groups']).map(f => parseSpaceFilterGroup(f))
-    }
-  }
-
 export const parseSpaceMetadata = (metadata: Record<string, any>, settings: MakeMDSettings) : SpaceDefinition => {
     return {
       sort: parseSpaceSort(metadata[spaceSortKey]), 
-      joins: ensureArray(metadata[spaceJoinsKey]).map(f => parseSpaceJoinGroup(f)),
-      contexts: ensureArray(metadata[spaceContextsKey]), 
       links: ensureArray(metadata[spaceLinksKey]), 
       defaultSticker: ensureString(metadata.defaultSticker),
       defaultColor: ensureString(metadata.defaultColor),
-      readMode: ensureBoolean(metadata.readMode),
-      fullWidth: ensureBoolean(metadata.fullWidth),
     }
 }
 

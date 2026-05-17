@@ -8,7 +8,6 @@ import { orderStringArrayByArray, uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
 import { linkContextRow, mergeContextRows, propertyDependencies, syncContextRow } from "core/utils/contexts/linkContextRow";
-import { pathByJoins } from "core/utils/spaces/query";
 import { ensureArray, initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
@@ -19,6 +18,7 @@ import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
+import { supportedFileTypes } from "adapters/image/imageAdapter";
 
 export const parseContextTableToCache = (
     space: SpaceInfo,
@@ -125,14 +125,19 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
 
 export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathCache: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState): { changed: boolean; cache: PathState } => {
     if (!pathCache) return { changed: false, cache: null };
-    const defaultSticker = (sticker: string, type: string, subtype: string, path: string): string => {
-        if (sticker?.length > 0) return sticker;
-        if (sticker?.length > 0) return sticker;
+    const defaultSticker = (sticker: string, type: string, subtype: string, path: string, extension?: string, savedSticker?: string): string => {
         if (type == "space") {
             if (path == "/") return "ui//home";
             if (path.startsWith("spaces://")) return "ui//hash";
+            if (savedSticker?.length > 0) return savedSticker;
+            if (sticker?.length > 0) return sticker;
             return "ui//folder";
         }
+        const fileExtension = extension?.toLowerCase() || subtype?.toLowerCase() || path.split(".").pop()?.toLowerCase();
+        if (supportedFileTypes.includes(fileExtension)) return "ui//image";
+        if (fileExtension == "canvas") return "ui//canvas";
+        if (fileExtension == "base") return "ui//table";
+        if (fileExtension == "md") return "ui//file-text";
         return "ui//file";
     };
 
@@ -183,9 +188,9 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
 
     const aliases = pathCache?.property ? ensureArray(pathCache.property[settings.fmKeyAlias]) : [];
     const parentDefaultSticker = spacesCache.get(parent)?.metadata?.defaultSticker;
-    const sticker = defaultSticker(initiateString(pathCache?.label?.sticker, parentDefaultSticker), type, subtype, path);
+    const sticker = defaultSticker(parentDefaultSticker, type, subtype, path, pathCache?.file?.extension, pathCache?.label?.sticker);
     const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
-    const color = pathCache?.label?.color ?? parentDefaultColor ?? "";
+    const color = initiateString(pathCache?.label?.color, parentDefaultColor) ?? "";
 
     const outlinks = pathCache?.resolvedLinks ?? [];
     const spaceNames = [];
@@ -237,14 +242,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             if (space.space && space.space.path == parent) {
                 spaces.push(s);
                 spaceNames.push(space.name);
-                return;
-            }
-        }
-        if (space.metadata?.joins?.length > 0) {
-            if (pathByJoins(space.metadata.joins, { ...pathState, spaces }, space.properties)) {
-                spaces.push(s);
-                spaceNames.push(space.name);
-                liveSpaces.push(s);
                 return;
             }
         }

@@ -3,11 +3,10 @@ import { savePathColor } from "core/superstate/utils/label";
 import { hidePath, hidePaths, renamePathByName } from "core/superstate/utils/path";
 import { TreeNode, removePathsFromSpace } from "core/superstate/utils/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
-import { removePathIcon, saveColorForPaths, saveIconsForPaths, savePathIcon } from "core/utils/emoji";
+import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import React from "react";
 import StickerModal from "shared/components/StickerModal";
 import { default as i18n } from "shared/i18n";
-import { removeIconsForPaths } from "shared/utils/sticker";
 
 import { deletePath, movePathToSpace } from "core/superstate/utils/path";
 import { isTouchScreen } from "core/utils/ui/screen";
@@ -23,6 +22,7 @@ import { showSpaceContextMenu } from "./spaceContextMenu";
 
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
     const paths = selectedPaths.map((s) => s.item.path);
+    const folderPaths = selectedPaths.filter((s) => s.item?.type == "space" && s.item.path != "/").map((s) => s.item.path);
     const menuOptions: SelectOption[] = [];
 
     // Open in a New Pane
@@ -46,20 +46,15 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
             },
         });
 
-        menuOptions.push({
-            name: i18n.buttons.changeIcon,
-            icon: "ui//sticker",
-            onClick: (e) => {
-                superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => saveIconsForPaths(superstate, paths, emoji)} />, windowFromDocument(e.view.document));
-            },
-        });
-        menuOptions.push({
-            name: i18n.buttons.removeIcon,
-            icon: "ui//file-minus",
-            onClick: (e) => {
-                removeIconsForPaths(superstate, paths);
-            },
-        });
+        if (folderPaths.length > 0) {
+            menuOptions.push({
+                name: i18n.buttons.changeIcon,
+                icon: "ui//sticker",
+                onClick: (e) => {
+                    superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => saveIconsForPaths(superstate, folderPaths, emoji)} />, windowFromDocument(e.view.document));
+                },
+            });
+        }
     }
 
     menuOptions.push(menuSeparator);
@@ -160,20 +155,6 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             },
         });
 
-        menuOptions.push({
-            name: i18n.buttons.changeIcon,
-            icon: "ui//sticker",
-            onClick: (e) => {
-                superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => savePathIcon(superstate, path, emoji)} />, windowFromDocument(e.view.document));
-            },
-        });
-        menuOptions.push({
-            name: i18n.buttons.removeIcon,
-            icon: "ui//file-minus",
-            onClick: (e) => {
-                removePathIcon(superstate, path);
-            },
-        });
     }
 
     menuOptions.push(menuSeparator);

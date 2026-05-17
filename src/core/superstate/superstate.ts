@@ -6,7 +6,6 @@ import { SpaceManager } from "core/spaceManager/spaceManager";
 import { defaultSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
 import { formulas } from "core/utils/formula/formulas";
-import { pathByJoins } from "core/utils/spaces/query";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
@@ -28,7 +27,6 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { safelyParseJSON } from "shared/utils/json";
-import { parseMultiString } from "utils/parsers";
 import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";
@@ -336,19 +334,6 @@ export class Superstate implements ISuperstate {
         const newPaths: string[] = [];
         if (space.metadata?.links && !_.isEqual(space.metadata.links, oldDef?.links)) {
             newPaths.push(...space.metadata.links);
-        }
-        if (space.metadata?.joins?.length > 0) {
-            const hasProps = space.metadata.joins.some((f) => f.groups.some((g) => g.filters.some((h) => h.fType == "property")));
-
-            if (!_.isEqual(space.metadata?.joins, oldDef?.joins) || hasProps) {
-                for (const [k, f] of this.pathsIndex) {
-                    if (space.metadata.joins.some((g) => g.path == "/" || f.path.startsWith(g.path + "/"))) {
-                        if (!f.hidden && pathByJoins(space.metadata?.joins, f, space.properties)) {
-                            newPaths.push(k);
-                        }
-                    }
-                }
-            }
         }
         const diff = [..._.difference(newPaths, [...currentPaths]), ..._.difference([...currentPaths], newPaths)];
         const cachedPromises = diff.map((f) => this.reloadPath(f, true).then((g) => this.dispatchEvent("pathStateUpdated", { path: f })));
@@ -709,7 +694,7 @@ export class Superstate implements ISuperstate {
 
         const spaceSort = metadata?.sort ?? { field: "rank", asc: true, group: true };
         const sortable = spaceSort.field == "rank";
-        if (!_.isEqual(space.metadata.links, metadata.links) || !_.isEqual(space.metadata.joins, metadata.joins)) {
+        if (!_.isEqual(space.metadata.links, metadata.links)) {
             spaceDefChanged = true;
         }
         const newSpaceCache: SpaceState = {
@@ -738,9 +723,6 @@ export class Superstate implements ISuperstate {
         const uri = this.spaceManager.uriByString(space.path);
         if (!uri) return null;
         const type: SpaceType = this.spaceManager.spaceTypeByString(uri);
-        if (type == "default" || type == "tag") {
-            metadata.joins = [];
-        }
         const propertyTypes: SpaceProperty[] = [];
         let properties = {};
 
@@ -781,18 +763,6 @@ export class Superstate implements ISuperstate {
         const sortable = spaceSort.field == "rank" || !spaceSort;
         const contexts: string[] = metadata?.contexts ?? [];
 
-        const dependencies = uniq(
-            (metadata.joins ?? [])
-                .flatMap((f) => f.groups)
-                .flatMap((f) => f.filters)
-                .flatMap((f) => (f.type == "context" ? [f.field.split(".")[0]] : f.type == "path" && f.field == "space" ? parseMultiString(f.value) : [])),
-        );
-        const linkDependencies = uniq(
-            (metadata.joins ?? [])
-                .flatMap((f) => f.groups)
-                .flatMap((f) => f.filters)
-                .flatMap((f) => (f.type.startsWith("link") ? parseMultiString(f.value) : [])),
-        );
         const cache: SpaceState = {
             name: space.name,
             space: space,
@@ -800,7 +770,7 @@ export class Superstate implements ISuperstate {
             type,
             contexts: contexts.map((f) => f.toLowerCase()),
             metadata,
-            dependencies,
+            dependencies: [],
             sortable,
             properties,
             propertyTypes,

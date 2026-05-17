@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import StickerModal from "shared/components/StickerModal";
-import { SelectOption } from "shared/types/menu";
 import { ISuperstate as Superstate } from "shared/types/superstate";
-import { removeIconsForPaths, savePathSticker } from "shared/utils/sticker";
-import { savePathColor } from "core/superstate/utils/label";
-import { showColorPickerMenu } from "core/react/components/UI/Menus/properties/colorPickerMenu";
+import { savePathSticker } from "shared/utils/sticker";
 import { default as i18n } from "shared/i18n";
 import { PathState } from "../types/PathState";
 import { windowFromDocument } from "../utils/dom";
@@ -17,69 +14,6 @@ export const PathStickerView = (props: {
   const { pathState } = props;
   const sticker = pathState?.label?.sticker;
   const color = pathState?.label?.color;
-  const triggerStickerContextMenu = (e: React.MouseEvent) => {
-    if (!pathState) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    const menuOptions: SelectOption[] = [];
-    menuOptions.push({
-      name: i18n.buttons.changeIcon,
-      icon: "ui//sticker",
-      onClick: (e) => {
-        props.superstate.ui.openPalette(
-          <StickerModal
-            ui={props.superstate.ui}
-            selectedSticker={(emoji) =>
-              savePathSticker(props.superstate, pathState?.path, emoji)
-            }
-          />,
-          windowFromDocument(e.view.document)
-        );
-      },
-    });
-
-    menuOptions.push({
-      name: i18n.menu.changeColor,
-      icon: "ui//palette",
-      onClick: (e) => {
-        const rect = (e.target as HTMLElement).getBoundingClientRect();
-        showColorPickerMenu(
-          props.superstate,
-          rect,
-          windowFromDocument(e.view.document),
-          color || "",
-          (newColor) => {
-            savePathColor(props.superstate, pathState.path, newColor);
-          }
-        );
-      },
-    });
-
-    menuOptions.push({
-      name: i18n.buttons.removeIcon,
-      icon: "ui//file-minus",
-      onClick: () => {
-        removeIconsForPaths(props.superstate, [pathState.path]);
-      },
-    });
-
-    props.superstate.ui.openMenu(
-      (e.target as HTMLElement).getBoundingClientRect(),
-      {
-        ui: props.superstate.ui,
-        multi: false,
-        value: [],
-        editable: false,
-        options: menuOptions,
-        searchable: false,
-        showAll: true,
-      },
-      windowFromDocument(e.view.document)
-    );
-
-    return false;
-  };
   const triggerStickerMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (pathState?.type == "space") {
@@ -119,7 +53,6 @@ export const PathStickerView = (props: {
       ) : (
         <button
           aria-label={i18n.buttons.changeIcon}
-          onContextMenu={triggerStickerContextMenu}
           style={
             color?.length > 0
               ? ({

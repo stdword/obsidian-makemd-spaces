@@ -1,4 +1,5 @@
 import { fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
+import { defaultSpaceDefContent } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 
 describe("FilesystemSpaceAdapter", () => {
   it("keeps nested Obsidian tag names intact when building tag spaces", () => {
@@ -30,5 +31,14 @@ describe("FilesystemSpaceAdapter", () => {
 
     expect(space.defPath).toBe("Projects/Alpha/.space/def.json");
     expect(space.notePath).toBe("Projects/Alpha/Alpha.md");
+  });
+
+  it("creates def.json content with an empty label color and sticker", () => {
+    expect(JSON.parse(defaultSpaceDefContent())).toEqual({
+      label: {
+        color: "",
+        sticker: "",
+      },
+    });
   });
 });

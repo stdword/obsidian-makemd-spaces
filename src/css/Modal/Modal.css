@@ -1,5 +1,5 @@
 @keyframes slideInFromBottom {
-  
+
     0% {
       transform-origin: top 50%;
       transform: translateY(50px);
@@ -12,7 +12,7 @@
   }
 
   @keyframes slideInFromTop {
-  
+
     0% {
       transform-origin: top 50%;
       transform: translateY(-100%);
@@ -30,7 +30,7 @@
     gap: 8px;
     margin-top: 16px;
   }
-  
+
 .mk-input {
     background-color: var(--mk-ui-background);
     border: none;
@@ -43,7 +43,7 @@
 
 .mk-input-large[data-placeholder]:empty::before {
     content: attr(data-placeholder);
-    color: var(--mk-ui-text-tertiary); 
+    color: var(--mk-ui-text-tertiary);
   }
 .mk-input-large {
     padding: 16px 20px;
@@ -106,7 +106,7 @@
     z-index: -1;
 }
 .mk-palette.mk-ready, .mk-modal.mk-ready {
-        
+
 
 }
 .mk-palette, .mk-modal {
@@ -117,7 +117,7 @@
     box-shadow: var(--shadow-l);
     border: thin solid var(--mk-ui-divider);
     z-index: 1;
-    
+
 }
 
 .mk-palette {
@@ -136,7 +136,7 @@
     max-width: var(--dialog-max-width);
     max-height: var(--dialog-max-height);
     overflow: auto;
-    
+
 }
 .is-phone .mk-palette, .is-phone .mk-modal {
     bottom: 0;
@@ -185,7 +185,7 @@
     height: 100%;
     top: 0;
     left: 0;
-    
+
 }
 .mk-modal-container {
     width: 100%;
@@ -243,7 +243,7 @@
 }
 
 .mk-tab {
-    padding: 4px 12px;   
+    padding: 4px 12px;
     border-radius: 8px;
 display: flex;
     --icon-size: 20px;
@@ -262,7 +262,7 @@ display: flex;
     border: thin solid var(--mk-ui-border);
     background: var(--mk-ui-background-selected);
     color: var(--mk-color-ui-accent);
-    
+
 }
 
 /* Onboarding Modal Styles */
@@ -949,4 +949,14 @@ display: flex;
   color: var(--text-error);
   font-size: 12px;
   margin-top: 4px;
+}
+
+.mk-palette > .mk-layout-row {
+    --icon-size: 26px;
+    font-size: 26px;
+    display: ruby;
+    overflow: auto;
+}
+.mk-palette > .mk-layout-row > .mk-hover {
+    margin: 4px;
 }

@@ -214,7 +214,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files.initiateFiletypeAdapter(new ObsidianMarkdownFiletypeAdapter(this));
         this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
         this.files.initiateFiletypeAdapter(new JSONFiletypeAdapter(this));
-        this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
+        // this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
 
         const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_SUB_FOLDER);
         this.ui = new ObsidianUI(this);
