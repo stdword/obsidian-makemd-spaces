@@ -10,6 +10,8 @@ interface StickerModalProps {
     hide?: () => void;
 }
 
+export const defaultStickerCategory = "lucide";
+
 const StickerModal: React.FC<StickerModalProps> = (props) => {
     const [query, setQuery] = useState("");
     const [allStickers, setAllStickers] = useState<Sticker[]>([]);
@@ -55,7 +57,7 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
             }
         };
     }, [loadNextPage]);
-    const [selectedCategory, setSelectedCategory] = useState<string>(null);
+    const [selectedCategory, setSelectedCategory] = useState<string>(defaultStickerCategory);
     useEffect(() => {
         setStickers(allStickers.filter((f) => f.name.includes(query.toLowerCase()) && (selectedCategory == null || f.type == selectedCategory)).slice(0, page * 250));
     }, [query, allStickers, page, selectedCategory]);
@@ -86,12 +88,6 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
     return (
         <>
             <div className="mk-palette-search">
-                <div
-                    className="mk-icon-small"
-                    dangerouslySetInnerHTML={{
-                        __html: props.ui.getSticker("ui//search"),
-                    }}
-                ></div>
                 <input value={query} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder={i18n.labels.findStickers} ref={ref} />
                 <button className="mk-toolbar-button">{i18n.labels.findStickersButton}</button>
                 <button

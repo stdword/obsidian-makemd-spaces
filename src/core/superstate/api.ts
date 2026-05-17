@@ -74,14 +74,6 @@ export class API implements IAPI {
         label: (path: string) => {
             return this.spaceManager.getPathState(path)?.label;
         },
-        thumbnail: (path: string) => {
-            // If path is a URL, return it directly
-            if (path && (path.startsWith("http://") || path.startsWith("https://"))) {
-                return path;
-            }
-            // Otherwise get thumbnail from path label
-            return this.spaceManager.getPathState(path)?.label?.thumbnail;
-        },
         open: (path: string, target?: TargetLocation, source?: string) => {
             const resolvedPath = source ? this.spaceManager.resolvePath(path, source) : path;
             this.superstate.ui.openPath(resolvedPath, target);

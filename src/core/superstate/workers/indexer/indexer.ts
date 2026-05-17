@@ -1,4 +1,3 @@
-
 import { stringifyJob } from "core/utils/superstate/serializer";
 import { Superstate } from "makemd-core";
 import { WorkerJobType } from "shared/types/PathState";
@@ -7,7 +6,6 @@ import { BatchContextWorkerPayload, BatchPathWorkerPayload, ContextWorkerPayload
 import SuperstateWorker from "./indexer.worker";
 /** Callback when a file is resolved. */
 type FileCallback = (p: any) => void;
-
 
 /** Multi-threaded file parser which debounces rapid file requests automatically. */
 export class Indexer {
@@ -22,8 +20,10 @@ export class Indexer {
     /** Paths -> promises for file reloads which have not yet been queued. */
     callbacks: Map<string, [FileCallback, FileCallback][]>;
 
-    public constructor(public numWorkers: number, public cache: Superstate) {
-
+    public constructor(
+        public numWorkers: number,
+        public cache: Superstate,
+    ) {
         this.workers = [];
         this.busy = [];
 
@@ -46,7 +46,7 @@ export class Indexer {
      * and all be resolved by a single actual file reload.
      */
     public reload<T>(jerb: WorkerJobType): Promise<T> {
-        const jobKey = stringifyJob(jerb)
+        const jobKey = stringifyJob(jerb);
         const promise: Promise<T> = new Promise((resolve, reject) => {
             if (this.callbacks.has(jobKey)) this.callbacks.get(jobKey)?.push([resolve, reject]);
             else this.callbacks.set(jobKey, [[resolve, reject]]);
@@ -59,7 +59,6 @@ export class Indexer {
         const workerId = this.nextAvailableWorker();
         if (workerId !== undefined) {
             this.send(jerb, workerId);
-
         } else {
             this.reloadQueue.push(jerb);
         }
@@ -69,8 +68,7 @@ export class Indexer {
 
     /** Finish the parsing of a file, potentially queueing a new file. */
     private finish(jerb: WorkerJobType, data: any, index: number) {
-
-        const jobKey = stringifyJob(jerb)
+        const jobKey = stringifyJob(jerb);
         // Cache the callbacks before we do book-keeping.
         const calls = ([] as [FileCallback, FileCallback][]).concat(this.callbacks.get(jobKey) ?? []);
         // Book-keeping to clear metadata & allow the file to be re-loaded again.
@@ -94,24 +92,22 @@ export class Indexer {
 
     /** Send a new task to the given worker ID. */
     private async send(job: WorkerJobType, workerId: number) {
-        
-        if (job.type == 'paths') {
+        if (job.type == "paths") {
             const pathCaches = await this.cache.spaceManager.allCaches();
-            const payload : BatchPathWorkerPayload = {
-                    settings: this.cache.settings, 
-                    spacesCache: this.cache.spacesIndex, 
-                    pathCache: pathCaches,
-                    oldMetadata: this.cache.pathsIndex
-            }
+            const payload: BatchPathWorkerPayload = {
+                settings: this.cache.settings,
+                spacesCache: this.cache.spacesIndex,
+                pathCache: pathCaches,
+                oldMetadata: this.cache.pathsIndex,
+            };
             this.message(workerId, {
-                job, 
-                payload: payload
-            })
+                job,
+                payload: payload,
+            });
             this.busy[workerId] = true;
             return;
         }
-        if (job.type == 'path')
-        {
+        if (job.type == "path") {
             const spaceState = this.cache.spacesIndex.get(job.path);
             let cachePath = job.path;
             let name;
@@ -119,119 +115,115 @@ export class Indexer {
                 name = spaceState.space.name;
                 cachePath = spaceState.space.defPath;
             }
-            let pathMetadata = await this.cache.spaceManager.readPathCache(cachePath) ?? await this.cache.spaceManager.readPathCache(job.path)
-            name = name ?? pathMetadata?.label.name
-            const parent = await this.cache.spaceManager.parentPathForPath(job.path)
-            const type = spaceState ? 'space' : pathMetadata?.type
-            const subtype = spaceState ? spaceState.type : pathMetadata?.subtype
-            const payload : PathWorkerPayload = {
+            const pathMetadata = (await this.cache.spaceManager.readPathCache(cachePath)) ?? (await this.cache.spaceManager.readPathCache(job.path));
+            name = name ?? pathMetadata?.name;
+            const parent = this.cache.spaceManager.parentPathForPath(job.path);
+            const type = spaceState ? "space" : pathMetadata?.type;
+            const subtype = spaceState ? spaceState.type : pathMetadata?.subtype;
+            const payload: PathWorkerPayload = {
                 path: job.path,
-                    settings: this.cache.settings, 
-                    spacesCache: this.cache.spacesIndex, 
-                    pathMetadata,
-                    name,
-                    parent,
-                    type,
-                    subtype,
-                    oldMetadata: this.cache.pathsIndex.get(job.path)
-            }
+                settings: this.cache.settings,
+                spacesCache: this.cache.spacesIndex,
+                pathMetadata,
+                name,
+                parent,
+                type,
+                subtype,
+                oldMetadata: this.cache.pathsIndex.get(job.path),
+            };
             this.message(workerId, {
-                job, 
-                payload: payload
-            })
+                job,
+                payload: payload,
+            });
             this.busy[workerId] = true;
             return;
         }
-        if (job.type == 'index') {
+        if (job.type == "index") {
             const pathsIndex = this.cache.pathsIndex;
             this.message(workerId, {
                 job,
                 payload: {
                     pathsIndex,
-                }
-            })
+                },
+            });
             this.busy[workerId] = true;
             return;
         }
-        if (job.type == 'context')
-        {
-            const space = this.cache.spacesIndex.get(job.path)?.space
+        if (job.type == "context") {
+            const space = this.cache.spacesIndex.get(job.path)?.space;
             if (!space || !space.path) {
                 this.message(workerId, {
-                    job, 
-                    payload:{
+                    job,
+                    payload: {
                         space,
                         mdb: null,
                         paths: [...this.cache.spacesMap.getInverse(job.path)],
-                        settings: this.cache.settings, 
+                        settings: this.cache.settings,
                         pathsIndex: this.cache.pathsIndex,
                         spacesMap: this.cache.spacesMap,
                         contextsIndex: this.cache.contextsIndex,
-                        options: job.payload
-                    } as ContextWorkerPayload
-                })
+                        options: job.payload,
+                    } as ContextWorkerPayload,
+                });
                 this.busy[workerId] = true;
                 return;
             }
             const dbExists = await this.cache.spaceManager.contextInitiated(space.path);
-            this.cache.spaceManager.readAllTables(space.path).then(mdb => {
+            this.cache.spaceManager.readAllTables(space.path).then((mdb) => {
                 this.message(workerId, {
-                job, 
-                payload:{
-                    space,
-                    mdb,
-                    paths: [...this.cache.spacesMap.getInverse(job.path)],
-                    spacesMap: this.cache.spacesMap,
-                    settings: this.cache.settings, 
-                    dbExists,
-                    contextsIndex: this.cache.contextsIndex,
-                    pathsIndex: this.cache.pathsIndex,
-                    options: job.payload
-                }
-            })
-            this.busy[workerId] = true;
-        })
-        return;
-    }
-    if (job.type == 'contexts') {
-        const spaces = this.cache.allSpaces().filter(f => f.type != 'default').map(f => f.space)
-        const payloads = new Map<string, any>();
-        for (const space of spaces) {
-            const dbExists = await this.cache.spaceManager.contextInitiated(space.path);
-            await this.cache.spaceManager.readAllTables(space.path).then(mdb => {
-                payloads.set(space.path, 
-                    {
+                    job,
+                    payload: {
+                        space,
+                        mdb,
+                        paths: [...this.cache.spacesMap.getInverse(job.path)],
+                        spacesMap: this.cache.spacesMap,
+                        settings: this.cache.settings,
+                        dbExists,
+                        contextsIndex: this.cache.contextsIndex,
+                        pathsIndex: this.cache.pathsIndex,
+                        options: job.payload,
+                    },
+                });
+                this.busy[workerId] = true;
+            });
+            return;
+        }
+        if (job.type == "contexts") {
+            const spaces = this.cache
+                .allSpaces()
+                .filter((f) => f.type != "default")
+                .map((f) => f.space);
+            const payloads = new Map<string, any>();
+            for (const space of spaces) {
+                const dbExists = await this.cache.spaceManager.contextInitiated(space.path);
+                await this.cache.spaceManager.readAllTables(space.path).then((mdb) => {
+                    payloads.set(space.path, {
                         space,
                         mdb,
                         paths: [...this.cache.spacesMap.getInverse(space.path)],
-                        settings: this.cache.settings, 
+                        settings: this.cache.settings,
                         spacesMap: this.cache.spacesMap,
                         contextsIndex: this.cache.contextsIndex,
                         dbExists,
-            })
-        })
-    }
-    this.message(workerId, {
-        job, 
-        payload: {
-            map: payloads,
-            pathsIndex: this.cache.pathsIndex,
-            settings: this.cache.settings, 
-            spacesMap: this.cache.spacesMap,
-            contextsIndex: this.cache.contextsIndex
-        } as BatchContextWorkerPayload
-    })
-    this.busy[workerId] = true;
-    }
-        
-    
+                    });
+                });
+            }
+            this.message(workerId, {
+                job,
+                payload: {
+                    map: payloads,
+                    pathsIndex: this.cache.pathsIndex,
+                    settings: this.cache.settings,
+                    spacesMap: this.cache.spacesMap,
+                    contextsIndex: this.cache.contextsIndex,
+                } as BatchContextWorkerPayload,
+            });
+            this.busy[workerId] = true;
+        }
     }
 
-    private message(workerId: number, message: {job: WorkerJobType, payload: any}) {
-        this.workers[workerId].postMessage(
-            message
-        )
-
+    private message(workerId: number, message: { job: WorkerJobType; payload: any }) {
+        this.workers[workerId].postMessage(message);
     }
     /** Find the next available, non-busy worker; return undefined if all workers are busy. */
     private nextAvailableWorker(): number | undefined {

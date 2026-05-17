@@ -74,7 +74,6 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
         const updatedCache: MarkdownCache = {
             tags: tagsFromCache(metadata),
             label: {
-                name: file.name,
                 sticker: label?.sticker,
                 color: label?.color,
             },

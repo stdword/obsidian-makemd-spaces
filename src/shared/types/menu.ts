@@ -2,28 +2,28 @@ import { Rect } from "./Pos";
 import { IUIManager } from "./uiManager";
 
 export type SelectMenuProps = {
-  ui: IUIManager;
-  multi?: boolean;
-  value: string[];
-  editable: boolean;
-  options: SelectOption[];
-  addKeyword?: string;
-  defaultOptions?: SelectOption[];
-  saveOptions?: (options: string[], value: string[], isNew?: boolean, section?: string) => void;
-  removeOption?: (option: string) => void;
-  placeholder?: string;
-  detail?: boolean;
-  searchable?: boolean;
-  sections?: SelectSection[];
-  showAll?: boolean;
-  showSections?: boolean;
-  previewComponent?: React.ReactNode;
-  onMoreOption?: (e: React.MouseEvent, option: string) => void;
-  onHover?: (option: any) => void;
-  onHide?: () => void;
-  isDisclosure?: boolean;
-  wrapperClass?: string;
-  onSelectSection?: (section: string) => void;
+    ui: IUIManager;
+    multi?: boolean;
+    value: string[];
+    editable: boolean;
+    options: SelectOption[];
+    addKeyword?: string;
+    defaultOptions?: SelectOption[];
+    saveOptions?: (options: string[], value: string[], isNew?: boolean, section?: string) => void;
+    removeOption?: (option: string) => void;
+    placeholder?: string;
+    detail?: boolean;
+    searchable?: boolean;
+    sections?: SelectSection[];
+    showAll?: boolean;
+    showSections?: boolean;
+    previewComponent?: React.ReactNode;
+    onMoreOption?: (e: React.MouseEvent, option: string) => void;
+    onHover?: (option: any) => void;
+    onHide?: () => void;
+    isDisclosure?: boolean;
+    wrapperClass?: string;
+    onSelectSection?: (section: string) => void;
 };
 
 export enum SelectOptionType {
@@ -36,21 +36,19 @@ export enum SelectOptionType {
     Toggle = 4,
     Custom = 5,
     Submenu = 6,
-  }
-  
-  export type SelectSection = {
+}
+
+export type SelectSection = {
     name: string;
     value: string;
-  };
-  //Overloaded component that handles menu selection
-  export type SelectOption = {
+};
+//Overloaded component that handles menu selection
+export type SelectOption = {
     id?: number;
     name: string;
     fragment?: React.FC<{
-      hide: () => void;
-      onSubmenu?: (
-        openSubmenu: (offset: Rect, onHide: () => void) => MenuObject
-      ) => void;
+        hide: () => void;
+        onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => void;
     }>;
     value?: any;
     color?: string;
@@ -68,8 +66,8 @@ export enum SelectOptionType {
     onValueChange?: (value: string) => void;
     onMoreOptions?: (e: React.MouseEvent) => void;
     onRemove?: () => void;
-  };
+};
 export type MenuObject = {
-  hide: (suppress?: boolean) => void;
-  update: (props: any) => void;
+    hide: (suppress?: boolean) => void;
+    update: (props: any) => void;
 };

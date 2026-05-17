@@ -34,11 +34,8 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
             property: property,
             definition: definition,
             label: {
-                name: file.name,
                 sticker: label?.sticker?.length > 0 ? label.sticker : "ui//json",
                 color: label?.color,
-                preview: "",
-                thumbnail: "",
             },
         };
 
@@ -83,16 +80,12 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
             const fm = safelyParseJSON(cache)?.label ?? {};
             const sticker = parseProperty("sticker", fm[this.plugin.superstate.settings.fmKeySticker]);
             const color = parseProperty("color", fm[this.plugin.superstate.settings.fmKeyColor]);
-            const name = parseProperty("aliases", fm[this.plugin.superstate.settings.fmKeyAlias])[0];
             const rows: Record<string, any> = {};
             if (sticker?.length > 0) {
                 rows["sticker"] = sticker;
             }
             if (color?.length > 0) {
                 rows["color"] = color;
-            }
-            if (name?.length > 0) {
-                rows["name"] = name;
             }
             return rows;
         }
@@ -107,9 +100,8 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
                 currentProperties[this.plugin.superstate.settings.fmKeySticker] = content(currentProperties);
             } else if (fragmentId == "color") {
                 currentProperties[this.plugin.superstate.settings.fmKeyColor] = content(currentProperties);
-            } else if (fragmentId == "name") {
-                currentProperties[this.plugin.superstate.settings.fmKeyAlias] = [content(currentProperties)];
             }
+
             const currentJSON = safelyParseJSON(await this.middleware.readTextFromFile(file.path)) ?? {};
 
             await this.middleware.writeTextToFile(file.path, JSON.stringify({ ...currentJSON, label: currentProperties }));

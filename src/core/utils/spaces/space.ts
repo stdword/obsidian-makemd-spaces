@@ -12,11 +12,9 @@ export const pathIsSpace = (superstate: Superstate, path: string) => {
 };
 
 export const spaceFolderPathFromSpace = (path: string, manager: SpaceManager) => {
-    if (manager.superstate.settings.spacesMDBInHidden) {
-        if (path == "/") return SPACE_SUB_FOLDER + "/";
-        return path + SPACE_SUB_FOLDER + "/";
-    }
-    return path;
+    if (path == "/")
+        return SPACE_SUB_FOLDER + "/";
+    return path + SPACE_SUB_FOLDER + "/";
 };
 
 export const spaceFolderForMDBPath = (path: string, manager: SpaceManager): string => {
@@ -25,14 +23,13 @@ export const spaceFolderForMDBPath = (path: string, manager: SpaceManager): stri
         return "/";
     }
     let parentPath = path.substring(0, indexOfLastSlash);
-    if (manager.superstate.settings.spacesMDBInHidden) {
-        const indexOfSecondLastSlash = parentPath.lastIndexOf("/");
-        if (parentPath.substring(indexOfSecondLastSlash + 1) == SPACE_SUB_FOLDER) {
-            parentPath = parentPath.substring(0, indexOfSecondLastSlash);
-        } else {
-            return null;
-        }
-    }
+
+    const indexOfSecondLastSlash = parentPath.lastIndexOf("/");
+    if (parentPath.substring(indexOfSecondLastSlash + 1) == SPACE_SUB_FOLDER) {
+        parentPath = parentPath.substring(0, indexOfSecondLastSlash);
+    } else
+        return null;
+
     if (parentPath.startsWith("/#")) {
         parentPath = parentPath.replace(/^/, "spaces:/");
     }

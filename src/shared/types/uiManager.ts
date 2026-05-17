@@ -50,7 +50,7 @@ export interface IUIManager {
     getSticker: (icon: string, options?: Record<string, any>) => string;
     getPlaceholderImage: (icon: string) => string;
     allStickers: () => Sticker[];
-    getUIPath: (path: string, thumbnail?: boolean) => string;
+    getUIPath: (path: string) => string;
     dragStarted: (e: React.DragEvent<HTMLDivElement>, paths: string[]) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>) => void;
     setDragLabel: (label: string) => void;
@@ -73,7 +73,7 @@ export interface UIAdapter {
     primaryInteractionType: () => InteractionType;
     getSticker: (icon: string, options?: Record<string, any>) => string;
     allStickers: () => Sticker[];
-    getUIPath: (path: string, thumbnail?: boolean) => string;
+    getUIPath: (path: string) => string;
     dragStarted: (e: React.DragEvent<HTMLDivElement>, paths: string[]) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>) => void;
     setDragLabel: (label: string) => void;

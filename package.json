@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "tsc -noEmit -skipLibCheck && buildDir=. node esbuild.config.mjs production",
+    "clean:def-json": "node scripts/remove-def-json-legacy-fields.mjs",
     "preview": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs preview",
     "demo": "node esbuild.config.mjs demo",
     "test": "jest",

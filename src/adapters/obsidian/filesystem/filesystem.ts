@@ -22,11 +22,10 @@ import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
 import { SPACE_SUB_FOLDER } from "shared/constants";
 
-
 export class ObsidianFileSystem implements FileSystemAdapter {
     static cacheFileName = "fileCache.mdc";
     static stateFileName = "superstate.mdc";
-    
+
     protected settingsPath: string;
 
     public middleware: FilesystemMiddleware;
@@ -50,18 +49,15 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         if (refresh) this.middleware.eventDispatch.dispatchEvent("onCacheUpdated", { path: path });
     }
 
-    public constructor(public plugin: MakeMDPlugin, middleware: FilesystemMiddleware) {
+    public constructor(
+        public plugin: MakeMDPlugin,
+        middleware: FilesystemMiddleware,
+    ) {
         this.middleware = middleware;
         this.plugin = plugin;
-        this.persister = new LocalStorageCache(
-            SPACE_SUB_FOLDER + "/" + ObsidianFileSystem.cacheFileName,
-            this.plugin.mdbFileAdapter,
-            ["file"],
-        );
+        this.persister = new LocalStorageCache(SPACE_SUB_FOLDER + "/" + ObsidianFileSystem.cacheFileName, this.plugin.mdbFileAdapter, ["file"]);
 
-        this.settingsPath = normalizePath(
-            this.plugin.app.vault.configDir + "/" + `plugins/${this.plugin.manifest.id}/data.json`
-        )
+        this.settingsPath = normalizePath(this.plugin.app.vault.configDir + "/" + `plugins/${this.plugin.manifest.id}/data.json`);
     }
 
     public setSettingsLastUpdatedDate() {
@@ -121,14 +117,14 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.vaultDBCache.forEach((f) => {
             const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f.path));
             if (file?.path == "/") {
-                file.name = "Vault";
-                f.name = "Vault";
+                file.name = "Home";
+                f.name = "Home";
             }
             if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
             let cache: Partial<FileCache> = {
                 metadata: {},
                 tags: [],
-                label: { sticker: f.sticker, thumbnail: "", color: f.color, name: f.name } as PathLabel,
+                label: { sticker: f.sticker, color: f.color } as PathLabel,
             };
             const h = allPaths.find((g) => g.path == f.path);
             if (h) cache = { ...cache, ...parsePathState(h.cache) };
@@ -138,7 +134,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                     file: file,
                     ctime: cache.ctime > 0 ? cache.ctime : file.ctime,
                     contentTypes: file.isFolder ? [] : ["md", "canvas", "folder"],
-                    label: { name: file.name, thumbnail: cache.label.thumbnail ?? "", sticker: cache.label.sticker ?? "", color: cache.label.color ?? "", cover: cache.label.cover ?? "" } as PathLabel,
+                    label: { sticker: cache.label.sticker ?? "", color: cache.label.color ?? "" } as PathLabel,
                     parent: file.parent,
                     type: file.isFolder ? "space" : "file",
                     subtype: file.isFolder ? "folder" : file.extension,
@@ -149,7 +145,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         const start = Date.now();
         await Promise.all(this.vaultDBCache.map((f) => this.middleware.createFileCache(f.path)));
 
-        this.plugin.superstate.ui.notify(`Make.md - File Cache Loaded in ${(Date.now() - start) / 1000} seconds ${this.cache.size}`, "console");
+        this.plugin.superstate.ui.notify(`make.md :: spaces - File Cache Loaded in ${(Date.now() - start) / 1000} seconds ${this.cache.size}`, "console");
         this.middleware.eventDispatch.dispatchEvent("onFilesystemIndexed", null);
         this.plugin.registerEvent(this.plugin.app.vault.on("create", this.onCreate));
         this.plugin.registerEvent(this.plugin.app.vault.on("modify", this.onModify));
@@ -247,7 +243,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             file: afile,
             ctime: afile.ctime,
             metadata: {},
-            label: { sticker: "", thumbnail: "", color: "", name: (file as TFile).basename ?? file.name } as PathLabel,
+            label: { sticker: "", color: "" } as PathLabel,
             tags: [],
             parent: afile.parent,
             type: afile.isFolder ? "space" : "file",

@@ -306,9 +306,6 @@ export class Superstate implements ISuperstate {
                 this.linksMap.set(f.path, new Set(cache.outlinks));
             }
         });
-        if (this.settings.enhancedLogs) {
-            // Initial Cache Loaded
-        }
         this.dispatchEvent("superstateUpdated", null);
     }
 
@@ -434,9 +431,6 @@ export class Superstate implements ISuperstate {
     }
 
     public onMetadataChange(path: string) {
-        if (this.settings.enhancedLogs) {
-            // Metadata Changed
-        }
         if (!this.pathsIndex.has(path)) {
             return;
         }
@@ -623,9 +617,6 @@ export class Superstate implements ISuperstate {
 
     public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
         if (!cache) return false;
-        if (this.settings.enhancedLogs) {
-            // Context Reloaded
-        }
         if (!changed && !force) {
             return false;
         }
@@ -714,9 +705,6 @@ export class Superstate implements ISuperstate {
 
     public async reloadSpace(space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized = true) {
         if (!space) return;
-        if (this.settings.enhancedLogs) {
-            // Reloading Space
-        }
         const metadata = spaceMetadata ?? (await this.spaceManager.spaceDefForSpace(space.path));
 
         let pathState = this.pathsIndex.get(space.path);
@@ -790,9 +778,6 @@ export class Superstate implements ISuperstate {
     }
     private async pathReloaded(path: string, cache: PathState, changed: boolean, force: boolean) {
         if (!cache) return false;
-        if (this.settings.enhancedLogs) {
-            // Path Reloaded
-        }
         this.pathsIndex.set(path, cache);
         await this.onPathReloaded(path);
         if (cache.subtype == "image" || cache.metadata?.file?.extension == "svg") {
@@ -837,7 +822,7 @@ export class Superstate implements ISuperstate {
         // Only load SVG files - Let AssetManager handle caching
         const isSvgFile = cache.metadata?.file?.extension === "svg";
 
-        if (isSvgFile && this.assets && (this.assets.iconPathMapping.has(path) || this.settings.indexSVG)) {
+        if (isSvgFile && this.assets && (this.assets.iconPathMapping.has(path))) {
             this.spaceManager.readPath(path).then((f) => {
                 // Let AssetManager handle all icon caching
                 this.assets.cacheIconFromPath(path, f);

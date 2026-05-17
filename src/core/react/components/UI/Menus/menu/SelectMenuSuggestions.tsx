@@ -176,8 +176,8 @@ const SelectMenuSuggestions = (props: {
         : item.type == SelectOptionType.Custom
         ? "mk-menu-custom"
         : `mk-menu-option ${
-            props.index === index && props.classNames.suggestionActive
-          } ${item.disabled && props.classNames.suggestionDisabled}`;
+            props.index === index ? props.classNames.suggestionActive : ""
+          } ${item.disabled ? props.classNames.suggestionDisabled : ""}`.trimRight();
     return (
       <div
         ref={(ref) => {

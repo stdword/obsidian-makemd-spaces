@@ -190,10 +190,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                 const builtIn = Object.keys(builtinSpaces).find((f) => f == uri.authority.slice(1));
                 if (builtIn) {
                     return {
-                        file: null,
+                        file: {
+                            name: builtinSpaces[builtIn].name,
+                        },
                         metadata: null,
                         label: {
-                            name: builtinSpaces[builtIn].name,
                             sticker: builtinSpaces[builtIn].icon,
                             color: "",
                         },
@@ -207,10 +208,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
             if (uri.authority.charAt(0) == "#") {
                 return {
-                    file: null,
+                    file: {
+                        name: uri.authority,
+                    },
                     metadata: null,
                     label: {
-                        name: uri.authority,
                         sticker: "",
                         color: "",
                     },
@@ -230,7 +232,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                 },
                 metadata: {},
                 label: {
-                    name: DEFAULT_SYSTEM_NAME,
                     sticker: "",
                     color: "",
                 },

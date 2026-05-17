@@ -1,45 +1,42 @@
-import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo"
-import { SpaceManager } from "makemd-core"
+import { fileSystemSpaceInfoFromFolder } from "core/spaceManager/filesystemAdapter/spaceInfo";
+import { SpaceManager } from "makemd-core";
 
-import { PathState, SpaceState } from "shared/types/PathState"
-import { MakeMDSettings } from "../../shared/types/settings"
+import { PathState, SpaceState } from "shared/types/PathState";
+import { MakeMDSettings } from "../../shared/types/settings";
 
-export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeyBanner, settings.fmKeySticker, settings.fmKeyColor, settings.fmKeyBanner, settings.fmKeyBannerOffset,
-  spaceLinksKey, spaceSortKey
-]
-  export const createVaultSpace  = (manager: SpaceManager) : SpaceState => ({
-    name: "Vault",
+export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeySticker, settings.fmKeyColor, spaceLinksKey, spaceSortKey];
+export const createVaultSpace = (manager: SpaceManager): SpaceState => ({
+    name: "Home",
     path: "/",
     space: fileSystemSpaceInfoFromFolder(manager, "/"),
     type: "default",
-  });
+});
 
-  export const vaultPath: PathState = {
-    name: "Vault",
+export const vaultPath: PathState = {
+    name: "Home",
     readOnly: false,
     path: "/",
     label: {
-      name: "Vault",
-      sticker: "ui//vault",
-      color: ''
+        sticker: "ui//vault",
+        color: "",
     },
     type: "default",
-  };
+};
 
 export type BuiltinSpace = {
-  name: string;
-  icon: string;
-  readOnly: boolean;
-  hidden: boolean;
-}
+    name: string;
+    icon: string;
+    readOnly: boolean;
+    hidden: boolean;
+};
 
-export const builtinSpaces : Record<string, BuiltinSpace> = {
-  tags: {
-    name: "Tags",
-    icon: "ui//tags",
-    readOnly: false,
-    hidden: false
-  },
+export const builtinSpaces: Record<string, BuiltinSpace> = {
+    tags: {
+        name: "Tags",
+        icon: "ui//tags",
+        readOnly: false,
+        hidden: false,
+    },
 };
 
 export const spaceLinksKey = "_links";

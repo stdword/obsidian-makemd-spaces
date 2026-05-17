@@ -18,7 +18,6 @@ import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
-import { supportedFileTypes } from "adapters/image/imageAdapter";
 
 export const parseContextTableToCache = (
     space: SpaceInfo,
@@ -115,7 +114,7 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
         const parent = _pathCache?.parent ?? "";
         const type = _pathCache?.type ?? "";
         const subtype = _pathCache?.subtype ?? "";
-        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : _pathCache?.label?.name;
+        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : _pathCache?.name;
         const oldMetadata = oldCache?.get(path);
         const { changed, cache: metadata } = parseMetadata(path, settings, spacesCache, pathCache, name, type, subtype, parent, oldMetadata);
         cache[path] = { changed, cache: metadata };
@@ -134,7 +133,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             return "ui//folder";
         }
         const fileExtension = extension?.toLowerCase() || subtype?.toLowerCase() || path.split(".").pop()?.toLowerCase();
-        if (supportedFileTypes.includes(fileExtension)) return "ui//image";
+        if (["png", "jpg", "jpeg", "avif", "webp", "gif"].includes(fileExtension)) return "ui//image";
         if (fileExtension == "canvas") return "ui//canvas";
         if (fileExtension == "base") return "ui//table";
         if (fileExtension == "md") return "ui//file-text";
@@ -144,7 +143,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const cache: PathState = {
         label: pathCache?.label,
         path,
-        name: pathCache?.label?.name ?? pathToString(path),
+        name: pathCache?.name ?? pathToString(path),
         readOnly: pathCache?.readOnly,
     };
 
@@ -186,7 +185,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
 
     tags.push(...fileTags);
 
-    const aliases = pathCache?.property ? ensureArray(pathCache.property[settings.fmKeyAlias]) : [];
     const parentDefaultSticker = spacesCache.get(parent)?.metadata?.defaultSticker;
     const sticker = defaultSticker(parentDefaultSticker, type, subtype, path, pathCache?.file?.extension, pathCache?.label?.sticker);
     const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
@@ -202,12 +200,8 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         subtype,
         parent,
         label: {
-            name,
             sticker,
             color,
-            cover: pathCache?.label?.cover ?? "",
-            preview: pathCache?.label?.preview ?? "",
-            thumbnail: pathCache?.label?.thumbnail ?? "",
         },
 
         metadata: {

@@ -56,10 +56,6 @@ export class ObsidianUI implements UIAdapter {
     };
 
     public quickOpen = (mode?: BlinkMode, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => {
-        // if (mode == BlinkMode.Image) {
-        //     this.openPalette(<ImageModal superstate={this.manager.superstate} selectedPath={onSelect}></ImageModal>, win, null);
-        //     return;
-        // }
         this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
     };
     public mainMenu = (el: HTMLElement, superstate: Superstate) => {
@@ -231,19 +227,13 @@ export class ObsidianUI implements UIAdapter {
         return [...allEmojis, ...allCustom, ...allLucide];
     };
 
-    public getUIPath = (path: string, thumbnail?: boolean): string => {
+    public getUIPath = (path: string): string => {
         const file = this.plugin.app.vault.getAbstractFileByPath(path);
-        if (file instanceof TFile) {
-            if (thumbnail) {
-                const thumb = this.plugin.superstate.pathsIndex.get(file.path)?.label?.thumbnail;
-                if (thumb) {
-                    return this.getUIPath(thumb);
-                }
-            }
+        if (file instanceof TFile)
             return `${this.plugin.app.vault.getResourcePath(file)}?${Math.floor(Math.random() * 1000)}`;
-        } else if (path?.match(urlRegex)) {
+        else if (path?.match(urlRegex))
             return path;
-        }
+
         const returnPath = getParentPathFromString(this.plugin.app.vault.getResourcePath(this.plugin.app.vault.getRoot() as any));
         return `${returnPath}${path}?${Math.floor(Math.random() * 1000)}`;
     };
@@ -268,7 +258,7 @@ export class ObsidianUI implements UIAdapter {
         }
         return [];
     };
-    public openPath = (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => {
+    public openPath = async (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => {
         if (newLeaf == "system") {
             // @ts-ignore
             this.plugin.app.showInFolder(path);
@@ -314,7 +304,7 @@ export class ObsidianUI implements UIAdapter {
             return;
         }
         const leaf = getLeaf(this.plugin.app, newLeaf);
-        this.plugin.openPath(leaf, path);
+        await this.plugin.openPath(leaf, path);
     };
     public primaryInteractionType = () => {
         return Platform.isMobile ? InteractionType.Touch : InteractionType.Mouse;

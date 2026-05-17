@@ -4,9 +4,9 @@ import MakeMDPlugin from "main";
 import { TFolder } from "obsidian";
 import { getAbstractFileAtPath, uniqueFileName } from "../utils/file";
 
-export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<string, any>, Record<string, never>> {
-    public supportedFileTypes: string[] = ["canvas"];
-    public id = "canvas.obsidian.md";
+export class ObsidianBaseFiletypeAdapter implements FileTypeAdapter<Record<string, any>, Record<string, never>> {
+    public supportedFileTypes: string[] = ["base"];
+    public id = "base.obsidian.md";
     public constructor(public plugin: MakeMDPlugin) {
         this.plugin = plugin;
         this.cache = new Map();
@@ -21,7 +21,7 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
         const label = this.middleware.getFileCache(file.path)?.label;
         const updatedCache = {
             label: {
-                sticker: label?.sticker?.length > 0 ? label.sticker : "ui//canvas",
+                sticker: label?.sticker?.length > 0 ? label.sticker : "ui//table",
                 color: label?.color,
             },
         };
@@ -34,10 +34,10 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
     public contentTypes: (file: AFile) => string[];
     public async newFile(parent: string, name: string, type: string) {
         if (!name) {
-            name = uniqueFileName("Untitled", "Untitled", "canvas", getAbstractFileAtPath(this.plugin.app, parent) as TFolder);
+            name = uniqueFileName("Untitled", "Untitled", "base", getAbstractFileAtPath(this.plugin.app, parent) as TFolder);
         }
         const newPath = `${parent}/${name}`;
-        await this.middleware.writeTextToFile(`${parent}/${name}`, "{}");
+        await this.middleware.writeTextToFile(newPath, "");
         return this.middleware.getFile(newPath);
     }
     public getCacheTypeByRefString: (file: AFile, refString: string) => any;

@@ -195,15 +195,13 @@ export const TreeItem = (props: TreeItemProps) => {
         };
     }, []);
     const hoverItem = (e: React.MouseEvent) => {
-        if (superstate.settings.filePreviewOnHover) {
-            setHoverTarget(e.target);
-            if (e.ctrlKey || e.metaKey) {
-                superstate.ui.openPath(pathState.path, "hover", e.target);
-            }
+        setHoverTarget(e.target);
+        if (e.ctrlKey || e.metaKey) {
+            superstate.ui.openPath(pathState.path, "hover", e.target);
         }
     };
     useEffect(() => {
-        if (hoverTarget && superstate.settings.filePreviewOnHover) {
+        if (hoverTarget) {
             window.addEventListener("keydown", onKeyDown);
             return () => {
                 window.removeEventListener("keydown", onKeyDown);
@@ -288,8 +286,9 @@ export const TreeItem = (props: TreeItemProps) => {
                             ></CollapseToggle>
                         )}
 
-                        {superstate.settings.spacesStickers && pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={superstate.settings.editStickerInSidebar} />}
-                        <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{pathState?.label.name ?? pathState?.name ?? data.path}</div>
+                        {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} />}
+                        <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{pathState?.name ?? data.path}</div>
+
                         {data.type == "group" && data.childrenCount > 0 && (
                             <CollapseToggle
                                 superstate={props.superstate}
@@ -301,6 +300,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 }}
                             ></CollapseToggle>
                         )}
+
                         <div className="mk-tree-span"></div>
                         {showFileTag && <span className="nav-file-tag">{extension}</span>}
                     </div>

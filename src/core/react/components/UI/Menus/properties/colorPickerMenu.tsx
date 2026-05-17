@@ -98,17 +98,17 @@ const GradientStop: React.FC<{
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    
+
     onSelect();
     setIsDragging(true);
-    
+
     const container = (e.target as HTMLElement).closest('.mk-gradient-preview') as HTMLElement;
     dragDataRef.current = {
       startX: e.clientX,
       startPosition: stop.position,
       container
     };
-    
+
     document.body.style.cursor = 'grabbing';
     document.body.style.userSelect = 'none';
   };
@@ -118,15 +118,15 @@ const GradientStop: React.FC<{
 
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
-      
+
       const { startX, startPosition, container } = dragDataRef.current;
       if (!container) return;
-      
+
       const rect = container.getBoundingClientRect();
       const deltaX = e.clientX - startX;
       const deltaPercent = (deltaX / rect.width) * 100;
       const newPosition = Math.max(0, Math.min(100, startPosition + deltaPercent));
-      
+
       onMove(newPosition);
     };
 
@@ -193,7 +193,7 @@ const ColorSwatch: React.FC<{
     large: 'mk-color-swatch-large'
   };
 
-  const backgroundStyle = isGradient 
+  const backgroundStyle = isGradient
     ? { backgroundImage: color }
     : { backgroundColor: color };
 
@@ -405,13 +405,13 @@ const SaturationLightnessCanvas: React.FC<{
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const newSaturation = (x / rect.width) * 100;
-      
+
       // Calculate max lightness based on saturation:
       // 0% saturation = 100% max lightness (white at top-left)
       // 100% saturation = 50% max lightness (pure hue at top-right)
       const maxLightness = 100 - (newSaturation / 100) * 50;
       const newLightness = maxLightness - (y / rect.height) * maxLightness;
-      
+
       onChange(
         Math.max(0, Math.min(100, newSaturation)),
         Math.max(0, Math.min(100, newLightness))
@@ -510,8 +510,8 @@ const ColorPaletteSelector: React.FC<{
             <div className="mk-palette-colors">
               {palette.colors.map((color: any, index: number) => {
                 const isGradient = color.value && (
-                  color.value.includes('linear-gradient') || 
-                  color.value.includes('radial-gradient') || 
+                  color.value.includes('linear-gradient') ||
+                  color.value.includes('radial-gradient') ||
                   color.value.includes('conic-gradient')
                 );
                 return (
@@ -552,7 +552,7 @@ export const ColorPicker = (props: {
   const [hue, setHue] = useState(0);
   const [saturation, setSaturation] = useState(50);
   const [lightness, setLightness] = useState(50);
-  
+
   // Debounced save function to prevent excessive updates
   const debouncedSaveValue = useCallback(
     debounce((color: string) => {
@@ -560,7 +560,7 @@ export const ColorPicker = (props: {
     }, 150),
     [props.saveValue]
   );
-  
+
   const saveValue = (v: string) => {
     setCurrentColor(v);
     if (gradient && selectedColorStop) {
@@ -581,30 +581,30 @@ export const ColorPicker = (props: {
     setValue(v);
     debouncedSaveValue(v);
   };
-  
+
   const saveGradient = (v: Gradient) => {
     const gradientString = stringifyGradient(v);
     setValue(gradientString);
     debouncedSaveValue(gradientString);
   };
-  
+
   const updateColor = (color: string) => {
     if (color) {
       setValue(color);
       setCurrentColor(color);
     }
-    
+
     let gradientObject;
-    
+
     // Try to parse as gradient first
     const isGradientString = color && (
-      color.includes('linear-gradient(') || 
-      color.includes('radial-gradient(') || 
+      color.includes('linear-gradient(') ||
+      color.includes('radial-gradient(') ||
       color.includes('conic-gradient(') ||
       color.includes('repeating-linear-gradient(') ||
       color.includes('repeating-radial-gradient(')
     );
-    
+
     if (isGradientString) {
       try {
         gradientObject = parseGradient(color);
@@ -638,7 +638,7 @@ export const ColorPicker = (props: {
       setMode(color === '' || color === 'transparent' ? 'none' : (props.hidePaletteSelector ? 'solid' : 'palettes'));
     }
   };
-  
+
   useEffect(() => {
     updateColor(props.color);
   }, [props.color]);
@@ -660,7 +660,7 @@ export const ColorPicker = (props: {
     const selectedStopColor = gradient?.values.find((f) => f.id == selectedColorStop)?.color;
     if (selectedStopColor && selectedStopColor !== currentColor) {
       setCurrentColor(selectedStopColor);
-      
+
       // Update HSL values to match the selected stop's color
       const rgb = hexToRgb(selectedStopColor);
       if (rgb) {
@@ -673,12 +673,12 @@ export const ColorPicker = (props: {
   }, [selectedColorStop, gradient]);
 
   return (
-    <div className="mk-ui-color-picker-enhanced" style={{ width: '200px' }}>
+    <div className="mk-ui-color-picker-enhanced">
       {/* Mode Selector */}
       <div className="mk-color-mode-selector">
         {([...(props.hidePaletteSelector ? [] : ['none']), ...(props.hidePaletteSelector ? [] : ['palettes']), 'solid', ...(props.allowGradient !== false ? ['gradient'] : [])] as ColorMode[]).map((modeOption) => {
           const isSelected = mode === modeOption;
-          
+
           let backgroundStyle: React.CSSProperties = {};
           switch (modeOption) {
             case 'palettes':
@@ -780,7 +780,7 @@ export const ColorPicker = (props: {
                 size={40}
               />
             </div>
-            
+
             {/* Icon Buttons */}
             <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
               {/* Add Stop Button */}
@@ -820,9 +820,9 @@ export const ColorPicker = (props: {
           </div>
 
           {/* Gradient Preview with Draggable Stops */}
-          <div 
-            className="mk-gradient-preview" 
-            style={{ 
+          <div
+            className="mk-gradient-preview"
+            style={{
               background: `linear-gradient(to right, ${gradient.values
                 .sort((a, b) => a.position - b.position)
                 .map(stop => `${stop.color} ${stop.position}%`)
@@ -838,14 +838,14 @@ export const ColorPicker = (props: {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = e.clientX - rect.left;
               const position = (x / rect.width) * 100;
-              
+
               // Check if clicking near an existing stop (threshold area)
               const isClickingStop = (e.target as HTMLElement).classList.contains('mk-gradient-stop');
               const thresholdDistance = 10; // 10% threshold around each stop
-              const nearExistingStop = gradient.values.some(stop => 
+              const nearExistingStop = gradient.values.some(stop =>
                 Math.abs(stop.position - position) <= thresholdDistance
               );
-              
+
               if (!isClickingStop && !nearExistingStop) {
                 const newGradient = { ...gradient };
                 newGradient.values.push({
@@ -918,7 +918,7 @@ export const ColorPicker = (props: {
               size={200}
             />
           </div>
-          
+
           {/* Hue Picker */}
           <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
             <HuePicker
@@ -935,7 +935,7 @@ export const ColorPicker = (props: {
               height={20}
             />
           </div>
-          
+
           {/* Current Color Display */}
           <div className="mk-color-current" style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
             <ColorSwatch
@@ -956,7 +956,7 @@ export const ColorPicker = (props: {
               style={{ flex: 1, minWidth: 0 }}
             />
           </div>
-          
+
           {/* Gradient Stop Controls - only show in gradient mode with selected stop */}
           {mode === 'gradient' && gradient && selectedColorStop && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', marginTop: '8px' }}>
@@ -992,7 +992,7 @@ export const ColorPicker = (props: {
                 title={i18n.menu.stopPosition}
               />
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>%</span>
-              
+
               <button
                 onClick={() => {
                   const newGradient = { ...gradient };

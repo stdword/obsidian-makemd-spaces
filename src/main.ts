@@ -15,16 +15,14 @@ import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { ObsidianAssetManager } from "adapters/obsidian/assets/ObsidianAssetManager";
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 
+import { ObsidianBaseFiletypeAdapter } from "adapters/obsidian/filetypes/baseAdapter";
 import { ObsidianCanvasFiletypeAdapter } from "adapters/obsidian/filetypes/canvasAdapter";
 import { ObsidianMarkdownFiletypeAdapter } from "adapters/obsidian/filetypes/markdownAdapter";
 import { ObsidianUI } from "adapters/obsidian/ui/ui";
 
 import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 
-import { IconFileTypeAdapter } from "adapters/icons/iconsAdapter";
-// import { openBlinkModal } from "core/react/components/Blink/Blink";
 import { LocalCachePersister } from "shared/types/persister";
-
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 
@@ -49,10 +47,9 @@ import "css/Panels/Navigator/Navigator.css";
 import "css/System/Settings.css";
 import "css/UI/Buttons.css";
 import { IMakeMDPlugin } from "shared/types/makemd";
-import { ISuperstate } from "shared/types/superstate";
-import { windowFromDocument } from "shared/utils/dom";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { getParentPathFromString } from "utils/path";
+import { ISuperstate } from "shared/types/superstate";
 
 export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     app: App;
@@ -67,10 +64,9 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     quickOpen(superstate: ISuperstate, mode?: number, onSelect?: (link: string) => void, source?: string) {
         console.log("TRACE", "quickOpen", { superstate, mode, onSelect, source });
-        const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument);
+        // const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument);
         // openBlinkModal(superstate, mode, win, onSelect, source);
     }
-
     loadSuperState() {
         this.app.workspace.onLayoutReady(async () => {
             await this.superstate.initializeIndex();
@@ -88,9 +84,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     }
     async loadSpaces() {
         document.body.querySelector(".app-container").setAttribute("vaul-drawer-wrapper", "");
-
-        this.superstate.settings.readableLineWidth = this.app.vault.getConfig("readableLineLength");
-        document.body.classList.toggle("mk-readable-line", this.superstate.settings.readableLineWidth);
 
         document.body.classList.toggle("mk-folder-lines", this.superstate.settings.folderIndentationLines);
 
@@ -177,29 +170,27 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
             openTagContext(leaf, uri.basePath, this.app);
             return;
         }
-        this.files.getFile(path).then((f) => {
-            if (f) {
-                if (f.isFolder) {
-                    return;
-                } else if (f) {
-                    openTFile(leaf, getAbstractFileAtPath(this.app, f.path) as TFile, this.app);
-                } else {
-                    return;
+        const f = await this.files.getFile(path);
+        if (f) {
+            if (f.isFolder) {
+                return;
+            } else if (f) {
+                await openTFile(leaf, getAbstractFileAtPath(this.app, f.path) as TFile, this.app);
+            } else {
+                return;
+            }
+        } else {
+            if (path.contains("/")) {
+                const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
+                const spaceFolder = this.superstate.spacesIndex.get(folder);
+                if (spaceFolder) {
+                    await newPathInSpace(this.superstate, spaceFolder, fileExtensionForFile(path), fileNameForFile(path));
                 }
             } else {
-                if (path.contains("/")) {
-                    const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
-                    const spaceFolder = this.superstate.spacesIndex.get(folder);
-                    if (spaceFolder) {
-                        newPathInSpace(this.superstate, spaceFolder, fileExtensionForFile(path), fileNameForFile(path));
-                    }
-                } else {
-                    defaultSpace(this.superstate, this.superstate.pathsIndex.get(this.superstate.ui.activePath)).then((f) => {
-                        if (f) newPathInSpace(this.superstate, f, fileExtensionForFile(path), fileNameForFile(path));
-                    });
-                }
+                const f = await defaultSpace(this.superstate, this.superstate.pathsIndex.get(this.superstate.ui.activePath));
+                if (f) await newPathInSpace(this.superstate, f, fileExtensionForFile(path), fileNameForFile(path));
             }
-        });
+        }
     };
 
     async onload() {
@@ -209,21 +200,20 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files = FilesystemMiddleware.create();
         this.obsidianAdapter = new ObsidianFileSystem(this, this.files);
         this.files.initiateFileSystemAdapter(this.obsidianAdapter, true);
+
         this.files.initiateFiletypeAdapter(this.mdbFileAdapter);
+        this.files.initiateFiletypeAdapter(new JSONFiletypeAdapter(this));
 
         this.files.initiateFiletypeAdapter(new ObsidianMarkdownFiletypeAdapter(this));
         this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
-        this.files.initiateFiletypeAdapter(new JSONFiletypeAdapter(this));
-        // this.files.initiateFiletypeAdapter(new IconFileTypeAdapter(this));
+        this.files.initiateFiletypeAdapter(new ObsidianBaseFiletypeAdapter(this));
 
         const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_SUB_FOLDER);
         this.ui = new ObsidianUI(this);
         const uiManager = UIManager.create(this.ui);
         this.superstate = Superstate.create(
             "0.9",
-            () => {
-                this.debouncedRefresh();
-            },
+            () => { this.debouncedRefresh(); },
             new SpaceManager(),
             uiManager,
         );

@@ -12,57 +12,43 @@ import { uniq } from "../../../shared/utils/array";
 import { parseMultiString } from "../../../utils/parsers";
 import { formatDate, parseDate } from "../date";
 
-
 export const optionValuesForColumn = (column: string, table: SpaceTable) => {
-  return uniq(
-    table?.rows.reduce((p, c) => {
-      if (!isString(c[column])) return [...p]
-      return [...p, ...parseMultiString(c[column])];
-    }, []) ?? []
-  );
+    return uniq(
+        table?.rows.reduce((p, c) => {
+            if (!isString(c[column])) return [...p];
+            return [...p, ...parseMultiString(c[column])];
+        }, []) ?? [],
+    );
 };
 
 export const defaultTableDataForContext = (superstate: Superstate, space: SpaceInfo): SpaceTable => {
-  const paths = [...superstate.getSpaceItems(space.path)];
-  return {
-    ...defaultMDBTableForContext(space),
-    rows: paths.map((f) => ({ [PathPropertyName]: f.path, "Created": formatDate(superstate.settings, parseDate(f.metadata?.ctime), "yyyy-MM-dd") })),
-  };
-
+    const paths = [...superstate.getSpaceItems(space.path)];
+    return {
+        ...defaultMDBTableForContext(space),
+        rows: paths.map((f) => ({ [PathPropertyName]: f.path, Created: formatDate(parseDate(f.metadata?.ctime), "yyyy-MM-dd") })),
+    };
 };
-
-
-
 
 export const createNewRow = (mdb: SpaceTable, row: DBRow, index?: number) => {
-  if (index) {
+    if (index) {
+        return {
+            ...mdb,
+            rows: insert(mdb.rows, index, row),
+        };
+    }
     return {
-      ...mdb,
-      rows: insert(mdb.rows, index, row),
+        ...mdb,
+        rows: [...mdb.rows, row],
     };
-  }
-  return {
-    ...mdb,
-    rows: [...mdb.rows, row],
-  };
 };
 
-
-export const renameTagSpacePath = async (
-  superstate: Superstate,
-  tag: string,
-  newTag: string
-) => {
-
-  const spacePath = folderForTagSpace(tag, superstate.settings);
+export const renameTagSpacePath = async (superstate: Superstate, tag: string, newTag: string) => {
+    const spacePath = folderForTagSpace(tag, superstate.settings);
 
     if (await superstate.spaceManager.pathExists(spacePath)) {
-      superstate.spaceManager.renamePath(spacePath, pathToParentPath(spacePath) + '/' + newTag)
-
+        superstate.spaceManager.renamePath(spacePath, pathToParentPath(spacePath) + "/" + newTag);
     } else {
-      deletePath(superstate, spacePath)
-      
+        deletePath(superstate, spacePath);
     }
-  superstate.onTagRenamed(tag, newTag)
-
+    superstate.onTagRenamed(tag, newTag);
 };

@@ -1,69 +1,59 @@
-import { format, parseISO } from 'date-fns';
-import { isDate, isFinite, isString } from 'lodash';
-import { RRule } from 'rrule';
-import { MakeMDSettings } from 'shared/types/settings';
+import { format, parseISO } from "date-fns";
+import { isDate, isFinite, isString } from "lodash";
+import { RRule } from "rrule";
+
+const defaultDateFormat = "MMM dd yyyy"
+const defaultTimeFormat = "h:mm a"
 
 export const isValidDate = (d: Date) => {
-  return d instanceof Date && !isNaN(d as any);
+    return d instanceof Date && !isNaN(d as any);
 };
 
 export const isoDateFormat = `yyyy-MM-dd'T'HH:mm:ss`;
 
-export const formatDate = (
-  settings: MakeMDSettings,
-  date: Date,
-  dateFormat?: string,
-) => {
-  let dateString;
-  
-  try {
-    const hasTime =
-    date.getHours() > 0 || date.getMinutes() > 0 || date.getSeconds() > 0;
-    dateString = format(
-      date,
-      dateFormat?.length > 0
-        ? dateFormat
-        : hasTime
-          ? `${settings.defaultDateFormat} ${settings.defaultTimeFormat}`
-          : settings.defaultDateFormat,
-    );
-  } catch (e) {
-    dateString = '';
-  }
-  return dateString;
+export const formatDate = (date: Date, dateFormat?: string) => {
+    let dateString;
+
+    try {
+        const hasTime = date.getHours() > 0 || date.getMinutes() > 0 || date.getSeconds() > 0;
+        dateString = format(date, dateFormat?.length > 0 ? dateFormat : hasTime ? `${defaultDateFormat} ${defaultTimeFormat}` : defaultDateFormat);
+    } catch (e) {
+        dateString = "";
+    }
+    return dateString;
 };
 
 export const parseDate = (str: any) => {
-  if (!str) return null;
-  if (isFinite(str)) {
-    return new Date(str);
-  }
-  if (isString(str)) {
-    // Handle date-only strings (yyyy-MM-dd) as local dates to avoid timezone shift
-    // parseISO treats these as UTC which can cause off-by-one day issues
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-      const [year, month, day] = str.split('-').map(Number);
-      return new Date(year, month - 1, day);
+    if (!str) return null;
+    if (isFinite(str)) {
+        return new Date(str);
     }
-    return parseISO(str);
-  }
-  if (isDate(str)) return str;
-  return null;
+    if (isString(str)) {
+        // Handle date-only strings (yyyy-MM-dd) as local dates to avoid timezone shift
+        // parseISO treats these as UTC which can cause off-by-one day issues
+        if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+            const [year, month, day] = str.split("-").map(Number);
+            return new Date(year, month - 1, day);
+        }
+        return parseISO(str);
+    }
+    if (isDate(str)) return str;
+    return null;
 };
 
 export const getFreqValue = (freq: string) => {
-  if (freq == 'DAILY') return RRule.DAILY;
-  if (freq == 'WEEKLY') return RRule.WEEKLY;
-  if (freq == 'MONTHLY') return RRule.MONTHLY;
-  if (freq == 'YEARLY') return RRule.YEARLY;
-  if (freq == 'HOURLY') return RRule.HOURLY;
+    if (freq == "DAILY") return RRule.DAILY;
+    if (freq == "WEEKLY") return RRule.WEEKLY;
+    if (freq == "MONTHLY") return RRule.MONTHLY;
+    if (freq == "YEARLY") return RRule.YEARLY;
+    if (freq == "HOURLY") return RRule.HOURLY;
 };
 export const getWeekdayValue = (weekday: string) => {
-  if (weekday == 'SU') return 6;
-  if (weekday == 'MO') return 0;
-  if (weekday == 'TU') return 1;
-  if (weekday == 'WE') return 2;
-  if (weekday == 'TH') return 3;
-  if (weekday == 'FR') return 4;
-  if (weekday == 'SA') return 5;
+    if (weekday == "SU") return 6;
+    if (weekday == "MO") return 0;
+    if (weekday == "TU") return 1;
+    if (weekday == "WE") return 2;
+    if (weekday == "TH") return 3;
+    if (weekday == "FR") return 4;
+    if (weekday == "SA") return 5;
 };

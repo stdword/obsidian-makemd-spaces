@@ -133,7 +133,7 @@ export class UIManager implements IUIManager {
         this.mainFrame.openPopover(position, popover);
     }
     public openPath(path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) {
-        this.mainFrame.openPath(path, newLeaf, source, props);
+        return this.mainFrame.openPath(path, newLeaf, source, props);
     }
     public primaryInteractionType() {
         return this.mainFrame.primaryInteractionType();
@@ -153,9 +153,10 @@ export class UIManager implements IUIManager {
     public allStickers() {
         return this.mainFrame.allStickers();
     }
-    public getUIPath(path: string, thumbnail?: boolean) {
-        if (!path) return null;
-        return this.mainFrame.getUIPath(path, thumbnail);
+    public getUIPath(path: string) {
+        if (!path)
+            return null;
+        return this.mainFrame.getUIPath(path);
     }
 
     public dragStarted(e: React.DragEvent<HTMLDivElement>, paths: string[]) {

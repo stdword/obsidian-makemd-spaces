@@ -1,52 +1,28 @@
-import i18n from "shared/i18n";
-
 import { MakeMDSettings } from "../../shared/types/settings";
 
-
-
 export const DEFAULT_SETTINGS: MakeMDSettings = {
-  defaultInitialization: false,
-  filePreviewOnHover: false,
-  spacesMDBInHidden: true,
-  cacheIndex: true,
-  activeView: "/",
-  activeSpace: "",
-  defaultDateFormat: "MMM dd yyyy",
-  defaultTimeFormat: "h:mm a",
-  currentWaypoint: 0,
-  folderIndentationLines: true,
-  revealActiveFile: false,
-  spacesStickers: true,
-  spaceRowHeight: 29,
-  bannerHeight: 200,
-  deleteFileOption: "trash",
-  expandedSpaces: ["/"],
-  expandFolderOnClick: true,
-  hiddenFiles: [],
-  hiddenExtensions: [".mdb", '_assets', '_blocks'],
-  newFileLocation: "root",
-  newFileFolderPath: "",
-  inlineBacklinks: false,
-  inlineBacklinksExpanded: false,
-  banners: true,
-  fmKeyAlias: 'aliases',
-  fmKeyBanner: 'banner',
-  fmKeyColor: 'color',
-  fmKeyBannerOffset: 'banner_y',
-  fmKeySticker: 'sticker',
+    // constants, not settings
+    fmKeyColor: "color",
+    fmKeySticker: "sticker",
 
-  openSpacesOnLaunch: true,
-  indexSVG: false,
-  readableLineWidth: true,
-  releaseNotesPrompt: 0.8,
-  showSpacePinIcon: true,
-  experimental: false,
-  actionMaxSteps: 100,
-  skipFolders: [],
-  skipFolderNames: [],
-  enhancedLogs: false,
-  firstLaunch: false,
-  editStickerInSidebar: true,
-  overrideNativeMenu: false,
-  onboardingCompleted: false,
+    // state, not settings
+    currentWaypoint: 0,
+    expandedSpaces: ["/"],
+
+    hiddenExtensions: [".mdb"],
+    hiddenFiles: [],
+    skipFolderNames: [],
+
+    newFileFolderPath: "",
+    newFileLocation: "root",
+
+    // settings
+    cacheIndex: true,
+    deleteFileOption: "trash",
+    expandFolderOnClick: true,
+    folderIndentationLines: true,
+    openSpacesOnLaunch: true,
+    overrideNativeMenu: false,
+    revealActiveFile: false,
+    spaceRowHeight: 29,
 };

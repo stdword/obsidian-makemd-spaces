@@ -1,49 +1,28 @@
 export type DeleteFileOption = "trash" | "permanent" | "system-trash";
-type MakeBasicsSettings = Record<string, any>;
 
 export interface MakeMDSettings {
-  defaultInitialization: boolean;
-  filePreviewOnHover: boolean;
-  spaceRowHeight: number;
-  spacesStickers: boolean;
-  banners: boolean;
-  bannerHeight: number;
-  deleteFileOption: DeleteFileOption;
-  expandFolderOnClick: boolean;
-  expandedSpaces: string[];
-  activeView: string;
-  currentWaypoint: number;
-  activeSpace: string;
-  spacesMDBInHidden: boolean;
-  folderIndentationLines: boolean;
-  revealActiveFile: boolean;
-  hiddenFiles: string[];
-  skipFolders: string[];
-  skipFolderNames: string[];
-  hiddenExtensions: string[];
-  newFileLocation: string;
-  newFileFolderPath: string;
-  defaultDateFormat: string;
-  defaultTimeFormat: string;
-  inlineBacklinks: boolean;
-  inlineBacklinksExpanded: boolean;
-  fmKeyAlias: string;
-  fmKeyBanner: string;
-  fmKeyBannerOffset: string;
-  fmKeyColor: string;
-  fmKeySticker: string;
-  openSpacesOnLaunch: boolean;
-  indexSVG: boolean;
-  readableLineWidth: boolean;
-  releaseNotesPrompt: number;
-  firstLaunch: boolean;
-  showSpacePinIcon: boolean;
-  experimental: boolean;
-  actionMaxSteps: number;
-  cacheIndex: boolean;
-  enhancedLogs: boolean;
-  basicsSettings?: MakeBasicsSettings;
-  editStickerInSidebar: boolean;
-  overrideNativeMenu: boolean;
-  onboardingCompleted: boolean;
+    // constants, not settings
+    fmKeyColor: string;
+    fmKeySticker: string;
+
+    // state, not settings
+    currentWaypoint: number;
+    expandedSpaces: string[];
+
+    hiddenExtensions: string[];
+    hiddenFiles: string[];
+    skipFolderNames: string[];
+
+    newFileFolderPath: string;
+    newFileLocation: string;
+
+    // settings
+    cacheIndex: boolean;
+    deleteFileOption: DeleteFileOption;
+    expandFolderOnClick: boolean;
+    folderIndentationLines: boolean;
+    openSpacesOnLaunch: boolean;
+    overrideNativeMenu: boolean;
+    revealActiveFile: boolean;
+    spaceRowHeight: number;
 }

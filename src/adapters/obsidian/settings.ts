@@ -38,38 +38,25 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
 
         const settings: {
             categories: string[];
-            subCategories: Record<string, string[]>;
             settings: SettingObject[];
         } = {
-            categories: ["navigator", "performance", "advanced"],
-            subCategories: {
-                navigator: ["appearance", "interaction", "advanced"],
-                performance: [],
-                advanced: [],
-            },
+            categories: ["appearance", "system", "advanced"],
             settings: [
                 {
                     name: "openSpacesOnLaunch",
-                    category: "navigator",
-                    subCategory: "interaction",
-                    type: "boolean",
-                },
-                {
-                    name: "editStickerInSidebar",
-                    category: "navigator",
-                    subCategory: "interaction",
+                    category: "system",
                     type: "boolean",
                 },
                 {
                     name: "overrideNativeMenu",
-                    category: "navigator",
-                    subCategory: "interaction",
+                    category: "system",
                     type: "boolean",
                 },
+
+
                 {
                     name: "spaceRowHeight",
-                    category: "navigator",
-                    subCategory: "appearance",
+                    category: "appearance",
                     type: "number",
                     props: {
                         control: "slider",
@@ -78,35 +65,27 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                 },
                 {
                     name: "folderIndentationLines",
-                    category: "navigator",
-                    subCategory: "appearance",
+                    category: "appearance",
                     type: "boolean",
                     onChange: (value: boolean) => {
                         document.body.classList.toggle("mk-folder-lines", value);
                     },
                 },
+
+
                 {
                     name: "expandFolderOnClick",
-                    category: "navigator",
-                    subCategory: "interaction",
-                    type: "boolean",
-                },
-                {
-                    name: "filePreviewOnHover",
-                    category: "navigator",
-                    subCategory: "interaction",
+                    category: "system",
                     type: "boolean",
                 },
                 {
                     name: "revealActiveFile",
-                    category: "navigator",
-                    subCategory: "interaction",
+                    category: "system",
                     type: "boolean",
                 },
                 {
                     name: "deleteFileOption",
-                    category: "navigator",
-                    subCategory: "interaction",
+                    category: "system",
                     type: "options",
                     props: {
                         options: [
@@ -117,9 +96,10 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     },
                 },
 
+
                 {
                     name: "cacheIndex",
-                    category: "performance",
+                    category: "advanced",
                     type: "boolean",
                 },
             ],
@@ -196,20 +176,10 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         };
 
         settings.categories.forEach((category) => {
-            containerEl.createEl("h1", { text: sectionKeys[category] });
+            containerEl.createEl("h2", { text: sectionKeys[category] });
             settings.settings.forEach((setting) => {
-                if (setting.category === category && !setting.subCategory) {
+                if (setting.category === category)
                     insertSetting(containerEl, setting);
-                }
-            });
-            settings.subCategories[category].forEach((subCategory) => {
-                const subCategoryItems = settings.settings.filter((setting) => setting.category === category && setting.subCategory === subCategory);
-                if (subCategoryItems.length > 0) {
-                    containerEl.createEl("h2", { text: sectionKeys[subCategory] });
-                }
-                subCategoryItems.forEach((setting) => {
-                    insertSetting(containerEl, setting);
-                });
             });
         });
     }
