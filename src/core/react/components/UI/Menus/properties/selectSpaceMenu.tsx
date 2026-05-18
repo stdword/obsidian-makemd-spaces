@@ -23,7 +23,7 @@ export const showSpacesMenu = (
             value: f.path,
             icon: superstate.pathsIndex.get(f.path)?.label?.sticker,
             section: f.type == "tag" ? "tag" : f.type == "folder" ? "folder" : "",
-            description: f.type == "tag" ? f.name : f.type == "folder" ? f.path : f.path,
+            description: f.type == "tag" ? f.name : f.type == "folder" ? f.path.replace(/[^\/]+$/, "") || "/" : f.path,
         }));
 
     return superstate.ui.openMenu(
