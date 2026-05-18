@@ -9,7 +9,12 @@ jest.mock(
   { virtual: true },
 );
 
+jest.mock("core/react/components/UI/Menus/properties/colorPickerMenu", () => ({
+  showColorPickerMenu: jest.fn((_superstate, _offset, _win, _color, saveValue) => saveValue("#123456")),
+}));
+
 import { triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
+import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 
 describe("triggerMultiPathMenu", () => {
   it("opens every selected path in a new tab from the multi-path open action", async () => {
@@ -61,5 +66,60 @@ describe("triggerMultiPathMenu", () => {
 
     resolveSecond();
     await openAll;
+  });
+});
+
+describe("showSpaceContextMenu", () => {
+  it("updates the home space color in memory when a color is selected", async () => {
+    const dispatchEvent = jest.fn();
+    const saveLabel = jest.fn(() => Promise.resolve());
+    const openMenu = jest.fn();
+    const pathState = {
+      path: "/",
+      parent: "",
+      type: "space",
+      label: {
+        color: "",
+      },
+    };
+    const superstate = {
+      settings: {
+        fmKeyColor: "color",
+      },
+      pathsIndex: new Map([["/", pathState]]),
+      spacesIndex: new Map([
+        [
+          "/",
+          {
+            path: "/",
+            name: "Home",
+            type: "vault",
+            metadata: {},
+            space: {
+              path: "/",
+              folderPath: "/",
+            },
+          },
+        ],
+      ]),
+      spaceManager: {
+        saveLabel,
+      },
+      ui: {
+        openMenu,
+        getOS: jest.fn(() => "mac"),
+        hasNativePathMenu: jest.fn(() => false),
+      },
+      dispatchEvent,
+    };
+
+    showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+    const changeColor = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//palette");
+    await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+
+    expect(saveLabel).toHaveBeenCalledWith("/", "color", "#123456");
+    expect(superstate.pathsIndex.get("/")?.label.color).toBe("#123456");
+    expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "/" });
   });
 });

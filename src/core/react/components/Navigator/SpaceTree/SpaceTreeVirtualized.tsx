@@ -35,7 +35,7 @@ export function showSpacesMenuInRect(
             saveActiveSpace(link);
         },
         true,
-        true,
+        false,
     );
 }
 

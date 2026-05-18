@@ -714,7 +714,7 @@ export const en = {
         spacesDeleteOptions: {
             permanent: "Permanent",
             trash: "Trash",
-            "system-trash": "System-trash",
+            "system-trash": "System Trash",
         },
         tooltips: {
             deletePalette: "Delete palette",

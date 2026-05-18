@@ -84,7 +84,7 @@ export const pathStateToTreeNode = (superstate: Superstate, item: PathStateWithR
 });
 
 export const spaceRowHeight = (superstate: Superstate, preset: number, section: boolean) => {
-    const spaceHeight = preset ?? (isTouchScreen(superstate.ui) ? 40 : 29);
+    const spaceHeight = preset ?? 29;
     return spaceHeight + (section ? 10 : 0);
 };
 
