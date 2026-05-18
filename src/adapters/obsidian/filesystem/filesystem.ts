@@ -4,7 +4,7 @@ import MakeMDPlugin from "main";
 import { AFile, FileCache, FileSystemAdapter, FileTypeCache, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { FileSystemAdapter as ObsidianFileSystemAdapter, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
-import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
+import { DisabledLocalCache } from "adapters/mdb/localCache/localCache";
 import { LocalCachePersister } from "shared/types/persister";
 
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
@@ -19,7 +19,7 @@ import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
-import { SPACE_SUB_FOLDER, FOCUSES_FILE } from "shared/constants";
+import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME } from "shared/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
     static cacheFileName = "fileCache.mdc";
@@ -54,7 +54,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     ) {
         this.middleware = middleware;
         this.plugin = plugin;
-        this.persister = new LocalStorageCache(SPACE_SUB_FOLDER + "/" + ObsidianFileSystem.cacheFileName, this.plugin.mdbFileAdapter, ["file"]);
+        this.persister = new DisabledLocalCache();
 
         this.settingsPath = normalizePath(this.plugin.app.vault.configDir + "/" + `plugins/${this.plugin.manifest.id}/data.json`);
     }
@@ -116,8 +116,8 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.vaultDBCache.forEach((f) => {
             const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f.path));
             if (file?.path == "/") {
-                file.name = "Home";
-                f.name = "Home";
+                file.name = DEFAULT_SYSTEM_NAME;
+                f.name = DEFAULT_SYSTEM_NAME;
             }
             if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
             let cache: Partial<FileCache> = {

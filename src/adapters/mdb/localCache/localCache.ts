@@ -89,3 +89,37 @@ export class LocalStorageCache implements LocalCachePersister {
         return selectDB(this.db, type)?.rows ?? []
     }
 }
+
+export class DisabledLocalCache implements LocalCachePersister {
+    public async initialize(): Promise<void> {
+        return;
+    }
+
+    public isInitialized() {
+        return false;
+    }
+
+    public unload() {
+        return;
+    }
+
+    public async store(path: string, cache: string, type: string): Promise<void> {
+        return;
+    }
+
+    public reset() {
+        return;
+    }
+
+    public async remove(path: string, type: string): Promise<void> {
+        return;
+    }
+
+    public cleanType(type: string) {
+        return;
+    }
+
+    public async loadAll(type: string): Promise<DBRow[]> {
+        return [];
+    }
+}
