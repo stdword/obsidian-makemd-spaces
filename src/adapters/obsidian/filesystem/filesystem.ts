@@ -8,7 +8,6 @@ import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 import { LocalCachePersister } from "shared/types/persister";
 
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
-import { defaultFocusFile } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 import { parsePathState } from "core/utils/superstate/parser";
 import { DBRows } from "shared/types/mdb";
 import { uniqueNameFromString } from "shared/utils/array";
@@ -20,7 +19,7 @@ import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
-import { SPACE_SUB_FOLDER } from "shared/constants";
+import { SPACE_SUB_FOLDER, FOCUSES_FILE } from "shared/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
     static cacheFileName = "fileCache.mdc";
@@ -165,7 +164,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.pathLastUpdated.set(path, fileStat.mtime);
         const parentPath = this.parentPathForPath(path);
         if (parentPath.split("/").pop() == SPACE_SUB_FOLDER) {
-            if (path == `${SPACE_SUB_FOLDER}/${defaultFocusFile}`) {
+            if (path == `${SPACE_SUB_FOLDER}/${FOCUSES_FILE}`) {
                 this.middleware.onFocusesUpdated();
                 return;
             }
@@ -271,7 +270,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             ...this.cache.get(oldPath),
             file: newFile,
             ctime: oldCache.ctime > 0 ? oldCache.ctime : newFile.ctime,
-            label: { ...oldCache.label, name: (file as TFile).basename ?? file.name } as PathLabel,
+            label: { ...oldCache.label } as PathLabel,
             parent: newFile.parent,
             type: newFile.isFolder ? "space" : "file",
             subtype: newFile.isFolder ? "folder" : newFile.extension,
@@ -347,7 +346,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             ...clonedCache,
             file: newFile,
             ctime: newFile.ctime,
-            label: { ...this.cache.get(path)?.label, name: newFile.name } as PathLabel,
+            label: { ...this.cache.get(path)?.label } as PathLabel,
             parent: newFile.parent,
             type: newFile.isFolder ? "space" : "file",
             subtype: newFile.isFolder ? "folder" : newFile.extension,

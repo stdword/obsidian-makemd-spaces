@@ -1,15 +1,11 @@
-
 export type FilesystemSpaceInfo = SpaceInfo & {
-  folderPath: string;
-  dbPath: string;
-  framePath: string;
+    folderPath: string;
+    dbPath: string;
 };
 
 export type SpaceInfo = {
-  name: string;
-  path: string;
-  isRemote: boolean;
-  readOnly: boolean;
-  defPath: string;
-  notePath: string;
+    name: string;
+    path: string;
+    defPath: string;
+    notePath: string;
 };

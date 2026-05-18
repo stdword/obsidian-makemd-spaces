@@ -7,8 +7,8 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderStringArrayByArray, uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
-import { linkContextRow, mergeContextRows, propertyDependencies, syncContextRow } from "core/utils/contexts/linkContextRow";
-import { ensureArray, initiateString, tagSpacePathFromTag } from "core/utils/strings";
+import { linkContextRow, mergeContextRows, syncContextRow } from "core/utils/contexts/linkContextRow";
+import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
 import { defaultContextFields } from "shared/schemas/fields";
@@ -26,7 +26,6 @@ export const parseContextTableToCache = (
     dbExists: boolean,
     pathsIndex: Map<string, PathState>,
     spacesMap: IndexMap,
-    runContext: math.MathJsInstance,
     settings: MakeMDSettings,
     contextsIndex: Map<string, ContextState>,
     options: { force?: boolean; calculate?: boolean },
@@ -60,14 +59,12 @@ export const parseContextTableToCache = (
 
     const missingPaths = paths.filter((f) => !contextPaths.includes(f));
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
-    const dependencies = propertyDependencies(cols);
     const spacePath = pathsIndex.get(space.path);
     let rows = mergeContextRows(paths, mdb[defaultContextSchemaID]?.rows ?? [], pathsIndex, spacesMap, spacePath);
 
     rows = rows.map((f) => syncContextRow(pathsIndex, f, cols, spacePath));
-    if (options?.calculate) {
-        rows = rows.map((f) => linkContextRow(runContext, pathsIndex, contextsIndex, spacesMap, f, cols, spacePath, settings, dependencies));
-    }
+    if (options?.calculate)
+        rows = rows.map((f) => linkContextRow(pathsIndex, contextsIndex, f, cols, spacePath));
 
     const contextTable: SpaceTable = {
         schema,
@@ -105,6 +102,24 @@ export const parseContextTableToCache = (
     return { changed, cache };
 };
 
+const stripExtension = (fileName: string) => {
+    const dotIndex = fileName.lastIndexOf(".");
+    if (dotIndex <= 0) return fileName;
+    return fileName.slice(0, dotIndex);
+};
+
+const displayNameForPath = (path: string, pathCache: PathCache, fallbackName?: string) => {
+    const file = pathCache?.file;
+    if (file?.name) return file.name;
+
+    const filePath = file?.path ?? path;
+    const fileName = file?.filename ?? filePath.split("/").pop() ?? fallbackName ?? pathToString(path);
+    if (pathCache?.type == "space" || pathCache?.type == "folder" || file?.isFolder) {
+        return fileName;
+    }
+    return stripExtension(fileName);
+};
+
 export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, oldCache: Map<string, PathState>): { [key: string]: { changed: boolean; cache: PathState } } => {
     const cache: { [key: string]: { changed: boolean; cache: PathState } } = {};
     for (const [path, _pathCache] of fileCache) {
@@ -114,7 +129,7 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
         const parent = _pathCache?.parent ?? "";
         const type = _pathCache?.type ?? "";
         const subtype = _pathCache?.subtype ?? "";
-        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : _pathCache?.name;
+        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : displayNameForPath(path, pathCache);
         const oldMetadata = oldCache?.get(path);
         const { changed, cache: metadata } = parseMetadata(path, settings, spacesCache, pathCache, name, type, subtype, parent, oldMetadata);
         cache[path] = { changed, cache: metadata };
@@ -124,6 +139,7 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
 
 export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathCache: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState): { changed: boolean; cache: PathState } => {
     if (!pathCache) return { changed: false, cache: null };
+    const displayName = displayNameForPath(path, pathCache, name);
     const defaultSticker = (sticker: string, type: string, subtype: string, path: string, extension?: string, savedSticker?: string): string => {
         if (type == "space") {
             if (path == "/") return "ui//home";
@@ -143,8 +159,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const cache: PathState = {
         label: pathCache?.label,
         path,
-        name: pathCache?.name ?? pathToString(path),
-        readOnly: pathCache?.readOnly,
+        name: displayName,
     };
 
     const tags: string[] = [];
@@ -153,7 +168,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     if (path.startsWith(builtinSpacePathPrefix)) {
         const builtin = path.replace(builtinSpacePathPrefix, "");
         hidden = builtinSpaces[builtin]?.hidden;
-        cache.readOnly = builtinSpaces[builtin]?.readOnly;
     }
     const getTagsFromCache = (map: Map<string, SpaceState>, spaces: string[], seen = new Set()) => {
         const keys: string[] = [];
@@ -194,7 +208,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const spaceNames = [];
     const pathState: PathState = {
         ...cache,
-        name,
+        name: displayName,
         tags: uniq(tags),
         type,
         subtype,

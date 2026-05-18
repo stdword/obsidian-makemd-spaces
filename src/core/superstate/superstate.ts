@@ -5,13 +5,11 @@ import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { defaultSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
-import { formulas } from "core/utils/formula/formulas";
 import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _, { debounce } from "lodash";
-import * as math from "mathjs";
 import { fieldTypeForField, mainFrameID } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { PathPropertyName } from "shared/types/context";
@@ -52,7 +50,6 @@ export class Superstate implements ISuperstate {
     public static create(indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager): Superstate {
         return new Superstate(indexVersion, onChange, spaceManager, uiManager);
     }
-    public formulaContext: math.MathJsInstance;
     public initialized: boolean;
     public eventsDispatcher: EventDispatcher<SuperstateEvent>;
     public spaceManager: SpaceManager;
@@ -110,42 +107,6 @@ export class Superstate implements ISuperstate {
         uiManager: UIManager,
     ) {
         this.eventsDispatcher = new EventDispatcher<SuperstateEvent>();
-
-        const all = {
-            ...math.all,
-            createAdd: math.factory(
-                "add",
-                [],
-                () =>
-                    function add(a: number, b: number) {
-                        return a + b;
-                    },
-            ),
-            createEqual: math.factory(
-                "equal",
-                [],
-                () =>
-                    function equal(a: unknown, b: unknown) {
-                        // eslint-disable-next-line eqeqeq
-                        return a == b;
-                    },
-            ),
-            createUnequal: math.factory(
-                "unequal",
-                [],
-                () =>
-                    function unequal(a: unknown, b: unknown) {
-                        // eslint-disable-next-line eqeqeq
-                        return a != b;
-                    },
-            ),
-        };
-        const config: math.ConfigOptions = {
-            matrix: "Array",
-        };
-        const runContext = math.create(all, config);
-        runContext.import(formulas, { override: true });
-        this.formulaContext = runContext;
         //Initialize
         this.initialized = false;
         this.spaceManager = spaceManager;
@@ -270,16 +231,6 @@ export class Superstate implements ISuperstate {
 
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null);
-        const allIcons = await this.persister.loadAll("icon");
-
-        // Load SVG files - Let AssetManager handle icon caching
-        this.spaceManager.allPaths(["svg"]).forEach((s) => {
-            const row = allIcons.find((f) => f.path == s);
-            if (row?.cache.length > 0 && this.assets) {
-                // AssetManager will handle all icon caching
-                this.assets.cacheIconFromPath(s, row.cache);
-            }
-        });
         const allPaths = await this.persister.loadAll("path");
         const allSpaces = await this.persister.loadAll("space");
         const allContexts = await this.persister.loadAll("context");
@@ -326,7 +277,6 @@ export class Superstate implements ISuperstate {
     }
 
     public async onSpaceDefinitionChanged(space: SpaceState, oldDef?: SpaceDefinition) {
-        if (space.space.readOnly) return;
         const currentPaths = this.spacesMap.getInverse(space.path);
         const newPaths: string[] = [];
         if (space.metadata?.links && !_.isEqual(space.metadata.links, oldDef?.links)) {
@@ -623,7 +573,7 @@ export class Superstate implements ISuperstate {
 
         this.contextsIndex.set(path, cache);
         const pathState = this.pathsIndex.get(path);
-        if (pathState && cache.dbExists && !pathState.readOnly) {
+        if (pathState && cache.dbExists /* && !this.spacesIndex.get(path)?.space?.readOnly */) {
             const allRows = cache.contextTable?.rows ?? [];
             const allColumns = cache.contextTable?.cols ?? [];
             const updatedValues = allRows.filter((f) => {
@@ -726,7 +676,6 @@ export class Superstate implements ISuperstate {
                     tags: [],
                     spaces: [],
                     outlinks: [],
-                    readOnly: space.readOnly,
                     hidden: false,
                     metadata: pathCache?.metadata,
                     type: "space",
@@ -734,7 +683,7 @@ export class Superstate implements ISuperstate {
                     label: pathCache?.label,
                 };
             }
-            properties = await this.spaceManager.readProperties(space.defPath).then((f) => linkContextRow(this.formulaContext, this.pathsIndex, this.contextsIndex, this.spacesMap, f, propertyTypes, pathState, this.settings));
+            properties = await this.spaceManager.readProperties(space.defPath).then((f) => linkContextRow(this.pathsIndex, this.contextsIndex, f, propertyTypes, pathState));
         }
 
         [...this.spacesMap.get(space.path)]
@@ -780,7 +729,7 @@ export class Superstate implements ISuperstate {
         if (!cache) return false;
         this.pathsIndex.set(path, cache);
         await this.onPathReloaded(path);
-        if (cache.subtype == "image" || cache.metadata?.file?.extension == "svg") {
+        if (cache.subtype == "image") {
             this.imagesCache.set(cache.metadata.file.filename, path);
         }
         if (!changed && !force) {
@@ -819,16 +768,6 @@ export class Superstate implements ISuperstate {
             );
         }
 
-        // Only load SVG files - Let AssetManager handle caching
-        const isSvgFile = cache.metadata?.file?.extension === "svg";
-
-        if (isSvgFile && this.assets && (this.assets.iconPathMapping.has(path))) {
-            this.spaceManager.readPath(path).then((f) => {
-                // Let AssetManager handle all icon caching
-                this.assets.cacheIconFromPath(path, f);
-                this.persister.store(path, f, "icon");
-            });
-        }
     }
     public async reloadPath(path: string, force?: boolean): Promise<boolean> {
         if (!path) return false;

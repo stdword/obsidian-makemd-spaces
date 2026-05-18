@@ -89,6 +89,5 @@ export type PathState = {
     tags?: string[];
     inlinks?: string[];
     outlinks?: string[];
-    readOnly: boolean;
     spaceNames?: string[];
 } & CacheState;

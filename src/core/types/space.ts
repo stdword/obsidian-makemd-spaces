@@ -3,18 +3,18 @@ import { SpaceManager } from "makemd-core";
 
 import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "../../shared/types/settings";
+import { DEFAULT_SYSTEM_NAME } from "shared/constants";
 
 export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeySticker, settings.fmKeyColor, spaceLinksKey, spaceSortKey];
 export const createVaultSpace = (manager: SpaceManager): SpaceState => ({
-    name: "Home",
+    name: DEFAULT_SYSTEM_NAME,
     path: "/",
     space: fileSystemSpaceInfoFromFolder(manager, "/"),
     type: "default",
 });
 
 export const vaultPath: PathState = {
-    name: "Home",
-    readOnly: false,
+    name: DEFAULT_SYSTEM_NAME,
     path: "/",
     label: {
         sticker: "ui//vault",
@@ -26,7 +26,6 @@ export const vaultPath: PathState = {
 export type BuiltinSpace = {
     name: string;
     icon: string;
-    readOnly: boolean;
     hidden: boolean;
 };
 
@@ -34,7 +33,6 @@ export const builtinSpaces: Record<string, BuiltinSpace> = {
     tags: {
         name: "Tags",
         icon: "ui//tags",
-        readOnly: false,
         hidden: false,
     },
 };

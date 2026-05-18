@@ -51,6 +51,42 @@ describe("parseMetadata", () => {
         expect(cache.label.color).toBe("#00aaee");
     });
 
+    it("derives display name from file metadata without label name", () => {
+        const { cache } = parseMetadata(
+            "Parent/Child.md",
+            settings,
+            new Map(),
+            {
+                metadata: {},
+                ctime: 0,
+                name: "Child.md",
+                label: {
+                    sticker: "",
+                    color: "",
+                },
+                contentTypes: [],
+                tags: [],
+                type: "file",
+                subtype: "md",
+                parent: "Parent",
+                readOnly: false,
+                file: {
+                    name: "Child",
+                    filename: "Child.md",
+                    path: "Parent/Child.md",
+                    extension: "md",
+                },
+            },
+            "Child.md",
+            "file",
+            "md",
+            "Parent",
+            null,
+        );
+
+        expect(cache.name).toBe("Child");
+    });
+
     it("uses file extension stickers instead of cached file stickers", () => {
         const cases = [
             ["Image.png", "png", "ui//image"],

@@ -19,7 +19,6 @@ export type { ContextState, PathState, SpaceState, SuperstateEvent };
 
 
 export abstract class ISuperstate {
-    formulaContext: math.MathJsInstance;
     initialized: boolean;
     eventsDispatcher: EventDispatcher<SuperstateEvent>;
     spaceManager: SpaceManagerInterface;

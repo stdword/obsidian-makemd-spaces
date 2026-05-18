@@ -190,9 +190,6 @@ export const createSpace = async (superstate: Superstate, path: string, newSpace
     } else {
         const spaceInfo = superstate.spaceManager.spaceInfoForPath(path);
 
-        if (spaceInfo.readOnly) {
-            return await superstate.reloadSpace(spaceInfo);
-        }
         await superstate.spaceManager.createSpace(spaceInfo.name, superstate.spaceManager.parentPathForPath(spaceInfo.path), newSpace);
 
         if (newSpace) {

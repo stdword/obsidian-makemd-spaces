@@ -1,4 +1,4 @@
-import { renameTagSpacePath } from "core/utils/contexts/optionValuesForColumn";
+import { renameTagSpacePath } from "core/utils/contexts/contextDefaults";
 import { Superstate } from "makemd-core";
 import { pathToString } from "utils/path";
 import { encodeSpaceName } from "../core/utils/strings";

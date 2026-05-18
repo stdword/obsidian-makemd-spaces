@@ -1,5 +1,5 @@
 import { fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
-import { defaultSpaceDefContent } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
+import { SPACE_DEF_DEFAULT_CONTENT } from "shared/constants";
 
 describe("FilesystemSpaceAdapter", () => {
   it("keeps nested Obsidian tag names intact when building tag spaces", () => {
@@ -34,7 +34,7 @@ describe("FilesystemSpaceAdapter", () => {
   });
 
   it("creates def.json content with an empty label color and sticker", () => {
-    expect(JSON.parse(defaultSpaceDefContent())).toEqual({
+    expect(JSON.parse(SPACE_DEF_DEFAULT_CONTENT())).toEqual({
       label: {
         color: "",
         sticker: "",

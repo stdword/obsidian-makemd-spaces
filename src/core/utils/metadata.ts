@@ -7,21 +7,20 @@ export const allMetadata = (superstate: Superstate) : Record<string, {
     name: string,
     properties: Metadata[]
 }> => ({
-    
     file: {
-        name: i18n.metadataTypes.fileMetadata,
+        name: "metadata.fileMetadata",
         properties: fileProperties
     },
     path: {
-        name: i18n.metadataTypes.outlinks,
+        name: "metadata.outlinks",
         properties: pathCacheMetadata
     },
-    label: { 
-        name: i18n.metadataTypes.label,
+    label: {
+        name: "metadata.label",
         properties: labelProperties
     },
     frontmatter: {
-        name: i18n.metadataTypes.frontmatter,
+        name: "metadata.frontmatter",
         properties: superstate.spaceManager.keysForCacheType("frontmatter").map(f => ({
             id: 'frontmatter.' + f,
             label: f,
@@ -33,7 +32,7 @@ export const allMetadata = (superstate: Superstate) : Record<string, {
         }))
     },
     context: {
-        name: i18n.metadataTypes.contexts,
+        name: "metadata.contexts",
         properties: [...superstate.contextsIndex.values()].flatMap(f => f?.contextTable?.cols.filter(f => f.primary != "true").map(g => ({
             id: 'contexts.' + f.path + '.' + g.name,
             label: g.name,

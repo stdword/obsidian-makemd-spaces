@@ -49,7 +49,7 @@ export const PathProvider: React.FC<
         removePathsFromSpace(props.superstate, spacePath, [pathState.path]);
     };
 
-    const readMode = pathState?.readOnly || props.readMode;
+    const readMode = props.readMode;
     useEffect(() => {
         const reloadPath = () => {
             // Use provided pathState if available

@@ -6,7 +6,6 @@ const item = (path: string, type = "file"): PathStateWithRank =>
         path,
         type,
         label: {},
-        readOnly: false,
     } as PathStateWithRank);
 
 const superstateWithFolderNotes = (settings?: Record<string, unknown>) =>

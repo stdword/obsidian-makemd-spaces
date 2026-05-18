@@ -24,17 +24,17 @@ export function parsePath (payload: PathWorkerPayload) {
     return parseMetadata(path, settings, spacesCache, pathMetadata, name, type, subtype, parent, oldMetadata);
 }
 
-export function parseContext (payload: ContextWorkerPayload, runContext: math.MathJsInstance) {
+export function parseContext (payload: ContextWorkerPayload) {
     const {space, mdb, paths, dbExists, spacesMap, pathsIndex, settings, contextsIndex, options} = payload;
-    return parseContextTableToCache(space, mdb, paths, dbExists, pathsIndex, spacesMap, runContext, settings, contextsIndex, options);
+    return parseContextTableToCache(space, mdb, paths, dbExists, pathsIndex, spacesMap, settings, contextsIndex, options);
 }
 
-export function parseAllContexts (payload: BatchContextWorkerPayload, runContext: math.MathJsInstance) {
+export function parseAllContexts (payload: BatchContextWorkerPayload) {
     
     const {map, pathsIndex, spacesMap, settings, contextsIndex} = payload;
     const result = new Map<string, {cache: ContextState, changed: boolean}>();
     for (const [key, value] of map) {
-        result.set(key, parseContext({...value, pathsIndex, spacesMap, settings, contextsIndex}, runContext, ));
+        result.set(key, parseContext({...value, pathsIndex, spacesMap, settings, contextsIndex}));
     }
     return result;
 }
@@ -42,7 +42,7 @@ export function parseAllContexts (payload: BatchContextWorkerPayload, runContext
 export function indexAllPaths (payload: SearchIndexPayload) {
     const options = {
         
-        keys: [{ name: 'name', weight: 2 }, "path", 'label.preview', { name: 'spaceNames', weight: 0.5 }],
+        keys: [{ name: 'name', weight: 2 }, "path", { name: 'spaceNames', weight: 0.5 }],
       };
     const items = [...payload.pathsIndex.values()].filter(f => f.hidden == false)
     return Fuse.createIndex(options.keys, items).toJSON();
@@ -52,4 +52,3 @@ export function parseAllPaths (payload: BatchPathWorkerPayload) {
     const {pathCache, settings, spacesCache, oldMetadata} = payload;
     return parseAllMetadata(pathCache, settings, spacesCache, oldMetadata);
 }
-

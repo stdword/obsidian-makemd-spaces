@@ -2,7 +2,7 @@ import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
 
 import { omit } from "lodash";
 import MakeMDPlugin from "main";
-import { DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
+import { SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
 import { safelyParseJSON } from "shared/utils/json";
 import { parseProperty } from "utils/parsers";
 
@@ -39,12 +39,9 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
             },
         };
 
-        // const contents = safelyParseJSON(await this.plugin.app.vault.cachedRead(getAbstractFileAtPath(this.plugin.app, file.path)as TFile))
         if (file.parent.split("/").pop() == SPACE_SUB_FOLDER && file.path.split("/").pop() == SPACE_DEF_FILE) {
-            const spaceFolder = await this.middleware.getFile(file.parent);
-            const name = spaceFolder.parent == "/" ? DEFAULT_SYSTEM_NAME : spaceFolder.parent.split("/").pop();
             const label = await this.readContent(file, "label", null);
-            updatedCache.label = { ...label, name: name };
+            updatedCache.label = { ...label };
         }
 
         this.cache.set(file.path, updatedCache);

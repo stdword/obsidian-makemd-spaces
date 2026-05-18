@@ -4,25 +4,22 @@ import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { builtinSpaces } from "core/types/space";
-import { DEFAULT_SYSTEM_NAME, SPACE_CONTEXT_FILE, SPACE_DEF_FILE, SPACE_DEF_PATH, SPACE_VIEWS_FILE } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME, SPACE_CONTEXT_FILE, SPACE_DEF_FILE, SPACE_DEF_PATH } from "shared/constants";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { folderPathToString } from "utils/path";
 import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
 
-export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string, readOnly?: boolean): FilesystemSpaceInfo => {
+export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): FilesystemSpaceInfo => {
     const path = tagSpacePathFromTag(tag.toLowerCase());
     const folderPath = tagToTagPath(tag);
     return {
         name: tag.replace(/^#/, ""),
         path,
 
-        isRemote: false,
-        readOnly: readOnly,
         folderPath,
         defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
         notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
-        framePath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_VIEWS_FILE,
         dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
     };
 };
@@ -37,12 +34,9 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
             name: builtinSpaces[builtinPath].name,
             path: contextPath,
 
-            isRemote: false,
-            readOnly: false,
             folderPath,
             defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
             notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
-            framePath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_VIEWS_FILE,
             dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
         };
     }
@@ -63,20 +57,17 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
     return null;
 };
 
-export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: string, readOnly?: boolean): FilesystemSpaceInfo => {
+export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: string): FilesystemSpaceInfo => {
     if (folder == "/") {
         const vaultName = "Vault";
         return {
             name: DEFAULT_SYSTEM_NAME,
 
             path: folder,
-            isRemote: false,
-            readOnly: readOnly,
             folderPath: folder,
             defPath: SPACE_DEF_PATH,
             notePath: vaultName + ".md",
             dbPath: spaceFolderPathFromSpace(folder, manager) + SPACE_CONTEXT_FILE,
-            framePath: spaceFolderPathFromSpace(folder, manager) + SPACE_VIEWS_FILE,
         };
     }
     const folderName = folderPathToString(folder);
@@ -84,12 +75,9 @@ export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: str
         name: folderName,
 
         path: folder,
-        isRemote: false,
-        readOnly: readOnly,
         folderPath: folder,
         defPath: folder + `/${SPACE_DEF_PATH}`,
         notePath: folder + "/" + folderName + ".md",
         dbPath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_CONTEXT_FILE,
-        framePath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_VIEWS_FILE,
     };
 };
