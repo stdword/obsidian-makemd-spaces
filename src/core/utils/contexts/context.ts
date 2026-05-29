@@ -14,7 +14,6 @@ import { metadataPathForSpace } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { defaultContextFields } from "shared/schemas/fields";
-import { safelyParseJSON } from "shared/utils/json";
 import { serializeMultiString } from "utils/serializers";
 import { parseMultiString, parseProperty } from "../../../utils/parsers";
 
@@ -52,15 +51,7 @@ export const contextPathFromPath = async (superstate: Superstate, path: string):
     let schemaName: string;
     let view: string;
     let viewName: string;
-    if (uri.refType == "frame") {
-        view = uri.ref;
-        const frameSchemas = await superstate.spaceManager.readAllFrames(space).then((f) => Object.values(f).map((f) => f.schema));
-        if (view && frameSchemas) {
-            viewName = frameSchemas.find((f) => f.id == view)?.name;
-            schema = safelyParseJSON(frameSchemas.find((f) => f.id == view)?.def)?.db;
-            schemaName = superstate.contextsIndex.get(space)?.schemas.find((f) => f.id == schema)?.name;
-        }
-    } else if (uri.refType == "context") {
+    if (uri.refType == "context") {
         schema = uri.ref;
         schemaName = superstate.contextsIndex.get(space)?.schemas.find((f) => f.id == schema)?.name;
     }

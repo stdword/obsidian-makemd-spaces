@@ -4,16 +4,31 @@ import { pathToParentPath } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow, SpaceTable } from "shared/types/mdb";
+import { PathState } from "shared/types/PathState";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { insert } from "shared/utils/array";
 import { defaultMDBTableForContext } from "../../../schemas/mdb";
-import { formatDate, parseDate } from "../date";
+
+export const pathStateToContextRow = (pathState: PathState): DBRow => {
+    const file = pathState.metadata?.file ?? {};
+    const isFolder = file.isFolder == true || pathState.type == "space" || pathState.subtype == "folder";
+    return {
+        [PathPropertyName]: pathState.path,
+        isFolder: isFolder ? "true" : "false",
+        name: file.name ?? pathState.name ?? "",
+        extension: file.extension ?? "",
+        ctime: `${file.ctime ?? pathState.metadata?.ctime ?? ""}`,
+        mtime: `${file.mtime ?? ""}`,
+        size: isFolder ? "" : `${file.size ?? ""}`,
+        color: pathState.label?.color ?? "",
+    };
+};
 
 export const defaultTableDataForContext = (superstate: Superstate, space: SpaceInfo): SpaceTable => {
     const paths = [...superstate.getSpaceItems(space.path)];
     return {
         ...defaultMDBTableForContext(space),
-        rows: paths.map((f) => ({ [PathPropertyName]: f.path, Created: formatDate(parseDate(f.metadata?.ctime), "yyyy-MM-dd") })),
+        rows: paths.map(pathStateToContextRow),
     };
 };
 

@@ -6,7 +6,6 @@ import { defaultContextSchemaID } from "shared/schemas/context";
 import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
-import { MDBFrame } from "shared/types/mframe";
 import { URI } from "shared/types/path";
 import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
@@ -29,9 +28,6 @@ export class SpaceManager implements SpaceManagerInterface {
         }
         if (type == "context") {
             this.superstate.reloadContextByPath(path);
-        }
-        if (type == "frame") {
-            this.superstate.dispatchEvent("frameStateUpdated", { path });
         }
     }
 
@@ -207,38 +203,6 @@ export class SpaceManager implements SpaceManagerInterface {
     public readAllTables(path: string) {
         return this.adapterForPath(path).readAllTables(path);
     }
-    public framesForSpace(path: string) {
-        return this.adapterForPath(path).framesForSpace(path);
-    }
-    public readFrame(path: string, schema: string) {
-        return this.adapterForPath(path).readFrame(path, schema);
-    }
-
-    public readAllFrames(path: string) {
-        return this.adapterForPath(path).readAllFrames(path);
-    }
-
-    public createFrame(path: string, schema: SpaceTableSchema) {
-        return this.adapterForPath(path)
-            .createFrame(path, schema)
-            .then((f) => this.superstate.dispatchEvent("frameStateUpdated", { path: this.spaceInfoForPath(path).path, schemaId: schema.id }));
-    }
-
-    public deleteFrame(path: string, name: string) {
-        return this.adapterForPath(path).deleteFrame(path, name);
-    }
-    public saveFrameSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-        return this.adapterForPath(path)
-            .saveFrameSchema(path, schemaId, saveSchema)
-            .then((f) => this.superstate.dispatchEvent("frameStateUpdated", { path: this.spaceInfoForPath(path).path, schemaId: schemaId }));
-    }
-
-    public saveFrame(path: string, frame: MDBFrame) {
-        return this.adapterForPath(path)
-            .saveFrame(path, frame)
-            .then((f) => this.superstate.dispatchEvent("frameStateUpdated", { path: this.spaceInfoForPath(path).path, schemaId: frame.schema.id }));
-    }
-
     //basic item operations
     public allPaths(type?: string[]) {
         return this.spaceAdapters.flatMap((f) => f.allPaths(type));

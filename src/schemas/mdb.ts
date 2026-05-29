@@ -48,16 +48,6 @@ export const defaultFrameListViewSchema: SpaceTableSchema = {
     def: JSON.stringify({ db: defaultContextSchemaID, icon: "ui//file-stack" }),
 };
 
-export const mainFrameID = "main";
-
-export const defaultMainFrameSchema = (id: string) => ({ id, name: id, type: "frame", def: "", predicate: "", primary: "true" });
-
-export const defaultFramesTable: DBTable = {
-    uniques: [],
-    cols: ["id", "name", "type", "def", "predicate", "primary"],
-    rows: [defaultMainFrameSchema(mainFrameID), defaultFrameListViewSchema] as SpaceTableSchema[],
-};
-
 export const defaultContextTable: DBTable = {
     uniques: [],
     cols: ["id", "name", "type", "def", "predicate", "primary"],
@@ -104,13 +94,9 @@ export const defaultTablesForContext = (space: SpaceInfo) => {
 };
 
 export const defaultFolderTables = {
-    m_schema: defaultContextTable,
-    m_fields: defaultContextFields,
     ...fieldsToTable(defaultContextFields.rows as SpaceProperty[], defaultContextTable.rows as SpaceTableSchema[]),
 };
 
 export const defaultTagTables = {
-    m_schema: defaultContextTable,
-    m_fields: defaultTagFields,
     ...fieldsToTable(defaultTagFields.rows as SpaceProperty[], defaultContextTable.rows as SpaceTableSchema[]),
 };

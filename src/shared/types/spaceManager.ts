@@ -4,7 +4,6 @@ import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
 import { PathCache } from "./caches";
 import { SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "./mdb";
-import { MDBFrame, MDBFrames } from "./mframe";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceFragmentType } from "./spaceFragment";
 import { SpaceInfo } from "./spaceInfo";
@@ -51,13 +50,6 @@ getContextsIndexMap: () => Map<string, ContextState>
     saveTable(path: string, table: SpaceTable, force?: boolean): Promise<boolean>;
     deleteTable(path: string, name: string): Promise<boolean>;
     readAllTables(path: string): Promise<SpaceTables>;
-    framesForSpace(path: string): Promise<SpaceTableSchema[]>;
-    readFrame(path: string, schema: string): Promise<MDBFrame>;
-    readAllFrames(path: string): Promise<MDBFrames>;
-    createFrame(path: string, schema: SpaceTableSchema): Promise<void>;
-    deleteFrame(path: string, name: string): Promise<void>;
-    saveFrameSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema): Promise<void>;
-    saveFrame(path: string, frame: MDBFrame): Promise<void>;
     allPaths(type?: string[]): string[];
     createItemAtPath(parent: string, type: string, name: string, content?: any): Promise<string>;
     renamePath(oldPath: string, newPath: string): Promise<string>;
@@ -123,15 +115,6 @@ export abstract class SpaceAdapter {
   public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;
   public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<boolean>;
   public deleteTable: (path: string, name: string) => Promise<void>;
-
-  //Frames
-  public framesForSpace: (path: string) => Promise<SpaceTableSchema[]>;
-  public readFrame: (path: string, name: string) => Promise<MDBFrame>;
-  public readAllFrames: (path: string) => Promise<MDBFrames>;
-  public createFrame: (path: string, schema: SpaceTableSchema) => Promise<void>;
-  public deleteFrame: (path: string, name: string) => Promise<void>;
-  public saveFrameSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;
-  public saveFrame: (path: string, frame: MDBFrame) => Promise<boolean>;
 
   //basic item operations
   public resolvePath: (path: string, source: string) => string;

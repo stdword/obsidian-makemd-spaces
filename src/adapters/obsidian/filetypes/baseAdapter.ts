@@ -21,7 +21,7 @@ export class ObsidianBaseFiletypeAdapter implements FileTypeAdapter<Record<strin
         const label = this.middleware.getFileCache(file.path)?.label;
         const updatedCache = {
             label: {
-                sticker: label?.sticker?.length > 0 ? label.sticker : "ui//table",
+                sticker: label?.sticker,
                 color: label?.color,
             },
         };

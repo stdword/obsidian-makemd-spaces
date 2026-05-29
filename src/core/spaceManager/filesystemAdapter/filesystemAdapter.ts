@@ -1,5 +1,4 @@
 import { defaultTableDataForContext } from "core/utils/contexts/contextDefaults";
-import { mdbFrameToDBTables } from "core/utils/frames/frame";
 
 import { FileCache, FilesystemMiddleware } from "core/middleware/filesystem";
 import { AFile } from "shared/types/afile";
@@ -10,13 +9,11 @@ import { parseSpaceMetadata } from "core/superstate/utils/spaces";
 import { builtinSpaces, spaceLinksKey, spaceSortKey } from "core/types/space";
 import { linkContextRow, mergeContextRows, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
-import { defaultContextTable, defaultFramesTable, defaultTablesForContext } from "schemas/mdb";
+import { defaultContextTable } from "schemas/mdb";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
-import { defaultFieldsForContext } from "shared/schemas/fields";
 import { DEFAULT_SYSTEM_NAME, SPACE_CONTEXT_FILE, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT } from "shared/constants";
 import { Focus } from "shared/types/focus";
-import { DBTables, SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
-import { MDBFrame, MDBFrames } from "shared/types/mframe";
+import { SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { SpaceAdapter } from "shared/types/spaceManager";
@@ -269,28 +266,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.parentPathForPath(path);
     }
 
-    public async readFrame(path: string, schema: string): Promise<MDBFrame> {
-        // const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-
-        // if (!mdbFile) {
-        //     const defaultTemplate = this.defaultFrame(path);
-        //     if (Object.keys(defaultTemplate).some((f) => f == schema)) {
-        //         const defaultTable = defaultTemplate[schema];
-        //         return defaultTable;
-        //     }
-        // }
-        // return this.fileSystem.readFileFragments(mdbFile, "mdbTable", schema);
-        return null
-    }
-    public async readAllFrames(path: string): Promise<MDBFrames> {
-        // const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-        // if (!mdbFile) {
-        //     return this.defaultFrame(path);
-        // }
-        // return this.fileSystem.readFileFragments(mdbFile, "mdbTables");
-        return null
-    }
-
     public async readTable(path: string, schema: string) {
         const spaceInfo = this.spaceInfoForPath(path);
         const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath);
@@ -340,15 +315,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     private defaultDBTablesForContext(spaceInfo: SpaceInfo) {
         const table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-        const defaultFields = defaultFieldsForContext(spaceInfo);
-        const defaultTable = defaultTablesForContext(spaceInfo);
         return {
-            ...defaultTable,
-            m_fields: {
-                uniques: defaultFields.uniques,
-                cols: defaultFields.cols,
-                rows: [...(defaultFields.rows ?? []), ...table.cols],
-            },
             [table.schema.id]: {
                 uniques: table.cols.filter((c) => c.unique == "true").map((c) => c.name),
                 cols: table.cols.map((c) => c.name),
@@ -356,10 +323,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             },
         };
     }
-    public defaultFrame(path: string): MDBFrames {
-        return {};
-    }
-
     public async createDefaultTable(path: string) {
         const spaceInfo = this.spaceInfoForPath(path);
         const dbPath = this.spaceInfoForPath(path).dbPath;
@@ -367,19 +330,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         const folder = dbPath.split("/").slice(0, -1).join("/");
         const filename = dbPath.split("/").pop().split(".")[0];
         return this.fileSystem.newFile(folder, filename, extension, this.defaultDBTablesForContext(spaceInfo));
-    }
-    public async createDefaultFrames(path: string) {
-        const defaultSpaceFrames = this.defaultFrame(path);
-        const dbField: DBTables = {
-            ...mdbFrameToDBTables(defaultSpaceFrames),
-            m_schema: defaultFramesTable,
-        };
-
-        const dbPath = "" // this.spaceInfoForPath(path).framePath;
-        const extension = dbPath.split(".").pop();
-        const folder = dbPath.split("/").slice(0, -1).join("/");
-        const filename = dbPath.split("/").pop().split(".")[0];
-        return this.fileSystem.newFile(folder, filename, extension, dbField);
     }
 
     public async createTable(path: string, schema: SpaceTableSchema) {
@@ -422,43 +372,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             };
         }
         return this.fileSystem.readFileFragments(mdbFile, "mdbTables", null);
-    }
-
-    public async framesForSpace(path: string) {
-        // const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-        // if (!mdbFile) {
-        //     const frames = this.defaultFrame(path);
-        //     return Object.values(frames).map((f) => f.schema);
-        // }
-        // return this.fileSystem.readFileFragments(mdbFile, "schemas", null);
-        return [] as SpaceTableSchema[]
-    }
-    public async createFrame(path: string, schema: SpaceTableSchema) {
-        // let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-        // if (!mdbFile) {
-        //     mdbFile = await this.createDefaultFrames(path);
-        // }
-        // return this.fileSystem.newFileFragment(mdbFile, "schema", schema.id, schema);
-    }
-    public async deleteFrame(path: string, name: string) {
-        // const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-        // return this.fileSystem.deleteFileFragment(mdbFile, "schema", name);
-    }
-    public async saveFrameSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-        // let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-        // if (!mdbFile) {
-        //     mdbFile = await this.createDefaultFrames(path);
-        // }
-        // return this.fileSystem.saveFileFragment(mdbFile, "schema", schemaId, saveSchema);
-        return false
-    }
-    public async saveFrame(path: string, frame: SpaceTable) {
-        // let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).framePath);
-        // if (!mdbFile) {
-        //     mdbFile = await this.createDefaultFrames(path);
-        // }
-        // return this.fileSystem.saveFileFragment(mdbFile, "mdbFrame", frame.schema.id, () => frame);
-        return false
     }
 
     public async contextForSpace(path: string): Promise<SpaceTable> {

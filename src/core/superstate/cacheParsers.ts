@@ -1,12 +1,13 @@
 import _ from "lodash";
 import { PathCache } from "shared/types/caches";
-import { SpaceProperty, SpaceTable, SpaceTables } from "shared/types/mdb";
+import { DBRow, SpaceProperty, SpaceTable, SpaceTables } from "shared/types/mdb";
 import { ContextState, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderStringArrayByArray, uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
+import { pathStateToContextRow } from "core/utils/contexts/contextDefaults";
 import { linkContextRow, mergeContextRows, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
@@ -62,7 +63,26 @@ export const parseContextTableToCache = (
     const spacePath = pathsIndex.get(space.path);
     let rows = mergeContextRows(paths, mdb[defaultContextSchemaID]?.rows ?? [], pathsIndex, spacesMap, spacePath);
 
-    rows = rows.map((f) => syncContextRow(pathsIndex, f, cols, spacePath));
+    rows = rows.map((_row) => {
+        const row = _row as DBRow;
+        const pathState = pathsIndex.get(row[PathPropertyName]);
+        const fileRow = pathState ? pathStateToContextRow(pathState) : {};
+        const normalizedRow = {
+            ...fileRow,
+            ...row,
+            color: row.color?.length > 0 ? row.color : fileRow.color,
+        };
+        if (pathState && normalizedRow.color != pathState.label?.color) {
+            pathsIndex.set(pathState.path, {
+                ...pathState,
+                label: {
+                    ...pathState.label,
+                    color: normalizedRow.color,
+                },
+            });
+        }
+        return syncContextRow(pathsIndex, normalizedRow, cols, spacePath);
+    });
     if (options?.calculate)
         rows = rows.map((f) => linkContextRow(pathsIndex, contextsIndex, f, cols, spacePath));
 
@@ -83,6 +103,7 @@ export const parseContextTableToCache = (
     });
 
     const outlinks = uniq(contextTable.rows.reduce((p, c) => uniq([...p, ...[...contextCols, ...linkCols].flatMap((f) => parseMultiString(c[f.name]).map((f) => parseLinkString(f)))]), []));
+    const changed = !_.isEqual(contextTable, mdb[defaultContextSchemaID]);
     mdb[defaultContextSchemaID] = contextTable;
     const cache: ContextState = {
         contextTable,
@@ -95,10 +116,6 @@ export const parseContextTableToCache = (
         dbExists,
         mdb,
     };
-    let changed = false;
-    if (!_.isEqual(contextTable, mdb[defaultContextSchemaID])) {
-        changed = true;
-    }
     return { changed, cache };
 };
 
@@ -150,7 +167,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         }
         const fileExtension = extension?.toLowerCase() || subtype?.toLowerCase() || path.split(".").pop()?.toLowerCase();
         if (["png", "jpg", "jpeg", "avif", "webp", "gif"].includes(fileExtension)) return "ui//image";
-        if (fileExtension == "canvas") return "ui//canvas";
+        if (fileExtension == "canvas") return "ui//layout-dashboard";
         if (fileExtension == "base") return "ui//table";
         if (fileExtension == "md") return "ui//file-text";
         return "ui//file";

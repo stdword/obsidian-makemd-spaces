@@ -58,14 +58,17 @@ describe("FolderNotesPluginIntegration", () => {
     });
 
     it("reads folder-notes settings from the Obsidian UI main frame plugin", () => {
-        const items = [item("Efforts/core/PSY content production/PSY content production.canvas"), item("Efforts/core/PSY content production/Content Ideas.canvas")];
+        const items = [
+            item("Projects/Content/Content.canvas"),
+            item("Projects/Content/Ideas.canvas"),
+        ];
         const superstate = superstateWithFolderNotesInMainFrame({
             folderNoteName: "{{folder_name}}",
             supportedFileTypes: ["md", "canvas", "base"],
         });
 
-        const filtered = hideFolderNoteFileFromItems(superstate, "Efforts/core/PSY content production", items);
+        const filtered = hideFolderNoteFileFromItems(superstate, "Projects/Content", items);
 
-        expect(filtered.map((i) => i.path)).toEqual(["Efforts/core/PSY content production/Content Ideas.canvas"]);
+        expect(filtered.map((i) => i.path)).toEqual(["Projects/Content/Ideas.canvas"]);
     });
 });

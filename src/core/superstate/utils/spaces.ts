@@ -6,7 +6,6 @@ import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { SpaceProperty } from "shared/types/mdb";
-import { MDBFrame } from "shared/types/mframe";
 import { TargetLocation } from "shared/types/path";
 import { CacheState, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
@@ -111,8 +110,17 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: Cache
         const propName = sortStrategy.field.split(".")[1];
         const fieldFunc = (obj: Record<string, any>) => obj?.metadata?.property?.[propName];
         sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc));
+    } else if (["ctime", "mtime", "size"].includes(sortStrategy.field)) {
+        const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.file?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field] ?? "";
+        sortFns.push((_a: Record<string, any>, _b: Record<string, any>) => {
+            const a = sortStrategy.asc ? _a : _b;
+            const b = sortStrategy.asc ? _b : _a;
+            const aValue = Number(fieldFunc(a) || 0);
+            const bValue = Number(fieldFunc(b) || 0);
+            return aValue - bValue;
+        });
     } else {
-        const fieldFunc = (obj: Record<string, any>) => obj?.metadata?.file?.[sortStrategy.field];
+        const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.file?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field];
         sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc));
     }
     return sortFns.reduce((p, c) => {
@@ -326,34 +334,12 @@ export const saveLabel = (superstate: Superstate, path: string, label: string, v
 };
 
 export const saveNewProperty = async (superstate: Superstate, path: string, property: SpaceProperty) => {
-    const saveProperty = (tableData: MDBFrame, newColumn: SpaceProperty, oldColumn?: SpaceProperty): boolean => {
-        const column = {
-            ...newColumn,
-            name: sanitizeColumnName(newColumn.name),
-        };
-        const mdbtable = tableData;
-
-        if (column.name == "") {
+    if (superstate.spacesIndex.has(path)) {
+        if (sanitizeColumnName(property.name) == "") {
             superstate.ui.notify(i18n.notice.noPropertyName);
             return false;
         }
-        if ((!oldColumn && mdbtable.cols.find((f) => f.name.toLowerCase() == column.name.toLowerCase())) || (oldColumn && oldColumn.name != column.name && mdbtable.cols.find((f) => f.name.toLowerCase() == column.name.toLowerCase()))) {
-            superstate.ui.notify(i18n.notice.duplicatePropertyName);
-            return false;
-        }
-
-        const oldFieldIndex = oldColumn ? mdbtable.cols.findIndex((f) => f.name == oldColumn.name) : -1;
-        const newFields: SpaceProperty[] = oldFieldIndex == -1 ? [...mdbtable.cols, column] : mdbtable.cols.map((f, i) => (i == oldFieldIndex ? column : f));
-        const newTable = {
-            ...mdbtable,
-            cols: newFields ?? [],
-        };
-        superstate.spaceManager.saveFrame(path, newTable as MDBFrame);
-        return true;
-    };
-    if (superstate.spacesIndex.has(path)) {
-        const tableData = await superstate.spaceManager.readFrame(path, "main");
-        saveProperty(tableData, { ...property, schemaId: "main" });
+        return superstate.spaceManager.saveProperties(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), { [property.name]: defaultValueForType(property.type) });
     } else {
         superstate.spaceManager.saveProperties(path, { [property.name]: defaultValueForType(property.type) });
     }

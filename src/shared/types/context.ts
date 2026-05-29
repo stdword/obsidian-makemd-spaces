@@ -1,5 +1,5 @@
-export const PathPropertyName = "File"
-export const PathPropertyCreated = "Created"
+export const PathPropertyName = "path"
+export const PathPropertyCreated = "ctime"
 
 export type ContextDefType = 'tag'
 export type ContextDef = {

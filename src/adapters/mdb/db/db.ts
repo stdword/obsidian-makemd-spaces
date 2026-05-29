@@ -262,6 +262,9 @@ export const saveDBToPath = async (plugin: MDBFileTypeAdapter, path: string, tab
                 db.exec(createFieldsTable);
             } catch (e) {}
         }
+    } else {
+        dropTable(db, "m_schema");
+        dropTable(db, "m_fields");
     }
     const result = replaceDB(db, tables);
     if (result) {

@@ -1,7 +1,6 @@
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/contexts/context";
-import { parseContextNode, parseLinkedNode } from "core/utils/frames/frame";
 import { SelectOption, SpaceManager } from "makemd-core";
 import { SpaceManagerInterface } from "shared/types/spaceManager";
 import { PathState } from "shared/types/superstate";
@@ -17,6 +16,27 @@ import { sanitizeTableName } from "shared/utils/sanitizers";
 import { parseMDBStringValue } from "utils/properties";
 import { ISuperstate } from "shared/types/superstate";
 import { newPathInSpace, saveProperties } from "./utils/spaces";
+
+const parsePropertyPath = (value: string): string[] => {
+    if (!value) return [];
+    return value
+        .replace(/\[['"]?([^'"\]]+)['"]?\]/g, ".$1")
+        .split(".")
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+};
+
+const parseContextNode = (value: string) => {
+    const path = parsePropertyPath(value);
+    if (path.length < 3 || path[0] != "$contexts") return null;
+    return { context: path[1], prop: path[2] };
+};
+
+const parseLinkedNode = (value: string) => {
+    const path = parsePropertyPath(value);
+    if (path.length < 3) return null;
+    return { node: path[0], prop: path[2] };
+};
 
 // Interface for the minimal space manager functionality needed by API
 export interface APISpaceManager {

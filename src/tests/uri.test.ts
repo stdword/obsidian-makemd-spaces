@@ -2,7 +2,7 @@ import { parseURI } from "shared/utils/uri";
 
 describe("parseURI", () => {
   it("keeps question marks and percent signs in plain vault paths", () => {
-    const path = "Efforts/How To Build A Better Personal Brand Than 99% Of People?.md";
+    const path = "Projects/Brand for 99% of People?.md";
 
     const uri = parseURI(path);
 
@@ -12,8 +12,8 @@ describe("parseURI", () => {
   });
 
   it("does not throw on malformed percent escapes in explicit URI query strings", () => {
-    const uri = parseURI("spaces://$tags/?q=99% Of People");
+    const uri = parseURI("spaces://$tags/?q=99% of People");
 
-    expect(uri.query).toEqual({ q: "99% Of People" });
+    expect(uri.query).toEqual({ q: "99% of People" });
   });
 });

@@ -10,13 +10,12 @@ import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _, { debounce } from "lodash";
-import { fieldTypeForField, mainFrameID } from "schemas/mdb";
+import { fieldTypeForField } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { PathPropertyName } from "shared/types/context";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { SpaceProperty } from "shared/types/mdb";
-import { MDBFrames } from "shared/types/mframe";
 import { ContextState, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
 import { MakeMDSettings } from "shared/types/settings";
@@ -663,9 +662,6 @@ export class Superstate implements ISuperstate {
         const type: SpaceType = this.spaceManager.spaceTypeByString(uri);
         const propertyTypes: SpaceProperty[] = [];
         let properties = {};
-
-        const frameProps = await this.spaceManager.readFrame(space.path, mainFrameID).then((f) => f?.cols ?? []);
-        propertyTypes.push(...frameProps);
 
         if (propertyTypes.length > 0) {
             if (!pathState) {

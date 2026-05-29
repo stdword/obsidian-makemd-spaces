@@ -21,7 +21,7 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
         const label = this.middleware.getFileCache(file.path)?.label;
         const updatedCache = {
             label: {
-                sticker: label?.sticker?.length > 0 ? label.sticker : "ui//canvas",
+                sticker: label?.sticker,
                 color: label?.color,
             },
         };

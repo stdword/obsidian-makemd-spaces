@@ -15,6 +15,7 @@ jest.mock("core/react/components/UI/Menus/properties/colorPickerMenu", () => ({
 
 import { triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
+import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
 
 describe("triggerMultiPathMenu", () => {
   it("opens every selected path in a new tab from the multi-path open action", async () => {
@@ -70,9 +71,10 @@ describe("triggerMultiPathMenu", () => {
 });
 
 describe("showSpaceContextMenu", () => {
-  it("updates the home space color in memory when a color is selected", async () => {
+  it("updates the home space color in context rows and memory when a color is selected", async () => {
     const dispatchEvent = jest.fn();
     const saveLabel = jest.fn(() => Promise.resolve());
+    const saveTable = jest.fn(() => Promise.resolve(true));
     const openMenu = jest.fn();
     const pathState = {
       path: "/",
@@ -81,6 +83,12 @@ describe("showSpaceContextMenu", () => {
       label: {
         color: "",
       },
+      spaces: ["/"],
+    };
+    const contextTable = {
+      schema: { id: defaultContextSchemaID, name: "Items", type: "db", primary: "true" },
+      cols: defaultContextFileColumns.map((name) => ({ name, schemaId: defaultContextSchemaID, type: "text" })),
+      rows: [{ path: "/", color: "" }],
     };
     const superstate = {
       settings: {
@@ -104,6 +112,8 @@ describe("showSpaceContextMenu", () => {
       ]),
       spaceManager: {
         saveLabel,
+        contextForSpace: jest.fn(() => Promise.resolve(contextTable)),
+        saveTable,
       },
       ui: {
         openMenu,
@@ -118,7 +128,14 @@ describe("showSpaceContextMenu", () => {
     const changeColor = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//palette");
     await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
-    expect(saveLabel).toHaveBeenCalledWith("/", "color", "#123456");
+    expect(saveLabel).not.toHaveBeenCalled();
+    expect(saveTable).toHaveBeenCalledWith(
+      "/",
+      expect.objectContaining({
+        rows: [{ path: "/", color: "#123456" }],
+      }),
+      true,
+    );
     expect(superstate.pathsIndex.get("/")?.label.color).toBe("#123456");
     expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "/" });
   });

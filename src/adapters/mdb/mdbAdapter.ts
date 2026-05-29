@@ -1,12 +1,12 @@
 
 import { mdbTablesToDBTables, saveDBToPath } from 'adapters/mdb/db/db';
 import { deleteMDBTable, getMDB, getMDBTable, getMDBTableProperties, getMDBTableSchemas, getMDBTables } from 'adapters/mdb/utils/mdb';
-import { mdbFrameToDBTables } from "core/utils/frames/frame";
 import MakeMDPlugin from 'main';
 import { AFile, FileTypeAdapter, FilesystemMiddleware } from 'makemd-core';
+import { SPACE_CONTEXT_FILE } from "shared/constants";
+import { defaultContextSchemaID } from "shared/schemas/context";
 import { fieldSchema } from "shared/schemas/fields";
 import { DBTable, DBTables, MDB, SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from 'shared/types/mdb';
-import { MDBFrame } from 'shared/types/mframe';
 import { loadSQL } from "./db/sqljs";
 import { deletePropertyToDBTables, savePropertyToDBTables } from './utils/property';
 import { saveSchemaToDBTables } from './utils/schema';
@@ -19,7 +19,6 @@ type MDBContent = {
     tables: DBTables,
     mdbTable: SpaceTable,
     mdbTables: SpaceTables,
-    mdbFrame: MDBFrame,
 }
 
 export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
@@ -34,7 +33,7 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
       }
     public async newFile (parent: string, name: string, type: string, content?: DBTables) {
         const newPath = `${parent}/${name}.${type}`;
-        await saveDBToPath(this, newPath, content);
+        await saveDBToPath(this, newPath, content, newPath.split("/").pop() != SPACE_CONTEXT_FILE);
 
         return this.middleware.getFile(newPath)
     }
@@ -67,7 +66,7 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
     }
     
     public contentTypes (file: AFile) {
-        return ['schemas', 'fields', 'tables', 'field', 'table', 'schema', 'field', 'mdbTable', 'mdbTables', 'mdbFrame'] as Array<keyof MDBContent>;
+        return ['schemas', 'fields', 'tables', 'field', 'table', 'schema', 'field', 'mdbTable', 'mdbTables'] as Array<keyof MDBContent>;
     }
     public cacheTypes (file: AFile) {
         return ['schemas', 'fields', 'tables'] as Array<keyof MDB>;
@@ -110,11 +109,6 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
         //    const fields = this.readFragment(file, 'fields', fragmentId) as MDBField[];
         //     return dbTableToMDBTable(table, schema, fields)
         }
-        
-        if (fragmentType == 'mdbFrame') {
-            return getMDBTable(this, file.path, fragmentId);
-        }
-
     }
     public async newContent (file: AFile, fragmentType: keyof MDBContent, name: string, content: any, options: { [key: string]: any; }) {
         if (fragmentType == 'schema') {
@@ -136,12 +130,8 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
             return saveDBToPath(this, file.path, content)
         }
         if (fragmentType == 'mdbTable') {
-            return saveDBToPath(this, file.path, mdbTablesToDBTables({ [name]: content }))
+            return saveDBToPath(this, file.path, mdbTablesToDBTables({ [name]: content }), file.path.split("/").pop() != SPACE_CONTEXT_FILE)
         }
-        if (fragmentType == 'mdbFrame') {
-            return saveDBToPath(this, file.path, mdbFrameToDBTables({ [name]: content }))
-        }
-        
     }
     public async saveContent (file: AFile, fragmentType: keyof MDBContent, fragmentId: any, content: (prev: any) => any) {
         if (fragmentType == 'schema') {
@@ -160,8 +150,11 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
         }
         if (fragmentType == 'mdbTable') {
             const mdbTable = await this.readContent(file, 'mdbTable', fragmentId);
-            const oldFields = await this.readContent(file, 'fields', null) as SpaceProperty[]
             const tables = { [fragmentId]: content(mdbTable) };
+            if (file.path.split("/").pop() == SPACE_CONTEXT_FILE && fragmentId == defaultContextSchemaID) {
+                return saveDBToPath(this, file.path, mdbTablesToDBTables(tables), false);
+            }
+            const oldFields = await this.readContent(file, 'fields', null) as SpaceProperty[]
             const newFields = {
                 m_fields: {
                     uniques: fieldSchema.uniques,
@@ -170,10 +163,6 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
                   }
             }
             return saveDBToPath(this, file.path,{...mdbTablesToDBTables(tables), ...newFields})
-        }
-        if (fragmentType == 'mdbFrame') {
-            const mdbTable = await this.readContent(file, 'mdbFrame', fragmentId);
-            return saveDBToPath(this, file.path, mdbFrameToDBTables({ [fragmentId]: content(mdbTable) }))
         }
     }
     public async deleteContent(file: AFile, fragmentType: keyof MDBContent, fragmentId: any) {

@@ -94,7 +94,7 @@ describe("parseMetadata", () => {
             ["Photo.jpeg", "jpeg", "ui//image"],
             ["Image.webp", "webp", "ui//image"],
             ["Animation.gif", "gif", "ui//image"],
-            ["Board.canvas", "canvas", "ui//canvas"],
+            ["Board.canvas", "canvas", "ui//layout-dashboard"],
             ["Database.base", "base", "ui//table"],
             ["Note.md", "md", "ui//file-text"],
         ];

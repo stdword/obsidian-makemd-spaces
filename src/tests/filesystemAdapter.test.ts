@@ -14,10 +14,10 @@ describe("FilesystemSpaceAdapter", () => {
       spaceTypeByString: jest.fn(),
     };
 
-    const tagSpace = fileSystemSpaceInfoFromTag(manager as any, "#book/types/psy");
+    const tagSpace = fileSystemSpaceInfoFromTag(manager as any, "#books/psy");
 
-    expect(tagSpace.name).toBe("book/types/psy");
-    expect(tagSpace.path).toBe("spaces://#book/types/psy");
+    expect(tagSpace.name).toBe("books/psy");
+    expect(tagSpace.path).toBe("spaces://#books/psy");
   });
 
   it("uses the folder name for folder note paths without reading folder-note settings", () => {
