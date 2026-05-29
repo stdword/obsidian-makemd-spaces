@@ -8,16 +8,45 @@ import { selectElementContents } from "shared/utils/dom";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";
 
+export const splitFileName = (filename: string) => {
+    if (filename.endsWith(".excalidraw.md")) {
+        return {
+            name: filename.substring(0, filename.length - ".excalidraw.md".length),
+            extension: "excalidraw",
+        };
+    }
+
+    if (filename.lastIndexOf(".") == -1) {
+        return {
+            name: filename,
+            extension: "",
+        };
+    }
+
+    return {
+        name: filename.substring(0, filename.lastIndexOf(".")),
+        extension: filename.split(".").pop(),
+    };
+};
+
+export const fileSuffixForExtension = (extension: string) => (extension == "excalidraw" ? "excalidraw.md" : extension);
+
+export const fileNameWithExtension = (name: string, extension: string) => {
+    const suffix = fileSuffixForExtension(extension);
+    return suffix?.length > 0 ? `${name}.${suffix}` : name;
+};
+
 export const tFileToAFile = (file: TAbstractFile | TFile): AFile => {
     if (!file) return null;
     if (file instanceof TFile && file.stat) {
+        const fileNameParts = splitFileName(file.name);
         return {
             isFolder: false,
-            name: file.basename,
+            name: fileNameParts.name,
             filename: file.name,
             path: file.path,
             parent: file.parent?.path,
-            extension: file.extension,
+            extension: fileNameParts.extension,
             ...file.stat,
         };
     }
@@ -39,18 +68,19 @@ export const fileNameForFile = (path: string) => (path?.indexOf("/") > 0 ? path.
 
 export const uniqueFileName = (oldName: string, name: string, extension: string, folder: TFolder) => {
     let newName = sanitizeFileName(name);
+    const suffix = fileSuffixForExtension(extension);
 
     let uniqueName = false;
     let append = 1;
     while (!uniqueName) {
-        if (!folder.children.some((f) => f.name == `${newName}.${extension}` && f.name != oldName)) {
+        if (!folder.children.some((f) => f.name == fileNameWithExtension(newName, suffix) && f.name != oldName)) {
             uniqueName = true;
         } else {
             newName = `${newName} ${append}`;
             append += 1;
         }
     }
-    return `${newName}.${extension}`;
+    return fileNameWithExtension(newName, suffix);
 };
 
 export const uniqueFolderName = (oldName: string, name: string, folder: TFolder) => {

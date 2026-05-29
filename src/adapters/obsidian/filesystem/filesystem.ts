@@ -18,7 +18,7 @@ import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
-import { getAbstractFileAtPath, getAllAbstractFilesInVault, tFileToAFile } from "../utils/file";
+import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
 import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME } from "shared/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
@@ -288,7 +288,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         const file = await this.getFile(path);
 
         if (!file) return;
-        newName = newName ? (file.extension?.length > 0 ? newName + "." + file.extension : newName) : file.filename;
+        newName = newName ? fileNameWithExtension(newName, file.extension) : file.filename;
 
         let newPath = folder + "/" + newName;
         let newFile: AFile;
@@ -330,7 +330,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                         file.name,
                         files.map((f) => pathToString(f)),
                     );
-                    newPath = folder + "/" + newName + "." + file.extension;
+                    newPath = folder + "/" + fileNameWithExtension(newName, file.extension);
                 }
                 await this.plugin.app.vault.adapter.copy(file.path, newPath);
             } catch (e) {}
@@ -419,17 +419,16 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             const fileStat = await this.plugin.app.vault.adapter.stat(path);
             if (!fileStat) return null;
             const type = fileStat?.type;
-            const extension = type == "file" ? path.split(".").pop() : null;
             const folder = path.split("/").slice(0, -1).join("/");
             const filename = path.split("/").pop();
-            const name = type == "file" ? filename.substring(0, filename.lastIndexOf(".")) : filename;
+            const fileNameParts = type == "file" ? splitFileName(filename) : null;
             aFile = {
                 path,
-                name,
+                name: fileNameParts?.name ?? filename,
                 filename,
                 parent: folder,
                 isFolder: type == "folder",
-                extension,
+                extension: fileNameParts?.extension ?? null,
             };
         }
         return aFile;

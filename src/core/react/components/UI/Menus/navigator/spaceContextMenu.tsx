@@ -62,18 +62,21 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             icon: "ui//sort-desc",
             type: SelectOptionType.Submenu,
             onSubmenu: (offset) => {
+                const currentSpace = superstate.spacesIndex.get(space.path) ?? space;
+                const sort = currentSpace.metadata?.sort ?? space.metadata.sort;
+                const saveSort = (sortOption: SpaceSort) => updateSpaceSort(superstate, currentSpace.path, sortOption);
                 const sortOptions: SelectOption[] = [];
                 sortOptions.push({
                     name: i18n.menu.groupSpaces,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.group == true,
+                    value: sort.group == true,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, {
-                            field: space.metadata.sort.field,
-                            asc: space.metadata.sort.asc,
-                            group: !space.metadata.sort.group,
-                            recursive: space.metadata.sort.recursive,
+                        saveSort({
+                            field: sort.field,
+                            asc: sort.asc,
+                            group: !sort.group,
+                            recursive: sort.recursive,
                         });
                     },
                 });
@@ -81,14 +84,14 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 sortOptions.push({
                     name: i18n.menu.recursiveSort,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.recursive == true,
+                    value: sort.recursive == true,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, {
-                            field: space.metadata.sort.field,
-                            asc: space.metadata.sort.asc,
-                            group: space.metadata.sort.group,
-                            recursive: !space.metadata.sort.recursive,
+                        saveSort({
+                            field: sort.field,
+                            asc: sort.asc,
+                            group: sort.group,
+                            recursive: !sort.recursive,
                         });
                     },
                 });
@@ -96,140 +99,140 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 const rankSortOption: SpaceSort = {
                     field: "rank",
                     asc: true,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.customSort,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == rankSortOption.field && space.metadata.sort.asc == rankSortOption.asc,
+                    value: sort.field == rankSortOption.field && sort.asc == rankSortOption.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, rankSortOption);
+                        saveSort(rankSortOption);
                     },
                 });
                 sortOptions.push(menuSeparator);
                 const nameSortOption: SpaceSort = {
                     field: "name",
                     asc: true,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.fileNameSortAlphaAsc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == nameSortOption.field && space.metadata.sort.asc == nameSortOption.asc,
+                    value: sort.field == nameSortOption.field && sort.asc == nameSortOption.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, nameSortOption);
+                        saveSort(nameSortOption);
                     },
                 });
                 const nameSortOptionDesc: SpaceSort = {
                     field: "name",
                     asc: false,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.fileNameSortAlphaDesc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == nameSortOptionDesc.field && space.metadata.sort.asc == nameSortOptionDesc.asc,
+                    value: sort.field == nameSortOptionDesc.field && sort.asc == nameSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, nameSortOptionDesc);
+                        saveSort(nameSortOptionDesc);
                     },
                 });
                 sortOptions.push(menuSeparator);
                 const numberSortOption: SpaceSort = {
                     field: "number",
                     asc: true,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.fileNameSortNumericalAsc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == numberSortOption.field && space.metadata.sort.asc == numberSortOption.asc,
+                    value: sort.field == numberSortOption.field && sort.asc == numberSortOption.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, numberSortOption);
+                        saveSort(numberSortOption);
                     },
                 });
                 const numberSortOptionDesc: SpaceSort = {
                     field: "number",
                     asc: false,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.fileNameSortNumericalDesc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == numberSortOptionDesc.field && space.metadata.sort.asc == numberSortOptionDesc.asc,
+                    value: sort.field == numberSortOptionDesc.field && sort.asc == numberSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, numberSortOptionDesc);
+                        saveSort(numberSortOptionDesc);
                     },
                 });
                 sortOptions.push(menuSeparator);
                 const createdTimeSortOption: SpaceSort = {
                     field: "ctime",
                     asc: false,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.createdTimeSortAsc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == createdTimeSortOption.field && space.metadata.sort.asc == createdTimeSortOption.asc,
+                    value: sort.field == createdTimeSortOption.field && sort.asc == createdTimeSortOption.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, createdTimeSortOption);
+                        saveSort(createdTimeSortOption);
                     },
                 });
                 const createdTimeSortOptionDesc: SpaceSort = {
                     field: "ctime",
                     asc: true,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.createdTimeSortDesc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == createdTimeSortOptionDesc.field && space.metadata.sort.asc == createdTimeSortOptionDesc.asc,
+                    value: sort.field == createdTimeSortOptionDesc.field && sort.asc == createdTimeSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, createdTimeSortOptionDesc);
+                        saveSort(createdTimeSortOptionDesc);
                     },
                 });
                 sortOptions.push(menuSeparator);
                 const modifiedTimeSortOption: SpaceSort = {
                     field: "mtime",
                     asc: false,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.modifiedTimeSortAsc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == modifiedTimeSortOption.field && space.metadata.sort.asc == modifiedTimeSortOption.asc,
+                    value: sort.field == modifiedTimeSortOption.field && sort.asc == modifiedTimeSortOption.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, modifiedTimeSortOption);
+                        saveSort(modifiedTimeSortOption);
                     },
                 });
                 const modifiedTimeSortOptionDesc: SpaceSort = {
                     field: "mtime",
                     asc: true,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.modifiedTimeSortDesc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == modifiedTimeSortOptionDesc.field && space.metadata.sort.asc == modifiedTimeSortOptionDesc.asc,
+                    value: sort.field == modifiedTimeSortOptionDesc.field && sort.asc == modifiedTimeSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, modifiedTimeSortOptionDesc);
+                        saveSort(modifiedTimeSortOptionDesc);
                     },
                 });
 
@@ -237,31 +240,31 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 const sizeSortOption: SpaceSort = {
                     field: "size",
                     asc: false,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.sizeSortAsc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == sizeSortOption.field && space.metadata.sort.asc == sizeSortOption.asc,
+                    value: sort.field == sizeSortOption.field && sort.asc == sizeSortOption.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, sizeSortOption);
+                        saveSort(sizeSortOption);
                     },
                 });
                 const sizeSortOptionDesc: SpaceSort = {
                     field: "size",
                     asc: true,
-                    group: space.metadata.sort.group,
-                    recursive: space.metadata.sort.recursive,
+                    group: sort.group,
+                    recursive: sort.recursive,
                 };
                 sortOptions.push({
                     name: i18n.menu.sizeSortDesc,
                     icon: "ui//arrow-up-down",
-                    value: space.metadata.sort.field == sizeSortOptionDesc.field && space.metadata.sort.asc == sizeSortOptionDesc.asc,
+                    value: sort.field == sizeSortOptionDesc.field && sort.asc == sizeSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
                     onClick: (e) => {
-                        updateSpaceSort(superstate, space.path, sizeSortOptionDesc);
+                        saveSort(sizeSortOptionDesc);
                     },
                 });
 

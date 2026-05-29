@@ -169,6 +169,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         if (["png", "jpg", "jpeg", "avif", "webp", "gif"].includes(fileExtension)) return "ui//image";
         if (fileExtension == "canvas") return "ui//layout-dashboard";
         if (fileExtension == "base") return "ui//table";
+        if (fileExtension == "excalidraw" || fileExtension == "excalidraw.md" || path.toLowerCase().endsWith(".excalidraw.md")) return "ui//excalidraw";
         if (fileExtension == "md") return "ui//file-text";
         return "ui//file";
     };

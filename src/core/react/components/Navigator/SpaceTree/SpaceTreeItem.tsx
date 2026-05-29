@@ -16,6 +16,7 @@ import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { defaultAddAction } from "../../UI/Menus/navigator/showSpaceAddMenu";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
+import { shouldShowFileTag } from "./fileTags";
 export type DropModifiers = "copy" | "link" | "move";
 
 export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) => (e.altKey ? "copy" : e.shiftKey || isDefaultSpace ? "link" : "move");
@@ -219,7 +220,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const isSpace = pathState?.type == "space";
     const isFolder = pathState?.metadata?.isFolder || isSpace;
     const extension = pathState?.metadata?.file?.extension;
-    const showFileTag = !isSpace && extension && !["md", "base", "canvas"].includes(extension);
+    const showFileTag = shouldShowFileTag(isSpace, extension);
     const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
     return (
         <>

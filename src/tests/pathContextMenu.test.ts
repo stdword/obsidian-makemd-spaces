@@ -4,6 +4,7 @@ jest.mock(
     SelectOptionType: {
       Submenu: "submenu",
       Separator: "separator",
+      Radio: "radio",
     },
   }),
   { virtual: true },
@@ -138,5 +139,65 @@ describe("showSpaceContextMenu", () => {
     );
     expect(superstate.pathsIndex.get("/")?.label.color).toBe("#123456");
     expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "/" });
+  });
+
+  it("rebuilds sort submenu radio values from the latest space state", () => {
+    const openMenu = jest.fn();
+    const pathState = {
+      path: "Projects",
+      parent: "",
+      type: "space",
+      label: {},
+      spaces: ["Projects"],
+    };
+    const initialSpace = {
+      path: "Projects",
+      name: "Projects",
+      type: "folder",
+      metadata: {
+        sort: {
+          field: "name",
+          asc: true,
+          group: false,
+          recursive: false,
+        },
+      },
+      space: {
+        path: "Projects",
+        folderPath: "Projects",
+      },
+    };
+    const superstate = {
+      pathsIndex: new Map([["Projects", pathState]]),
+      spacesIndex: new Map([["Projects", initialSpace]]),
+      ui: {
+        openMenu,
+        getOS: jest.fn(() => "mac"),
+        hasNativePathMenu: jest.fn(() => false),
+      },
+    };
+
+    showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+    const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
+    sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+    expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(true);
+
+    superstate.spacesIndex.set("Projects", {
+      ...initialSpace,
+      metadata: {
+        sort: {
+          field: "number",
+          asc: true,
+          group: false,
+          recursive: false,
+        },
+      },
+    });
+
+    sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+
+    expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(false);
+    expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (1 to 9)")?.value).toBe(true);
   });
 });

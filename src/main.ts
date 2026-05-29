@@ -94,6 +94,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     }
 
     getActiveFile() {
+        modifyTabSticker(this);
         let filePath = null;
         let state = null;
         const leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
@@ -104,7 +105,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         if (activeView.getViewType() == "markdown") {
             filePath = activeView.file.path;
             state = activeView.getState();
-            modifyTabSticker(this);
         }
 
         if (!filePath || !state) return null;
@@ -226,7 +226,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.saveSettings = () => this.saveSettings();
         this.loadViews();
 
-        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space", "frame", "context", "icon"]);
+        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space", "context", "icon"]);
 
         if (this.superstate.settings.cacheIndex) {
             await cachePersister.initialize()

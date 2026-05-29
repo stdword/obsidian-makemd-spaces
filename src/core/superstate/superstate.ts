@@ -191,7 +191,6 @@ export class Superstate implements ISuperstate {
         this.persister.cleanType("space");
         this.persister.cleanType("path");
         this.persister.cleanType("context");
-        this.persister.cleanType("frame");
     }
 
     public async initializeSpaces() {

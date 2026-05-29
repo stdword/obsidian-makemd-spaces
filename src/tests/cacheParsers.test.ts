@@ -96,6 +96,7 @@ describe("parseMetadata", () => {
             ["Animation.gif", "gif", "ui//image"],
             ["Board.canvas", "canvas", "ui//layout-dashboard"],
             ["Database.base", "base", "ui//table"],
+            ["Sketch.excalidraw.md", "excalidraw", "ui//excalidraw"],
             ["Note.md", "md", "ui//file-text"],
         ];
 
