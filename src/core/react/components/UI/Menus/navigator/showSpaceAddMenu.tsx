@@ -9,6 +9,7 @@ import { tagsSpacePath } from "shared/schemas/builtin";
 import { TargetLocation } from "shared/types/path";
 import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
+import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
@@ -26,7 +27,7 @@ export const defaultAddAction = async (superstate: Superstate, _space: SpaceStat
     newPathInSpace(superstate, space, "md", null, false, null, location);
 };
 
-export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, isSubmenu?: boolean) => {
+export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, isSubmenu?: boolean, onHide?: () => void) => {
     const menuOptions: SelectOption[] = [];
 
     menuOptions.push({
@@ -77,6 +78,15 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
             newPathInSpace(superstate, space, "canvas", null, dontOpen);
         },
     });
+    if (superstate.ui.isPluginEnabled("obsidian-excalidraw-plugin")) {
+        menuOptions.push({
+            name: i18n.buttons.createDrawing,
+            icon: "ui//excalidraw",
+            onClick: () => {
+                superstate.ui.createExcalidrawDrawing((space.space as FilesystemSpaceInfo)?.folderPath);
+            },
+        });
+    }
     menuOptions.push({
         name: i18n.buttons.createBase,
         icon: "ui//table",
@@ -103,5 +113,5 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
         });
     }
 
-    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), win, "right");
+    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), win, "right", onHide);
 };

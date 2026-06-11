@@ -17,7 +17,6 @@ export interface MakeMDSettings {
     newFileLocation: string;
 
     // settings
-    cacheIndex: boolean;
     deleteFileOption: DeleteFileOption;
     expandFolderOnClick: boolean;
     folderIndentationLines: boolean;

@@ -719,7 +719,8 @@ export const ColorPicker = (props: {
               onClick={() => {
                 setMode(modeOption);
                 if (modeOption === 'none') {
-                  debouncedSaveValue('');
+                  props.saveValue('');
+                  props.hide?.();
                 } else if (modeOption === 'solid' && gradient) {
                   setGradient(null);
                   debouncedSaveValue(currentColor);

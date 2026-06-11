@@ -42,6 +42,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         name: i18n.menu.changeColor,
         icon: "ui//palette",
         type: SelectOptionType.Submenu,
+        closeParentOnOpen: true,
         onSubmenu: (offset) => {
             return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, paths, value), false, true);
         },
@@ -152,6 +153,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         name: i18n.menu.changeColor,
         icon: "ui//palette",
         type: SelectOptionType.Submenu,
+        closeParentOnOpen: true,
         onSubmenu: (offset) => {
             return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
         },

@@ -6,8 +6,9 @@ export const ConfirmationModal = (props: {
   confirmAction: () => void;
   message: string;
   confirmLabel: string;
+  cancelLabel?: string;
 }) => {
-    const { hide, confirmAction, message, confirmLabel } = props;
+    const { hide, confirmAction, message, confirmLabel, cancelLabel } = props;
     const confirm = () => {
         confirmAction();
         hide();
@@ -28,13 +29,13 @@ export const ConfirmationModal = (props: {
     }, []);
     return (
         <div className="mk-modal-contents">
-            <div className="mk-modal-message">{message}</div>
+            {message ? <div className="mk-modal-message">{message}</div> : null}
             <div className="mk-button-group">
                 <button onClick={() => confirm()} tabIndex={0} className="mod-warning">
                     {confirmLabel}
                 </button>
                 <button onClick={() => hide && hide()} tabIndex={0}>
-                    {i18n.buttons.cancel}
+                    {cancelLabel ?? i18n.buttons.cancel}
                 </button>
             </div>
         </div>

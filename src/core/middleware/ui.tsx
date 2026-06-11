@@ -174,4 +174,10 @@ export class UIManager implements IUIManager {
     public nativePathMenu(e: React.MouseEvent, path: string) {
         this.mainFrame.nativePathMenu(e, path);
     }
+    public isPluginEnabled(id: string) {
+        return this.mainFrame.isPluginEnabled(id);
+    }
+    public createExcalidrawDrawing(folder?: string) {
+        return this.mainFrame.createExcalidrawDrawing(folder);
+    }
 }

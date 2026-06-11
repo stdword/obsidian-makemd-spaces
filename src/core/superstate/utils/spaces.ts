@@ -110,7 +110,7 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: Cache
         const propName = sortStrategy.field.split(".")[1];
         const fieldFunc = (obj: Record<string, any>) => obj?.metadata?.property?.[propName];
         sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc));
-    } else if (["ctime", "mtime", "size"].includes(sortStrategy.field)) {
+    } else if (["ctime", "mtime"].includes(sortStrategy.field)) {
         const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.file?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field] ?? "";
         sortFns.push((_a: Record<string, any>, _b: Record<string, any>) => {
             const a = sortStrategy.asc ? _a : _b;

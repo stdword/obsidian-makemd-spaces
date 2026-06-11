@@ -67,6 +67,16 @@ export class ObsidianUI implements UIAdapter {
     public navigationHistory = () => {
         return this.plugin.app.workspace.getLastOpenFiles();
     };
+    public isPluginEnabled = (id: string) => Boolean(this.plugin.app.plugins.getPlugin(id));
+    public createExcalidrawDrawing = async (folder?: string) => {
+        const excalidraw = this.plugin.app.plugins.getPlugin("obsidian-excalidraw-plugin");
+        if (!excalidraw?.createAndOpenDrawing) return;
+
+        const path = await excalidraw.createAndOpenDrawing("Untitled.excalidraw.md", "new-tab", folder == "/" ? "" : folder);
+        if (path) {
+            this.manager.setActivePath(path);
+        }
+    };
     public getSticker = (icon: string, options?: Record<string, any>) => {
         return stickerFromString(icon, this.plugin, options);
     };

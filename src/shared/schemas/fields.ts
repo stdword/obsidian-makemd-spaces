@@ -25,7 +25,7 @@ export const defaultContextFields: DBTable = {
   rows: defaultContextFileColumns.map((name) => ({
     name,
     schemaId: defaultContextSchemaID,
-    type: name == PathPropertyName ? "file" : name == "ctime" || name == "mtime" || name == "size" ? "number" : "text",
+    type: name == PathPropertyName ? "file" : name == "ctime" || name == "mtime" ? "number" : "text",
     primary: name == PathPropertyName ? "true" : "",
     hidden: "",
     unique: name == PathPropertyName ? "true" : "",

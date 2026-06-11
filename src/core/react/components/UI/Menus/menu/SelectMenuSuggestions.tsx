@@ -190,23 +190,32 @@ const SelectMenuSuggestions = (props: {
         onClick={(e) => {
           if (item.onSubmenu && props.openSubmenu) {
             const el = props.refs?.current[index].getBoundingClientRect();
-            props.openSubmenu(
-              item.onSubmenu(el, () => {
-                if (props.onHide) {
-                  props.onHide();
-                }
-                props.hide();
-              })
-            );
+            if (item.closeParentOnOpen) {
+              props.openSubmenu(null);
+              props.hide();
+              item.onSubmenu(el, () => {});
+            } else {
+              props.openSubmenu(
+                item.onSubmenu(el, () => {
+                  if (props.onHide) {
+                    props.onHide();
+                  }
+                  props.hide();
+                })
+              );
+            }
           } else if (item.onClick) {
+            props.openSubmenu?.(null);
             item.onClick(e);
             if (
+              !item.keepOpen &&
               item.type != SelectOptionType.Submenu &&
               item.type != SelectOptionType.Disclosure
             ) {
               props.hide();
             }
           } else {
+            props.openSubmenu?.(null);
             if (
               item.type == null ||
               item.type == SelectOptionType.Option ||

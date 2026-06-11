@@ -52,6 +52,35 @@ describe("ObsidianFileSystem.getFile", () => {
     });
 });
 
+describe("ObsidianFileSystem cache", () => {
+    it("keeps file metadata in memory without a persistent file cache", () => {
+        const filesystem = Object.create(ObsidianFileSystem.prototype) as ObsidianFileSystem;
+        filesystem.cache = new Map();
+        filesystem.middleware = {
+            eventDispatch: {
+                dispatchEvent: jest.fn(),
+            },
+        } as any;
+
+        expect(() =>
+            filesystem.updateFileCache(
+                "Note.md",
+                {
+                    tags: ["#test"],
+                },
+                false,
+            ),
+        ).not.toThrow();
+        expect(filesystem.getFileCache("Note.md")).toMatchObject({
+            tags: ["#test"],
+        });
+    });
+
+    it("only defines the superstate storage filename", () => {
+        expect(Object.keys(ObsidianFileSystem)).toEqual(["stateFileName"]);
+    });
+});
+
 describe("tFileToAFile", () => {
     it("normalizes Obsidian TFile metadata for .excalidraw.md files only", () => {
         const excalidrawFile = Object.assign(new TFile(), {

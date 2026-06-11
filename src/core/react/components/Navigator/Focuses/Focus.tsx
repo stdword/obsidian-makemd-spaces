@@ -1,13 +1,13 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import useLongPress from "core/react/hooks/useLongPress";
 import { SelectOption, Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { forwardRef, useContext, useRef } from "react";
 import { Focus } from "shared/types/focus";
 import { Rect } from "shared/types/Pos";
 import { windowFromDocument } from "shared/utils/dom";
+import { ConfirmationModal } from "../../UI/Modals/ConfirmationModal";
 import { defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
 
@@ -42,11 +42,6 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             dragStart(index);
         }
     };
-    const onLongPress = () => {
-        const rect = innerRef.current.getBoundingClientRect();
-        openContextMenu(rect);
-    };
-    useLongPress(innerRef, onLongPress);
     const onDragEnded = (e: React.DragEvent<HTMLDivElement>) => {
         if (dragEnded) {
             dragEnded();
@@ -73,8 +68,20 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                 icon: "ui//close",
                 value: "close",
                 onClick: () => {
-                    setFocuses(focuses.filter((f, i) => i != index));
-                    superstate.saveSettings();
+                    const focusName = pin.name || i18n.labels.waypoint;
+                    superstate.ui.openModal(
+                        i18n.labels.closeFocus.replace("${1}", focusName),
+                        <ConfirmationModal
+                            confirmAction={() => {
+                                setFocuses(focuses.filter((f, i) => i != index));
+                                superstate.saveSettings();
+                            }}
+                            confirmLabel={i18n.menu.yes}
+                            cancelLabel={i18n.menu.no}
+                            message=""
+                        />,
+                        windowFromDocument(innerRef.current.ownerDocument),
+                    );
                 },
             },
         ];

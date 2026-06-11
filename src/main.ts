@@ -70,7 +70,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     loadSuperState() {
         this.app.workspace.onLayoutReady(async () => {
             await this.superstate.initializeIndex();
-            this.obsidianAdapter.loadCacheFromObsidianCache();
+            this.obsidianAdapter.loadFilesFromObsidian();
             this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
 
             this.registerEvent(this.app.vault.on("delete", this.onDelete));
@@ -228,9 +228,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
         const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space", "context", "icon"]);
 
-        if (this.superstate.settings.cacheIndex) {
-            await cachePersister.initialize()
-        }
+        await cachePersister.initialize()
         this.superstate.persister = cachePersister;
 
         // Replace AssetManager with ObsidianAssetManager for direct filesystem access

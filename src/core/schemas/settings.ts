@@ -17,7 +17,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
     newFileLocation: "root",
 
     // settings
-    cacheIndex: true,
     deleteFileOption: "system-trash",
     expandFolderOnClick: true,
     folderIndentationLines: true,

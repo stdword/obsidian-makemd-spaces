@@ -4,11 +4,7 @@ import MakeMDPlugin from "main";
 import { AFile, FileCache, FileSystemAdapter, FileTypeCache, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { FileSystemAdapter as ObsidianFileSystemAdapter, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
-import { DisabledLocalCache } from "adapters/mdb/localCache/localCache";
-import { LocalCachePersister } from "shared/types/persister";
-
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
-import { parsePathState } from "core/utils/superstate/parser";
 import { DBRows } from "shared/types/mdb";
 import { uniqueNameFromString } from "shared/utils/array";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
@@ -22,7 +18,6 @@ import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVaul
 import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME } from "shared/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
-    static cacheFileName = "fileCache.mdc";
     static stateFileName = "superstate.mdc";
 
     protected settingsPath: string;
@@ -33,7 +28,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public tagsCache: Set<string>;
 
     public cache: Map<string, FileCache> = new Map();
-    public persister: LocalCachePersister;
     public pathLastUpdated: Map<string, number> = new Map();
 
     public updateFileCache(path: string, cache: FileTypeCache, refresh: boolean) {
@@ -44,7 +38,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             return;
         }
         this.cache.set(path, newCache);
-        this.persister.store(path, JSON.stringify(newCache), "file");
         if (refresh) this.middleware.eventDispatch.dispatchEvent("onCacheUpdated", { path: path });
     }
 
@@ -54,7 +47,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     ) {
         this.middleware = middleware;
         this.plugin = plugin;
-        this.persister = new DisabledLocalCache();
 
         this.settingsPath = normalizePath(this.plugin.app.vault.configDir + "/" + `plugins/${this.plugin.manifest.id}/data.json`);
     }
@@ -98,10 +90,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter((t) => t.toLowerCase() != tag.toLowerCase())]));
     }
 
-    public async loadCacheFromObsidianCache() {
-        //Load Spaces Database File
-        await this.persister.initialize();
-
+    public async loadFilesFromObsidian() {
         this.vaultDBCache = getAllAbstractFilesInVault(this.plugin.app)
             .map((file) => ({
                 path: file.path,
@@ -111,8 +100,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             }))
             .filter((f) => !excludePathPredicate(this.plugin.superstate.settings, f.path));
 
-        const allPaths = await this.persister.loadAll("file");
-        // this.persister.reset();
         this.vaultDBCache.forEach((f) => {
             const file = tFileToAFile(getAbstractFileAtPath(this.plugin.app, f.path));
             if (file?.path == "/") {
@@ -125,8 +112,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                 tags: [],
                 label: { sticker: f.sticker, color: f.color } as PathLabel,
             };
-            const h = allPaths.find((g) => g.path == f.path);
-            if (h) cache = { ...cache, ...parsePathState(h.cache) };
             if (file) {
                 cache = {
                     ...cache,
@@ -144,7 +129,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         const start = Date.now();
         await Promise.all(this.vaultDBCache.map((f) => this.middleware.createFileCache(f.path)));
 
-        this.plugin.superstate.ui.notify(`make.md :: spaces - File Cache Loaded in ${(Date.now() - start) / 1000} seconds ${this.cache.size}`, "console");
+        this.plugin.superstate.ui.notify(`make.md :: spaces - Files Loaded in ${(Date.now() - start) / 1000} seconds ${this.cache.size}`, "console");
         this.middleware.eventDispatch.dispatchEvent("onFilesystemIndexed", null);
         this.plugin.registerEvent(this.plugin.app.vault.on("create", this.onCreate));
         this.plugin.registerEvent(this.plugin.app.vault.on("modify", this.onModify));

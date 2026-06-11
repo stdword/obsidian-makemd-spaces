@@ -40,7 +40,7 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
             categories: string[];
             settings: SettingObject[];
         } = {
-            categories: ["appearance", "system", "advanced"],
+            categories: ["appearance", "system"],
             settings: [
                 {
                     name: "openSpacesOnLaunch",
@@ -94,13 +94,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                             { name: t.settings.spacesDeleteOptions["system-trash"], value: "system-trash" },
                         ],
                     },
-                },
-
-
-                {
-                    name: "cacheIndex",
-                    category: "advanced",
-                    type: "boolean",
                 },
             ],
         };

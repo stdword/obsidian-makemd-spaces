@@ -29,8 +29,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         name: i18n.menu.new,
         icon: "ui//plus",
         type: SelectOptionType.Submenu,
-        onSubmenu: (offset) => {
-            return showSpaceAddMenu(superstate, offset, win, space, false, true);
+        onSubmenu: (offset, onHide) => {
+            return showSpaceAddMenu(superstate, offset, win, space, false, true, onHide);
         },
     });
 
@@ -40,6 +40,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         name: i18n.menu.changeColor,
         icon: "ui//palette",
         type: SelectOptionType.Submenu,
+        closeParentOnOpen: true,
         onSubmenu: (offset) => {
             return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, space.path, value), false, true);
         },
@@ -236,38 +237,6 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     },
                 });
 
-                sortOptions.push(menuSeparator);
-                const sizeSortOption: SpaceSort = {
-                    field: "size",
-                    asc: false,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.sizeSortAsc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == sizeSortOption.field && sort.asc == sizeSortOption.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: (e) => {
-                        saveSort(sizeSortOption);
-                    },
-                });
-                const sizeSortOptionDesc: SpaceSort = {
-                    field: "size",
-                    asc: true,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.sizeSortDesc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == sizeSortOptionDesc.field && sort.asc == sizeSortOptionDesc.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: (e) => {
-                        saveSort(sizeSortOptionDesc);
-                    },
-                });
-
                 return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, sortOptions), win);
             },
         });
@@ -279,7 +248,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         icon: "ui//apply-items",
         value: "apply-all",
         type: SelectOptionType.Submenu,
-        onSubmenu: (offset) => showApplyItemsMenu(offset, superstate, space, win),
+        onSubmenu: (offset, onHide) => showApplyItemsMenu(offset, superstate, space, win, onHide),
     });
 
 

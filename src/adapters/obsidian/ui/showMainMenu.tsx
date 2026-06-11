@@ -7,7 +7,15 @@ import i18n from "shared/i18n";
 import { windowFromDocument } from "shared/utils/dom";
 import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
 
+let activeMainMenu: ReturnType<Superstate["ui"]["openMenu"]> | null = null;
+
 export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: MakeMDPlugin) => {
+    if (activeMainMenu?.isOpen?.()) {
+        activeMainMenu.hide(true);
+        activeMainMenu = null;
+        return;
+    }
+
     const toggleSections = (collapse: boolean) => {
         const spaces = superstate.focuses[superstate.settings.currentWaypoint].paths;
         const newSections = collapse ? [] : spaces;
@@ -52,5 +60,7 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: Ma
     });
 
     const offset = el.getBoundingClientRect();
-    superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), windowFromDocument(el.ownerDocument), "bottom");
+    activeMainMenu = superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), windowFromDocument(el.ownerDocument), "bottom", () => {
+        activeMainMenu = null;
+    });
 };

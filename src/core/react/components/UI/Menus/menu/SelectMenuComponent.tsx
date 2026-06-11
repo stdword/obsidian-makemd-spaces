@@ -243,8 +243,9 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
 
     const onKeyDown = (e: React.KeyboardEvent) => {
         if (onComposition.current) {
-            return;
+            return false;
         }
+        let handled = false;
         // when one of the terminating keys is pressed, add current query to the tags
         if (props.delimiters.indexOf(e.key) > -1) {
             if (query || index > -1) {
@@ -257,28 +258,36 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
                 altKey: e.altKey,
                 shiftKey: e.shiftKey,
             });
+            handled = true;
         }
 
         if (e.key == "Escape") {
-            return;
+            return false;
         }
         // when backspace key is pressed and query is blank, delete the last tag
         if (e.key === KEYS.TAB) {
             pressTabKey(e);
+            handled = true;
         }
 
         if (e.key === KEYS.BACKSPACE) {
             pressBackspaceKey();
+            handled = true;
         }
 
         if (e.key === KEYS.UP_ARROW || e.key === KEYS.UP_ARROW_COMPAT) {
             pressUpKey(e);
+            handled = true;
         }
 
         if (e.key === KEYS.DOWN_ARROW || e.key === KEYS.DOWN_ARROW_COMPAT) {
             pressDownKey(e);
+            handled = true;
         }
-        e.stopPropagation();
+        if (handled) {
+            e.stopPropagation();
+        }
+        return handled;
     };
 
     const onBlur = () => {
@@ -432,6 +441,9 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
         }
         submenuRef.current = menu;
     };
+    useEffect(() => {
+        return () => submenuRef.current?.hide(true);
+    }, []);
     return (
         <div
             ref={container}

@@ -19,8 +19,8 @@ export const pathStateToContextRow = (pathState: PathState): DBRow => {
         extension: file.extension ?? "",
         ctime: `${file.ctime ?? pathState.metadata?.ctime ?? ""}`,
         mtime: `${file.mtime ?? ""}`,
-        size: isFolder ? "" : `${file.size ?? ""}`,
         color: pathState.label?.color ?? "",
+        sticker: pathState.label?.sticker ?? "",
     };
 };
 

@@ -1,8 +1,8 @@
-import { Superstate } from "makemd-core";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { PathPropertyName } from "shared/types/context";
+import { ISuperstate } from "shared/types/superstate";
 
-export const savePathColor = async (superstate: Superstate, path: string, color: string) => {
+export const savePathLabel = async (superstate: ISuperstate, path: string, field: "color" | "sticker", value: string) => {
     const pathState = superstate.pathsIndex.get(path);
     if (!pathState) return;
 
@@ -13,8 +13,8 @@ export const savePathColor = async (superstate: Superstate, path: string, color:
             if (!table) return;
             const hasRow = table.rows.some((row) => row[PathPropertyName] == path);
             const rows = hasRow
-                ? table.rows.map((row) => (row[PathPropertyName] == path ? { ...row, color } : row))
-                : [...table.rows, { [PathPropertyName]: path, color }];
+                ? table.rows.map((row) => (row[PathPropertyName] == path ? { ...row, [field]: value } : row))
+                : [...table.rows, { [PathPropertyName]: path, [field]: value }];
             await superstate.spaceManager.saveTable(
                 spaceState.space.path,
                 {
@@ -31,8 +31,12 @@ export const savePathColor = async (superstate: Superstate, path: string, color:
         ...pathState,
         label: {
             ...pathState.label,
-            color,
+            [field]: value,
         },
     });
     superstate.dispatchEvent("pathStateUpdated", { path });
+};
+
+export const savePathColor = async (superstate: ISuperstate, path: string, color: string) => {
+    return savePathLabel(superstate, path, "color", color);
 };

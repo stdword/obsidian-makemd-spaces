@@ -56,6 +56,8 @@ export interface IUIManager {
     setDragLabel: (label: string) => void;
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
+    isPluginEnabled: (id: string) => boolean;
+    createExcalidrawDrawing: (folder?: string) => Promise<void>;
 }
 
 export interface UIAdapter {
@@ -80,6 +82,8 @@ export interface UIAdapter {
     navigationHistory: () => string[];
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
+    isPluginEnabled: (id: string) => boolean;
+    createExcalidrawDrawing: (folder?: string) => Promise<void>;
     mainMenu: (el: HTMLElement, superstate: ISuperstate) => void;
     quickOpen: (
         mode?: number,

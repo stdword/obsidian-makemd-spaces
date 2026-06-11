@@ -157,5 +157,6 @@ export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; wi
     return {
         update: updateRoot,
         hide: hide,
+        isOpen: () => portalElement.isConnected,
     } as MenuObject;
 };

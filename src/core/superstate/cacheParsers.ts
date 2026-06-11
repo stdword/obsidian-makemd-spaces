@@ -20,6 +20,24 @@ import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
 
+export const applyContextLabelsToPaths = (contextTable: SpaceTable, pathsIndex: Map<string, PathState>) => {
+    contextTable?.rows?.forEach((row) => {
+        const pathState = pathsIndex.get(row[PathPropertyName]);
+        if (!pathState) return;
+        const color = row.color?.length > 0 ? row.color : pathState.label?.color ?? "";
+        const sticker = row.sticker?.length > 0 ? row.sticker : pathState.label?.sticker ?? "";
+        if (color == pathState.label?.color && sticker == pathState.label?.sticker) return;
+        pathsIndex.set(pathState.path, {
+            ...pathState,
+            label: {
+                ...pathState.label,
+                color,
+                sticker,
+            },
+        });
+    });
+};
+
 export const parseContextTableToCache = (
     space: SpaceInfo,
     mdb: SpaceTables,
@@ -67,20 +85,13 @@ export const parseContextTableToCache = (
         const row = _row as DBRow;
         const pathState = pathsIndex.get(row[PathPropertyName]);
         const fileRow = pathState ? pathStateToContextRow(pathState) : {};
+        const { size: _legacySize, ...persistedRow } = row;
         const normalizedRow = {
             ...fileRow,
-            ...row,
+            ...persistedRow,
             color: row.color?.length > 0 ? row.color : fileRow.color,
+            sticker: row.sticker?.length > 0 ? row.sticker : fileRow.sticker,
         };
-        if (pathState && normalizedRow.color != pathState.label?.color) {
-            pathsIndex.set(pathState.path, {
-                ...pathState,
-                label: {
-                    ...pathState.label,
-                    color: normalizedRow.color,
-                },
-            });
-        }
         return syncContextRow(pathsIndex, normalizedRow, cols, spacePath);
     });
     if (options?.calculate)

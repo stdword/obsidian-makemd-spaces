@@ -9,6 +9,7 @@ import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
 import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
+import { applyContextLabelsToPaths } from "core/superstate/cacheParsers";
 import _, { debounce } from "lodash";
 import { fieldTypeForField } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
@@ -183,7 +184,6 @@ export class Superstate implements ISuperstate {
 
         await this.initializePaths();
         await this.initializeContexts();
-        await this.initializeFrames();
 
         this.refreshMetadata();
         this.dispatchEvent("superstateUpdated", null);
@@ -218,8 +218,6 @@ export class Superstate implements ISuperstate {
             })
             .filter((f) => f?.hidden != true && f.path != spacePath);
     }
-    private async initializeFrames() {}
-
     private async initializeContexts() {
         await this.indexer.reload<Map<string, { cache: ContextState; changed: boolean }>>({ type: "contexts", path: "" }).then(async (r) => {
             const promises = [...r.entries()].map(([path, { cache, changed }]) => this.contextReloaded(path, cache, changed, true));
@@ -570,6 +568,7 @@ export class Superstate implements ISuperstate {
         }
 
         this.contextsIndex.set(path, cache);
+        applyContextLabelsToPaths(cache.contextTable, this.pathsIndex);
         const pathState = this.pathsIndex.get(path);
         if (pathState && cache.dbExists /* && !this.spacesIndex.get(path)?.space?.readOnly */) {
             const allRows = cache.contextTable?.rows ?? [];

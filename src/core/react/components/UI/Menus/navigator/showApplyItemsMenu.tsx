@@ -1,5 +1,5 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
-import { SelectOption, Superstate } from "makemd-core";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React from "react";
 import { SpaceState } from "shared/types/PathState";
@@ -8,7 +8,7 @@ import StickerModal from "../../../../../../shared/components/StickerModal";
 import { defaultMenu } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
 
-export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: SpaceState, win: Window) => {
+export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: SpaceState, win: Window, onHide?: () => void) => {
     const options: SelectOption[] = [
         {
             name: i18n.menu.setDefaultSticker,
@@ -33,6 +33,8 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
             name: i18n.menu.setDefaultColor,
             icon: "ui//palette",
             value: "apply-all-color",
+            type: SelectOptionType.Submenu,
+            closeParentOnOpen: true,
             onSubmenu: (rect) =>
                 showColorPickerMenu(
                     superstate,
@@ -49,5 +51,5 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
                 ),
         },
     ];
-    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, options), win);
+    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, options), win, "right", onHide);
 };
