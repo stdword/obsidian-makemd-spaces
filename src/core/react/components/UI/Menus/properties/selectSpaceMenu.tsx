@@ -2,16 +2,7 @@ import { SelectOption, Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { Rect } from "shared/types/Pos";
 
-export const showSpacesMenu = (
-  offset: Rect,
-  win: Window,
-  superstate: Superstate,
-  saveLink: (link: string, isNew?: boolean, type?: string) => void,
-  includeDefaults?: boolean,
-  canAdd?: boolean,
-  onlyTags?: boolean,
-  hidden?: boolean
-) => {
+export const showSpacesMenu = (offset: Rect, win: Window, superstate: Superstate, saveLink: (link: string, isNew?: boolean, type?: string) => void, includeDefaults?: boolean, canAdd?: boolean, onlyTags?: boolean, hidden?: boolean) => {
     const options = [...superstate.allSpaces(true, hidden)]
         .filter(
             (f) =>
@@ -23,15 +14,7 @@ export const showSpacesMenu = (
             value: f.path,
             icon: superstate.pathsIndex.get(f.path)?.label?.sticker,
             section: f.type == "tag" ? "tag" : f.type == "folder" ? "folder" : "",
-            description: (
-                f.type == "tag"
-                    ? f.name
-                    : f.type == "vault"
-                        ? ""
-                        : f.type == "folder"
-                            ? f.path.replace(/[^\/]+$/, "")
-                            : f.path
-            ),
+            description: f.type == "tag" ? f.name : f.type == "vault" ? "" : f.type == "folder" ? f.path.replace(/[^\/]+$/, "") : f.path,
         }));
 
     return superstate.ui.openMenu(

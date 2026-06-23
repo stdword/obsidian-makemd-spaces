@@ -145,8 +145,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         showSpaceContextMenu(superstate, cache, rect, win, space, onClose);
         return;
     }
-    if (!cache)
-        return;
+    if (!cache) return;
 
     const menuOptions: SelectOption[] = [];
 
@@ -179,15 +178,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         onClick: (e) => {
             const isExcalidraw = path.toLowerCase().endsWith(".excalidraw.md");
             const displayName = isExcalidraw ? cache.name.replace(/\.excalidraw$/i, "") : cache.name;
-            superstate.ui.openModal(
-                i18n.labels.rename,
-                <InputModal
-                    saveLabel={i18n.buttons.rename}
-                    value={displayName}
-                    saveValue={(value) => renamePathByName(superstate, path, isExcalidraw ? value.replace(/\.excalidraw(?:\.md)?$/i, "") : value)}
-                ></InputModal>,
-                windowFromDocument(e.view.document),
-            );
+            superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={displayName} saveValue={(value) => renamePathByName(superstate, path, isExcalidraw ? value.replace(/\.excalidraw(?:\.md)?$/i, "") : value)}></InputModal>, windowFromDocument(e.view.document));
         },
     });
 

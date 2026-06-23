@@ -3,15 +3,7 @@ import React, { cloneElement } from "react";
 import { Root } from "react-dom/client";
 import { ObsidianUI } from "./ui";
 
-export const showModal = (props: {
-  ui: ObsidianUI;
-  fc: JSX.Element;
-  title?: string;
-  isPalette?: boolean;
-  className?: string;
-  props?: any;
-  win?: Window;
-}) => {
+export const showModal = (props: { ui: ObsidianUI; fc: JSX.Element; title?: string; isPalette?: boolean; className?: string; props?: any; win?: Window }) => {
     const portalElement = props.win.document.createElement("div");
 
     portalElement.classList.add("mk-modal-wrapper");

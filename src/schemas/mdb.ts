@@ -1,5 +1,4 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import i18n from "shared/i18n";
 import { PathPropertyName } from "shared/types/context";
 import { DBTable, DBTables, SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
 import { SpaceInfo } from "shared/types/spaceInfo";
@@ -15,22 +14,21 @@ export const fieldTypeForField = (f: SpaceProperty) => {
 
 export const stickerForField = (f: SpaceProperty) => (f.attrs?.length > 0 ? (safelyParseJSON(f.attrs)?.icon ?? fieldTypeForType(f.type, f.name)?.icon) : fieldTypeForType(f.type, f.name)?.icon);
 
-export const fieldTypeForType = (type: string, name?: string) => (
+export const fieldTypeForType = (type: string, name?: string) =>
     name == PathPropertyName
-    ? {
-        type: "file",
-        icon: "",
-        label: "properties.file.label",
-        restricted: true,
-    }
-    : {
-        type: "fileprop",
-        icon: "",
-        label: "properties.fileProperty.label",
-        configKeys: ["field", "value", "type", "format"],
-        flex: true,
-    }
-)
+        ? {
+              type: "file",
+              icon: "",
+              label: "properties.file.label",
+              restricted: true,
+          }
+        : {
+              type: "fileprop",
+              icon: "",
+              label: "properties.fileProperty.label",
+              configKeys: ["field", "value", "type", "format"],
+              flex: true,
+          };
 
 export const defaultValueForPropertyType = (name: string, value: string, type: string) => {
     if (type == "fileprop") {

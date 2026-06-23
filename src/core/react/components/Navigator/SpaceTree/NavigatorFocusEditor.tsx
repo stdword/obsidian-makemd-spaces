@@ -1,13 +1,11 @@
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
-// import { createSpace } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { useContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { windowFromDocument } from "shared/utils/dom";
 import StickerModal from "../../../../../shared/components/StickerModal";
-// import { BlinkMode } from "../../../../../shared/types/blink";
 import { showSpacesMenuInRect } from "./SpaceTreeVirtualized";
 
 export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveFocus: (focus: Focus) => void }) => {

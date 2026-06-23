@@ -252,7 +252,6 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         onSubmenu: (offset, onHide) => showApplyItemsMenu(offset, superstate, space, win, onHide),
     });
 
-
     if (space.type != "vault") {
         menuOptions.push(menuSeparator);
 

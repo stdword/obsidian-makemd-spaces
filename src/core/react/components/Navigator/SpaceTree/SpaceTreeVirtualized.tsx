@@ -13,12 +13,7 @@ import { windowFromDocument } from "shared/utils/dom";
 import { showSpacesMenu } from "../../UI/Menus/properties/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 
-export function showSpacesMenuInRect(
-    rect: DOMRect,
-    document: Document,
-    superstate: Superstate,
-    saveActiveSpace: (path: string) => void,
-) {
+export function showSpacesMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void) {
     showSpacesMenu(
         rect,
         windowFromDocument(document),

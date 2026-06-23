@@ -5,7 +5,6 @@ import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "shared/utils/dom";
-import { FILE_TREE_VIEW_TYPE } from "./navigator/NavigatorView";
 
 let activeMainMenu: ReturnType<Superstate["ui"]["openMenu"]> | null = null;
 

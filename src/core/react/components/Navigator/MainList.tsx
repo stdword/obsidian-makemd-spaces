@@ -26,9 +26,7 @@ export const MainList = (props: { superstate: Superstate }) => {
     return (
         <>
             <ErrorBoundary FallbackComponent={ErrorFallback}>
-                <div className="mk-progress-bar">{
-                    indexing && <div className="mk-progress-bar-value"></div>
-                }</div>
+                <div className="mk-progress-bar">{indexing && <div className="mk-progress-bar-value"></div>}</div>
                 <MainMenu superstate={props.superstate}></MainMenu>
                 <FocusSelector superstate={props.superstate}></FocusSelector>
 

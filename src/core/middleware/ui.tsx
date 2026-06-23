@@ -154,8 +154,7 @@ export class UIManager implements IUIManager {
         return this.mainFrame.allStickers();
     }
     public getUIPath(path: string) {
-        if (!path)
-            return null;
+        if (!path) return null;
         return this.mainFrame.getUIPath(path);
     }
 

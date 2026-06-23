@@ -6,7 +6,6 @@ import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/naviga
 import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTagContext } from "adapters/obsidian/utils/file";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
-import { mkLogo } from "adapters/obsidian/ui/icons";
 import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "shared/utils/json";
 import { SPACE_SUB_FOLDER } from "shared/constants";
@@ -220,8 +219,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         await this.loadSettings();
 
         this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
-
-        addIcon("mk-logo", mkLogo);
 
         this.superstate.saveSettings = () => this.saveSettings();
         this.loadViews();
