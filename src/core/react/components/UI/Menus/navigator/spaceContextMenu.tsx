@@ -378,7 +378,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             name: i18n.menu.delete,
             icon: "ui//trash",
             onClick: (e) => {
-                superstate.ui.openModal(i18n.labels.deleteSpace, <ConfirmationModal confirmAction={() => removeSpace(superstate, space.path)} confirmLabel={i18n.buttons.delete} message={i18n.descriptions.deleteSpace}></ConfirmationModal>, win);
+                superstate.ui.openModal(i18n.labels.deleteFolder, <ConfirmationModal confirmAction={() => removeSpace(superstate, space.path)} confirmLabel={i18n.buttons.delete} message={i18n.descriptions.deleteFolder}></ConfirmationModal>, win);
             },
         });
 

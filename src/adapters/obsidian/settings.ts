@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
-import t from "shared/i18n";
+import i18n from "shared/i18n";
 import MakeMDPlugin from "../../main";
 import { MakeMDSettings } from "../../shared/types/settings";
 
@@ -89,9 +89,9 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     type: "options",
                     props: {
                         options: [
-                            { name: t.settings.spacesDeleteOptions.permanent, value: "permanent" },
-                            { name: t.settings.spacesDeleteOptions.trash, value: "trash" },
-                            { name: t.settings.spacesDeleteOptions["system-trash"], value: "system-trash" },
+                            { name: i18n.settings.spacesDeleteOptions.permanent, value: "permanent" },
+                            { name: i18n.settings.spacesDeleteOptions.trash, value: "trash" },
+                            { name: i18n.settings.spacesDeleteOptions["system-trash"], value: "system-trash" },
                         ],
                     },
                 },
@@ -99,9 +99,9 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         };
 
         containerEl.innerHTML = "";
-        const sectionKeys = t.settings.sections as unknown as Record<string, string>;
+        const sectionKeys = i18n.settings.sections as unknown as Record<string, string>;
         const insertSetting = (containerEl: HTMLElement, setting: SettingObject) => {
-            const localizationKeys = t.settings as unknown as Record<
+            const localizationKeys = i18n.settings as unknown as Record<
                 keyof MakeMDSettings,
                 {
                     name: string;

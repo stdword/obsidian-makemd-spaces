@@ -17,6 +17,8 @@ export class ObsidianAssetManager implements IAssetManager {
         await this.ensureDefaultPalettes(new Set());
     }
 
+
+    ////
     private async ensureDefaultPalettes(loadedIds: Set<string>): Promise<void> {
         if (!loadedIds.has("default-palette")) {
             this.assets.set("default-palette", {
@@ -38,7 +40,6 @@ export class ObsidianAssetManager implements IAssetManager {
                     { name: i18n.colors.charcoal, value: "var(--mk-color-charcoal)", category: "brand" },
                     { name: i18n.colors.gray, value: "var(--mk-color-gray)", category: "brand" },
                 ],
-                gradients: [],
                 designSystemMapping: {
                     baseTokens: {
                         "mk-color-red": "var(--mk-color-red)",
@@ -71,17 +72,16 @@ export class ObsidianAssetManager implements IAssetManager {
                 path: "monochrome-palette",
                 type: "colorpalette",
                 colors: [
-                    { name: i18n.labels.base0, value: "var(--mk-color-base-0)", category: "base" },
-                    { name: i18n.labels.base10, value: "var(--mk-color-base-10)", category: "base" },
-                    { name: i18n.labels.base20, value: "var(--mk-color-base-20)", category: "base" },
-                    { name: i18n.labels.base30, value: "var(--mk-color-base-30)", category: "base" },
-                    { name: i18n.labels.base40, value: "var(--mk-color-base-40)", category: "base" },
-                    { name: i18n.labels.base50, value: "var(--mk-color-base-50)", category: "base" },
-                    { name: i18n.labels.base60, value: "var(--mk-color-base-60)", category: "base" },
-                    { name: i18n.labels.base70, value: "var(--mk-color-base-70)", category: "base" },
-                    { name: i18n.labels.base100, value: "var(--mk-color-base-100)", category: "base" },
+                    { name: i18n.colors.base0, value: "var(--mk-color-base-0)", category: "base" },
+                    { name: i18n.colors.base10, value: "var(--mk-color-base-10)", category: "base" },
+                    { name: i18n.colors.base20, value: "var(--mk-color-base-20)", category: "base" },
+                    { name: i18n.colors.base30, value: "var(--mk-color-base-30)", category: "base" },
+                    { name: i18n.colors.base40, value: "var(--mk-color-base-40)", category: "base" },
+                    { name: i18n.colors.base50, value: "var(--mk-color-base-50)", category: "base" },
+                    { name: i18n.colors.base60, value: "var(--mk-color-base-60)", category: "base" },
+                    { name: i18n.colors.base70, value: "var(--mk-color-base-70)", category: "base" },
+                    { name: i18n.colors.base100, value: "var(--mk-color-base-100)", category: "base" },
                 ],
-                gradients: [],
                 designSystemMapping: {
                     baseTokens: {
                         "mk-color-base-0": "var(--mk-color-base-0)",
@@ -106,32 +106,6 @@ export class ObsidianAssetManager implements IAssetManager {
             });
         }
 
-        if (!loadedIds.has("default-gradient-palette")) {
-            this.assets.set("default-gradient-palette", {
-                id: "default-gradient-palette",
-                name: i18n.labels.gradients,
-                path: "default-gradient-palette",
-                type: "colorpalette",
-                colors: [
-                    { name: "Warm Sunset", value: "linear-gradient(135deg, #ffff84 0%, #ff6164 50%, #b00012 100%)", category: "custom" },
-                    { name: "Earth Tones", value: "linear-gradient(90deg, #a47451 0%, #9c9881 17%, #73a09d 33%, #3b899a 50%, #095b79 67%, #002847 83%, #000116 100%)", category: "custom" },
-                    { name: "Golden Pink", value: "linear-gradient(45deg, #fada61 0%, #ff9188 50%, #ff5acd 100%)", category: "custom" },
-                    { name: "Soft Pink", value: "linear-gradient(45deg, #fc8ec5 0%, #ff8dd3 25%, #ffa1d8 50%, #ffc1d2 75%, #ffe0c3 100%)", category: "custom" },
-                    { name: "Purple Gold", value: "linear-gradient(45deg, #4159d0 0%, #c84fc0 50%, #ffcd70 100%)", category: "custom" },
-                    { name: "Cyan Purple", value: "linear-gradient(45deg, #23d4fd 0%, #3a98f0 50%, #b721ff 100%)", category: "custom" },
-                ],
-                designSystemMapping: {
-                    baseTokens: {},
-                    semanticTokens: {},
-                },
-                tags: ["default", "gradients"],
-                category: "material",
-                description: i18n.descriptions.defaultGradientPaletteWithBeautifulGradients,
-                created: Date.now(),
-                modified: Date.now(),
-            });
-        }
-
         if (!loadedIds.has("pastel-palette")) {
             this.assets.set("pastel-palette", {
                 id: "pastel-palette",
@@ -139,14 +113,14 @@ export class ObsidianAssetManager implements IAssetManager {
                 path: "pastel-palette",
                 type: "colorpalette",
                 colors: [
-                    { name: "Light Pink", value: "#FFB6C1", category: "custom" },
+                    { name: i18n.colors.lightPink, value: "#FFB6C1", category: "custom" },
                     { name: i18n.colors.gold, value: "#FFD700", category: "custom" },
-                    { name: "Pale Green", value: "#98FB98", category: "custom" },
-                    { name: "Sky Blue", value: "#87CEEB", category: "custom" },
+                    { name: i18n.colors.paleGreen, value: "#98FB98", category: "custom" },
+                    { name: i18n.colors.skyBlue, value: "#87CEEB", category: "custom" },
                     { name: i18n.colors.plum, value: "#DDA0DD", category: "custom" },
                     { name: i18n.colors.khaki, value: "#F0E68C", category: "custom" },
-                    { name: "Light Salmon", value: "#FFA07A", category: "custom" },
-                    { name: "Powder Blue", value: "#B0E0E6", category: "custom" },
+                    { name: i18n.colors.lightSalmon, value: "#FFA07A", category: "custom" },
+                    { name: i18n.colors.powderBlue, value: "#B0E0E6", category: "custom" },
                     { name: i18n.colors.moccasin, value: "#FFE4B5", category: "custom" },
                     { name: i18n.colors.lavender, value: "#E6E6FA", category: "custom" },
                 ],
@@ -162,6 +136,24 @@ export class ObsidianAssetManager implements IAssetManager {
             });
         }
     }
+
+    public getColorPalettes(): ColorPaletteAsset[] {
+        return Array.from(this.assets.values()).filter((a) => a.type === "colorpalette") as ColorPaletteAsset[];
+    }
+
+    public async resetDefaultPalettes(): Promise<void> {
+        ["default-palette", "monochrome-palette", "pastel-palette"].forEach((paletteId) => this.assets.delete(paletteId));
+        await this.ensureDefaultPalettes(new Set());
+    }
+
+    public async resetSinglePalette(paletteId: string): Promise<boolean> {
+        if (!["default-palette", "monochrome-palette", "pastel-palette"].includes(paletteId)) return false;
+        this.assets.delete(paletteId);
+        await this.ensureDefaultPalettes(new Set());
+        return true;
+    }
+    ////
+
 
     private dispatchEvent(event: string, ...args: any[]): void {
         const handlers = this.eventListeners.get(event) || [];
@@ -224,22 +216,6 @@ export class ObsidianAssetManager implements IAssetManager {
 
     public getVisualizations(): VisualizationAsset[] {
         return Array.from(this.assets.values()).filter((a) => a.type === "visualization") as VisualizationAsset[];
-    }
-
-    public getColorPalettes(): ColorPaletteAsset[] {
-        return Array.from(this.assets.values()).filter((a) => a.type === "colorpalette") as ColorPaletteAsset[];
-    }
-
-    public async resetDefaultPalettes(): Promise<void> {
-        ["default-palette", "monochrome-palette", "default-gradient-palette", "pastel-palette"].forEach((paletteId) => this.assets.delete(paletteId));
-        await this.ensureDefaultPalettes(new Set());
-    }
-
-    public async resetSinglePalette(paletteId: string): Promise<boolean> {
-        if (!["default-palette", "monochrome-palette", "default-gradient-palette", "pastel-palette"].includes(paletteId)) return false;
-        this.assets.delete(paletteId);
-        await this.ensureDefaultPalettes(new Set());
-        return true;
     }
 
     public async discoverAssets(basePath?: string): Promise<Asset[]> {

@@ -151,27 +151,27 @@ export const TreeItem = (props: TreeItemProps) => {
     const mouseOut = (e: React.MouseEvent) => {
         setHoverTarget(null);
     };
-    const newAction = (e: React.MouseEvent) => {
-        const space = superstate.spacesIndex.get(pathState.path);
-        if (e.shiftKey) {
-            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showLinkMenu(
-                offset,
-                windowFromDocument(e.view.document),
-                superstate,
-                (link) => {
-                    if (isString(link)) {
-                        pinPathToSpaceAtIndex(superstate, space, link);
-                    }
-                },
-                { placeholder: i18n.labels.pinNotePlaceholder },
-            );
-            e.stopPropagation();
-            return;
-        }
+    // const newAction = (e: React.MouseEvent) => {
+    //     const space = superstate.spacesIndex.get(pathState.path);
+    //     if (e.shiftKey) {
+    //         const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+    //         showLinkMenu(
+    //             offset,
+    //             windowFromDocument(e.view.document),
+    //             superstate,
+    //             (link) => {
+    //                 if (isString(link)) {
+    //                     pinPathToSpaceAtIndex(superstate, space, link);
+    //                 }
+    //             },
+    //             { placeholder: i18n.labels.pinNotePlaceholder },
+    //         );
+    //         e.stopPropagation();
+    //         return;
+    //     }
 
-        defaultAddAction(superstate, space, windowFromDocument(e.view.document));
-    };
+    //     defaultAddAction(superstate, space, windowFromDocument(e.view.document));
+    // };
     const handleRightClick = (e: React.MouseEvent) => {
         selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string)) ? triggerMultiPathMenu(superstate, selectedPaths, e) : contextMenu(e);
     };
