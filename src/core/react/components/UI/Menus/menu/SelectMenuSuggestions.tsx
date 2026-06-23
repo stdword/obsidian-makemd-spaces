@@ -103,7 +103,7 @@ const SelectMenuSuggestionsComponent = (props: {
           }}
         ></div>
       )}
-      {props.item.type == SelectOptionType.Submenu && (
+      {(props.item.type == SelectOptionType.Submenu || props.item.showChevron) && (
         <div
           className="mk-icon-small"
           dangerouslySetInnerHTML={{
@@ -163,9 +163,13 @@ const SelectMenuSuggestions = (props: {
   isDisclosureMenu: boolean;
   openSubmenu?: (menu: MenuObject) => void;
 }) => {
-  // const mouseOver = (e: React.MouseEvent, index: number) => {
-  //   props.setIndex(index);
-  // };
+  const canFocusOption = (item: SelectOption) =>
+    !item.disabled &&
+    item.type != SelectOptionType.Separator &&
+    item.type != SelectOptionType.Section &&
+    item.type != SelectOptionType.Input &&
+    item.type != SelectOptionType.Custom;
+
   const options = props.options.map((item, index) => {
     const key = `${props.id}-${index}`;
     const className =
@@ -186,6 +190,11 @@ const SelectMenuSuggestions = (props: {
         onMouseDown={(e) => {
           if (!props.isDisclosureMenu) e.stopPropagation();
           e.preventDefault();
+        }}
+        onMouseEnter={() => {
+          if (canFocusOption(item)) {
+            props.setIndex(index);
+          }
         }}
         onClick={(e) => {
           if (item.onSubmenu && props.openSubmenu) {
@@ -232,13 +241,6 @@ const SelectMenuSuggestions = (props: {
             }
           }
         }}
-        // onMouseOver={(e) => {
-        //   if (props.openSubmenu && item.onSubmenu) {
-        //     props.setIndex(index);
-        //     const el = props.refs?.current[index].getBoundingClientRect();
-        //     props.openSubmenu(item.onSubmenu(el));
-        //   }
-        // }}
         id={key}
         key={key}
         className={className}

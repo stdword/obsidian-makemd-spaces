@@ -14,8 +14,6 @@ export const defaultStickerCategory = "lucide";
 
 const StickerModal: React.FC<StickerModalProps> = (props) => {
     const [query, setQuery] = useState("");
-    const [allStickers, setAllStickers] = useState<Sticker[]>([]);
-    const [stickers, setStickers] = useState<Sticker[]>([]);
     const [selectedSticker, setSelectedSticker] = useState<number>(null);
 
     const htmlFromSticker = (sticker: Sticker) => {
@@ -25,19 +23,15 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
         return sticker.html;
     };
 
-    useEffect(() => {
-        const _allImages: Sticker[] = [];
-        _allImages.push(...props.ui.allStickers());
-        setAllStickers(_allImages);
-    }, []);
+    const allStickers = useMemo(() => [...props.ui.allStickers()], [props.ui]);
 
     const categories = useMemo(() => new Set(allStickers.map((f) => f.type)), [allStickers]);
 
     const [page, setPage] = useState(1);
 
     const loadNextPage = useCallback(() => {
-        setPage((p) => p + 1);
-    }, [page]);
+        setPage((p) => (p * 250 < allStickers.length ? p + 1 : p));
+    }, [allStickers.length]);
     const loaderRef = useRef(null);
     useEffect(() => {
         const observer = new IntersectionObserver((entries) => {
@@ -58,9 +52,10 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
         };
     }, [loadNextPage]);
     const [selectedCategory, setSelectedCategory] = useState<string>(defaultStickerCategory);
-    useEffect(() => {
-        setStickers(allStickers.filter((f) => f.name.includes(query.toLowerCase()) && (selectedCategory == null || f.type == selectedCategory)).slice(0, page * 250));
-    }, [query, allStickers, page, selectedCategory]);
+    const stickers = useMemo(
+        () => allStickers.filter((f) => f.name.includes(query.toLowerCase()) && (selectedCategory == null || f.type == selectedCategory)).slice(0, page * 250),
+        [query, allStickers, page, selectedCategory],
+    );
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(event.target.value);
@@ -79,16 +74,10 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
         }
     };
 
-    const ref = useRef(null);
-    useEffect(() => {
-        if (ref.current) {
-            ref.current.focus();
-        }
-    }, [ref.current]);
     return (
         <>
             <div className="mk-palette-search">
-                <input value={query} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder={i18n.labels.findStickers} ref={ref} />
+                <input value={query} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder={i18n.labels.findStickers} />
                 <button className="mk-toolbar-button">{i18n.labels.findStickersButton}</button>
                 <button
                     className="mk-toolbar-button"

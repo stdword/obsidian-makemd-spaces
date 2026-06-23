@@ -5,6 +5,9 @@ import { savePathSticker } from "shared/utils/sticker";
 import { PathState } from "../types/PathState";
 import { windowFromDocument } from "../utils/dom";
 
+export const openStickerPalette = (superstate: Superstate, win: Window, selectedSticker: (emoji: string) => void) =>
+    superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={selectedSticker} />, win, "mk-no-transition");
+
 export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean }) => {
     const { pathState } = props;
     const sticker = pathState?.label?.sticker;
@@ -13,7 +16,7 @@ export const PathStickerView = (props: { superstate: Superstate; pathState: Path
     const triggerStickerMenu = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (pathState?.type == "space")
-            props.superstate.ui.openPalette(<StickerModal ui={props.superstate.ui} selectedSticker={(emoji) => savePathSticker(props.superstate, pathState.path, emoji)} />, windowFromDocument(e.view.document));
+            openStickerPalette(props.superstate, windowFromDocument(e.view.document), (emoji) => savePathSticker(props.superstate, pathState.path, emoji));
     };
 
     return (

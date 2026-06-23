@@ -33,6 +33,7 @@ export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveF
                                 }}
                             />,
                             windowFromDocument(e.view.document),
+                            "mk-no-transition",
                         )
                     }
                 ></div>

@@ -39,6 +39,7 @@ export const ModalInner = (
     }>,
 ) => {
     const ref = React.useRef(null);
+    const disableTransition = props.className?.includes("mk-no-transition");
     const { setNodeRef, isOver } = useDroppable({
         id: "_modalInner",
         data: { id: "_modalInner" },
@@ -85,20 +86,28 @@ export const ModalInner = (
             props.ui.inputManager.off("keydown", onKeyDown);
         };
     }, [props.hide]);
-    const transitionStyles = {
-        entering: { opacity: 1 },
-        entered: { opacity: 1 },
-        exiting: { opacity: 0 },
-        exited: { opacity: 0 },
-        unmounted: { opacity: 0 },
-    };
+    const transitionStyles = disableTransition
+        ? {
+              entering: { opacity: 1 },
+              entered: { opacity: 1 },
+              exiting: { opacity: 1 },
+              exited: { opacity: 1 },
+              unmounted: { opacity: 1 },
+          }
+        : {
+              entering: { opacity: 1 },
+              entered: { opacity: 1 },
+              exiting: { opacity: 0 },
+              exited: { opacity: 0 },
+              unmounted: { opacity: 0 },
+          };
     return (
         <Transition timeout={300} appear={true} in={true} nodeRef={ref}>
             {(state) => (
                 <div
                     className={`${props.className}`}
                     style={{
-                        transition: `all 100ms ease-in`,
+                        transition: disableTransition ? "none" : `all 100ms ease-in`,
                         transform: "translateY(0px)",
                         ...transitionStyles[state],
                     }}

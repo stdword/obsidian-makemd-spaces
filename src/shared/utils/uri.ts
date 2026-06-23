@@ -134,7 +134,11 @@ export const renamePathWithoutExtension = (path: string, newName: string): strin
 
 export const renamePathWithExtension = (path: string, newName: string): string => {
   const dir = path.substring(0, path.lastIndexOf("/"));
-  const ext = path.lastIndexOf(".") != -1 ? path.substring(path.lastIndexOf(".")) : "";
+  const ext = path.toLowerCase().endsWith(".excalidraw.md")
+    ? ".excalidraw.md"
+    : path.lastIndexOf(".") != -1
+      ? path.substring(path.lastIndexOf("."))
+      : "";
   return dir.length > 0 ? `${dir}/${newName}${ext}` : `${newName}${ext}`;
 }
 

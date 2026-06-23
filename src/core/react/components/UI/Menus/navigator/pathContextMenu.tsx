@@ -5,7 +5,7 @@ import { TreeNode, removePathsFromSpace } from "core/superstate/utils/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import React from "react";
-import StickerModal from "shared/components/StickerModal";
+import { openStickerPalette } from "shared/components/PathSticker";
 import { default as i18n } from "shared/i18n";
 
 import { deletePath, movePathToSpace } from "core/superstate/utils/path";
@@ -53,8 +53,10 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         menuOptions.push({
             name: i18n.buttons.changeIcon,
             icon: "ui//sticker",
+            showChevron: true,
             onClick: (e) => {
-                superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => saveIconsForPaths(superstate, folderPaths, emoji)} />, windowFromDocument(e.view.document));
+                const win = windowFromDocument(e.view.document);
+                setTimeout(() => openStickerPalette(superstate, win, (emoji) => saveIconsForPaths(superstate, folderPaths, emoji)), 60);
             },
         });
     }
@@ -175,7 +177,17 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         name: i18n.menu.rename,
         icon: "ui//edit",
         onClick: (e) => {
-            superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={cache.name} saveValue={(v) => renamePathByName(superstate, path, v)}></InputModal>, windowFromDocument(e.view.document));
+            const isExcalidraw = path.toLowerCase().endsWith(".excalidraw.md");
+            const displayName = isExcalidraw ? cache.name.replace(/\.excalidraw$/i, "") : cache.name;
+            superstate.ui.openModal(
+                i18n.labels.rename,
+                <InputModal
+                    saveLabel={i18n.buttons.rename}
+                    value={displayName}
+                    saveValue={(value) => renamePathByName(superstate, path, isExcalidraw ? value.replace(/\.excalidraw(?:\.md)?$/i, "") : value)}
+                ></InputModal>,
+                windowFromDocument(e.view.document),
+            );
         },
     });
 

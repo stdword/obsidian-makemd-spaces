@@ -63,6 +63,7 @@ export type SelectOption = {
     onReorder?: (value: string, newValue: string) => void;
     onClick?: (ev: React.MouseEvent) => void;
     onSubmenu?: (offset: Rect, onHide: () => void) => MenuObject;
+    showChevron?: boolean;
     closeParentOnOpen?: boolean;
     keepOpen?: boolean;
     onValueChange?: (value: string) => void;

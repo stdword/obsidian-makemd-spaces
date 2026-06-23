@@ -3,9 +3,10 @@ import { hidePath, renamePathByName } from "core/superstate/utils/path";
 import { addPathToSpaceAtIndex, removePathsFromSpace, removeSpace, updateSpaceSort } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
-import StickerModal from "shared/components/StickerModal";
+import { openStickerPalette } from "shared/components/PathSticker";
 import { default as i18n } from "shared/i18n";
 import { PathState } from "shared/types/PathState";
+import { Rect } from "shared/types/Pos";
 import { SpaceSort } from "shared/types/spaceDef";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { savePathSticker } from "shared/utils/sticker";
@@ -18,7 +19,6 @@ import { showColorPickerMenu } from "../properties/colorPickerMenu";
 import { showSpacesMenu } from "../properties/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
-import { Rect } from "shared/types/Pos";
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void) => {
     const space = superstate.spacesIndex.get(path.path);
@@ -49,8 +49,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.buttons.changeIcon,
             icon: "ui//sticker",
+            showChevron: true,
             onClick: (e) => {
-                superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={(emoji) => savePathSticker(superstate, space.path, emoji)} />, win);
+                setTimeout(() => openStickerPalette(superstate, win, (emoji) => savePathSticker(superstate, space.path, emoji)), 60);
             },
         });
     }

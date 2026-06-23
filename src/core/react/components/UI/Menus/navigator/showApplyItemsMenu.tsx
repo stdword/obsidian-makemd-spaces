@@ -4,7 +4,7 @@ import i18n from "shared/i18n";
 import React from "react";
 import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
-import StickerModal from "../../../../../../shared/components/StickerModal";
+import { openStickerPalette } from "../../../../../../shared/components/PathSticker";
 import { defaultMenu } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../properties/colorPickerMenu";
 
@@ -14,18 +14,17 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
             name: i18n.menu.setDefaultSticker,
             icon: "ui//sticker",
             value: "apply-all-sticker",
+            showChevron: true,
             onClick: () => {
-                superstate.ui.openPalette(
-                    <StickerModal
-                        ui={superstate.ui}
-                        selectedSticker={(emoji) =>
+                setTimeout(
+                    () =>
+                        openStickerPalette(superstate, win, (emoji) =>
                             saveSpaceCache(superstate, space.space, {
                                 ...space.metadata,
                                 defaultSticker: emoji,
-                            })
-                        }
-                    />,
-                    win,
+                            }),
+                        ),
+                    60,
                 );
             },
         },

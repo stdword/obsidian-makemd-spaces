@@ -192,6 +192,9 @@ body .mk-tree-new {
     font-family: emoji;
     align-items: center;
 }
+.nav-file-title > .mk-path-icon {
+    flex: 0 0 var(--icon-size);
+}
 .mk-path-icon svg,
 .mk-path-icon img {
     width: var(--icon-size);
