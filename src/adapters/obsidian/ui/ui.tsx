@@ -179,10 +179,8 @@ export class ObsidianUI implements UIAdapter {
 
     public getUIPath = (path: string): string => {
         const file = this.plugin.app.vault.getAbstractFileByPath(path);
-        if (file instanceof TFile)
-            return `${this.plugin.app.vault.getResourcePath(file)}?${Math.floor(Math.random() * 1000)}`;
-        else if (path?.match(urlRegex))
-            return path;
+        if (file instanceof TFile) return `${this.plugin.app.vault.getResourcePath(file)}?${Math.floor(Math.random() * 1000)}`;
+        else if (path?.match(urlRegex)) return path;
 
         const returnPath = getParentPathFromString(this.plugin.app.vault.getResourcePath(this.plugin.app.vault.getRoot() as any));
         return `${returnPath}${path}?${Math.floor(Math.random() * 1000)}`;

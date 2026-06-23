@@ -1,20 +1,5 @@
 import i18n from "shared/i18n";
-import {
-    Asset,
-    AssetCacheStats,
-    AssetLoadOptions,
-    AssetManagerEvents,
-    AssetType,
-    AudioAsset,
-    ColorPaletteAsset,
-    CoverImage,
-    IAssetManager,
-    ImageAsset,
-    ModelAsset,
-    TextureAsset,
-    VisualizationAsset,
-    VisualizationConfig,
-} from "shared/types/assets";
+import { Asset, AssetCacheStats, AssetLoadOptions, AssetManagerEvents, AssetType, AudioAsset, ColorPaletteAsset, CoverImage, IAssetManager, ImageAsset, ModelAsset, TextureAsset, VisualizationAsset, VisualizationConfig } from "shared/types/assets";
 
 export class ObsidianAssetManager implements IAssetManager {
     private assets: Map<string, Asset> = new Map();
