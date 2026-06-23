@@ -1,25 +1,41 @@
+import { saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { defaultContextSchemaID } from "shared/schemas/context";
-import { PathPropertyName } from "shared/types/context";
+import { defaultContextFields } from "shared/schemas/fields";
+import { normalizeContextPath, PathPropertyName, PathPropertyPinned } from "shared/types/context";
 import { ISuperstate } from "shared/types/superstate";
 
-export const savePathLabel = async (superstate: ISuperstate, path: string, field: "color" | "sticker", value: string) => {
+const isFolderPathState = (pathState: any) => pathState?.type == "space" || pathState?.subtype == "folder" || pathState?.metadata?.file?.isFolder;
+
+const contextColorRow = (row: Record<string, string> | null, path: string, color: string): Record<string, string> => ({
+    [PathPropertyName]: row?.[PathPropertyName] ?? path,
+    color: (row?.[PathPropertyName] ?? path)?.endsWith("/") ? "" : color,
+    [PathPropertyPinned]: row?.[PathPropertyPinned] ?? "false",
+});
+
+export const savePathColor = async (superstate: ISuperstate, path: string, color: string) => {
     const pathState = superstate.pathsIndex.get(path);
     if (!pathState) return;
+
+    if (isFolderPathState(pathState)) {
+        await saveSpaceMetadataValue(superstate as any, path, "defaultColor", color);
+        return;
+    }
 
     const spaces = (pathState.spaces ?? []).map((spacePath) => superstate.spacesIndex.get(spacePath)).filter((space) => space?.space);
     await Promise.all(
         spaces.map(async (spaceState) => {
             const table = await superstate.spaceManager.contextForSpace(spaceState.space.path);
             if (!table) return;
-            const hasRow = table.rows.some((row) => row[PathPropertyName] == path);
+            const hasRow = table.rows.some((row) => normalizeContextPath(row[PathPropertyName]) == path);
             const rows = hasRow
-                ? table.rows.map((row) => (row[PathPropertyName] == path ? { ...row, [field]: value } : row))
-                : [...table.rows, { [PathPropertyName]: path, [field]: value }];
+                ? table.rows.map((row) => (normalizeContextPath(row[PathPropertyName]) == path ? contextColorRow(row, path, color) : contextColorRow(row, normalizeContextPath(row[PathPropertyName]), row.color ?? "")))
+                : [...table.rows.map((row) => contextColorRow(row, normalizeContextPath(row[PathPropertyName]), row.color ?? "")), contextColorRow(null, path, color)];
             await superstate.spaceManager.saveTable(
                 spaceState.space.path,
                 {
                     ...table,
                     schema: table.schema ?? { id: defaultContextSchemaID, name: "Items", type: "db", primary: "true" },
+                    cols: defaultContextFields.rows as any,
                     rows,
                 },
                 true,
@@ -31,12 +47,8 @@ export const savePathLabel = async (superstate: ISuperstate, path: string, field
         ...pathState,
         label: {
             ...pathState.label,
-            [field]: value,
+            color,
         },
     });
     superstate.dispatchEvent("pathStateUpdated", { path });
-};
-
-export const savePathColor = async (superstate: ISuperstate, path: string, color: string) => {
-    return savePathLabel(superstate, path, "color", color);
 };

@@ -2,7 +2,7 @@ import { deletePath } from "core/superstate/utils/path";
 import { folderForTagSpace } from "core/utils/spaces/space";
 import { pathToParentPath } from "core/utils/strings";
 import { Superstate } from "makemd-core";
-import { PathPropertyName } from "shared/types/context";
+import { PathPropertyName, PathPropertyPinned } from "shared/types/context";
 import { DBRow, SpaceTable } from "shared/types/mdb";
 import { PathState } from "shared/types/PathState";
 import { SpaceInfo } from "shared/types/spaceInfo";
@@ -12,15 +12,11 @@ import { defaultMDBTableForContext } from "../../../schemas/mdb";
 export const pathStateToContextRow = (pathState: PathState): DBRow => {
     const file = pathState.metadata?.file ?? {};
     const isFolder = file.isFolder == true || pathState.type == "space" || pathState.subtype == "folder";
+    const path = isFolder && pathState.path != "/" && !pathState.path.endsWith("/") ? `${pathState.path}/` : pathState.path;
     return {
-        [PathPropertyName]: pathState.path,
-        isFolder: isFolder ? "true" : "false",
-        name: file.name ?? pathState.name ?? "",
-        extension: file.extension ?? "",
-        ctime: `${file.ctime ?? pathState.metadata?.ctime ?? ""}`,
-        mtime: `${file.mtime ?? ""}`,
-        color: pathState.label?.color ?? "",
-        sticker: pathState.label?.sticker ?? "",
+        [PathPropertyName]: path,
+        color: isFolder ? "" : pathState.label?.color ?? "",
+        [PathPropertyPinned]: "false",
     };
 };
 

@@ -72,10 +72,12 @@ describe("triggerMultiPathMenu", () => {
 });
 
 describe("showSpaceContextMenu", () => {
-  it("updates the home space color in context rows and memory when a color is selected", async () => {
+  it("updates the home space color in def.json when a color is selected", async () => {
     const dispatchEvent = jest.fn();
     const saveLabel = jest.fn(() => Promise.resolve());
     const saveTable = jest.fn(() => Promise.resolve(true));
+    const saveSpace = jest.fn();
+    const updateSpaceMetadata = jest.fn(() => Promise.resolve(true));
     const openMenu = jest.fn();
     const pathState = {
       path: "/",
@@ -115,7 +117,9 @@ describe("showSpaceContextMenu", () => {
         saveLabel,
         contextForSpace: jest.fn(() => Promise.resolve(contextTable)),
         saveTable,
+        saveSpace,
       },
+      updateSpaceMetadata,
       ui: {
         openMenu,
         getOS: jest.fn(() => "mac"),
@@ -130,15 +134,11 @@ describe("showSpaceContextMenu", () => {
     await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
     expect(saveLabel).not.toHaveBeenCalled();
-    expect(saveTable).toHaveBeenCalledWith(
-      "/",
-      expect.objectContaining({
-        rows: [{ path: "/", color: "#123456" }],
-      }),
-      true,
-    );
-    expect(superstate.pathsIndex.get("/")?.label.color).toBe("#123456");
-    expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "/" });
+    expect(saveTable).not.toHaveBeenCalled();
+    expect(saveSpace).toHaveBeenCalledWith("/", expect.any(Function));
+    expect(updateSpaceMetadata).toHaveBeenCalledWith("/", { defaultColor: "#123456" });
+    expect(superstate.pathsIndex.get("/")?.label.color).toBe("");
+    expect(dispatchEvent).not.toHaveBeenCalled();
   });
 
   it("rebuilds sort submenu radio values from the latest space state", () => {

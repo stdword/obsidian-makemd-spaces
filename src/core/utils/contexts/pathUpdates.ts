@@ -1,6 +1,8 @@
-import { PathPropertyName } from "shared/types/context";
+import { normalizeContextPath, PathPropertyName } from "shared/types/context";
 import { SpaceTable } from "shared/types/mdb";
 import { insertMulti } from "shared/utils/array";
+
+const isContextPathMatch = (rowPath: string, path: string) => normalizeContextPath(rowPath) == normalizeContextPath(path);
 
 export const renameRowForPath = (
     spaceTable: SpaceTable,
@@ -10,7 +12,7 @@ export const renameRowForPath = (
     return {
       ...spaceTable,
       rows: spaceTable.rows.map((f) =>
-        f[PathPropertyName] == paths
+        isContextPathMatch(f[PathPropertyName], paths)
           ? { ...f, [PathPropertyName]: newPath }
           : f
       ),
@@ -23,7 +25,7 @@ export const renameRowForPath = (
     return {
       ...spaceTable,
       rows: spaceTable.rows.filter(
-        (f) => f[PathPropertyName] != paths
+        (f) => !isContextPathMatch(f[PathPropertyName], paths)
       ),
     };
   };
@@ -32,7 +34,7 @@ export const renameRowForPath = (
     return {
       ...spaceTable,
       rows: spaceTable.rows.filter(
-        (f) => !paths.includes(f[PathPropertyName])
+        (f) => !paths.some((path) => isContextPathMatch(f[PathPropertyName], path))
       ),
     };
   };
@@ -41,12 +43,12 @@ export const renameRowForPath = (
 
   export const reorderRowsForPath = (spaceTable: SpaceTable, paths: string[], index: number): SpaceTable => {
     const rows = spaceTable.rows.filter(
-      (f) => paths.includes(f[PathPropertyName])
+      (f) => paths.some((path) => isContextPathMatch(f[PathPropertyName], path))
     )
     return {
       ...spaceTable,
       rows: insertMulti(spaceTable.rows.filter(
-        (f) => !paths.includes(f[PathPropertyName])
+        (f) => !paths.some((path) => isContextPathMatch(f[PathPropertyName], path))
       ), index, rows),
     };
   };

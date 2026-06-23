@@ -13,7 +13,7 @@ import { applyContextLabelsToPaths } from "core/superstate/cacheParsers";
 import _, { debounce } from "lodash";
 import { fieldTypeForField } from "schemas/mdb";
 import { tagsSpacePath } from "shared/schemas/builtin";
-import { PathPropertyName } from "shared/types/context";
+import { normalizeContextPath, PathPropertyName } from "shared/types/context";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { SpaceProperty } from "shared/types/mdb";
@@ -65,7 +65,6 @@ export class Superstate implements ISuperstate {
     public contextsIndex: Map<string, ContextState>;
 
     //Persistant Cache
-    public iconsCache: Map<string, string>;
     public imagesCache: Map<string, string>;
 
     public spacesDBLoaded: boolean;
@@ -134,7 +133,6 @@ export class Superstate implements ISuperstate {
         this.liveSpaceLinkMap = new IndexMap();
 
         //Initiate Persistance
-        this.iconsCache = new Map();
         this.imagesCache = new Map();
         this.contextStateQueue = Promise.resolve();
 
@@ -574,7 +572,7 @@ export class Superstate implements ISuperstate {
             const allRows = cache.contextTable?.rows ?? [];
             const allColumns = cache.contextTable?.cols ?? [];
             const updatedValues = allRows.filter((f) => {
-                const path = f[PathPropertyName];
+                const path = normalizeContextPath(f[PathPropertyName]);
                 const pathCache = this.pathsIndex.get(path);
 
                 if (!pathCache) {
@@ -592,7 +590,7 @@ export class Superstate implements ISuperstate {
                 updatedValues.forEach((f) =>
                     saveProperties(
                         this,
-                        f[PathPropertyName],
+                        normalizeContextPath(f[PathPropertyName]),
                         allColumns.reduce((acc, col, i) => {
                             if (col.type == "fileprop" && col.primary != "true") {
                                 return { ...acc, [col.name]: parseMDBStringValue(fieldTypeForField(col), f[col.name], true) };
@@ -686,7 +684,7 @@ export class Superstate implements ISuperstate {
                 if (f) {
                     const contextProps = f.contextTable?.cols ?? [];
                     propertyTypes.push(...contextProps);
-                    properties = { ...properties, ...(f.contextTable?.rows.find((g) => g[PathPropertyName] == space.path) ?? {}) };
+                    properties = { ...properties, ...(f.contextTable?.rows.find((g) => normalizeContextPath(g[PathPropertyName]) == space.path) ?? {}) };
                 }
             });
 

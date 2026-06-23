@@ -31,7 +31,6 @@ export abstract class ISuperstate {
     pathsIndex: Map<string, PathState>;
     spacesIndex: Map<string, SpaceState>;
     contextsIndex: Map<string, ContextState>;
-    iconsCache: Map<string, string>;
     imagesCache: Map<string, string>;
     spacesDBLoaded: boolean;
     spacesMap: IndexMap;

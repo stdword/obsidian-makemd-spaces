@@ -12,7 +12,6 @@ export type SuperstateEvent = {
     "spaceDeleted": { path: string; };
     "spaceStateUpdated": { path: string; };
     "contextStateUpdated": { path: string; };
-    "frameStateUpdated": { path: string; schemaId?: string; };
     "settingsChanged": null;
     "focusesChanged": null;
     "superstateUpdated": null;

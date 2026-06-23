@@ -29,7 +29,6 @@ export const parseURI = (uri: string): URI => {
       const mapRefType = (refTypeChar: string, isSpace: boolean) => {
         if (isSpace) {
           if (refTypeChar === '^') return 'context';
-          if (refTypeChar === '*') return 'frame';
           if (refTypeChar === ';') return 'action';
           return null
         }

@@ -218,10 +218,10 @@ body .mk-tree-new {
     background: none;
 }
 .nav-file-title > .mk-path-icon > button > svg {
-    color: var(--label-color, var(--icon-color)) !important;
+    color: var(--icon-color) !important;
 }
 .nav-file-title.is-active > .mk-path-icon > button > svg {
-    color: var(--label-color, unset) !important;
+    color: var(--icon-color) !important;
 }
 
 .mk-tree-text.nav-file-title-content {

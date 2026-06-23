@@ -230,7 +230,7 @@ export const TreeItem = (props: TreeItemProps) => {
                     color?.length > 0
                         ? ({
                               "--label-color": `${color}`,
-                              "--icon-color": `#ffffff`,
+                              "--icon-color": isFolder ? `#ffffff` : `var(--mk-ui-text-secondary)`,
                               position: "relative",
                           } as React.CSSProperties)
                         : ({

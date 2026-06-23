@@ -24,18 +24,9 @@ const createSuperstate = () => {
 
     const superstate = Superstate.create("test", jest.fn(), spaceManager as any, ui as any) as any;
     superstate.persister = {
-        loadAll: jest.fn((type: string) => {
-            if (type === "icon") {
-                return Promise.resolve([{ path: "icons/logo.svg", cache: "<svg />" }]);
-            }
-            return Promise.resolve([]);
-        }),
+        loadAll: jest.fn(() => Promise.resolve([])),
         store: jest.fn(() => Promise.resolve()),
         remove: jest.fn(),
-    };
-    superstate.assets = {
-        iconPathMapping: new Map([["icons/logo.svg", "logo"]]),
-        cacheIconFromPath: jest.fn(),
     };
     superstate.spaceManager.readPath = jest.fn(() => Promise.resolve("<svg />"));
 
@@ -43,16 +34,7 @@ const createSuperstate = () => {
 };
 
 describe("Superstate SVG handling", () => {
-    it("does not load SVG files into icon caches from persisted cache", async () => {
-        const { superstate, spaceManager } = createSuperstate();
-
-        await superstate.loadFromCache();
-
-        expect(spaceManager.allPaths).not.toHaveBeenCalledWith(["svg"]);
-        expect(superstate.assets.cacheIconFromPath).not.toHaveBeenCalled();
-    });
-
-    it("does not treat SVG file reloads as image or icon cache work", async () => {
+    it("does not treat SVG file reloads as image cache work", async () => {
         const { superstate } = createSuperstate();
 
         await superstate.pathReloaded(
@@ -78,7 +60,6 @@ describe("Superstate SVG handling", () => {
 
         expect(superstate.imagesCache.has("logo.svg")).toBe(false);
         expect(superstate.spaceManager.readPath).not.toHaveBeenCalled();
-        expect(superstate.assets.cacheIconFromPath).not.toHaveBeenCalled();
         expect(superstate.persister.store).toHaveBeenCalledTimes(1);
         expect(superstate.persister.store).toHaveBeenCalledWith(
             "icons/logo.svg",

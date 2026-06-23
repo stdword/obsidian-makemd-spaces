@@ -17,7 +17,6 @@ import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 
 import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
-// import ImageModal from "core/react/components/UI/Modals/ImageModal";
 import { removeSpace } from "core/superstate/utils/spaces";
 import { BlinkMode } from "shared/types/blink";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
@@ -161,65 +160,6 @@ export class ObsidianUI implements UIAdapter {
         }));
 
         const allCustom: Sticker[] = [];
-
-        // Get icons from AssetManager iconsets
-        if (this.plugin.superstate.assets) {
-            const assetManager = this.plugin.superstate.assets;
-
-            // Get all iconsets and iterate through their icons
-            const iconsets = assetManager.getIconsets?.() || [];
-
-            for (const iconset of iconsets) {
-                if (iconset.id === "lucide" || iconset.id === "emoji" || iconset.id === "ui") {
-                    continue; // Skip built-in iconsets as they're handled separately
-                }
-
-                // Get icons from this iconset
-                if (iconset.icons && iconset.icons.length > 0) {
-                    for (const icon of iconset.icons) {
-                        const iconName = typeof icon === "string" ? icon : icon.id || icon.name;
-                        const iconKey = `${iconset.id}//${iconName}`;
-
-                        allCustom.push({
-                            name: iconName,
-                            type: iconset.id,
-                            keywords: iconKey,
-                            value: iconName,
-                            html: assetManager.getCachedIcon(iconKey) || assetManager.getCachedIcon(iconName) || "",
-                        });
-                    }
-                }
-            }
-        }
-
-        // Add any remaining icons from superstate cache
-        this.plugin.superstate.iconsCache.forEach((value, key) => {
-            if (key.includes("//")) {
-                const [iconsetId, filename] = key.split("//");
-                // Only add if not already added
-                if (!allCustom.some((s) => s.type === iconsetId && s.value === filename)) {
-                    allCustom.push({
-                        name: filename.replace(/\.(svg|png|jpg|jpeg)$/i, ""), // Remove file extension for display
-                        type: iconsetId,
-                        keywords: key,
-                        value: filename,
-                        html: value,
-                    });
-                }
-            } else if (!key.includes("/") || key.startsWith("http")) {
-                // Legacy vault icons
-                if (!allCustom.some((s) => s.value === key)) {
-                    allCustom.push({
-                        name: key,
-                        type: "vault",
-                        keywords: key,
-                        value: key,
-                        html: value,
-                    });
-                }
-            }
-            // Skip single slash paths as they should now be available with // format
-        });
 
         const allEmojis: Sticker[] = Object.keys(emojis as EmojiData).reduce(
             (p, c: string) => [

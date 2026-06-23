@@ -1,6 +1,6 @@
 
 import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
-import { PathPropertyName } from "shared/types/context";
+import { PathPropertyName, PathPropertyPinned } from "shared/types/context";
 import { DBTable, SpaceProperty } from "shared/types/mdb";
 import { SpaceInfo } from "shared/types/spaceInfo";
 
@@ -25,7 +25,7 @@ export const defaultContextFields: DBTable = {
   rows: defaultContextFileColumns.map((name) => ({
     name,
     schemaId: defaultContextSchemaID,
-    type: name == PathPropertyName ? "file" : name == "ctime" || name == "mtime" ? "number" : "text",
+    type: name == PathPropertyName ? "file" : name == PathPropertyPinned ? "boolean" : "text",
     primary: name == PathPropertyName ? "true" : "",
     hidden: "",
     unique: name == PathPropertyName ? "true" : "",

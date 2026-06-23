@@ -2,6 +2,8 @@ import { getParentPathFromString } from "utils/path";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import JSZip from "jszip";
+import { defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextFields } from "shared/schemas/fields";
 import { DBRows, DBTable, DBTables, SpaceTables } from "shared/types/mdb";
 import { uniq } from "shared/utils/array";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
@@ -184,10 +186,16 @@ export const replaceDB = (db: Database, tables: DBTables) => {
     const sqlStatements: string[] = [];
     Object.keys(tables).forEach((t) => {
         const tableFields = tables[t].cols;
+        const columnTypeForField = (field: string) => {
+            const propertyType = t == defaultContextSchemaID ? defaultContextFields.rows.find((col) => col.name == field)?.type : null;
+            if (propertyType == "boolean") return "BOOLEAN";
+            if (propertyType == "number") return "REAL";
+            return "char";
+        };
         const fieldQuery = serializeSQLFieldNames(
             uniq(tableFields)
                 .filter((f) => f)
-                .map((f) => `'${sanitizeSQLStatement(f)}' char`),
+                .map((f) => `'${sanitizeSQLStatement(f)}' ${columnTypeForField(f)}`),
         );
 
         const createQuery = `CREATE TABLE IF NOT EXISTS "${t}" (${fieldQuery}); `;

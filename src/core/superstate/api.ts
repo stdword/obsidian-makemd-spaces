@@ -17,27 +17,6 @@ import { parseMDBStringValue } from "utils/properties";
 import { ISuperstate } from "shared/types/superstate";
 import { newPathInSpace, saveProperties } from "./utils/spaces";
 
-const parsePropertyPath = (value: string): string[] => {
-    if (!value) return [];
-    return value
-        .replace(/\[['"]?([^'"\]]+)['"]?\]/g, ".$1")
-        .split(".")
-        .map((part) => part.trim())
-        .filter((part) => part.length > 0);
-};
-
-const parseContextNode = (value: string) => {
-    const path = parsePropertyPath(value);
-    if (path.length < 3 || path[0] != "$contexts") return null;
-    return { context: path[1], prop: path[2] };
-};
-
-const parseLinkedNode = (value: string) => {
-    const path = parsePropertyPath(value);
-    if (path.length < 3) return null;
-    return { node: path[0], prop: path[2] };
-};
-
 // Interface for the minimal space manager functionality needed by API
 export interface APISpaceManager {
     getPathState(path: string): PathState | null;
@@ -53,25 +32,6 @@ export class API implements IAPI {
         this.superstate = superstate;
         this.spaceManager = spaceManager || superstate.spaceManager;
     }
-    public frame = {
-        update: (property: string, value: string, path: string, saveState: (state: any) => void) => {
-            if (property.startsWith("$contexts")) {
-                const { context, prop } = parseContextNode(property);
-                if (context && prop) this.context.update(context, path, prop, value);
-            } else {
-                const linkedNode = parseLinkedNode(property);
-                if (linkedNode.node && linkedNode.prop) {
-                    saveState({
-                        [linkedNode.node]: {
-                            props: {
-                                [linkedNode.prop]: value,
-                            },
-                        },
-                    });
-                }
-            }
-        },
-    };
     public properties = {
         color: (property: SpaceProperty, value: string) => {
             if (property?.type?.includes("option")) {

@@ -3,9 +3,6 @@ import { DBRow, SpaceProperty } from "./mdb";
 import { TargetLocation } from "./path";
 
 export interface IAPI {
-    frame: {
-        update: (property: string, value: string, path: string, saveState: (state: any) => void) => void;
-    };
     properties: {
         color: (property: SpaceProperty, value: string) => string;
         sticker: (property: SpaceProperty) => string;

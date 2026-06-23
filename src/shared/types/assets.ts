@@ -226,37 +226,7 @@ export interface BaseAsset {
 }
 
 // Asset types supported by the system
-export type AssetType = 'icon' | 'iconset' | 'image' | 'audio' | 'texture' | 'model' | 'visualization' | 'colorpalette';
-
-// Specific asset interfaces extending BaseAsset
-
-export interface IconAsset extends BaseAsset {
-  type: 'icon';
-  format: 'svg' | 'png' | 'jpg' | 'gif' | 'emoji';
-  svg?: string; // Cached SVG content for svg icons
-  emoji?: string; // Emoji character(s) for emoji icons
-  iconsetId?: string; // Reference to parent iconset if part of a set
-}
-
-export interface IconsetAsset extends BaseAsset {
-  type: 'iconset';
-  icons: IconMetadata[];
-  theme?: 'light' | 'dark' | 'auto';
-  description?: string;
-  tags?: string[];
-  format?: 'mixed' | 'svg' | 'png' | 'emoji'; // Type of icons in the set
-}
-
-export interface IconMetadata {
-  id: string;
-  name: string;
-  path?: string; // Optional for emoji icons
-  emoji?: string; // For emoji icons (deprecated)
-  unicode?: string; // Unicode code for emoji icons
-  category?: string;
-  keywords?: string[];
-  size?: { width: number; height: number };
-}
+export type AssetType = 'image' | 'audio' | 'texture' | 'model' | 'visualization' | 'colorpalette';
 
 
 export interface ImageAsset extends BaseAsset {
@@ -332,7 +302,7 @@ export interface ColorPaletteAsset extends BaseAsset {
 }
 
 // Union type for all asset types
-export type Asset = IconAsset | IconsetAsset | ImageAsset | TextureAsset | AudioAsset | ModelAsset | VisualizationAsset | ColorPaletteAsset;
+export type Asset = ImageAsset | TextureAsset | AudioAsset | ModelAsset | VisualizationAsset | ColorPaletteAsset;
 
 
 // Asset loading and caching options
@@ -364,11 +334,6 @@ export interface CoverImage {
 
 // Asset manager interface
 export interface IAssetManager {
-  // Icon caches and mappings
-  iconsCache: Map<string, string>;
-  iconsetCaches: Map<string, Map<string, string>>;
-  iconPathMapping: Map<string, string>;
-  
   // Cover images mapping
   coverImages: Map<string, CoverImage>;
   
@@ -383,8 +348,6 @@ export interface IAssetManager {
   deleteAsset(id: string): Promise<boolean>;
 
   // Type-specific getters
-  getIcons(): IconAsset[];
-  getIconsets(): IconsetAsset[];
   getImages(): ImageAsset[];
   getTextures(): TextureAsset[];
   getAudios(): AudioAsset[];
@@ -418,19 +381,6 @@ export interface IAssetManager {
   deleteColorPalette(id: string): Promise<boolean>;
   loadColorPalette(path: string): Promise<ColorPaletteAsset | null>;
   reloadColorPalette(id: string): Promise<ColorPaletteAsset | null>;
-
-  // Iconset management
-  loadIconset(path: string): Promise<IconsetAsset | null>;
-  saveIconset(iconset: IconsetAsset): Promise<boolean>;
-  deleteIconset(id: string): Promise<boolean>;
-  getIconFromSet(iconsetId: string, iconId: string): IconMetadata | null;
-  
-  // Icon caching methods
-  getCachedIcon(iconId: string, iconsetId?: string): string | null;
-  cacheIconFromPath(path: string, content: string): void;
-  hasIcon(iconName: string): boolean;
-  getIcon(key: string): Promise<string | undefined>;
-  getIconSync(key: string): string | undefined;
 
   // Cover image management
   addCoverImage(url: string, name: string, tags?: string[]): Promise<boolean>;

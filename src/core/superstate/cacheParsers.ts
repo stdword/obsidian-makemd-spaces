@@ -13,7 +13,7 @@ import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
 import { defaultContextFields } from "shared/schemas/fields";
-import { PathPropertyName } from "shared/types/context";
+import { normalizeContextPath, PathPropertyName, PathPropertyPinned } from "shared/types/context";
 import { IndexMap } from "shared/types/indexMap";
 import { excludePathPredicate } from "utils/hide";
 import { parseLinkString, parseMultiString } from "utils/parsers";
@@ -22,17 +22,16 @@ import { tagPathToTag } from "utils/tags";
 
 export const applyContextLabelsToPaths = (contextTable: SpaceTable, pathsIndex: Map<string, PathState>) => {
     contextTable?.rows?.forEach((row) => {
-        const pathState = pathsIndex.get(row[PathPropertyName]);
+        const rowPath = row[PathPropertyName];
+        const pathState = pathsIndex.get(normalizeContextPath(rowPath));
         if (!pathState) return;
-        const color = row.color?.length > 0 ? row.color : pathState.label?.color ?? "";
-        const sticker = row.sticker?.length > 0 ? row.sticker : pathState.label?.sticker ?? "";
-        if (color == pathState.label?.color && sticker == pathState.label?.sticker) return;
+        const isFolder = rowPath?.endsWith("/") || pathState.type == "space" || pathState.subtype == "folder" || pathState.metadata?.file?.isFolder;
+        if (isFolder || !row.color || row.color == pathState.label?.color) return;
         pathsIndex.set(pathState.path, {
             ...pathState,
             label: {
                 ...pathState.label,
-                color,
-                sticker,
+                color: row.color,
             },
         });
     });
@@ -69,12 +68,9 @@ export const parseContextTableToCache = (
         };
     }
     const schemas = Object.values(mdb).map((f) => f.schema);
-    let cols = mdb[defaultContextSchemaID]?.cols;
-    if (!cols || cols.length == 0) {
-        cols = defaultContextFields.rows as SpaceProperty[];
-    }
+    const cols = defaultContextFields.rows as SpaceProperty[];
     const schema = mdb[defaultContextSchemaID]?.schema ?? defaultContextDBSchema;
-    const contextPaths = mdb[defaultContextSchemaID]?.rows?.map((f) => f[PathPropertyName]) ?? [];
+    const contextPaths = mdb[defaultContextSchemaID]?.rows?.map((f) => normalizeContextPath(f[PathPropertyName])) ?? [];
 
     const missingPaths = paths.filter((f) => !contextPaths.includes(f));
     const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
@@ -83,14 +79,14 @@ export const parseContextTableToCache = (
 
     rows = rows.map((_row) => {
         const row = _row as DBRow;
-        const pathState = pathsIndex.get(row[PathPropertyName]);
+        const normalizedPath = normalizeContextPath(row[PathPropertyName]);
+        const pathState = pathsIndex.get(normalizedPath);
         const fileRow = pathState ? pathStateToContextRow(pathState) : {};
-        const { size: _legacySize, ...persistedRow } = row;
         const normalizedRow = {
             ...fileRow,
-            ...persistedRow,
-            color: row.color?.length > 0 ? row.color : fileRow.color,
-            sticker: row.sticker?.length > 0 ? row.sticker : fileRow.sticker,
+            [PathPropertyName]: fileRow[PathPropertyName] ?? row[PathPropertyName],
+            color: fileRow[PathPropertyName]?.endsWith("/") ? "" : row.color ?? fileRow.color ?? "",
+            [PathPropertyPinned]: row[PathPropertyPinned] ?? fileRow[PathPropertyPinned] ?? "false",
         };
         return syncContextRow(pathsIndex, normalizedRow, cols, spacePath);
     });

@@ -1,6 +1,6 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { resolvePath } from "core/superstate/utils/path";
-import { PathPropertyName } from "shared/types/context";
+import { normalizeContextPath, PathPropertyName } from "shared/types/context";
 import { IndexMap } from "shared/types/indexMap";
 import { DBRow, DBRows, SpaceProperty } from "shared/types/mdb";
 import { ContextState, PathState } from "shared/types/PathState";
@@ -39,12 +39,12 @@ export const syncContextRow = (paths: Map<string, PathState>, _row: DBRow, field
 export const mergeContextRows = (paths: string[], rows: DBRows, pathStates: Map<string, PathState>, spaceMap: IndexMap, path: PathState) => {
     // Filter existing rows to only include valid paths, preserving database order (rank)
     const validRows = rows.filter((row) => {
-        const resolvedPath = resolvePath(row[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == "space");
+        const resolvedPath = normalizeContextPath(resolvePath(row[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == "space"));
         return paths.includes(resolvedPath);
     });
 
     // Find paths that are in the paths array but not in any existing row
-    const existingPaths = validRows.map((row) => resolvePath(row[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == "space"));
+    const existingPaths = validRows.map((row) => normalizeContextPath(resolvePath(row[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == "space")));
     const missingPaths = paths.filter((f) => !existingPaths.includes(f));
 
     // Return existing rows (in their original order) plus new rows for missing paths

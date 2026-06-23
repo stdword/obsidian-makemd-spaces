@@ -3,7 +3,7 @@
 import { linkColumns, removeLinksInRow, renameLinksInRow } from "core/utils/contexts/links";
 import { removeRowForPath, removeRowsForPath, renameRowForPath, reorderRowsForPath } from "core/utils/contexts/pathUpdates";
 import _ from "lodash";
-import { PathPropertyName } from "shared/types/context";
+import { normalizeContextPath, PathPropertyName } from "shared/types/context";
 import { DBRow, DBRows, SpaceProperty, SpaceTable } from "shared/types/mdb";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { insertMulti } from "shared/utils/array";
@@ -138,9 +138,9 @@ const insertRowsIfUnique = (folder: SpaceTable, rows: DBRows, index?: number): S
             ? insertMulti(
                   folder.rows,
                   index,
-                  rows.filter((f) => !folder.rows.some((g) => g[PathPropertyName] == f[PathPropertyName])),
+                  rows.filter((f) => !folder.rows.some((g) => normalizeContextPath(g[PathPropertyName]) == normalizeContextPath(f[PathPropertyName]))),
               )
-            : [...rows.filter((f) => !folder.rows.some((g) => g[PathPropertyName] == f[PathPropertyName])), ...folder.rows],
+            : [...rows.filter((f) => !folder.rows.some((g) => normalizeContextPath(g[PathPropertyName]) == normalizeContextPath(f[PathPropertyName]))), ...folder.rows],
     };
 };
 
@@ -230,7 +230,7 @@ export const getContextProperties = (superstate: Superstate, context: string): S
 
 export const updateContextWithProperties = async (superstate: Superstate, path: string, spaces: SpaceInfo[]): Promise<void[]> => {
     const updatePath = async (mdb: SpaceTable) => {
-        const objectExists = mdb.rows.some((item) => item[PathPropertyName] === path);
+        const objectExists = mdb.rows.some((item) => normalizeContextPath(item[PathPropertyName]) === normalizeContextPath(path));
         const properties = await getPathProperties(
             superstate,
             path,
@@ -239,7 +239,7 @@ export const updateContextWithProperties = async (superstate: Superstate, path: 
 
         if (objectExists) {
             return mdb.rows.map((f) =>
-                f[PathPropertyName] == path
+                normalizeContextPath(f[PathPropertyName]) == normalizeContextPath(path)
                     ? {
                           ...f,
                           ...properties,
