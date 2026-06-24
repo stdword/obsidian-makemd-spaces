@@ -9,10 +9,15 @@ jest.mock("core/superstate/workers/indexer/indexer", () => ({
 }));
 
 import { Superstate } from "core/superstate/superstate";
+import { tagSpacePathFromTag } from "core/utils/strings";
 
 const createSuperstate = () => {
     const spaceManager = {
         allPaths: jest.fn(() => ["icons/logo.svg"]),
+        readTags: jest.fn((): string[] => []),
+        spaceDefForSpace: jest.fn(() => Promise.resolve({})),
+        uriByString: jest.fn(),
+        spaceTypeByString: jest.fn(),
         superstate: null as any,
         api: null as any,
     };
@@ -32,6 +37,19 @@ const createSuperstate = () => {
 
     return { superstate, spaceManager };
 };
+
+describe("Superstate tag initialization", () => {
+    it("creates space states for tags read from the vault", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.readTags = jest.fn(() => ["#project"]);
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+
+        await superstate.initializeTags();
+
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+});
 
 describe("Superstate SVG handling", () => {
     it("does not treat SVG file reloads as image cache work", async () => {

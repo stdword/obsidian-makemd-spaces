@@ -342,7 +342,7 @@ export const addRowInTable = async (manager: SpaceManager, row: DBRow, context: 
 };
 export const deleteRowInTable = async (manager: SpaceManager, context: SpaceInfo, table: string, index: number): Promise<void> => {
     return processTable(manager, context, table, async (mdb, space) => {
-        const newDB = { ...mdb, rows: mdb.rows.filter((f, i) => i != index) };
+        const newDB = { ...mdb, rows: mdb.rows.filter((_f, i) => i != index) };
         if (!_.isEqual(mdb, newDB)) {
             await saveContext(manager, space, newDB);
         }

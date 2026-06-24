@@ -29,7 +29,7 @@ export const stringEqual: FilterFunction = (value: string, filterValue: string):
     return value == filterValue;
 };
 
-export const empty: FilterFunction = (value: string, filterValue: string): boolean => {
+export const empty: FilterFunction = (value: string, _filterValue: string): boolean => {
     return (value ?? "").length == 0;
 };
 

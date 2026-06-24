@@ -26,13 +26,13 @@ export const HiddenPaths = (props: {
     };
 
     const removeExtension = (index: number) => {
-        superstate.settings.hiddenExtensions = superstate.settings.hiddenExtensions.filter((f, i) => i != index);
+        superstate.settings.hiddenExtensions = superstate.settings.hiddenExtensions.filter((_f, i) => i != index);
         superstate.saveSettings();
         superstate.initializePaths();
     };
 
     const removeItem = (index: number) => {
-        superstate.settings.hiddenFiles = superstate.settings.hiddenFiles.filter((f, i) => i != index);
+        superstate.settings.hiddenFiles = superstate.settings.hiddenFiles.filter((_f, i) => i != index);
         superstate.saveSettings();
         superstate.initializePaths();
     };
@@ -100,7 +100,7 @@ export const HiddenPaths = (props: {
             </div>
             <div className="mk-modal-item">
                 <input placeholder={i18n.labels.addExtension} type="text" ref={ref}></input>
-                <button onClick={(e) => addExtension()}>{i18n.buttons.add}</button>
+                <button onClick={() => addExtension()}>{i18n.buttons.add}</button>
             </div>
 
             <div className="mk-modal-heading">{i18n.labels.filesAndFolders}</div>

@@ -53,7 +53,7 @@ export class ObsidianUI implements UIAdapter {
         return Object.keys(this.plugin.app.viewRegistry.typeByExtension);
     };
 
-    public quickOpen = (mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => {
+    public quickOpen = (mode?: number, _offset?: Rect, _win?: Window, onSelect?: (link: string) => void, source?: string) => {
         this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
     };
     public mainMenu = (el: HTMLElement, superstate: Superstate) => {
@@ -105,7 +105,7 @@ export class ObsidianUI implements UIAdapter {
             win,
         });
     };
-    public openPopover = (position: Pos, popover: JSX.Element) => {};
+    public openPopover = (_position: Pos, _popover: JSX.Element) => {};
 
     public dragStarted = (e: React.DragEvent<HTMLDivElement>, paths: string[]) => {
         if (paths.length == 0) return;
@@ -147,7 +147,7 @@ export class ObsidianUI implements UIAdapter {
         this.plugin.app.dragManager.setAction(label);
     };
 
-    public dragEnded = (e: React.DragEvent<HTMLDivElement>) => {};
+    public dragEnded = (_e: React.DragEvent<HTMLDivElement>) => {};
 
     public allStickers = () => {
         const allLucide: Sticker[] = lucideIcons.map((f) => ({
@@ -157,8 +157,6 @@ export class ObsidianUI implements UIAdapter {
             value: f,
             html: getIcon(f).outerHTML,
         }));
-
-        const allCustom: Sticker[] = [];
 
         const allEmojis: Sticker[] = Object.keys(emojis as EmojiData).reduce(
             (p, c: string) => [
@@ -173,7 +171,7 @@ export class ObsidianUI implements UIAdapter {
             [],
         );
 
-        return [...allEmojis, ...allCustom, ...allLucide];
+        return [...allEmojis, ...allLucide];
     };
 
     public getUIPath = (path: string): string => {
@@ -195,7 +193,7 @@ export class ObsidianUI implements UIAdapter {
                 .map((f) => {
                     return {
                         path: f.view.file?.path as string,
-                        openPath: (path: string) => {
+                        openPath: (_path: string) => {
                             f.openFile(abstractFile as TFile);
                         },
                         parent: null as any,
@@ -259,7 +257,7 @@ export class ObsidianUI implements UIAdapter {
     public getScreenType = () => {
         return Platform.isPhone ? ScreenType.Phone : Platform.isTablet ? ScreenType.Tablet : ScreenType.Desktop;
     };
-    public hasNativePathMenu = (path: string) => {
+    public hasNativePathMenu = (_path: string) => {
         return true;
     };
     public nativePathMenu = (e: React.MouseEvent, path: string) => {

@@ -227,7 +227,7 @@ export class FilesystemMiddleware {
         this.eventDispatch.dispatchEvent("onFocusesUpdated", null);
     }
 
-    public adapterForPath(path?: string) {
+    public adapterForPath(_path?: string) {
         return this.primary;
     }
 

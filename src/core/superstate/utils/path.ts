@@ -43,7 +43,7 @@ export const hidePath = async (superstate: Superstate, path: string) => {
     superstate.settings.hiddenFiles = uniq([...superstate.settings.hiddenFiles, path]);
     superstate.ui.notify("Item is now hidden in the Navigator, you can manage hidden items in the Navigator menu.");
     superstate.saveSettings();
-    superstate.reloadPath(path, true).then((f) => superstate.dispatchEvent("superstateUpdated", null));
+    superstate.reloadPath(path, true).then(() => superstate.dispatchEvent("superstateUpdated", null));
 };
 
 export const hidePaths = async (superstate: Superstate, paths: string[]) => {
@@ -53,7 +53,7 @@ export const hidePaths = async (superstate: Superstate, paths: string[]) => {
         paths.map((path) => {
             superstate.reloadPath(path, true);
         }),
-    ).then((f) => superstate.dispatchEvent("superstateUpdated", null));
+    ).then(() => superstate.dispatchEvent("superstateUpdated", null));
 };
 
 export const deletePath = async (superstate: Superstate, path: string) => {

@@ -25,7 +25,6 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { safelyParseJSON } from "shared/utils/json";
-import { getAllParentTags } from "utils/tags";
 import { removeLinkInContexts, removePathInContexts, removeTagInContexts, renameLinkInContexts, renamePathInContexts, renameTagInContexts, updateContextWithProperties } from "../utils/contexts/context";
 import { API } from "./api";
 
@@ -37,7 +36,6 @@ import { Indexer } from "./workers/indexer/indexer";
 import Fuse, { FuseIndex } from "fuse.js";
 import { SuperstateEvent } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
-import { getParentPathFromString } from "utils/path";
 import { parseMDBStringValue } from "utils/properties";
 import { fastSearch, searchPath } from "./workers/search/impl";
 export type SuperProperty = {
@@ -85,7 +83,7 @@ export class Superstate implements ISuperstate {
 
     public focuses: Focus[];
     public searchIndex: FuseIndex<PathState>;
-    public async search(path: string, query?: string, queries?: FilterGroupDef[]) {
+    public async search(_path: string, query?: string, queries?: FilterGroupDef[]) {
         const navigatorSearchResults = (paths: PathState[]) => paths.filter((f) => !f.path.startsWith("spaces://"));
         if (query) {
             return navigatorSearchResults(fastSearch(query, this.pathsIndex, 10, this.searchIndex));
@@ -194,7 +192,7 @@ export class Superstate implements ISuperstate {
         const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
 
         return items
-            .map<PathStateWithRank>((f, i) => {
+            .map<PathStateWithRank>((f) => {
                 this.spaceManager.loadPath(f);
                 const pathCache = this.pathsIndex.get(f);
 
@@ -254,8 +252,8 @@ export class Superstate implements ISuperstate {
     }
 
     public async initializeTags() {
-        const allTags = this.spaceManager.readTags().map((f) => tagSpacePathFromTag(f));
-        const promises = [...allTags].map((l) => this.reloadPath(l, true));
+        const allTags = this.spaceManager.readTags().map((f) => fileSystemSpaceInfoFromTag(this.spaceManager, f));
+        const promises = [...allTags].map((l) => this.reloadSpace(l, null, true));
         await Promise.all(promises);
     }
 
@@ -266,7 +264,7 @@ export class Superstate implements ISuperstate {
             newPaths.push(...space.metadata.links);
         }
         const diff = [..._.difference(newPaths, [...currentPaths]), ..._.difference([...currentPaths], newPaths)];
-        const cachedPromises = diff.map((f) => this.reloadPath(f, true).then((g) => this.dispatchEvent("pathStateUpdated", { path: f })));
+        const cachedPromises = diff.map((f) => this.reloadPath(f, true).then(() => this.dispatchEvent("pathStateUpdated", { path: f })));
         await Promise.all(cachedPromises);
     }
 
@@ -326,13 +324,13 @@ export class Superstate implements ISuperstate {
         const spacePath = folderForTagSpace(tag, this.settings);
         await this.spaceManager.deletePath(spacePath);
         this.onSpaceDeleted(tagSpacePathFromTag(tag));
-        for (const [contextPath, spaceCache] of this.spacesIndex) {
+        for (const spaceCache of this.spacesIndex.values()) {
             if (spaceCache.metadata?.contexts.includes(tag)) {
                 saveSpaceCache(this, spaceCache.space, { ...spaceCache.metadata, contexts: spaceCache.metadata.contexts.filter((f) => f != tag) });
             }
         }
         const allContextsWithTag: SpaceInfo[] = [];
-        for (const [contextPath, contextCache] of this.contextsIndex) {
+        for (const contextCache of this.contextsIndex.values()) {
             if (contextCache.contexts.includes(tag)) {
                 allContextsWithTag.push(this.spaceManager.spaceInfoForPath(contextCache.path));
             }
@@ -367,7 +365,7 @@ export class Superstate implements ISuperstate {
         if (!this.pathsIndex.has(path)) {
             return;
         }
-        this.reloadPath(path).then((f) => {
+        this.reloadPath(path).then(() => {
             const pathState = this.pathsIndex.get(path);
             const spaceState = this.spacesIndex.get(path);
             if (spaceState) {
@@ -427,12 +425,12 @@ export class Superstate implements ISuperstate {
                 await this.reloadContext(space.space, { force: true, calculate: true });
             }
             const allContextsWithLink: SpaceInfo[] = [];
-            for (const [contextPath, contextCache] of this.contextsIndex) {
+            for (const contextCache of this.contextsIndex.values()) {
                 if (contextCache.outlinks.includes(oldPath)) {
                     allContextsWithLink.push(this.spacesIndex.get(contextCache.path).space);
                 }
             }
-            this.addToContextStateQueue(() => renameLinkInContexts(this.spaceManager, oldPath, newFilePath, allContextsWithLink).then((f) => Promise.all(allContextsWithLink.map((c) => this.reloadContext(c, { force: true, calculate: true })))));
+            this.addToContextStateQueue(() => renameLinkInContexts(this.spaceManager, oldPath, newFilePath, allContextsWithLink).then(() => Promise.all(allContextsWithLink.map((c) => this.reloadContext(c, { force: true, calculate: true })))));
         }
 
         let focusChanged = false;
@@ -480,14 +478,14 @@ export class Superstate implements ISuperstate {
         }
 
         const allContextsWithFile = (fileCache.spaces ?? []).map((f) => this.spacesIndex.get(f)?.space).filter((f) => f);
-        this.addToContextStateQueue(() => removePathInContexts(this.spaceManager, path, allContextsWithFile).then((f) => allContextsWithFile.forEach((c) => this.reloadContext(c, { force: false, calculate: true }))));
+        this.addToContextStateQueue(() => removePathInContexts(this.spaceManager, path, allContextsWithFile).then(() => allContextsWithFile.forEach((c) => this.reloadContext(c, { force: false, calculate: true }))));
         const allContextsWithLink: SpaceInfo[] = [];
-        for (const [contextPath, contextCache] of this.contextsIndex) {
+        for (const contextCache of this.contextsIndex.values()) {
             if (contextCache.outlinks.includes(path) && this.spacesIndex.has(contextCache.path)) {
                 allContextsWithLink.push(this.spacesIndex.get(contextCache.path).space);
             }
         }
-        this.addToContextStateQueue(() => removeLinkInContexts(this.spaceManager, path, allContextsWithLink).then((f) => allContextsWithFile.forEach((c) => this.reloadContext(c, { force: false, calculate: true }))));
+        this.addToContextStateQueue(() => removeLinkInContexts(this.spaceManager, path, allContextsWithLink).then(() => allContextsWithFile.forEach((c) => this.reloadContext(c, { force: false, calculate: true }))));
 
         (fileCache.spaces ?? []).forEach((f) => {
             this.dispatchEvent("spaceStateUpdated", { path: f });
@@ -568,7 +566,7 @@ export class Superstate implements ISuperstate {
                     return false;
                 }
                 if (pathCache.type == "file" && pathCache.subtype != "md") return false;
-                return allColumns.reduce((acc, col, i) => {
+                return allColumns.reduce((acc, col) => {
                     if (acc) return acc;
                     if (col.type != "fileprop" || col.primary == "true") return acc;
                     if (f[col.name]?.length > 0 && pathCache.metadata?.property?.[col.name] != f[col.name]) return true;
@@ -580,7 +578,7 @@ export class Superstate implements ISuperstate {
                     saveProperties(
                         this,
                         normalizeContextPath(f[PathPropertyName]),
-                        allColumns.reduce((acc, col, i) => {
+                        allColumns.reduce((acc, col) => {
                             if (col.type == "fileprop" && col.primary != "true") {
                                 return { ...acc, [col.name]: parseMDBStringValue(fieldTypeForField(col), f[col.name], true) };
                             }
@@ -733,7 +731,7 @@ export class Superstate implements ISuperstate {
                     return;
                 });
             const allPromises = Promise.all(promises);
-            await allPromises.then((f) => {
+            await allPromises.then(() => {
                 this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
             });
         }
@@ -741,7 +739,7 @@ export class Superstate implements ISuperstate {
             const allContextsWithFile = cache.spaces.map((f) => this.spacesIndex.get(f)?.space).filter((f) => f);
 
             this.addToContextStateQueue(() =>
-                updateContextWithProperties(this, path, allContextsWithFile).then((g) => {
+                updateContextWithProperties(this, path, allContextsWithFile).then(() => {
                     allContextsWithFile.forEach((f) => {
                         this.dispatchEvent("spaceStateUpdated", { path: f.path });
                     });

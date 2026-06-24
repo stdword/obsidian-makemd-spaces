@@ -5,7 +5,7 @@ import { lucideIcon } from "./icons";
 
 export const stickerFromString = (
     sticker: string,
-    plugin: MakeMDPlugin,
+    _plugin: MakeMDPlugin,
     options?: {
         fontless?: boolean;
     },

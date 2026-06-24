@@ -164,16 +164,16 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
     };
 
-    public keysForCacheType(type: string): string[] {
+    public keysForCacheType(_type: string): string[] {
         return [];
     }
     public allContent() {
         return [...this.cache.values()].flatMap((f) => f);
     }
-    public allFiles(hidden?: boolean) {
+    public allFiles(_hidden?: boolean) {
         return getAllAbstractFilesInVault(this.plugin.app).map((f) => tFileToAFile(f));
     }
-    public getFileCache(path: string, source?: string) {
+    public getFileCache(path: string, _source?: string) {
         return this.cache.get(path);
     }
     public parentPathForPath(path: string) {

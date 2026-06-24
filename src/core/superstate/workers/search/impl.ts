@@ -6,9 +6,6 @@ import { PathState } from "shared/types/PathState";
 import { FilterGroupDef } from "shared/types/spaceDef";
 
 export function fastSearch (query: string, pathsIndex: Map<string, PathState>, count: number, index: FuseIndex<PathState>) {
-
-    const paths = [];
-
     const fuseOptions = {
       // isCaseSensitive: false,
       // includeScore: false,
@@ -34,7 +31,7 @@ export function searchPath (payload: { queries: FilterGroupDef[], pathsIndex: Ma
     const { queries, pathsIndex, count } = payload;
     const paths = [];
 
-    for (const [k, f] of pathsIndex) {
+    for (const f of pathsIndex.values()) {
       if (!f.hidden && pathByDef(queries, f, {}, true)) {
         paths.push(f);
       }

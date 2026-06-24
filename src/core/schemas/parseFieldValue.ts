@@ -7,7 +7,7 @@ type FilePropValue = {
     type: string;
 };
 
-export const convertFileProp = ({ field, value }: { field: string; value: string }): FilePropValue => {
+export const convertFileProp = ({ value }: { field: string; value: string }): FilePropValue => {
     if (value == "ctime") return { value: `parseDate(prop('File')['metadata']['ctime'])`, type: "date" };
     return { value: ``, type: "string" };
 };

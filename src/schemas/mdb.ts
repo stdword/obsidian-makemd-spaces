@@ -4,7 +4,7 @@ import { DBTable, DBTables, SpaceProperty, SpaceTable, SpaceTableSchema } from "
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { safelyParseJSON } from "shared/utils/json";
 import { parsePropString } from "utils/parsers";
-import { defaultContextDBSchema, defaultContextSchemaID } from "../shared/schemas/context";
+import { defaultContextDBSchema } from "../shared/schemas/context";
 import { defaultContextFields, defaultTagFields } from "../shared/schemas/fields";
 
 export const fieldTypeForField = (f: SpaceProperty) => {
@@ -14,7 +14,7 @@ export const fieldTypeForField = (f: SpaceProperty) => {
 
 export const stickerForField = (f: SpaceProperty) => (f.attrs?.length > 0 ? (safelyParseJSON(f.attrs)?.icon ?? fieldTypeForType(f.type, f.name)?.icon) : fieldTypeForType(f.type, f.name)?.icon);
 
-export const fieldTypeForType = (type: string, name?: string) =>
+export const fieldTypeForType = (_type: string, name?: string) =>
     name == PathPropertyName
         ? {
               type: "file",
@@ -30,29 +30,21 @@ export const fieldTypeForType = (type: string, name?: string) =>
               flex: true,
           };
 
-export const defaultValueForPropertyType = (name: string, value: string, type: string) => {
+export const defaultValueForPropertyType = (_name: string, value: string, type: string) => {
     if (type == "fileprop") {
-        const { field, property } = parsePropString(value);
+        const { property } = parsePropString(value);
         if (property == "ctime" || property == "mtime") return (Date.now() - 60).toString();
         return value;
     }
     return "";
 };
-export const defaultFrameListViewID = "filesView";
-export const defaultFrameListViewSchema: SpaceTableSchema = {
-    id: defaultFrameListViewID,
-    name: "All",
-    type: "view",
-    def: JSON.stringify({ db: defaultContextSchemaID, icon: "ui//file-stack" }),
-};
-
 export const defaultContextTable: DBTable = {
     uniques: [],
     cols: ["id", "name", "type", "def", "predicate", "primary"],
     rows: [defaultContextDBSchema] as SpaceTableSchema[],
 };
 
-export const defaultMDBTableForContext = (space: SpaceInfo) => {
+export const defaultMDBTableForContext = (_space: SpaceInfo) => {
     return defaultFolderMDBTable;
 };
 
@@ -87,7 +79,7 @@ export const fieldsToTable = (fields: SpaceProperty[], schemas: SpaceTableSchema
         }, {});
 };
 
-export const defaultTablesForContext = (space: SpaceInfo) => {
+export const defaultTablesForContext = (_space: SpaceInfo) => {
     return defaultFolderTables;
 };
 

@@ -28,7 +28,7 @@ const SelectMenuSearch = forwardRef(
         },
         input: any,
     ) => {
-        const { classNames, inputAttributes, inputEventHandlers, index } = props;
+        const { classNames, inputAttributes, inputEventHandlers } = props;
         const sizer = useRef<HTMLDivElement>(null);
         const [inputWidth, setInputWidth] = useState(null);
 

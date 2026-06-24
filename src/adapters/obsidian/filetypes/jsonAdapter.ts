@@ -49,10 +49,10 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
     }
     public cache: Map<string, Record<string, any>>;
     public cacheTypes: (file: AFile) => string[];
-    public contentTypes(file: AFile) {
+    public contentTypes(_file: AFile) {
         return ["property", "label", "definition"] as Array<keyof CachedMetadataContentTypes>;
     }
-    public async newFile(parent: string, name: string, type: string, content: string) {
+    public async newFile(parent: string, name: string, _type: string, content: string) {
         const newPath = parent == "/" ? name + ".json" : `${parent}/${name}.json`;
 
         if (!(await this.middleware.fileExists(parent))) {
@@ -63,7 +63,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
     }
     public getCacheTypeByRefString: (file: AFile, refString: string) => any;
     public getCache: (file: AFile, fragmentType: string, query?: string) => never;
-    public async readContent(file: AFile, fragmentType: string, fragmentId: any) {
+    public async readContent(file: AFile, fragmentType: string, _fragmentId: any) {
         if (fragmentType == "definition") {
             const cache = await this.middleware.readTextFromFile(file.path);
             return omit(safelyParseJSON(cache) ?? {}, ["label", "property"]);

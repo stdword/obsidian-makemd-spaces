@@ -37,7 +37,7 @@ export function getDragDepth(offset: number, indentationWidth: number) {
     return Math.round(offset / indentationWidth);
 }
 
-export const getMultiProjection = (flattenedTree: TreeNode[], paths: string[], overIndex: number, modifier: DropModifiers) => {
+export const getMultiProjection = (flattenedTree: TreeNode[], _paths: string[], overIndex: number, modifier: DropModifiers) => {
     const overItem = flattenedTree[overIndex];
     if (!overItem) return;
     const dropTarget = overItem.type == "file" ? flattenedTree.find((f) => f.id == overItem.parentId) : overItem;

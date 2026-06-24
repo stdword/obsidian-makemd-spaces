@@ -66,7 +66,7 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => voi
         [tags, suggestions, props],
     );
     const onAddition = useCallback(
-        (newTag: SelectOption, modifiers: PointerModifiers) => {
+        (newTag: SelectOption, _modifiers: PointerModifiers) => {
             let tag = newTag;
             let newSuggestions = suggestions;
             let newTags = tags;

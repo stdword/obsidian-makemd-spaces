@@ -62,16 +62,16 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
             });
     }
 
-    public contentTypes(file: AFile) {
+    public contentTypes(_file: AFile) {
         return ["schemas", "fields", "tables", "field", "table", "schema", "field", "mdbTable", "mdbTables"] as Array<keyof MDBContent>;
     }
-    public cacheTypes(file: AFile) {
+    public cacheTypes(_file: AFile) {
         return ["schemas", "fields", "tables"] as Array<keyof MDB>;
     }
-    public getCacheTypeByRefString(file: AFile, refString: string) {
+    public getCacheTypeByRefString(_file: AFile, _refString: string) {
         return null as any;
     }
-    public getCache(file: AFile, fragmentType: keyof MDB, query?: string) {
+    public getCache(file: AFile, fragmentType: keyof MDB, _query?: string) {
         return this.cache.get(file.path)[fragmentType];
     }
     public async readContent(file: AFile, fragmentType: keyof MDBContent, fragmentId: any): Promise<MDBContent[typeof fragmentType]> {
@@ -105,7 +105,7 @@ export class MDBFileTypeAdapter implements FileTypeAdapter<MDB, MDBContent> {
             //     return dbTableToMDBTable(table, schema, fields)
         }
     }
-    public async newContent(file: AFile, fragmentType: keyof MDBContent, name: string, content: any, options: { [key: string]: any }) {
+    public async newContent(file: AFile, fragmentType: keyof MDBContent, name: string, content: any, _options: { [key: string]: any }) {
         if (fragmentType == "schema") {
             const schemas = (await this.readContent(file, "schemas", null)) as SpaceTableSchema[];
             const dbTables = saveSchemaToDBTables(content, schemas);

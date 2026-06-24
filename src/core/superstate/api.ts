@@ -106,7 +106,7 @@ export class API implements IAPI {
             return Promise.resolve();
         },
 
-        create: (path: string, table: string, properties: SpaceProperty[]) => {
+        create: (path: string, table: string, _properties: SpaceProperty[]) => {
             const newSchema: SpaceTableSchema = {
                 id: sanitizeTableName(table),
                 name: table,
@@ -131,7 +131,7 @@ export class API implements IAPI {
                 showPathContextMenu(this.superstate, path, space, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document));
             }
         },
-        editModal: async (space: string, table: string, index: number, properties?: DBRow, win?: Window) => {
+        editModal: async (_space: string, _table: string, _index: number, _properties?: DBRow, _win?: Window) => {
             return;
         },
         createModal: async (space: string, table: string, properties?: DBRow, win?: Window) => {

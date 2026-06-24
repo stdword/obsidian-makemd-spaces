@@ -11,12 +11,12 @@ export const pathIsSpace = (superstate: Superstate, path: string) => {
     return superstate.spacesIndex.has(path);
 };
 
-export const spaceFolderPathFromSpace = (path: string, manager: SpaceManager) => {
+export const spaceFolderPathFromSpace = (path: string, _manager: SpaceManager) => {
     if (path == "/") return SPACE_SUB_FOLDER + "/";
     return path + SPACE_SUB_FOLDER + "/";
 };
 
-export const spaceFolderForMDBPath = (path: string, manager: SpaceManager): string => {
+export const spaceFolderForMDBPath = (path: string, _manager: SpaceManager): string => {
     const indexOfLastSlash = path.lastIndexOf("/");
     if (indexOfLastSlash == -1) {
         return "/";
@@ -34,7 +34,7 @@ export const spaceFolderForMDBPath = (path: string, manager: SpaceManager): stri
     return parentPath;
 };
 
-export const folderForTagSpace = (space: string, settings: MakeMDSettings) => "/" + space;
+export const folderForTagSpace = (space: string, _settings: MakeMDSettings) => "/" + space;
 
 export const spacesFromFileCache = (cache: PathState, superstate: Superstate) => {
     return (cache?.spaces ?? [])

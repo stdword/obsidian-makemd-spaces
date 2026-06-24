@@ -193,7 +193,7 @@ export const openTFile = async (leaf: WorkspaceLeaf, file: TFile, app: App) => {
     await leaf.openFile(file);
 };
 
-export const openTagContext = async (leaf: WorkspaceLeaf, tag: string, app: App) => {
+export const openTagContext = async (_leaf: WorkspaceLeaf, _tag: string, _app: App) => {
     return;
 };
 

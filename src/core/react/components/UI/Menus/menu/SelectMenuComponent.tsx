@@ -290,21 +290,6 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
         return handled;
     };
 
-    const onBlur = () => {
-        setFocused(false);
-        if (props.onBlur) {
-            props.onBlur();
-        }
-    };
-
-    const onFocus = () => {
-        setFocused(true);
-
-        if (props.onFocus) {
-            props.onFocus();
-        }
-    };
-
     const onDeleteTag = (index: number, event: React.MouseEvent) => {
         // Because we'll destroy the element with cursor focus we need to ensure
         // it does not get lost and move it to the next interactive element
@@ -335,10 +320,6 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
 
     const clearInput = () => {
         setQuery("");
-        setIndex(-1);
-    };
-
-    const clearSelectedIndex = () => {
         setIndex(-1);
     };
 
@@ -399,10 +380,6 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             });
         }
     }
-
-    const focusInput = () => {
-        inputRef.current.focus();
-    };
 
     const inputEventHandlers = {
         // Provide a no-op function to the input component to avoid warnings

@@ -7,7 +7,7 @@ export const showSpacesMenu = (offset: Rect, win: Window, superstate: Superstate
         .filter(
             (f) =>
                 // Navigator add-to-space menus should not expose internal spaces:// paths.
-                !f.path.startsWith("spaces://") && (includeDefaults || f.type != "default") && (!onlyTags || f.type == "tag"),
+                (!f.path.startsWith("spaces://") || f.type == "tag") && (includeDefaults || f.type != "default") && (!onlyTags || f.type == "tag"),
         )
         .map<SelectOption>((f) => ({
             name: f.name,

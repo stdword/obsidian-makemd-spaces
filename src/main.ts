@@ -136,7 +136,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     public basics: unknown;
     private debouncedRefresh: () => void = () => null;
 
-    openPath = async (leaf: WorkspaceLeaf, path: string, flow?: boolean) => {
+    openPath = async (leaf: WorkspaceLeaf, path: string, _flow?: boolean) => {
         const uri = this.superstate.spaceManager.uriByString(path);
         console.log("TRACE", "openPath", path);
         if (!uri) return;
@@ -237,10 +237,10 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.ui.notify(`Make.md - Plugin loaded in ${(Date.now() - start) / 1000} seconds`, "console");
     }
 
-    onDelete = async (file: TAbstractFile) => {
+    onDelete = async (_file: TAbstractFile) => {
         this.activeFileChange();
     };
-    onRename = async (file: TAbstractFile, oldPath: string) => {
+    onRename = async (_file: TAbstractFile, _oldPath: string) => {
         this.activeFileChange();
     };
 

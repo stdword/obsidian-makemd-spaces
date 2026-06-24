@@ -36,7 +36,7 @@ export const syncContextRow = (paths: Map<string, PathState>, _row: DBRow, field
     };
 };
 
-export const mergeContextRows = (paths: string[], rows: DBRows, pathStates: Map<string, PathState>, spaceMap: IndexMap, path: PathState) => {
+export const mergeContextRows = (paths: string[], rows: DBRows, pathStates: Map<string, PathState>, _spaceMap: IndexMap, path: PathState) => {
     // Filter existing rows to only include valid paths, preserving database order (rank)
     const validRows = rows.filter((row) => {
         const resolvedPath = normalizeContextPath(resolvePath(row[PathPropertyName], path?.path, (spacePath) => pathStates.get(spacePath)?.type == "space"));

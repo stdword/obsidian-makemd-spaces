@@ -29,7 +29,7 @@ export const hideLine = StateField.define<DecorationSet>({
   create() {
     return Decoration.none;
   },
-  update(value, tr) {
+  update(_value, tr) {
     const builder = new RangeSetBuilder<Decoration>();
     const betterFacet = combinedRangeFacets(tr.state.field(selectiveLinesFacet, false), tr.state.field(frontmatterFacet, false));
     if (betterFacet?.[0] != null) {

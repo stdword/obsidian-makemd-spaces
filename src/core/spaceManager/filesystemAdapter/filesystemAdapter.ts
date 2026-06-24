@@ -124,7 +124,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         } else if (!parentURI?.isFolder) {
             const file = await this.fileSystem.getFile(parent);
             if (!file) return null;
-            return this.fileSystem.newFileFragment(file, type, name, content)?.then((f) => file.path);
+            return this.fileSystem.newFileFragment(file, type, name, content)?.then(() => file.path);
         }
         return this.fileSystem.newFile(parent, name, type, content).then((f) => f?.path);
     }
@@ -153,7 +153,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         const uri = this.uriByPath(path);
         const file = await this.fileSystem.getFile(uri.path);
         if (uri.refStr) {
-            const type = this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
+            this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
         }
         return file as Record<string, any>;
     }
@@ -294,7 +294,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         rows = rows.map((f) => linkContextRow(pathsIndexMap, contextsIndexMap, f, table.cols, pathState));
         return { ...table, rows };
     }
-    public async spaceInitiated(path: string) {
+    public async spaceInitiated(_path: string) {
         return true;
     }
     public async contextInitiated(path: string) {
@@ -555,7 +555,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                 ...(properties ?? {}),
             }));
         }
-        await this.fileSystem.saveFileFragment(defFile, "definition", null, (frontmatter) => ({
+        await this.fileSystem.saveFileFragment(defFile, "definition", null, (_frontmatter) => ({
             [spaceLinksKey]: metadata.links,
             [spaceSortKey]: metadata.sort,
             defaultSticker: metadata.defaultSticker,
@@ -604,7 +604,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         const newMetadata = { ...metadata, links: spaceExists };
         await this.saveSpace(tagPath, (oldMetadata) => ({ ...oldMetadata, ...newMetadata }));
         await this.spaceManager.superstate.updateSpaceMetadata(tagPath, newMetadata);
-        this.spaceManager.superstate.reloadPath(path, true).then((f) => this.spaceManager.superstate.dispatchEvent("pathStateUpdated", { path: path }));
+        this.spaceManager.superstate.reloadPath(path, true).then(() => this.spaceManager.superstate.dispatchEvent("pathStateUpdated", { path: path }));
     }
 
     public renameTag(path: string, tag: string, newTag: string) {

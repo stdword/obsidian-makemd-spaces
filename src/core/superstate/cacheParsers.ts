@@ -44,7 +44,7 @@ export const parseContextTableToCache = (
     dbExists: boolean,
     pathsIndex: Map<string, PathState>,
     spacesMap: IndexMap,
-    settings: MakeMDSettings,
+    _settings: MakeMDSettings,
     contextsIndex: Map<string, ContextState>,
     options: { force?: boolean; calculate?: boolean },
 ): { changed: boolean; cache: ContextState } => {

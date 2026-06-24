@@ -178,7 +178,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public createTable(path: string, schema: SpaceTableSchema) {
         return this.adapterForPath(path)
             .createTable(path, schema)
-            .then((f) => this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
+            .then(() => this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
     }
 
     public saveTableSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
@@ -195,7 +195,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public deleteTable(path: string, name: string) {
         return this.adapterForPath(path)
             .deleteTable(path, name)
-            .then((f) => {
+            .then(() => {
                 return this.superstate.reloadContextByPath(path, { force: true, calculate: true });
             });
     }
@@ -290,19 +290,19 @@ export class SpaceManager implements SpaceManagerInterface {
         }
         return this.adapterForPath(path)
             .addSpaceProperty(path, property)
-            .then((f) => {
+            .then(() => {
                 return this.superstate.reloadContextByPath(path, { force: true, calculate: true });
             });
     }
     public deleteSpaceProperty(path: string, property: SpaceProperty) {
         return this.adapterForPath(path)
             .deleteSpaceProperty(path, property)
-            .then((f) => this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
+            .then(() => this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
     }
     public saveSpaceProperty(path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
         return this.adapterForPath(path)
             .saveSpaceProperty(path, property, oldProperty)
-            .then((f) => {
+            .then(() => {
                 if (oldProperty.name != property.name) {
                     this.superstate.getSpaceItems(path).forEach((f) => {
                         this.renameProperty(f.path, oldProperty.name, property.name);

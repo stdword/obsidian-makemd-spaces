@@ -15,7 +15,7 @@ export const ModalWrapper = (props: {
     });
 
     useDndMonitor({
-        onDragOver: (event) => {
+        onDragOver: () => {
             if (isOver) {
                 props.hide();
             }
@@ -40,11 +40,11 @@ export const ModalInner = (
 ) => {
     const ref = React.useRef(null);
     const disableTransition = props.className?.includes("mk-no-transition");
-    const { setNodeRef, isOver } = useDroppable({
+    const { setNodeRef } = useDroppable({
         id: "_modalInner",
         data: { id: "_modalInner" },
     });
-    const [isPending, startTransition] = useTransition();
+    const [, startTransition] = useTransition();
     useEffect(() => {
         startTransition(() => null);
     }, []);

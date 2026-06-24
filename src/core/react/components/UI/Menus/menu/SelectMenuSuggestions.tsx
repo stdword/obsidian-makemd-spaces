@@ -117,7 +117,7 @@ const SelectMenuInput = (props: { value: string; setValue: (value: string) => vo
                 e.stopPropagation();
             }}
             onChange={(e) => setValue(e.target.value)}
-            onBlur={(e) => props.setValue(value)}
+            onBlur={() => props.setValue(value)}
         ></input>
     );
 };

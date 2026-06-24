@@ -83,23 +83,23 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
         this.middleware.updateFileCache(file.path, updatedCache, refresh);
     }
 
-    public cacheTypes(file: AFile): (keyof MarkdownCache)[] {
+    public cacheTypes(_file: AFile): (keyof MarkdownCache)[] {
         return ["tags"];
     }
 
-    public contentTypes(file: AFile) {
+    public contentTypes(_file: AFile) {
         return ["tags"] as Array<keyof MarkdownContent>;
     }
 
-    public getCacheTypeByRefString(file: AFile, refString: string): null {
+    public getCacheTypeByRefString(_file: AFile, _refString: string): null {
         return null;
     }
 
-    public getCache(file: AFile, fragmentType: keyof MarkdownCache, query?: any) {
+    public getCache(file: AFile, fragmentType: keyof MarkdownCache, _query?: any) {
         return this.cache.get(file.path)?.[fragmentType] as MarkdownCache[typeof fragmentType];
     }
 
-    public async readContent(file: AFile, fragmentType: keyof MarkdownContent, fragmentId: any) {
+    public async readContent(file: AFile, fragmentType: keyof MarkdownContent, _fragmentId: any) {
         if (fragmentType == "tags") {
             const tFile = getAbstractFileAtPath(this.app, file.path) as TFile;
             return tagsFromCache(this.app.metadataCache.getFileCache(tFile));
@@ -107,7 +107,7 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
         return null;
     }
 
-    public async newFile(parent: string, name: string, type: string, content?: string) {
+    public async newFile(parent: string, name: string, _type: string, content?: string) {
         let parentFolder = getAbstractFileAtPath(this.app, parent);
         if (!parentFolder) {
             await this.middleware.createFolder(parent);

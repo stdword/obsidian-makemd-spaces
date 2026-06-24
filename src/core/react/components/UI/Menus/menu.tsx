@@ -26,7 +26,7 @@ export const MenuWrapper = (props: { rect: Rect; ui: UIManager; anchor: Anchors;
     );
     const ref = React.useRef(null);
     // const [rect, setRect] = React.useState<Rect>(props.rect);
-    const [isReady, setIsReady] = React.useState(false);
+    const isReady = false;
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key == "Escape") {

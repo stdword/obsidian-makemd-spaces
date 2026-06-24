@@ -22,7 +22,7 @@ export const defaultContextFields: DBTable = {
     })) as SpaceProperty[],
 };
 
-export const defaultFieldsForContext = (space: SpaceInfo) => {
+export const defaultFieldsForContext = (_space: SpaceInfo) => {
     return defaultContextFields;
 };
 

@@ -95,7 +95,7 @@ export class UIManager implements IUIManager {
         this.mainFrame = primaryAdapter;
         this.inputManager = new InputManager();
     }
-    public createRoot(container: Element | DocumentFragment, options?: RootOptions) {
+    public createRoot(container: Element | DocumentFragment, _options?: RootOptions) {
         return this.mainFrame.createRoot(container);
     }
 
@@ -122,7 +122,7 @@ export class UIManager implements IUIManager {
         }
         this.mainFrame.openToast(content);
     }
-    public error(error: any) {}
+    public error(_error: any) {}
     public openPalette(modal: JSX.Element, win: Window, className?: string) {
         return this.mainFrame.openPalette(modal, win, className);
     }

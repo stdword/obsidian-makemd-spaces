@@ -3,7 +3,7 @@ import { App, WorkspaceLeaf } from "obsidian";
 export const openPathInElement = (
   app: App,
   parentLeaf: WorkspaceLeaf,
-  initiatingEl?: HTMLElement,
+  _initiatingEl?: HTMLElement,
   fileName?: string,
   onShowCallback?: (leaf: { attachLeaf: () => WorkspaceLeaf; titleEl: HTMLElement }) => Promise<unknown>
 ) => {

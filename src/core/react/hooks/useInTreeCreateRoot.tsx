@@ -14,7 +14,7 @@ export function useInTreeCreateRoot() {
     const getRoot = (container: Element | DocumentFragment) => {
         return rootMapRef.current.get(container);
     };
-    const createRoot: typeof origCreateRoot = useCallback((container, options) => {
+    const createRoot: typeof origCreateRoot = useCallback((container, _options) => {
         const root: Root = {
             render: (children) => {
                 rootsRef.current.set(container, children);

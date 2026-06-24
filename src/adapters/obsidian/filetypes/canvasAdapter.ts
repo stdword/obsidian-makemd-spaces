@@ -32,7 +32,7 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
     public cache: Map<string, Record<string, any>>;
     public cacheTypes: (file: AFile) => string[];
     public contentTypes: (file: AFile) => string[];
-    public async newFile(parent: string, name: string, type: string) {
+    public async newFile(parent: string, name: string, _type: string) {
         if (!name) {
             name = uniqueFileName("Untitled", "Untitled", "canvas", getAbstractFileAtPath(this.plugin.app, parent) as TFolder);
         }

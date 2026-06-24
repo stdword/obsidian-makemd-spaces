@@ -2,7 +2,6 @@ import { spaceLinksKey, spaceSortKey } from "core/types/space";
 import { reorderPathsInContext } from "core/utils/contexts/context";
 import { ensureArray, ensureBoolean, ensureString } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
-import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { SpaceProperty } from "shared/types/mdb";
@@ -27,7 +26,7 @@ const parseSpaceSort = (value: any): SpaceSort => {
     };
 };
 
-export const parseSpaceMetadata = (metadata: Record<string, any>, settings: MakeMDSettings): SpaceDefinition => {
+export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: MakeMDSettings): SpaceDefinition => {
     return {
         sort: parseSpaceSort(metadata[spaceSortKey]),
         links: ensureArray(metadata[spaceLinksKey]),
@@ -67,7 +66,7 @@ export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sor
         type: "space",
     };
 };
-export const pathStateToTreeNode = (superstate: Superstate, item: PathStateWithRank, space: string, path: string, depth: number, i: number, collapsed: boolean, sortable: boolean, childrenCount: number, parentId: string): TreeNode => ({
+export const pathStateToTreeNode = (_superstate: Superstate, item: PathStateWithRank, space: string, path: string, depth: number, i: number, collapsed: boolean, sortable: boolean, childrenCount: number, parentId: string): TreeNode => ({
     item: item,
     space,
     id: parentId + "/" + item.path,
@@ -82,7 +81,7 @@ export const pathStateToTreeNode = (superstate: Superstate, item: PathStateWithR
     type: "file",
 });
 
-export const spaceRowHeight = (superstate: Superstate, preset: number, section: boolean) => {
+export const spaceRowHeight = (_superstate: Superstate, preset: number, section: boolean) => {
     const spaceHeight = preset ?? 29;
     return spaceHeight + (section ? 10 : 0);
 };
@@ -135,11 +134,11 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
     const fixedRank = rank;
     superstate.addToContextStateQueue(() =>
         reorderPathsInContext(superstate.spaceManager, [path], fixedRank, spaceState.space)
-            .then((f) => {
+            .then(() => {
                 const promises = [...superstate.spacesMap.getInverse(spaceState.path)].map((f) => superstate.reloadPath(f));
                 return Promise.all(promises);
             })
-            .then((f) => superstate.dispatchEvent("spaceStateUpdated", { path: spaceState.path })),
+            .then(() => superstate.dispatchEvent("spaceStateUpdated", { path: spaceState.path })),
     );
 };
 
@@ -271,7 +270,7 @@ export const pinPathToSpaceAtIndex = async (superstate: Superstate, space: Space
 
     await saveSpaceCache(superstate, space.space, { ...space.metadata, links: spaceExists });
 
-    await superstate.reloadPath(path, true).then((f) => superstate.dispatchEvent("pathStateUpdated", { path: path }));
+    await superstate.reloadPath(path, true).then(() => superstate.dispatchEvent("pathStateUpdated", { path: path }));
     updatePathRankInSpace(superstate, path, rank, space.path);
 };
 
@@ -295,7 +294,7 @@ export const updateSpaceSort = (superstate: Superstate, path: string, sort: Spac
         });
 };
 
-export const metadataPathForSpace = (superstate: Superstate, space: SpaceInfo) => {
+export const metadataPathForSpace = (_superstate: Superstate, space: SpaceInfo) => {
     return space.defPath;
 };
 

@@ -8,7 +8,7 @@ import { windowFromDocument } from "shared/utils/dom";
 
 let activeMainMenu: ReturnType<Superstate["ui"]["openMenu"]> | null = null;
 
-export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: MakeMDPlugin) => {
+export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: MakeMDPlugin) => {
     if (activeMainMenu?.isOpen?.()) {
         activeMainMenu.hide(true);
         activeMainMenu = null;
@@ -53,7 +53,7 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, plugin: Ma
     menuOptions.push({
         name: i18n.menu.settings,
         icon: "ui//settings",
-        onClick: (e) => {
+        onClick: () => {
             superstate.ui.openPath("obsidian://settings", false);
         },
     });

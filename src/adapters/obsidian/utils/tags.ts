@@ -8,7 +8,7 @@ import { stringFromTag, tagPathToTag, validateName } from "utils/tags";
 
 const tagKeys = ["tags"];
 
-export const loadTags = (app: App, settings: MakeMDSettings): string[] => {
+export const loadTags = (app: App, _settings: MakeMDSettings): string[] => {
     const folder = app.vault.getRoot();
     return uniq([...Object.keys(app.metadataCache.getTags()).map((f) => f.toLowerCase()), ...(folder?.children.filter((f) => f instanceof TFolder && f.name.charAt(0) == "#").map((f) => tagPathToTag(f.name)) ?? [])]);
 };

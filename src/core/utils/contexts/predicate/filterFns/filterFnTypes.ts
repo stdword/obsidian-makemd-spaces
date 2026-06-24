@@ -4,12 +4,12 @@ import { dateAfter, dateBefore, empty, FilterFunctionType, greaterThan, isSameDa
 export const filterFnTypes: FilterFunctionType = {
     isNotEmpty: {
         type: ["text", "file", "number", "option", "option-multi", "link", "link-multi", "image"],
-        fn: (v, f) => !empty(v, ""),
+        fn: (v, _f) => !empty(v, ""),
         valueType: "none",
     },
     isEmpty: {
         type: ["text", "file", "number", "option", "option-multi", "link", "link-multi", "image"],
-        fn: (v, f) => empty(v, ""),
+        fn: (v, _f) => empty(v, ""),
         valueType: "none",
     },
     include: {
@@ -84,7 +84,7 @@ export const filterFnTypes: FilterFunctionType = {
     },
     isSameDateAsToday: {
         type: ["date"],
-        fn: (v, f) => isSameDayAsToday(v, f),
+        fn: (v, _f) => isSameDayAsToday(v, _f),
         valueType: "none",
     },
     isExactList: {
@@ -104,12 +104,12 @@ export const filterFnTypes: FilterFunctionType = {
     },
     isTrue: {
         type: ["boolean"],
-        fn: (v, f) => (isString(v) ? v == "true" : v),
+        fn: (v, _f) => (isString(v) ? v == "true" : v),
         valueType: "none",
     },
     isFalse: {
         type: ["boolean"],
-        fn: (v, f) => (isString(v) ? v != "true" : !v),
+        fn: (v, _f) => (isString(v) ? v != "true" : !v),
         valueType: "none",
     },
 };

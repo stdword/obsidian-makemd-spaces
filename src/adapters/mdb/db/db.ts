@@ -58,7 +58,7 @@ export const getZippedDBFile = async (plugin: MDBFileTypeAdapter, path: string) 
     const file = await plugin.middleware.readBinaryToFile(path);
     let buffer;
     try {
-        buffer = await zip.loadAsync(file).then((f) => zip.file("data.mdb").async("arraybuffer"));
+        buffer = await zip.loadAsync(file).then(() => zip.file("data.mdb").async("arraybuffer"));
     } catch (e) {}
     return buffer;
 };
@@ -103,7 +103,7 @@ export const mdbTablesToDBTables = (tables: SpaceTables, uniques?: { [x: string]
 
 export const dbResultsToDBTables = (res: QueryExecResult[]): DBTable[] => {
     return res.reduce(
-        (p, c, i) => [
+        (p, c) => [
             ...p,
             {
                 cols: c.columns,
