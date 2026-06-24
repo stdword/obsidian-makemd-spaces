@@ -599,9 +599,6 @@ export const en = {
         // },
     },
     descriptions: {
-        defaultMakemlColorPaletteWithThemeColors: "Default Makeml Color Palette With Theme Colors",
-        monochromeColorPaletteWithBaseColors: "Monochrome Color Palette With Base Colors",
-        softPastelColorsForGentleVisualizations: "Soft Pastel Colors For Gentle Visualizations",
         // installing: "Installing",
         // loopOverAList: "Loop Over A List",
         // loop: "Loop",

@@ -17,7 +17,9 @@ import { windowFromDocument } from "shared/utils/dom";
 import { defaultAddAction } from "../../UI/Menus/navigator/showSpaceAddMenu";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { shouldShowFileTag } from "./fileTags";
+import { treeItemActiveColorVariables, treeItemColorVariables } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
+type TreeItemStyle = React.CSSProperties & Record<string, string>;
 
 export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) => (e.altKey ? "copy" : e.shiftKey || isDefaultSpace ? "link" : "move");
 export interface TreeItemProps {
@@ -226,18 +228,7 @@ export const TreeItem = (props: TreeItemProps) => {
         <>
             <div
                 className={classNames("mk-tree-wrapper", data.type == "group" ? "mk-tree-section" : "", clone && "mk-clone", ghost && "mk-ghost", highlighted ? "is-highlighted" : "")}
-                style={
-                    color?.length > 0
-                        ? ({
-                              "--label-color": `${color}`,
-                              "--icon-color": isFolder ? `#ffffff` : `var(--mk-ui-text-secondary)`,
-                              position: "relative",
-                          } as React.CSSProperties)
-                        : ({
-                              "--icon-color": `var(--mk-ui-text-secondary)`,
-                              position: "relative",
-                          } as React.CSSProperties)
-                }
+                style={treeItemColorVariables(color, isFolder) as TreeItemStyle}
                 ref={innerRef}
                 onMouseLeave={mouseOut}
                 onMouseEnter={hoverItem}
@@ -271,7 +262,8 @@ export const TreeItem = (props: TreeItemProps) => {
                             {
                                 "--spacing": `${spacing}px`,
                                 "--childrenCount": `${data.type == "space" && !collapsed ? childCount * spaceRowHeight(superstate, superstate.settings.spaceRowHeight, false) - 13 : 0}px`,
-                            } as React.CSSProperties
+                                ...treeItemActiveColorVariables(color, isFolder),
+                            } as TreeItemStyle
                         }
                         data-path={pathState?.path}
                     >

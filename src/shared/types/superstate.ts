@@ -4,7 +4,6 @@ import { Metadata } from "shared/types/metadata";
 import { MakeMDSettings } from "shared/types/settings";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { IAPI } from "./api";
-import { IAssetManager } from "./assets";
 import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
 import { ContextState, PathState, SpaceState, SuperstateEvent } from "./PathState";
@@ -24,7 +23,6 @@ export abstract class ISuperstate {
     saveSettings: () => void;
     api: IAPI;
     ui: IUIManager;
-    assets: IAssetManager;
     pathsIndex: Map<string, PathState>;
     spacesIndex: Map<string, SpaceState>;
     contextsIndex: Map<string, ContextState>;

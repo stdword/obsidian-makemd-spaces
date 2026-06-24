@@ -1,5 +1,5 @@
 import { Superstate } from "makemd-core";
-import { ColorPaletteAsset } from "shared/types/assets";
+import i18n from "shared/i18n";
 
 export interface ColorPaletteColor {
     name: string;
@@ -7,31 +7,78 @@ export interface ColorPaletteColor {
     category?: string;
 }
 
-export const getColorPalettes = (superstate: Superstate): ColorPaletteAsset[] => {
-    // Check both possible asset manager references
-    const assetManager = (superstate as any).assetManager || (superstate as any).assets;
+export interface ColorPalette {
+    id: string;
+    name: string;
+    colors: ColorPaletteColor[];
+}
 
-    if (!assetManager) {
-        console.warn("[ColorPalette] AssetManager not available in superstate");
-        return [];
-    }
+export const defaultColorPalettes: ColorPalette[] = [
+    {
+        id: "default-palette",
+        name: "Default Colors",
+        colors: [
+            { name: i18n.colors.red, value: "var(--mk-color-red)", category: "brand" },
+            { name: i18n.colors.pink, value: "var(--mk-color-pink)", category: "brand" },
+            { name: i18n.colors.orange, value: "var(--mk-color-orange)", category: "brand" },
+            { name: i18n.colors.yellow, value: "var(--mk-color-yellow)", category: "brand" },
+            { name: i18n.colors.green, value: "var(--mk-color-green)", category: "brand" },
+            { name: i18n.colors.turquoise, value: "var(--mk-color-turquoise)", category: "brand" },
+            { name: i18n.colors.teal, value: "var(--mk-color-teal)", category: "brand" },
+            { name: i18n.colors.blue, value: "var(--mk-color-blue)", category: "brand" },
+            { name: i18n.colors.purple, value: "var(--mk-color-purple)", category: "brand" },
+            { name: i18n.colors.brown, value: "var(--mk-color-brown)", category: "brand" },
+            { name: i18n.colors.charcoal, value: "var(--mk-color-charcoal)", category: "brand" },
+            { name: i18n.colors.gray, value: "var(--mk-color-gray)", category: "brand" },
+        ],
+    },
+    {
+        id: "monochrome-palette",
+        name: "Monochrome Colors",
+        colors: [
+            { name: i18n.colors.base0, value: "var(--mk-color-base-0)", category: "base" },
+            { name: i18n.colors.base10, value: "var(--mk-color-base-10)", category: "base" },
+            { name: i18n.colors.base20, value: "var(--mk-color-base-20)", category: "base" },
+            { name: i18n.colors.base30, value: "var(--mk-color-base-30)", category: "base" },
+            { name: i18n.colors.base40, value: "var(--mk-color-base-40)", category: "base" },
+            { name: i18n.colors.base50, value: "var(--mk-color-base-50)", category: "base" },
+            { name: i18n.colors.base60, value: "var(--mk-color-base-60)", category: "base" },
+            { name: i18n.colors.base70, value: "var(--mk-color-base-70)", category: "base" },
+            { name: i18n.colors.base100, value: "var(--mk-color-base-100)", category: "base" },
+        ],
+    },
+    {
+        id: "pastel-palette",
+        name: "Pastel Colors",
+        colors: [
+            { name: i18n.colors.lightPink, value: "#FFB6C1", category: "custom" },
+            { name: i18n.colors.gold, value: "#FFD700", category: "custom" },
+            { name: i18n.colors.paleGreen, value: "#98FB98", category: "custom" },
+            { name: i18n.colors.skyBlue, value: "#87CEEB", category: "custom" },
+            { name: i18n.colors.plum, value: "#DDA0DD", category: "custom" },
+            { name: i18n.colors.khaki, value: "#F0E68C", category: "custom" },
+            { name: i18n.colors.lightSalmon, value: "#FFA07A", category: "custom" },
+            { name: i18n.colors.powderBlue, value: "#B0E0E6", category: "custom" },
+            { name: i18n.colors.moccasin, value: "#FFE4B5", category: "custom" },
+            { name: i18n.colors.lavender, value: "#E6E6FA", category: "custom" },
+        ],
+    },
+];
 
-    // Asset manager will ensure defaults exist if none are found
-    const palettes = assetManager.getColorPalettes() || [];
-
-    return palettes;
+export const getColorPalettes = (superstate: Superstate): ColorPalette[] => {
+    return defaultColorPalettes;
 };
 
-export const getColorPaletteById = (superstate: Superstate, paletteId: string): ColorPaletteAsset | undefined => {
+export const getColorPaletteById = (superstate: Superstate, paletteId: string): ColorPalette | undefined => {
     const palettes = getColorPalettes(superstate);
     return palettes.find((p) => p.id === paletteId);
 };
 
-export const getDefaultPalette = (superstate: Superstate): ColorPaletteAsset | undefined => {
+export const getDefaultPalette = (superstate: Superstate): ColorPalette | undefined => {
     return getColorPaletteById(superstate, "default-palette");
 };
 
-export const getMonochromePalette = (superstate: Superstate): ColorPaletteAsset | undefined => {
+export const getMonochromePalette = (superstate: Superstate): ColorPalette | undefined => {
     return getColorPaletteById(superstate, "monochrome-palette");
 };
 

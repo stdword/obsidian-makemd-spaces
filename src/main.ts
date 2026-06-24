@@ -11,7 +11,6 @@ import { safelyParseJSON } from "shared/utils/json";
 import { SPACE_SUB_FOLDER } from "shared/constants";
 
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
-import { ObsidianAssetManager } from "adapters/obsidian/assets/ObsidianAssetManager";
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 
 import { ObsidianBaseFiletypeAdapter } from "adapters/obsidian/filetypes/baseAdapter";
@@ -227,8 +226,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
         await cachePersister.initialize()
         this.superstate.persister = cachePersister;
-
-        this.superstate.assets = new ObsidianAssetManager();
 
         this.loadSuperState();
         this.addSettingTab(new MakeMDPluginSettingsTab(this.app, this));

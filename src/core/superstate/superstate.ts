@@ -31,7 +31,6 @@ import { API } from "./api";
 
 import { linkContextRow } from "core/utils/contexts/linkContextRow";
 import { allMetadata } from "core/utils/metadata";
-import { IAssetManager } from "shared/types/assets";
 import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
 
@@ -58,7 +57,6 @@ export class Superstate implements ISuperstate {
     public api: API;
 
     public ui: UIManager;
-    public assets: IAssetManager | null;
     //Index
     public pathsIndex: Map<string, PathState>;
     public spacesIndex: Map<string, SpaceState>;
@@ -118,9 +116,6 @@ export class Superstate implements ISuperstate {
         // Initialize SpaceManager's API reference
         spaceManager.api = new API(this, spaceManager);
 
-        //Initialize Asset Manager - will be replaced by platform-specific implementation
-        this.assets = null; // Defer creation until persister is available
-
         //Initiate Indexes
         this.pathsIndex = new Map();
         this.spacesIndex = new Map();
@@ -173,12 +168,6 @@ export class Superstate implements ISuperstate {
 
         await this.initializeBuiltins();
         await this.initializeTags();
-
-        // Initialize AssetManager before path loading
-        if (this.assets) {
-            await this.assets.initialize();
-        } else {
-        }
 
         await this.initializePaths();
         await this.initializeContexts();
