@@ -12,6 +12,4 @@ export type Emoji = {
     desc: string;
     unicode: string;
     variants?: string[];
-    iconKey?: string; // For custom icons from asset manager
-    isCustomIcon?: boolean; // Flag to distinguish custom icons from emojis
 };

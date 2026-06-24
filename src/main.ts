@@ -1,5 +1,5 @@
 import { DEFAULT_SETTINGS } from "core/schemas/settings";
-import { App, MarkdownView, Plugin, TAbstractFile, TFile, WorkspaceLeaf, addIcon } from "obsidian";
+import { App, MarkdownView, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 

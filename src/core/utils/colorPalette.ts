@@ -1,4 +1,3 @@
-import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 
 export interface ColorPaletteColor {
@@ -65,51 +64,8 @@ export const defaultColorPalettes: ColorPalette[] = [
     },
 ];
 
-export const getColorPalettes = (superstate: Superstate): ColorPalette[] => {
+export const getColorPalettes = (): ColorPalette[] => {
     return defaultColorPalettes;
-};
-
-export const getColorPaletteById = (superstate: Superstate, paletteId: string): ColorPalette | undefined => {
-    const palettes = getColorPalettes(superstate);
-    return palettes.find((p) => p.id === paletteId);
-};
-
-export const getDefaultPalette = (superstate: Superstate): ColorPalette | undefined => {
-    return getColorPaletteById(superstate, "default-palette");
-};
-
-export const getMonochromePalette = (superstate: Superstate): ColorPalette | undefined => {
-    return getColorPaletteById(superstate, "monochrome-palette");
-};
-
-export const getThemeColors = (superstate: Superstate): ColorPaletteColor[] => {
-    const defaultPalette = getDefaultPalette(superstate);
-    return defaultPalette?.colors || [];
-};
-
-export const getMonochromeColors = (superstate: Superstate): ColorPaletteColor[] => {
-    const monochromePalette = getMonochromePalette(superstate);
-    return monochromePalette?.colors || [];
-};
-
-export const getAllColors = (superstate: Superstate): ColorPaletteColor[] => {
-    const palettes = getColorPalettes(superstate);
-    return palettes.flatMap((p) => p.colors);
-};
-
-export const getColorByName = (superstate: Superstate, name: string): string | undefined => {
-    const colors = getAllColors(superstate);
-    const color = colors.find((c) => c.name.toLowerCase() === name.toLowerCase());
-    return color?.value;
-};
-
-// Legacy compatibility arrays for easier migration
-export const getColors = (superstate: Superstate): [string, string][] => {
-    return getThemeColors(superstate).map((c) => [c.name, c.value] as [string, string]);
-};
-
-export const getColorsBase = (superstate: Superstate): [string, string][] => {
-    return getMonochromeColors(superstate).map((c) => [c.name, c.value] as [string, string]);
 };
 
 // UI color arrays that combine CSS variables with palette colors

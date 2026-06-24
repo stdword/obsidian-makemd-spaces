@@ -202,19 +202,9 @@ const SaturationLightnessCanvas: React.FC<{
 
 // ColorPaletteSelector component
 const ColorPaletteSelector: React.FC<{
-    superstate: Superstate;
     onColorSelect: (color: string) => void;
-}> = ({ superstate, onColorSelect }) => {
-    const [palettes, setPalettes] = useState<any[]>([]);
-
-    useEffect(() => {
-        // Load palettes from asset manager
-        const colorPalettes = getColorPalettes(superstate);
-        setPalettes(colorPalettes);
-    }, [superstate]);
-
-    // Use the palettes from state
-    const displayPalettes = palettes;
+}> = ({ onColorSelect }) => {
+    const displayPalettes = getColorPalettes();
 
     return (
         <div className="mk-color-palette-selector">
@@ -396,7 +386,6 @@ export const ColorPicker = (props: { superstate: Superstate; color: string; hide
             {/* Color Palette Selector */}
             {!props.hidePaletteSelector && (mode === "palettes" || mode === "none") && (
                 <ColorPaletteSelector
-                    superstate={props.superstate}
                     onColorSelect={(color) => {
                         saveValue(color);
                     }}

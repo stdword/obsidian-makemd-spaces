@@ -13,7 +13,6 @@ import { excludePathPredicate } from "utils/hide";
 import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
-import { getAllFrontmatterKeys } from "../filetypes/frontmatter/fm";
 import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
 import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME } from "shared/constants";
 
@@ -165,10 +164,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
     };
 
-    public keysForCacheType(type: string) {
-        if (type == "frontmatter") {
-            return getAllFrontmatterKeys(this.plugin);
-        }
+    public keysForCacheType(type: string): string[] {
         return [];
     }
     public allContent() {

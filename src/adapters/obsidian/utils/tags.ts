@@ -1,4 +1,3 @@
-import { getAbstractFileAtPath } from "adapters/obsidian/utils/file";
 import MakeMDPlugin from "main";
 import { SpaceManager } from "makemd-core";
 import { App, CachedMetadata, Pos, TFile, TFolder, getAllTags } from "obsidian";

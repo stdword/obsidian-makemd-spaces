@@ -1,5 +1,4 @@
 import { Superstate } from "makemd-core";
-import i18n from "shared/i18n";
 import { fieldTypeForField } from "schemas/mdb";
 import { Metadata, fileProperties, labelProperties, pathCacheMetadata } from "shared/types/metadata";
 
@@ -23,18 +22,6 @@ export const allMetadata = (
     label: {
         name: "metadata.label",
         properties: labelProperties,
-    },
-    frontmatter: {
-        name: "metadata.frontmatter",
-        properties: superstate.spaceManager.keysForCacheType("frontmatter").map((f) => ({
-            id: "frontmatter." + f,
-            label: f,
-            field: f,
-            vType: "any",
-            defaultFilter: "contains",
-            type: "frontmatter",
-            description: "Frontmatter property",
-        })),
     },
     context: {
         name: "metadata.contexts",

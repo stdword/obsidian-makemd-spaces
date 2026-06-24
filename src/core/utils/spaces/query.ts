@@ -10,7 +10,7 @@ const filterPathsForAny = (paths: PathState[], filters: FilterDef[], props: Reco
         (p, c) => {
             const [result, remaining] = p;
 
-            const filteredPaths = c.type == "context" ? filterContext(remaining, c, props) : c.type == "path" ? filterPathCache(remaining, c, props) : c.type == "frontmatter" ? filterFM(remaining, c, props) : filterPathProperties(remaining, c, props);
+            const filteredPaths = c.type == "context" ? filterContext(remaining, c, props) : c.type == "path" ? filterPathCache(remaining, c, props) : filterPathProperties(remaining, c, props);
             const diffArray = remaining.filter((x) => !filteredPaths.includes(x));
             return [[...result, ...filteredPaths], diffArray];
         },
@@ -21,7 +21,7 @@ const filterPathsForAny = (paths: PathState[], filters: FilterDef[], props: Reco
 
 const filterPathsForAll = (paths: PathState[], filters: FilterDef[], props: Record<string, string>): PathState[] => {
     return filters.reduce((p, c) => {
-        return c.type == "context" ? filterContext(p, c, props) : c.type == "path" ? filterPathCache(p, c, props) : c.type == "frontmatter" ? filterFM(p, c, props) : filterPathProperties(p, c, props);
+        return c.type == "context" ? filterContext(p, c, props) : c.type == "path" ? filterPathCache(p, c, props) : filterPathProperties(p, c, props);
     }, paths);
 };
 const filterContext = (paths: PathState[], def: FilterDef, props: Record<string, string>) => {
@@ -50,27 +50,6 @@ const filterContext = (paths: PathState[], def: FilterDef, props: Record<string,
     });
 };
 
-const filterFM = (paths: PathState[], def: FilterDef, props: Record<string, string>) => {
-    const filterFn = filterFnTypes[def.fn];
-    if (!filterFn || (filterFn.valueType != "none" && def.value.length == 0)) {
-        return [];
-    }
-    return paths.filter((f) => {
-        const fm = f.metadata?.property;
-        if (!fm || fm[def.field] === undefined) {
-            return false;
-        }
-
-        let result = true;
-
-        if (filterFn) {
-            const value = def.fType == "property" ? props[def.value] : def.value;
-            const propValue = parseProperty(def.field, fm[def.field]);
-            if (isString(value) && isString(propValue)) result = filterFn.fn(propValue, value);
-        }
-        return result;
-    });
-};
 const filterPathCache = (paths: PathState[], def: FilterDef, props: Record<string, string>) => {
     const filterFn = filterFnTypes[def.fn];
     if (!filterFn || (filterFn.valueType != "none" && def.value.length == 0)) {

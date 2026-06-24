@@ -1,5 +1,3 @@
-import i18n from "shared/i18n";
-
 export type MetadataType = "filemeta" | "fileprop" | "fm";
 export type Metadata = {
     id: string;

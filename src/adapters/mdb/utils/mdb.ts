@@ -1,9 +1,8 @@
 import { DBTable, MDB, SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "shared/types/mdb";
-import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 
 import { vaultSchema } from "adapters/obsidian/filesystem/schemas/vaultSchema";
 import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
-import { defaultContextFields, defaultFieldsForContext } from "shared/schemas/fields";
+import { defaultContextFields } from "shared/schemas/fields";
 import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database, QueryExecResult } from "sql.js";
 import { dbResultsToDBTables, deleteFromDB, dropTable, getDBFile, replaceDB, saveDBFile } from "../db/db";
@@ -27,11 +26,6 @@ const fieldsForTable = (table: string, dbTable?: DBTable): SpaceProperty[] => {
 const userTables = (db: Database): string[] => {
     const tableResults = dbResultsToDBTables(db.exec("SELECT name FROM sqlite_schema WHERE type ='table' AND name NOT LIKE 'sqlite_%';"));
     return ((tableResults[0]?.rows?.map((f) => f.name) as string[]) ?? []).filter((f) => !f.startsWith("m_"));
-};
-
-const updateFieldsToSchema = (fields: SpaceProperty[], space: FilesystemSpaceInfo) => {
-    const defaultFields = defaultFieldsForContext(space);
-    return [...fields, ...(defaultFields.rows.filter((f) => !fields.some((g) => g.name == f.name && g.schemaId == f.schemaId)) as SpaceProperty[])];
 };
 
 export const getMDB = async (plugin: MDBFileTypeAdapter, path: string): Promise<MDB> => {
