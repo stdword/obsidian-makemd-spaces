@@ -1,3 +1,4 @@
+/*
 .mk-path-explorer {
     display: flex;
     flex-direction: column;
@@ -16,11 +17,13 @@
     gap: 8px;
     padding: 0 var(--size-4-3);
 }
+*/
 
 .mk-path-context-label .mk-path-icon button {
     /* --label-color:var(--background-secondary) */
 }
 
+/*
 .mk-path-context-label {
     display: flex;
     width: 100%;
@@ -397,11 +400,13 @@ body .markdown-source-view.mod-cm6.mod-cm6.is-readable-line-width .mk-inline-tit
 .mk-inline-context:hover .mk-fold {
     opacity: 1 !important;
 }
+*/
 
 .markdown-source-view.mod-cm6 .cm-content > .cm-line.mk-has-banner {
     /* position: inherit !important; */
 }
 
+/*
 .markdown-source-view.mod-cm6 .mk-has-backlinks img.cm-widgetBuffer {
     display: none !important;
 }
@@ -587,3 +592,4 @@ body:not(.is-mobile) .mk-header-label-actions .mk-inline-button {
 .mk-path-context-label .mk-path-icon svg.svg-icon {
     --icon-size: 40px;
 }
+*/

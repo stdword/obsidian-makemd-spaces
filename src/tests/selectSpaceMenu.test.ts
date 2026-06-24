@@ -1,6 +1,6 @@
-import { showSpacesMenu } from "core/react/components/UI/Menus/properties/selectSpaceMenu";
+import { showOpenMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
 
-describe("showSpacesMenu", () => {
+describe("showOpenMenu", () => {
     it("includes tag spaces even though their paths use the spaces protocol", () => {
         const openMenu = jest.fn();
         const superstate = {
@@ -15,7 +15,7 @@ describe("showSpacesMenu", () => {
             },
         } as any;
 
-        showSpacesMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
+        showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
 
         const menuConfig = openMenu.mock.calls[0][1];
         expect(menuConfig.options).toEqual(
@@ -69,7 +69,7 @@ describe("showSpacesMenu", () => {
             },
         } as any;
 
-        showSpacesMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
+        showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
 
         const menuConfig = openMenu.mock.calls[0][1];
         expect(menuConfig.options[0].value).toBe("/");

@@ -436,7 +436,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             style={
                 !props.suggestionsOnly
                     ? ({
-                          "--mk-menu-max-height": props.wrapperClass?.includes("mk-search-menu") ? "340px" : "200px",
+                          "--mk-menu-max-height": "200px",
                       } as React.CSSProperties)
                     : {}
             }

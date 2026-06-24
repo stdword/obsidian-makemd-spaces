@@ -6,22 +6,21 @@ import { showMenu } from "./menu";
 export type Point = { x: number; y: number };
 
 export const showSelectMenu = (
-  rect: Rect,
-  optionProps: SelectMenuProps,
-  win: Window,
-  defaultAnchor: Anchors,
-  onHide?: () => void,
-  force?: boolean
+    rect: Rect,
+    optionProps: SelectMenuProps,
+    win: Window,
+    defaultAnchor: Anchors,
+    onHide?: () => void, force?: boolean,
 ) => {
-  return showMenu({
-    ui: optionProps.ui,
-    rect: rect,
-    anchor: defaultAnchor,
-    win,
-    fc: <SelectMenu {...optionProps} />,
-    onHide,
-    className: optionProps.searchable ? "mk-combo-menu" : "mk-select-menu",
-    centered: optionProps.centered,
-    force,
-  });
+    return showMenu({
+        ui: optionProps.ui,
+        rect: rect,
+        anchor: defaultAnchor,
+        win,
+        fc: <SelectMenu {...optionProps} />,
+        onHide,
+        className: optionProps.searchable ? "mk-combo-menu" : "mk-select-menu",
+        centered: optionProps.centered,
+        force,
+    });
 };

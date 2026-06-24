@@ -1,4 +1,4 @@
-import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
+import { showLinkMenu } from "core/react/components/UI/Menus/modals/linkMenu";
 
 describe("showLinkMenu", () => {
     it("uses the shared search menu tabs without system, tags, or new item creation", () => {

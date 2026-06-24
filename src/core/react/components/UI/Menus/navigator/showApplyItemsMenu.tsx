@@ -5,7 +5,7 @@ import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
 import { openStickerPalette } from "../../../../../../shared/components/PathSticker";
 import { defaultMenu } from "../menu/SelectionMenu";
-import { showColorPickerMenu } from "../properties/colorPickerMenu";
+import { showColorPickerMenu } from "../modals/colorPickerMenu";
 
 export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: SpaceState, win: Window, onHide?: () => void) => {
     const options: SelectOption[] = [

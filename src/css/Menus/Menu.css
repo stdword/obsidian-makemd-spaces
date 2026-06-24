@@ -183,15 +183,7 @@
 .mk-menu-input-wrapper {
     width: 100%;
 }
-.is-phone .mk-menu-input-wrapper {
-    padding: 8px;
-}
-.is-phone .mk-menu-search {
-    background: var(--mk-ui-background-input);
-    border-radius: 8px;
-    margin-top: 0;
-    border-bottom: none;
-}
+
 .mk-menu-container {
     height: 100%;
     position: relative;
@@ -204,10 +196,6 @@
     flex-wrap: wrap;
     /* clicking anywhere will focus the input */
     cursor: text;
-}
-
-.mk-menu-container.mk-search-menu {
-    width: min(576px, calc(100vw - 48px));
 }
 
 .mk-menu-sections {
@@ -258,69 +246,13 @@
     border-color: #b1b1b1;
 }
 
-.mk-menu-search {
-    width: 100%;
-    display: flex;
-    padding: 0px 10px;
-    margin-top: 4px;
-    border-bottom: 1px solid var(--mk-ui-border);
-}
-
-button.mk-menu-search-button {
-    background: none;
-    border: none;
-    box-shadow: none;
-    --icon-size: 16px;
-}
-
-button.mk-menu-search-button svg {
-    width: var(--icon-size);
-    height: var(--icon-size);
-}
-
-.mk-menu-search-container {
-    display: flex;
-    gap: 8px;
-    /* match tag layout */
-    padding: 7px 2px;
-
-    /* prevent autoresize overflowing the container */
-    max-width: 100%;
-    width: 100%;
-}
-
-.mk-menu-search-input {
-    /* prevent autoresize overflowing the container */
-    max-width: 100%;
-    background: unset !important;
-    /* remove styles and layout from this element */
-    margin: 0;
-    padding: 0;
-    border: 0;
-    outline: none;
-
-    /* match the font styles */
-    font-size: 13px;
-    line-height: inherit;
-}
-
-.mk-menu-search-input::-ms-clear {
-    display: none;
-}
-
-body:not(.is-phone) .mk-menu-suggestions {
+.mk-menu-suggestions {
     width: 100%;
     height: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     margin: 4px -1px;
     max-height: var(--mk-menu-max-height);
-}
-
-.is-phone .mk-menu-suggestions {
-    width: 100%;
-    flex: 1;
-    overflow-y: auto;
 }
 
 .mk-menu-input {

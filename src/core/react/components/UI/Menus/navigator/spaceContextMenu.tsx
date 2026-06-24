@@ -15,8 +15,8 @@ import { stringFromTag } from "utils/tags";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
-import { showColorPickerMenu } from "../properties/colorPickerMenu";
-import { showSpacesMenu } from "../properties/selectSpaceMenu";
+import { showColorPickerMenu } from "../modals/colorPickerMenu";
+import { showFoldersMenu, showOpenMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
 
@@ -283,7 +283,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             icon: "ui//paper-plane",
             onClick: (e) => {
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-                showSpacesMenu(offset, win, superstate, (link) => {
+                showFoldersMenu(offset, win, superstate, (link) => {
                     superstate.spaceManager.renameSpace(space.path, movePath(space.path, link));
                 });
             },
@@ -297,15 +297,15 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             icon: "ui//link",
             onClick: (e) => {
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-                showSpacesMenu(
+                showFoldersMenu(
                     offset,
                     win,
                     superstate,
                     (link) => {
                         const spaceCache = superstate.spacesIndex.get(link);
-                        if (spaceCache) addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
+                        if (spaceCache)
+                            addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
                     },
-                    true,
                 );
             },
         });

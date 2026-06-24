@@ -81,7 +81,19 @@ export const MenuWrapper = (props: { rect: Rect; ui: UIManager; anchor: Anchors;
     );
 };
 
-export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; win: Window; fc: JSX.Element; props?: any; onHide?: () => void; onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject; className?: string; centered?: boolean; force?: boolean }): MenuObject => {
+export const showMenu = (props: {
+    rect: Rect;
+    ui: UIManager;
+    anchor: Anchors;
+    win: Window;
+    fc: JSX.Element;
+    props?: any;
+    onHide?: () => void;
+    onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject;
+    className?: string;
+    centered?: boolean;
+    force?: boolean;
+}): MenuObject => {
     const backdropElement = props.centered ? props.win.document.createElement("div") : null;
     const portalElement = props.win.document.createElement("div");
     portalElement.classList.add("mk-menu");
@@ -142,30 +154,32 @@ export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; wi
     if (props.centered) {
         portalElement.style.position = "fixed";
         portalElement.style.left = "50%";
-        portalElement.style.top = "50%";
+        portalElement.style.top = "30%";
     } else {
         portalElement.style.position = "absolute";
         portalElement.style.left = `${props.rect.x}px`;
         portalElement.style.top = `${props.rect.y}px`;
     }
 
-    resizeObserver = props.centered ? null : new ResizeObserver((entries) => {
-        const newPos = calculateBoundsBasedOnPosition(
-            props.rect,
-            entries[0].target.getBoundingClientRect(),
-            {
-                width: props.win.innerWidth,
-                height: props.win.innerHeight,
-            },
-            props.anchor,
-        );
-        portalElement.style.left = `${newPos.x}px`;
-        portalElement.style.top = `${newPos.y}px`;
+    resizeObserver = props.centered
+        ? null
+        : new ResizeObserver((entries) => {
+              const newPos = calculateBoundsBasedOnPosition(
+                  props.rect,
+                  entries[0].target.getBoundingClientRect(),
+                  {
+                      width: props.win.innerWidth,
+                      height: props.win.innerHeight,
+                  },
+                  props.anchor,
+              );
+              portalElement.style.left = `${newPos.x}px`;
+              portalElement.style.top = `${newPos.y}px`;
 
-        // portalElement.style.height = `${newPos.height}px`;
-        // portalElement.style.height = `${newPos.height}px`;
-        // portalElement.style.width = `${newPos.width}px`;
-    });
+              // portalElement.style.height = `${newPos.height}px`;
+              // portalElement.style.height = `${newPos.height}px`;
+              // portalElement.style.width = `${newPos.width}px`;
+          });
 
     // start observing a DOM node
     resizeObserver?.observe(portalElement);

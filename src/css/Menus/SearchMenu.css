@@ -1,0 +1,54 @@
+.mk-menu-container.mk-search-menu {
+    --mk-menu-max-height: 350px !important;
+    width: 500px;
+}
+
+.mk-menu-search {
+    width: 100%;
+    display: flex;
+    padding: 0px 10px;
+    margin-top: 4px;
+    border-bottom: 1px solid var(--mk-ui-border);
+}
+
+button.mk-menu-search-button {
+    background: none;
+    border: none;
+    box-shadow: none;
+    --icon-size: 16px;
+}
+
+button.mk-menu-search-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+.mk-menu-search-container {
+    display: flex;
+    gap: 8px;
+    /* match tag layout */
+    padding: 7px 2px;
+
+    /* prevent autoresize overflowing the container */
+    max-width: 100%;
+    width: 100%;
+}
+
+.mk-menu-search-input {
+    /* prevent autoresize overflowing the container */
+    max-width: 100%;
+    background: unset !important;
+    /* remove styles and layout from this element */
+    margin: 0;
+    padding: 0;
+    border: 0;
+    outline: none;
+
+    /* match the font styles */
+    font-size: 13px;
+    line-height: inherit;
+}
+
+.mk-menu-search-input::-ms-clear {
+    display: none;
+}

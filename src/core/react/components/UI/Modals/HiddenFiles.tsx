@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "shared/utils/dom";
 import { pathNameToString } from "utils/path";
+import { SearchMenuTab, showSearchMenu } from "../Menus/modals/searchMenu";
 
 export const HiddenPaths = (props: {
   superstate: Superstate;
@@ -57,28 +58,18 @@ export const HiddenPaths = (props: {
     }, []);
 
     const addMenu = (e: React.MouseEvent) => {
-        const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-        const options = props.superstate.spaceManager.allPaths().map((f) => ({
-            name: pathNameToString(f),
-            value: f,
-        }));
         e.stopPropagation();
-        props.superstate.ui.openMenu(
-            offset,
-            {
-                ui: props.superstate.ui,
-                multi: false,
-                editable: false,
-                value: [],
-                options,
-                saveOptions: saveFile,
-                placeholder: i18n.labels.linkItemSelectPlaceholder,
-                detail: true,
-                searchable: true,
-            },
-            windowFromDocument(e.view.document),
-        );
+
+        showSearchMenu({
+            offset: (e.target as HTMLButtonElement).getBoundingClientRect(),
+            win: windowFromDocument(e.view.document),
+            superstate: props.superstate,
+            tabs: [ 'folders', 'files' ],
+            placeholder: i18n.labels.hideItemInputPlaceholder,
+            saveOptions: saveFile,
+        });
     };
+
     return (
         <div className="mk-modal-contents">
             <div className="mk-modal-heading">{i18n.labels.hiddenFilePattern}</div>

@@ -137,10 +137,10 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => voi
             showSections={props.showSections}
             sections={props.sections}
             optionLimitsBySection={props.optionLimitsBySection}
+            allowNewBySection={props.allowNewBySection}
             maxSuggestionsLength={maxSuggestionsLengthForMenu(Boolean(props.showAll), props.options.length)}
             suggestionsOnly={!props.searchable && !props.editable}
             allowNew={props.editable}
-            allowNewBySection={props.allowNewBySection}
             previewComponent={props.previewComponent}
             isDisclosure={props.isDisclosure}
         />

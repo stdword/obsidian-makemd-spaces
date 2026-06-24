@@ -12,12 +12,12 @@ import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { CSSProperties, useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
-import { showSpacesMenu } from "../../UI/Menus/properties/selectSpaceMenu";
+import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
 
-export function showSpacesMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void) {
-    showSpacesMenu(
+export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void) {
+    showOpenMenu(
         rect,
         windowFromDocument(document),
         superstate,
@@ -44,8 +44,6 @@ export function showSpacesMenuInRect(rect: DOMRect, document: Document, supersta
             }
             saveActiveSpace(link);
         },
-        true,
-        true,
     );
 }
 
@@ -159,7 +157,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                 className={"mk-tree-wrapper mk-tree-section"}
                                 onClick={(e) => {
                                     const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                    showSpacesMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace);
+                                    showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace);
                                 }}
                             >
                                 <div className="mk-tree-item tree-item-self nav-folder-title mk-tree-new">

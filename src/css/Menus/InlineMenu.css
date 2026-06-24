@@ -1,4 +1,4 @@
-body:not(.is-mobile) .mk-style-menu {
+/*.mk-style-menu {
   margin-left: -80px;
 }
 
@@ -33,7 +33,6 @@ body:not(.is-mobile) .mk-style-menu {
 }
 
 .mk-style-toolbar {
-  --mobile-toolbar-height: 48px;
   border-radius: 0;
   width: 100%;
   margin-top: 0;
@@ -49,14 +48,6 @@ body:not(.is-mobile) .mk-style-menu {
   margin: 4px;
   border-radius: 4px;
   display: flex;
-}
-
-
-.mk-mobile-styler .mobile-toolbar-options-list {
-  display: none;
-}
-.mk-mobile-styler .mobile-toolbar-floating-options {
-  display: none;
 }
 
 .mk-mark div {
@@ -105,10 +96,11 @@ mark {
   border-radius: 2px;
   margin: 0px 2px;
   padding: 0px 2px;
-}
+}*/
+
 
 /* Color Palette Panel Styles */
-.mk-color-palette-panel {
+/*.mk-color-palette-panel {
   position: absolute;
   top: 100%;
   left: 0;
@@ -198,10 +190,11 @@ mark {
   transform: scale(1.1);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   border-color: var(--interactive-accent);
-}
+}*/
+
 
 /* Palette Item Styles */
-.mk-palette-item {
+/*.mk-palette-item {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -234,4 +227,4 @@ mark {
   font-weight: 500;
   color: var(--text-normal);
   margin: 0;
-}
+}*/

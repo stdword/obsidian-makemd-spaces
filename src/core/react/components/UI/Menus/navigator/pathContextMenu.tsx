@@ -15,8 +15,8 @@ import { windowFromDocument } from "shared/utils/dom";
 import { movePath } from "shared/utils/uri";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
-import { showColorPickerMenu } from "../properties/colorPickerMenu";
-import { showSpacesMenu } from "../properties/selectSpaceMenu";
+import { showColorPickerMenu } from "../modals/colorPickerMenu";
+import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
 
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
@@ -69,7 +69,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         icon: "ui//paper-plane",
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showSpacesMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
                 paths.forEach((f) => {
                     movePathToSpace(superstate, f, link);
                 });
@@ -83,7 +83,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         icon: "ui//link",
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showSpacesMenu(
+            showFoldersMenu(
                 offset,
                 windowFromDocument(e.view.document),
                 superstate,
@@ -96,7 +96,6 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
                         "link",
                     );
                 },
-                true,
             );
         },
     });
@@ -188,7 +187,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         icon: "ui//paper-plane",
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showSpacesMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
                 superstate.spaceManager.renamePath(path, movePath(path, link));
             });
         },
@@ -200,14 +199,13 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         icon: "ui//link",
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showSpacesMenu(
+            showFoldersMenu(
                 offset,
                 windowFromDocument(e.view.document),
                 superstate,
                 (link) => {
                     dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
                 },
-                true,
             );
         },
     });

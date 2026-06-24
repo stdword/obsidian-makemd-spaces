@@ -6,7 +6,7 @@ import React, { useContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { windowFromDocument } from "shared/utils/dom";
 import StickerModal from "../../../../../shared/components/StickerModal";
-import { showSpacesMenuInRect } from "./SpaceTreeVirtualized";
+import { showOpenMenuInRect } from "./SpaceTreeVirtualized";
 
 export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveFocus: (focus: Focus) => void }) => {
     const { saveActiveSpace, editFocus: editFocus, activeFocus: activeFocus, setFocuses: setFocuses, focuses: focuses, setEditFocus: setEditFocus } = useContext(NavigatorContext);
@@ -59,7 +59,7 @@ export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveF
                 <button
                     onClick={(e) => {
                         const rect = (e.target as HTMLElement).getBoundingClientRect();
-                        showSpacesMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace);
+                        showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace);
                     }}
                 >
                     {i18n.labels.openASpace}

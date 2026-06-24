@@ -13,7 +13,7 @@ import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { windowFromDocument } from "shared/utils/dom";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
-import { showLinkMenu } from "../properties/linkMenu";
+import { showLinkMenu } from "../modals/linkMenu";
 
 export const defaultAddAction = async (superstate: Superstate, _space: SpaceState, win: Window, location?: TargetLocation) => {
     let space = _space;
