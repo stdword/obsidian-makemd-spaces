@@ -18,7 +18,6 @@ import { urlRegex } from "utils/regex";
 
 import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
 import { removeSpace } from "core/superstate/utils/spaces";
-import { BlinkMode } from "shared/types/blink";
 import { editableRange } from "shared/utils/codemirror/selectiveEditor";
 import { getLineRangeFromRef } from "shared/utils/obsidian";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
@@ -54,7 +53,7 @@ export class ObsidianUI implements UIAdapter {
         return Object.keys(this.plugin.app.viewRegistry.typeByExtension);
     };
 
-    public quickOpen = (mode?: BlinkMode, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => {
+    public quickOpen = (mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => {
         this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
     };
     public mainMenu = (el: HTMLElement, superstate: Superstate) => {

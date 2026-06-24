@@ -2,8 +2,7 @@ import { removeLeadingSlash } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 
 export const pathDisplayName = (path: string, superstate: Superstate) => {
-    if (!path)
-        return "";
+    if (!path) return "";
 
     const uri = superstate.spaceManager.uriByString(path);
     if (uri.refType) {

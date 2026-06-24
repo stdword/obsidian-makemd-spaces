@@ -4,6 +4,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { PathState } from "shared/types/PathState";
 import { genId } from "shared/utils/uuid";
 import { useSpaceManager } from "./SpaceManagerContext";
+
 type PathContextProps = {
     uid: string;
     pathState: PathState;

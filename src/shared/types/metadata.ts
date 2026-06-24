@@ -42,7 +42,7 @@ export const fileProperties: Metadata[] = [
         type: "file",
         description: "Name for a space or note",
     },
- {
+    {
         id: "file.path",
         label: "file.path",
         field: "path",

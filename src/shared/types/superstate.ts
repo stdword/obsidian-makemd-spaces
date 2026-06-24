@@ -1,4 +1,3 @@
-
 import { LocalCachePersister } from "shared/types/persister";
 
 import { Metadata } from "shared/types/metadata";
@@ -15,8 +14,6 @@ import { SpaceManagerInterface } from "./spaceManager";
 import { IUIManager } from "./uiManager";
 
 export type { ContextState, PathState, SpaceState, SuperstateEvent };
-
-
 
 export abstract class ISuperstate {
     initialized: boolean;
@@ -42,37 +39,36 @@ export abstract class ISuperstate {
     persister: LocalCachePersister;
 
     refreshMetadata: () => void;
-    initializeIndex:() => Promise<void>;
+    initializeIndex: () => Promise<void>;
     addToContextStateQueue: (operation: () => Promise<any>) => void;
-    initialize:() => Promise<void>;
+    initialize: () => Promise<void>;
     initializePaths: () => Promise<void>;
-    initializeSpaces:() => Promise<void>;
-    getSpaceItems: (spacePath: string, filesOnly?: boolean)=> PathStateWithRank[];
+    initializeSpaces: () => Promise<void>;
+    getSpaceItems: (spacePath: string, filesOnly?: boolean) => PathStateWithRank[];
     loadFromCache: () => Promise<void>;
-    dispatchEvent:(event: keyof SuperstateEvent, payload: any)=> void;
+    dispatchEvent: (event: keyof SuperstateEvent, payload: any) => void;
     initializeBuiltins: () => Promise<void>;
     initializeTags: () => Promise<void>;
-    onTagRenamed: (tag: string, newTag: string)=> Promise<void>;
-    onTagDeleted:(tag: string) => Promise<void>;
-    deleteTagInPath:(tag: string, path: string) => Promise<void>;
-    onMetadataChange:(path: string) => void;
-    reloadSpaceByPath:(path: string, metadata?: SpaceDefinition) => Promise<SpaceState>;
-    onPathRename:(oldPath: string, newPath: string) => Promise<void>;
-    onPathCreated:(path: string) => Promise<void>;
-    onPathDeleted:(path: string) => void;
-    onSpaceRenamed:(oldPath: string, newSpaceInfo: SpaceInfo) => Promise<void>;
-    onSpaceDeleted:(space: string) => void;
-    reloadContextByPath:(path: string, options?: {calculate?: boolean, force?: boolean}) => Promise<boolean>;
-    reloadContext:(space: SpaceInfo, options?: {calculate?: boolean, force?: boolean}) => Promise<boolean>;
-    contextReloaded:(path: string, cache: ContextState, changed: boolean, force?: boolean) => Promise<boolean>;
-    allSpaces:(ordered?: boolean, hidden?: boolean) => SpaceState[];
-    spaceOrder:() => string[];
-    updateSpaceMetadata:(spacePath: string, metadata: SpaceDefinition) => Promise<SpaceState>;
-    reloadSpace:(space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized?: boolean) => Promise<SpaceState>;
-    reloadPath:(path: string, force?: boolean) => Promise<boolean>;
-    onPathReloaded:(path: string) => Promise<boolean>;
-    search:(path: string, query?: string, queries?: FilterGroupDef[]) => Promise<PathStateWithRank[]>;
-
+    onTagRenamed: (tag: string, newTag: string) => Promise<void>;
+    onTagDeleted: (tag: string) => Promise<void>;
+    deleteTagInPath: (tag: string, path: string) => Promise<void>;
+    onMetadataChange: (path: string) => void;
+    reloadSpaceByPath: (path: string, metadata?: SpaceDefinition) => Promise<SpaceState>;
+    onPathRename: (oldPath: string, newPath: string) => Promise<void>;
+    onPathCreated: (path: string) => Promise<void>;
+    onPathDeleted: (path: string) => void;
+    onSpaceRenamed: (oldPath: string, newSpaceInfo: SpaceInfo) => Promise<void>;
+    onSpaceDeleted: (space: string) => void;
+    reloadContextByPath: (path: string, options?: { calculate?: boolean; force?: boolean }) => Promise<boolean>;
+    reloadContext: (space: SpaceInfo, options?: { calculate?: boolean; force?: boolean }) => Promise<boolean>;
+    contextReloaded: (path: string, cache: ContextState, changed: boolean, force?: boolean) => Promise<boolean>;
+    allSpaces: (ordered?: boolean, hidden?: boolean) => SpaceState[];
+    spaceOrder: () => string[];
+    updateSpaceMetadata: (spacePath: string, metadata: SpaceDefinition) => Promise<SpaceState>;
+    reloadSpace: (space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized?: boolean) => Promise<SpaceState>;
+    reloadPath: (path: string, force?: boolean) => Promise<boolean>;
+    onPathReloaded: (path: string) => Promise<boolean>;
+    search: (path: string, query?: string, queries?: FilterGroupDef[]) => Promise<PathStateWithRank[]>;
 }
 
-export type PathStateWithRank = PathState & { rank?: number; };
+export type PathStateWithRank = PathState & { rank?: number };

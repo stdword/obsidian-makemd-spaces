@@ -124,4 +124,3 @@ export class IndexMap {
 
     static EMPTY_SET: Readonly<Set<string>> = Object.freeze(new Set<string>());
 }
-

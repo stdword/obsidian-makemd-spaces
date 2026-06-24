@@ -1,6 +1,5 @@
 import { DBRow } from "shared/types/mdb";
 
-
 export abstract class LocalCachePersister {
     public abstract initialize(): Promise<void>;
     public abstract isInitialized(): boolean;

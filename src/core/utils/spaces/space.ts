@@ -12,8 +12,7 @@ export const pathIsSpace = (superstate: Superstate, path: string) => {
 };
 
 export const spaceFolderPathFromSpace = (path: string, manager: SpaceManager) => {
-    if (path == "/")
-        return SPACE_SUB_FOLDER + "/";
+    if (path == "/") return SPACE_SUB_FOLDER + "/";
     return path + SPACE_SUB_FOLDER + "/";
 };
 
@@ -27,8 +26,7 @@ export const spaceFolderForMDBPath = (path: string, manager: SpaceManager): stri
     const indexOfSecondLastSlash = parentPath.lastIndexOf("/");
     if (parentPath.substring(indexOfSecondLastSlash + 1) == SPACE_SUB_FOLDER) {
         parentPath = parentPath.substring(0, indexOfSecondLastSlash);
-    } else
-        return null;
+    } else return null;
 
     if (parentPath.startsWith("/#")) {
         parentPath = parentPath.replace(/^/, "spaces:/");
@@ -36,9 +34,7 @@ export const spaceFolderForMDBPath = (path: string, manager: SpaceManager): stri
     return parentPath;
 };
 
-export const folderForTagSpace = (space: string, settings: MakeMDSettings) => (
-    "/" + space
-)
+export const folderForTagSpace = (space: string, settings: MakeMDSettings) => "/" + space;
 
 export const spacesFromFileCache = (cache: PathState, superstate: Superstate) => {
     return (cache?.spaces ?? [])

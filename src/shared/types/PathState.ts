@@ -4,23 +4,23 @@ import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 
 export type SuperstateEvent = {
-    "pathCreated": { path: string; };
-    "pathChanged": { path: string; newPath: string; };
-    "pathDeleted": { path: string; };
-    "pathStateUpdated": { path: string; };
-    "spaceChanged": { path: string; newPath: string; };
-    "spaceDeleted": { path: string; };
-    "spaceStateUpdated": { path: string; };
-    "contextStateUpdated": { path: string; };
-    "settingsChanged": null;
-    "focusesChanged": null;
-    "superstateUpdated": null;
-    "superstateReindex": null;
+    pathCreated: { path: string };
+    pathChanged: { path: string; newPath: string };
+    pathDeleted: { path: string };
+    pathStateUpdated: { path: string };
+    spaceChanged: { path: string; newPath: string };
+    spaceDeleted: { path: string };
+    spaceStateUpdated: { path: string };
+    contextStateUpdated: { path: string };
+    settingsChanged: null;
+    focusesChanged: null;
+    superstateUpdated: null;
+    superstateReindex: null;
 };
 export type WorkerJobType = {
     type: string;
     path: string;
-    payload?: { [key: string]: any; };
+    payload?: { [key: string]: any };
 };
 export type SpaceState = {
     name: string;
@@ -37,8 +37,6 @@ export type SpaceState = {
     properties?: Record<string, any>;
 } & CacheState;
 
-
-
 export type ContextState = {
     path: string;
     schemas: SpaceTableSchema[];
@@ -48,10 +46,9 @@ export type ContextState = {
     //contexts to notify if values change
     contexts: string[];
     paths: string[];
-    spaceMap: { [key: string]: { [key: string]: string[]; }; };
+    spaceMap: { [key: string]: { [key: string]: string[] } };
     dbExists: boolean;
-    mdb: SpaceTables
-
+    mdb: SpaceTables;
 };
 
 export type TagsCache = {

@@ -1,13 +1,11 @@
-
-
 export type Filter = {
     field: string;
     fn: string;
     value: string;
     fType: string;
-  };
+};
 
-  export type Predicate = {
+export type Predicate = {
     view: string;
 
     listView: string;
@@ -25,9 +23,9 @@ export type Filter = {
     colsSize: Record<string, number>;
     colsCalc: Record<string, string>;
     limit: number;
-  };
+};
 
-  export type Sort = {
+export type Sort = {
     field: string;
     fn: string;
-  };
+};

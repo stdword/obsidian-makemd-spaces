@@ -5,16 +5,13 @@ import { ContextDef } from "shared/types/context";
 
 export const serializeDefString = (def: ContextDef[]) => JSON.stringify(def);
 
-export const serializeOptionValue = (
-    newOptions: SelectOption[],
-    value: Record<string, any>
-  ) => {
+export const serializeOptionValue = (newOptions: SelectOption[], value: Record<string, any>) => {
     return JSON.stringify({
-      ...value,
-      options: newOptions.map((f) => ({
-        name: f.name,
-        value: f.value,
-        color: f.color,
-      })),
+        ...value,
+        options: newOptions.map((f) => ({
+            name: f.name,
+            value: f.value,
+            color: f.color,
+        })),
     });
-  };
+};

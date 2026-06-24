@@ -10,13 +10,13 @@ import { SpaceInfo } from "./spaceInfo";
 import { ContextState, ISuperstate, PathState } from "./superstate";
 
 export interface SpaceManagerInterface {
-  primarySpaceAdapter: SpaceAdapter;
-  spaceAdapters: SpaceAdapter[];
-  superstate: ISuperstate;
-  api: IAPI;
-  getPathState: (path: string) => PathState;
-getPathsIndexMap: () => Map<string, PathState>;
-getContextsIndexMap: () => Map<string, ContextState>
+    primarySpaceAdapter: SpaceAdapter;
+    spaceAdapters: SpaceAdapter[];
+    superstate: ISuperstate;
+    api: IAPI;
+    getPathState: (path: string) => PathState;
+    getPathsIndexMap: () => Map<string, PathState>;
+    getContextsIndexMap: () => Map<string, ContextState>;
     loadPath: (path: string) => Promise<PathCache | void>;
     onSpaceUpdated(path: string, type: SpaceFragmentType): void;
     onFocusesUpdated(): void;
@@ -81,81 +81,79 @@ getContextsIndexMap: () => Map<string, ContextState>
     childrenForPath(path: string, type?: string): Promise<string[]>;
     readFocuses(): Promise<Focus[]>;
     saveFocuses(focuses: Focus[]): Promise<void>;
-  }
+}
 //Space Manager creates an abstraction that manipulates Spaces and their Items
 //Works both on local systems, non-local systems, ACLed systems and cloud systems
 
 export abstract class SpaceAdapter {
-  //authorities that this cosmoform supports
-  public schemes: string[];
-  public loadPath: (path: string) => Promise<PathCache | void>;
-  public initiateAdapter: (manager: SpaceManagerInterface) => void;
-  //basic space operations
-  public spaceInfoForPath: (path: string) => SpaceInfo;
-  public spaceDefForSpace: (path: string) => Promise<SpaceDefinition>;
-  public parentPathForPath: (path: string) => string;
-  public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void;
-  public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void;
-  public renameSpace: (path: string, newPath: string) => Promise<string>;
-  public deleteSpace: (path: string) => void;
-  public childrenForSpace: (path: string) => string[];
-  public allPaths: (type?: string[]) => string[];
-  public keysForCacheType: (type: string) => string[];
-  public spaceInitiated: (path: string) => Promise<boolean>;
+    //authorities that this cosmoform supports
+    public schemes: string[];
+    public loadPath: (path: string) => Promise<PathCache | void>;
+    public initiateAdapter: (manager: SpaceManagerInterface) => void;
+    //basic space operations
+    public spaceInfoForPath: (path: string) => SpaceInfo;
+    public spaceDefForSpace: (path: string) => Promise<SpaceDefinition>;
+    public parentPathForPath: (path: string) => string;
+    public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void;
+    public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void;
+    public renameSpace: (path: string, newPath: string) => Promise<string>;
+    public deleteSpace: (path: string) => void;
+    public childrenForSpace: (path: string) => string[];
+    public allPaths: (type?: string[]) => string[];
+    public keysForCacheType: (type: string) => string[];
+    public spaceInitiated: (path: string) => Promise<boolean>;
 
-  //Space Features
-  public contextForSpace: (path: string) => Promise<SpaceTable>;
+    //Space Features
+    public contextForSpace: (path: string) => Promise<SpaceTable>;
 
-  //Context
-  public contextInitiated: (path: string) => Promise<boolean>;
-  public tablesForSpace: (path: string) => Promise<SpaceTableSchema[]>;
-  public readTable: (path: string, name: string) => Promise<SpaceTable>;
-  public readAllTables: (path: string) => Promise<SpaceTables>;
-  public createTable: (path: string, schema: SpaceTableSchema) => Promise<void>;
-  public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;
-  public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<boolean>;
-  public deleteTable: (path: string, name: string) => Promise<void>;
+    //Context
+    public contextInitiated: (path: string) => Promise<boolean>;
+    public tablesForSpace: (path: string) => Promise<SpaceTableSchema[]>;
+    public readTable: (path: string, name: string) => Promise<SpaceTable>;
+    public readAllTables: (path: string) => Promise<SpaceTables>;
+    public createTable: (path: string, schema: SpaceTableSchema) => Promise<void>;
+    public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;
+    public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<boolean>;
+    public deleteTable: (path: string, name: string) => Promise<void>;
 
-  //basic item operations
-  public resolvePath: (path: string, source: string) => string;
-  public pathExists: (path: string) => Promise<boolean>;
-  public createItemAtPath: (parent: string, type: string, name: string, content: any) => Promise<string>;
-  public renamePath: (oldPath: string, newPath: string) => Promise<string>;
-  public copyPath: (source: string, destination: string, newName?: string) => Promise<string>;
-  public getPathInfo: (path: string) => Promise<Record<string, any>>;
-  public deletePath: (path: string) => void;
-  public readPath: (path: string) => Promise<string>;
+    //basic item operations
+    public resolvePath: (path: string, source: string) => string;
+    public pathExists: (path: string) => Promise<boolean>;
+    public createItemAtPath: (parent: string, type: string, name: string, content: any) => Promise<string>;
+    public renamePath: (oldPath: string, newPath: string) => Promise<string>;
+    public copyPath: (source: string, destination: string, newName?: string) => Promise<string>;
+    public getPathInfo: (path: string) => Promise<Record<string, any>>;
+    public deletePath: (path: string) => void;
+    public readPath: (path: string) => Promise<string>;
 
-  public readPathCache: (path: string) => Promise<PathCache>;
+    public readPathCache: (path: string) => Promise<PathCache>;
 
-  public writeToPath: (path: string, content: any, binary?: boolean) => Promise<void>;
+    public writeToPath: (path: string, content: any, binary?: boolean) => Promise<void>;
 
+    public allSpaces: (hidden?: boolean) => SpaceInfo[];
+    public allCaches: () => Map<string, PathCache>;
+    public addProperty: (path: string, property: SpaceProperty) => void;
+    public readProperties: (path: string) => Promise<{ [key: string]: any }>;
+    public saveProperties: (path: string, properties: { [key: string]: any }) => Promise<boolean>;
+    public renameProperty: (path: string, property: string, newProperty: string) => void;
+    public deleteProperty: (path: string, property: string) => void;
 
-  public allSpaces: (hidden?: boolean) => SpaceInfo[];
-  public allCaches: () => Map<string, PathCache>;
-  public addProperty: (path: string, property: SpaceProperty) => void;
-  public readProperties: (path: string) => Promise<{ [key: string]: any; }>;
-  public saveProperties: (path: string, properties: { [key: string]: any; }) => Promise<boolean>;
-  public renameProperty: (path: string, property: string, newProperty: string) => void;
-  public deleteProperty: (path: string, property: string) => void;
+    public readLabel: (path: string) => Promise<PathLabel>;
+    public saveLabel: (path: string, key: string, value: any) => void;
 
-  public readLabel: (path: string) => Promise<PathLabel>;
-  public saveLabel: (path: string, key: string, value: any) => void;
+    public addSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
+    public deleteSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
+    public saveSpaceProperty: (path: string, property: SpaceProperty, oldProperty: SpaceProperty) => Promise<boolean>;
 
-  public addSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
-  public deleteSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
-  public saveSpaceProperty: (path: string, property: SpaceProperty, oldProperty: SpaceProperty) => Promise<boolean>;
+    //tag management
+    public addTag: (path: string, tag: string) => void;
+    public deleteTag: (path: string, tag: string) => void;
+    public renameTag: (path: string, tag: string, newTag: string) => void;
+    public readTags: () => string[];
 
-  //tag management
-  public addTag: (path: string, tag: string) => void;
-  public deleteTag: (path: string, tag: string) => void;
-  public renameTag: (path: string, tag: string, newTag: string) => void;
-  public readTags: () => string[];
+    public pathsForTag: (tag: string) => string[];
+    public childrenForPath: (path: string, type?: string) => Promise<string[]>;
 
-  public pathsForTag: (tag: string) => string[];
-  public childrenForPath: (path: string, type?: string) => Promise<string[]>;
-
-  public readFocuses: () => Promise<Focus[]>;
-  public saveFocuses: (focuses: Focus[]) => Promise<void>;
+    public readFocuses: () => Promise<Focus[]>;
+    public saveFocuses: (focuses: Focus[]) => Promise<void>;
 }
-  

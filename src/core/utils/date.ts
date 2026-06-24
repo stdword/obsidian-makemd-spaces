@@ -1,8 +1,8 @@
 import { format, parseISO } from "date-fns";
 import { isDate, isFinite, isString } from "lodash";
 
-const defaultDateFormat = "MMM dd yyyy"
-const defaultTimeFormat = "h:mm a"
+const defaultDateFormat = "MMM dd yyyy";
+const defaultTimeFormat = "h:mm a";
 
 export const formatDate = (date: Date, dateFormat?: string) => {
     let dateString;
