@@ -6,6 +6,7 @@ export type SelectMenuProps = {
     multi?: boolean;
     value: string[];
     editable: boolean;
+    allowNewBySection?: Record<string, boolean | undefined>;
     options: SelectOption[];
     addKeyword?: string;
     defaultOptions?: SelectOption[];
@@ -16,6 +17,7 @@ export type SelectMenuProps = {
     searchable?: boolean;
     sections?: SelectSection[];
     showAll?: boolean;
+    optionLimitsBySection?: Record<string, number | undefined>;
     showSections?: boolean;
     previewComponent?: React.ReactNode;
     onMoreOption?: (e: React.MouseEvent, option: string) => void;
@@ -23,6 +25,7 @@ export type SelectMenuProps = {
     onHide?: () => void;
     isDisclosure?: boolean;
     wrapperClass?: string;
+    centered?: boolean;
     onSelectSection?: (section: string) => void;
 };
 

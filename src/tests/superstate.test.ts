@@ -79,10 +79,6 @@ describe("Superstate SVG handling", () => {
         expect(superstate.imagesCache.has("logo.svg")).toBe(false);
         expect(superstate.spaceManager.readPath).not.toHaveBeenCalled();
         expect(superstate.persister.store).toHaveBeenCalledTimes(1);
-        expect(superstate.persister.store).toHaveBeenCalledWith(
-            "icons/logo.svg",
-            expect.any(String),
-            "path",
-        );
+        expect(superstate.persister.store).toHaveBeenCalledWith("icons/logo.svg", expect.any(String), "path");
     });
 });

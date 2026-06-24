@@ -64,6 +64,26 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     },
                 },
                 {
+                    name: "searchMenuTagsLimit",
+                    category: "system",
+                    type: "optional-number",
+                },
+                {
+                    name: "searchMenuFoldersLimit",
+                    category: "system",
+                    type: "optional-number",
+                },
+                {
+                    name: "searchMenuFilesLimit",
+                    category: "system",
+                    type: "optional-number",
+                },
+                {
+                    name: "searchMenuRefsLimit",
+                    category: "system",
+                    type: "optional-number",
+                },
+                {
                     name: "folderIndentationLines",
                     category: "appearance",
                     type: "boolean",
@@ -150,6 +170,17 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                         Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
                         this.plugin.saveSettings();
                         if (setting.onChange) setting.onChange(value);
+                    }),
+                );
+            }
+            if (setting.type == "optional-number") {
+                newSetting.addText((text) =>
+                    text.setValue(this.plugin.superstate.settings[setting.name]?.toString() ?? "").onChange((value: string) => {
+                        const trimmed = value.trim();
+                        const parsed = trimmed.length > 0 ? parseInt(trimmed, 10) : undefined;
+                        Object.assign(this.plugin.superstate.settings, { [setting.name]: Number.isFinite(parsed) ? parsed : undefined });
+                        this.plugin.saveSettings();
+                        if (setting.onChange) setting.onChange(parsed);
                     }),
                 );
             }

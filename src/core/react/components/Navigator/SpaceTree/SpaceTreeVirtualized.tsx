@@ -5,22 +5,37 @@ import { Pos } from "shared/types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { createSpace, TreeNode } from "core/superstate/utils/spaces";
+import { addTag } from "core/superstate/utils/tags";
 import { DragProjection } from "core/utils/dnd/dragPath";
+import { tagSpacePathFromTag } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { CSSProperties, useContext } from "react";
 import { windowFromDocument } from "shared/utils/dom";
 import { showSpacesMenu } from "../../UI/Menus/properties/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
+import { ensureTag } from "utils/tags";
 
 export function showSpacesMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void) {
     showSpacesMenu(
         rect,
         windowFromDocument(document),
         superstate,
-        (link) => {
-            const isNew = !superstate.spacesIndex.has(link);
-            if (isNew) {
+        (link, isNewOption, type) => {
+            const missingSpace = !superstate.spacesIndex.has(link);
+            if (isNewOption && type == "tags") {
+                const tagPath = tagSpacePathFromTag(ensureTag(link));
+                Promise.resolve(addTag(superstate, link)).then(() => {
+                    saveActiveSpace(tagPath);
+                    superstate.ui.openPath(tagPath, false);
+                });
+                return;
+            }
+            if (isNewOption && type == "refs") {
+                saveActiveSpace(link);
+                return;
+            }
+            if (missingSpace) {
                 createSpace(superstate, link, {}).then(() => {
                     saveActiveSpace(link);
                     superstate.ui.openPath(link, false);
@@ -30,7 +45,7 @@ export function showSpacesMenuInRect(rect: DOMRect, document: Document, supersta
             saveActiveSpace(link);
         },
         true,
-        false,
+        true,
     );
 }
 

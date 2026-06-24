@@ -81,13 +81,20 @@ export const MenuWrapper = (props: { rect: Rect; ui: UIManager; anchor: Anchors;
     );
 };
 
-export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; win: Window; fc: JSX.Element; props?: any; onHide?: () => void; onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject; className?: string; force?: boolean }): MenuObject => {
+export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; win: Window; fc: JSX.Element; props?: any; onHide?: () => void; onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject; className?: string; centered?: boolean; force?: boolean }): MenuObject => {
+    const backdropElement = props.centered ? props.win.document.createElement("div") : null;
     const portalElement = props.win.document.createElement("div");
     portalElement.classList.add("mk-menu");
+    if (props.centered) portalElement.classList.add("mk-menu-centered");
 
+    if (backdropElement) {
+        backdropElement.classList.add("mk-menu-backdrop");
+        props.win.document.body.appendChild(backdropElement);
+    }
     props.win.document.body.appendChild(portalElement);
 
     let submenu: MenuObject = null;
+    let resizeObserver: ResizeObserver | null = null;
 
     const hideFunction = () => {
         let hasBeenCalled = false;
@@ -97,12 +104,15 @@ export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; wi
             if (hasBeenCalled) return;
             hasBeenCalled = true;
             setTimeout(() => {
+                resizeObserver?.disconnect();
                 root.unmount();
-                props.win.document.body.removeChild(portalElement);
+                if (portalElement.isConnected) props.win.document.body.removeChild(portalElement);
+                if (backdropElement?.isConnected) props.win.document.body.removeChild(backdropElement);
             }, 50);
         };
     };
     const hide = hideFunction();
+    backdropElement?.addEventListener("click", () => hide(true));
 
     const root = props.ui.createRoot(portalElement);
     const updateRoot = (newProps: any) => {
@@ -129,11 +139,17 @@ export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; wi
     };
 
     updateRoot(props.props);
-    portalElement.style.position = "absolute";
-    portalElement.style.left = `${props.rect.x}px`;
-    portalElement.style.top = `${props.rect.y}px`;
+    if (props.centered) {
+        portalElement.style.position = "fixed";
+        portalElement.style.left = "50%";
+        portalElement.style.top = "50%";
+    } else {
+        portalElement.style.position = "absolute";
+        portalElement.style.left = `${props.rect.x}px`;
+        portalElement.style.top = `${props.rect.y}px`;
+    }
 
-    const resizeObserver = new ResizeObserver((entries) => {
+    resizeObserver = props.centered ? null : new ResizeObserver((entries) => {
         const newPos = calculateBoundsBasedOnPosition(
             props.rect,
             entries[0].target.getBoundingClientRect(),
@@ -152,7 +168,7 @@ export const showMenu = (props: { rect: Rect; ui: UIManager; anchor: Anchors; wi
     });
 
     // start observing a DOM node
-    resizeObserver.observe(portalElement);
+    resizeObserver?.observe(portalElement);
     // Ensure the portalElement stays within the window
     return {
         update: updateRoot,

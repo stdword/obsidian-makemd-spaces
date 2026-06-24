@@ -13,6 +13,7 @@ import SelectMenuPillComponent from "./SelectMenuPill";
 import SelectMenuSuggestions from "./SelectMenuSuggestions";
 import { focusNextElement } from "./concerns/focusNextElement";
 import { matchAny, matchExact } from "./concerns/matchers";
+import { applySectionLimits } from "./selectMenuLimits";
 const KEYS = {
     ENTER: "Enter",
     TAB: "Tab",
@@ -91,12 +92,14 @@ type SelectMenuComponentProps = {
     onValidate?: (tag: SelectOption) => boolean;
     showSections?: boolean;
     sections?: SelectSection[];
+    optionLimitsBySection?: Record<string, number | undefined>;
     minQueryLength?: number;
     maxSuggestionsLength?: number;
     classNames?: Record<string, string>;
     inputAttributes?: Record<string, any>;
     addKeyword?: string;
     allowNew?: boolean;
+    allowNewBySection?: Record<string, boolean | undefined>;
     isDisclosure?: boolean;
 };
 
@@ -155,7 +158,7 @@ function getOptions(props: SelectMenuComponentProps, query: string, section: str
     //   );
     // }
 
-    options = options.slice(0, props.maxSuggestionsLength);
+    options = applySectionLimits(options, section, props.optionLimitsBySection).slice(0, props.maxSuggestionsLength);
 
     if (props.newTagText && findMatchIndex(options, query) === -1) {
         options.push({ id: 0, name: query, value: query });
@@ -191,6 +194,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
     const [focused, setFocused] = useState(false);
     const [index, setIndex] = useState(0);
     const onComposition = useRef(false);
+    const allowNewInSection = props.allowNew && (!props.allowNewBySection || Boolean(props.allowNewBySection[section]));
     useEffect(() => {
         if (ref) {
             ref.current = () => {
@@ -302,6 +306,10 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
 
     const addTag = (tag: SelectOption, modifiers: PointerModifiers) => {
         if (tag.disabled) {
+            return;
+        }
+
+        if (!options.some((option) => option.value == tag.value) && !allowNewInSection) {
             return;
         }
 
@@ -428,7 +436,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             style={
                 !props.suggestionsOnly
                     ? ({
-                          "--mk-menu-max-height": "200px",
+                          "--mk-menu-max-height": props.wrapperClass?.includes("mk-search-menu") ? "340px" : "200px",
                       } as React.CSSProperties)
                     : {}
             }
@@ -479,7 +487,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             ) : (
                 <></>
             )}
-            {options.length || props.allowNew ? (
+            {options.length || allowNewInSection ? (
                 <SelectMenuSuggestions
                     ui={props.ui}
                     hide={() => {
@@ -496,7 +504,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
                     classNames={classNames}
                     expanded={expanded}
                     selectOption={addTag}
-                    allowNew={props.allowNew}
+                    allowNew={allowNewInSection}
                     moreOption={props.onMoreOption}
                     deleteOption={props.onDeleteOption}
                     isDisclosureMenu={props.isDisclosure}

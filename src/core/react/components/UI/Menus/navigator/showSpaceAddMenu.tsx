@@ -1,4 +1,4 @@
-import { createSpace, defaultSpace, newPathInSpace, pinPathToSpaceAtIndex } from "core/superstate/utils/spaces";
+import { createSpace, defaultSpace, newPathInSpace, pinPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
 import { isString } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";
@@ -29,40 +29,6 @@ export const defaultAddAction = async (superstate: Superstate, _space: SpaceStat
 
 export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, _isSubmenu?: boolean, onHide?: () => void) => {
     const menuOptions: SelectOption[] = [];
-
-    menuOptions.push({
-        name: i18n.labels.createSection,
-        icon: "ui//folder",
-        onClick: (e) => {
-            superstate.ui.openModal(
-                i18n.labels.createSection,
-                <InputModal
-                    saveLabel={i18n.buttons.createFolder}
-                    value={""}
-                    saveValue={(v) => {
-                        let pathState = superstate.pathsIndex.get(space?.path);
-                        if (!pathState) {
-                            pathState = superstate.pathsIndex.get("/");
-                        }
-                        const newName = v.replace(/\//g, "");
-                        const parentPath = pathState?.subtype == "folder" ? pathState.path : pathState.parent ? pathState.parent : "/";
-
-                        const newPath = !parentPath || parentPath == "/" ? newName : parentPath + "/" + newName;
-                        if (newName.length == 0) {
-                            superstate.ui.notify(i18n.notice.newSpaceName);
-                            return;
-                        }
-                        if (superstate.spacesIndex.has(newPath)) {
-                            superstate.ui.notify(i18n.notice.duplicateSpaceName);
-                            return;
-                        }
-                        createSpace(superstate, newPath, {});
-                    }}
-                ></InputModal>,
-                windowFromDocument(e.view.document),
-            );
-        },
-    });
 
     menuOptions.push({
         name: i18n.labels.createNote,
@@ -99,14 +65,48 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
         menuOptions.push(menuSeparator);
 
         menuOptions.push({
+            name: i18n.labels.createFolder,
+            icon: "ui//folder",
+            onClick: (e) => {
+                let pathState = superstate.pathsIndex.get(space?.path);
+                if (!pathState) {
+                    pathState = superstate.pathsIndex.get("/");
+                }
+                const parentPath = pathState?.subtype == "folder" ? pathState.path : pathState.parent ? pathState.parent : "/";
+                const pathForName = (value: string) => {
+                    const newName = value.replace(/\//g, "").trim();
+                    const newPath = !parentPath || parentPath == "/" ? newName : parentPath + "/" + newName;
+                    return { newName, newPath };
+                };
+
+                superstate.ui.openModal(
+                    i18n.labels.createFolder,
+                    <InputModal
+                        saveLabel={i18n.buttons.createFolder}
+                        value={""}
+                        saveValue={(v) => {
+                            const { newPath } = pathForName(v);
+                            createSpace(superstate, newPath, {});
+                        }}
+                        validateValue={(v) => {
+                            const { newName, newPath } = pathForName(v);
+                            if (newName.length == 0) return i18n.notice.emptyfolderName;
+                            if (superstate.spacesIndex.has(newPath)) return i18n.notice.duplicateFolderName;
+                        }}
+                    ></InputModal>,
+                    windowFromDocument(e.view.document),
+                );
+            },
+        });
+
+        menuOptions.push({
             name: i18n.buttons.addIntoSpace,
             icon: "ui//link",
             onClick: (e) => {
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
                 showLinkMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                    if (isString(link)) {
-                        pinPathToSpaceAtIndex(superstate, space, link);
-                    }
+                    if (isString(link))
+                        linkPathToSpaceAtIndex(superstate, space, link);
                 });
                 e.stopPropagation();
             },

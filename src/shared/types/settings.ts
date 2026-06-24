@@ -24,4 +24,8 @@ export interface MakeMDSettings {
     overrideNativeMenu: boolean;
     revealActiveFile: boolean;
     spaceRowHeight: number;
+    searchMenuTagsLimit?: number;
+    searchMenuFoldersLimit?: number;
+    searchMenuFilesLimit?: number;
+    searchMenuRefsLimit?: number;
 }

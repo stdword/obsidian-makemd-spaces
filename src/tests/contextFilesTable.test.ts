@@ -112,17 +112,7 @@ describe("context files table", () => {
             },
         };
 
-        const result = parseContextTableToCache(
-            { path: "Vault" } as any,
-            mdb as any,
-            ["Note.md", "Folder"],
-            true,
-            pathsIndex,
-            new IndexMap(),
-            {} as any,
-            new Map(),
-            {},
-        );
+        const result = parseContextTableToCache({ path: "Vault" } as any, mdb as any, ["Note.md", "Folder"], true, pathsIndex, new IndexMap(), {} as any, new Map(), {});
 
         applyContextLabelsToPaths(result.cache.contextTable, pathsIndex);
 

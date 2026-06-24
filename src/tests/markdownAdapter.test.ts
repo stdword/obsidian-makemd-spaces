@@ -1,79 +1,79 @@
 jest.mock(
-  "obsidian",
-  () => ({
-    TFile: class TFile {},
-    TFolder: class TFolder {},
-  }),
-  { virtual: true },
+    "obsidian",
+    () => ({
+        TFile: class TFile {},
+        TFolder: class TFolder {},
+    }),
+    { virtual: true },
 );
 
 import { ObsidianMarkdownFiletypeAdapter } from "adapters/obsidian/filetypes/markdownAdapter";
 
 describe("ObsidianMarkdownFiletypeAdapter", () => {
-  const createAdapter = () => {
-    const plugin = {
-      app: {
-        metadataCache: {
-          getCache: jest.fn(() => ({
-            frontmatter: {
-              tags: "frontmatter-tag",
-              sticker: "frontmatter-sticker",
-              color: "frontmatter-color",
+    const createAdapter = () => {
+        const plugin = {
+            app: {
+                metadataCache: {
+                    getCache: jest.fn(() => ({
+                        frontmatter: {
+                            tags: "frontmatter-tag",
+                            sticker: "frontmatter-sticker",
+                            color: "frontmatter-color",
+                        },
+                        links: [] as any[],
+                        tags: [{ tag: "#inline-tag" }],
+                    })),
+                    resolvedLinks: {},
+                    getFirstLinkpathDest: jest.fn(),
+                },
             },
-            links: [] as any[],
-            tags: [{ tag: "#inline-tag" }],
-          })),
-          resolvedLinks: {},
-          getFirstLinkpathDest: jest.fn(),
-        },
-      },
-      superstate: {
-        settings: {
-          fmKeyBanner: "banner",
-          fmKeyColor: "color",
-          fmKeySticker: "sticker",
-        },
-      },
-    };
-    const adapter = new ObsidianMarkdownFiletypeAdapter(plugin as any);
-    const middleware = {
-      getFileCache: jest.fn(() => ({
-        label: {
-          name: "Note.md",
-          sticker: "cache-sticker",
-          color: "cache-color",
-        },
-      })),
-      updateFileCache: jest.fn(),
+            superstate: {
+                settings: {
+                    fmKeyBanner: "banner",
+                    fmKeyColor: "color",
+                    fmKeySticker: "sticker",
+                },
+            },
+        };
+        const adapter = new ObsidianMarkdownFiletypeAdapter(plugin as any);
+        const middleware = {
+            getFileCache: jest.fn(() => ({
+                label: {
+                    name: "Note.md",
+                    sticker: "cache-sticker",
+                    color: "cache-color",
+                },
+            })),
+            updateFileCache: jest.fn(),
+        };
+
+        adapter.initiate(middleware as any);
+
+        return { adapter, middleware };
     };
 
-    adapter.initiate(middleware as any);
+    it("only exposes tags as markdown content", () => {
+        const { adapter } = createAdapter();
 
-    return { adapter, middleware };
-  };
+        expect(adapter.contentTypes({ extension: "md" } as any)).toEqual(["tags"]);
+        expect(adapter.cacheTypes({ extension: "md" } as any)).toEqual(["tags"]);
+    });
 
-  it("only exposes tags as markdown content", () => {
-    const { adapter } = createAdapter();
+    it("uses file cache for markdown sticker and color", async () => {
+        const { adapter, middleware } = createAdapter();
 
-    expect(adapter.contentTypes({ extension: "md" } as any)).toEqual(["tags"]);
-    expect(adapter.cacheTypes({ extension: "md" } as any)).toEqual(["tags"]);
-  });
+        await adapter.parseCache({ path: "Note.md", name: "Note.md" } as any, false);
 
-  it("uses file cache for markdown sticker and color", async () => {
-    const { adapter, middleware } = createAdapter();
-
-    await adapter.parseCache({ path: "Note.md", name: "Note.md" } as any, false);
-
-    expect(middleware.updateFileCache).toHaveBeenCalledWith(
-      "Note.md",
-      expect.objectContaining({
-        label: expect.objectContaining({
-          sticker: "cache-sticker",
-          color: "cache-color",
-        }),
-        tags: ["#inline-tag", "#frontmatter-tag"],
-      }),
-      false,
-    );
-  });
+        expect(middleware.updateFileCache).toHaveBeenCalledWith(
+            "Note.md",
+            expect.objectContaining({
+                label: expect.objectContaining({
+                    sticker: "cache-sticker",
+                    color: "cache-color",
+                }),
+                tags: ["#inline-tag", "#frontmatter-tag"],
+            }),
+            false,
+        );
+    });
 });

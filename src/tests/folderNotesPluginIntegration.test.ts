@@ -6,7 +6,7 @@ const item = (path: string, type = "file"): PathStateWithRank =>
         path,
         type,
         label: {},
-    } as PathStateWithRank);
+    }) as PathStateWithRank;
 
 const superstateWithFolderNotes = (settings?: Record<string, unknown>) =>
     ({
@@ -19,7 +19,7 @@ const superstateWithFolderNotes = (settings?: Record<string, unknown>) =>
                 },
             },
         },
-    } as any);
+    }) as any;
 
 const superstateWithFolderNotesInMainFrame = (settings?: Record<string, unknown>) =>
     ({
@@ -34,7 +34,7 @@ const superstateWithFolderNotesInMainFrame = (settings?: Record<string, unknown>
                 },
             },
         },
-    } as any);
+    }) as any;
 
 describe("FolderNotesPluginIntegration", () => {
     it("returns all folder items when the folder-notes plugin is not installed", () => {
@@ -58,10 +58,7 @@ describe("FolderNotesPluginIntegration", () => {
     });
 
     it("reads folder-notes settings from the Obsidian UI main frame plugin", () => {
-        const items = [
-            item("Projects/Content/Content.canvas"),
-            item("Projects/Content/Ideas.canvas"),
-        ];
+        const items = [item("Projects/Content/Content.canvas"), item("Projects/Content/Ideas.canvas")];
         const superstate = superstateWithFolderNotesInMainFrame({
             folderNoteName: "{{folder_name}}",
             supportedFileTypes: ["md", "canvas", "base"],

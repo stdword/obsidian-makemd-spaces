@@ -3,6 +3,19 @@ import React, { useEffect, useRef, useState } from "react";
 import { default as i18n } from "shared/i18n";
 
 export type SectionAction = "rename" | "create";
+export type InputModalValidator = (value: string) => string | undefined;
+export type InputModalProps = {
+    value: string;
+    saveValue: (value: string) => void;
+    saveLabel: string;
+    validateValue?: InputModalValidator;
+    hide?: () => void;
+};
+
+export const validateInputModalValue = (value: string, validateValue?: InputModalValidator) => {
+    if (!validateValue) return;
+    return validateValue(value);
+};
 
 export const openInputModal = (
   superstate: Superstate,
@@ -10,14 +23,21 @@ export const openInputModal = (
   value: string,
   saveValue: (val: string) => void,
   saveLabel: string,
-  win: Window
+  win: Window,
+  validateValue?: InputModalValidator
 ) => {
-    superstate.ui.openModal(title, <InputModal value={value} saveValue={saveValue} saveLabel={saveLabel} />, win);
+    superstate.ui.openModal(title, <InputModal value={value} saveValue={saveValue} saveLabel={saveLabel} validateValue={validateValue} />, win);
 };
 
-export const InputModal = (props: { value: string; saveValue: (value: string) => void; saveLabel: string; hide?: () => void }) => {
+export const InputModal = (props: InputModalProps) => {
     const [value, setValue] = useState(props.value);
+    const [error, setError] = useState<string>();
     const save = () => {
+        const validationError = validateInputModalValue(value, props.validateValue);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
         props.saveValue(value);
         if (props.hide) props.hide();
     };
@@ -33,8 +53,12 @@ export const InputModal = (props: { value: string; saveValue: (value: string) =>
                 ref={ref}
                 value={value}
                 type="text"
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                    setValue(e.target.value);
+                    setError(undefined);
+                }}
                 className="mk-input mk-input-large"
+                aria-invalid={!!error}
                 style={{
                     width: "100%",
                 }}
@@ -42,6 +66,7 @@ export const InputModal = (props: { value: string; saveValue: (value: string) =>
                     if (e.key === "Enter") save();
                 }}
             ></input>
+            {error && <div className="mk-field-error" role="alert">{error}</div>}
             <div className="mk-modal-actions">
                 <button onClick={() => save()}>{props.saveLabel}</button>
                 <button onClick={() => props.hide && props.hide()}>{i18n.buttons.cancel}</button>

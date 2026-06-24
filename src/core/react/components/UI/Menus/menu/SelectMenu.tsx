@@ -2,6 +2,7 @@ import { PointerModifiers } from "core/types/ui";
 import { SelectMenuProps, SelectOption, SelectOptionType } from "makemd-core";
 import React, { useCallback, useEffect, useState } from "react";
 import SelectMenuComponent from "./SelectMenuComponent";
+import { maxSuggestionsLengthForMenu } from "./selectMenuLimits";
 
 const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => void }, ref: any) => {
     const [selectedSection, setSelectedSection] = useState<string | null>(null);
@@ -135,9 +136,11 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => voi
             onHover={props.onHover}
             showSections={props.showSections}
             sections={props.sections}
-            maxSuggestionsLength={props.showAll ? Math.min(50, props.options.length) : 25}
+            optionLimitsBySection={props.optionLimitsBySection}
+            maxSuggestionsLength={maxSuggestionsLengthForMenu(Boolean(props.showAll), props.options.length)}
             suggestionsOnly={!props.searchable && !props.editable}
             allowNew={props.editable}
+            allowNewBySection={props.allowNewBySection}
             previewComponent={props.previewComponent}
             isDisclosure={props.isDisclosure}
         />

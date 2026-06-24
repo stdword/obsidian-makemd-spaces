@@ -267,7 +267,7 @@ export const en = {
         // changeBannerShort: "Cover",
         // removeBanner: "Remove Cover",
         rename: "Change Name",
-        createFolder: "New Folder",
+        createFolder: "Create Folder",
         createCanvas: "New Canvas",
         createDrawing: "New Drawing",
         createBase: "New Base",
@@ -345,7 +345,7 @@ export const en = {
         // done: "Done",
         // reposition: "Reposition",
         // tables: "Tables",
-        createSection: "New Folder",
+        createFolder: "New Folder",
         createNote: "New Note",
         // select: "Select",
         // pinnedItems: "Pinned Items",
@@ -670,8 +670,8 @@ export const en = {
         copyError: "Copy Error",
         reload: "Reload",
         // error: "Error: ",
-        newSpaceName: "New Space Name",
-        duplicateSpaceName: "Duplicate Space Name",
+        emptyfolderName: "Folder name must be non-empty",
+        duplicateFolderName: "This folder already exist",
         noPropertyName: "No Property Name",
         // duplicatePropertyName: "Duplicate Property Name",
         // palette: "Palette",
@@ -738,6 +738,22 @@ export const en = {
         spaceRowHeight: {
             name: "Row Height",
             desc: "The height for each row in navigator (in pixels), default is 29",
+        },
+        searchMenuTagsLimit: {
+            name: "Search Menu Tag Limit",
+            desc: "Maximum tag suggestions in search menus. Leave empty to show all tags.",
+        },
+        searchMenuFoldersLimit: {
+            name: "Search Menu Folder Limit",
+            desc: "Maximum folder suggestions in search menus. Leave empty to show all folders.",
+        },
+        searchMenuFilesLimit: {
+            name: "Search Menu File Limit",
+            desc: "Maximum file suggestions in search menus. Leave empty to show all files.",
+        },
+        searchMenuRefsLimit: {
+            name: "Search Menu Ref Limit",
+            desc: "Maximum ref suggestions in search menus. Leave empty to show all refs.",
         },
         folderIndentationLines: {
             name: "Show Folder Indentation Lines",

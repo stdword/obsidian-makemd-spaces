@@ -21,6 +21,7 @@ export const showSelectMenu = (
     fc: <SelectMenu {...optionProps} />,
     onHide,
     className: optionProps.searchable ? "mk-combo-menu" : "mk-select-menu",
+    centered: optionProps.centered,
     force,
   });
 };

@@ -53,6 +53,27 @@
 .mk-menu-wrapper {
     max-height: inherit;
 }
+
+.mk-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--layer-menu) - 1);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.mk-menu.mk-menu-centered {
+    position: fixed;
+    left: 50%;
+    top: max(48px, 10vh);
+    transform: translateX(-50%);
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - max(96px, 20vh));
+}
+
+.mk-menu.mk-menu-centered .mk-menu-wrapper {
+    max-width: inherit;
+}
+
 .mk-menu-suggester {
     visibility: hidden;
 }
@@ -183,6 +204,10 @@
     flex-wrap: wrap;
     /* clicking anywhere will focus the input */
     cursor: text;
+}
+
+.mk-menu-container.mk-search-menu {
+    width: min(576px, calc(100vw - 48px));
 }
 
 .mk-menu-sections {
