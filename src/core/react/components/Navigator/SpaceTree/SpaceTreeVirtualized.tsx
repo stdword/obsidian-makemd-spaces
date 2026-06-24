@@ -16,6 +16,15 @@ import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
 
+const isTagSpacePath = (path: string) => path?.startsWith("spaces://#");
+
+const ensureTagSpaceLoaded = (superstate: Superstate, tagPath: string) => {
+    if (superstate.spacesIndex.has(tagPath)) {
+        return Promise.resolve(superstate.spacesIndex.get(tagPath));
+    }
+    return Promise.resolve(superstate.reloadSpace(superstate.spaceManager.spaceInfoForPath(tagPath), null, true));
+};
+
 export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void) {
     showOpenMenu(
         rect,
@@ -28,6 +37,12 @@ export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate
                 Promise.resolve(addTag(superstate, link)).then(() => {
                     saveActiveSpace(tagPath);
                     superstate.ui.openPath(tagPath, false);
+                });
+                return;
+            }
+            if (isTagSpacePath(link)) {
+                ensureTagSpaceLoaded(superstate, link).then(() => {
+                    saveActiveSpace(link);
                 });
                 return;
             }

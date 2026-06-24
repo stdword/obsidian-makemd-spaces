@@ -333,6 +333,7 @@
 .mk-menu-option mark {
     text-decoration: underline;
     background: none;
+    color: inherit;
     font-weight: 600;
     border-radius: unset;
     margin: unset;

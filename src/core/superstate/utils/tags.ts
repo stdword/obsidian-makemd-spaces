@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import { tagSpacePathFromTag } from "core/utils/strings";
 import { ensureTag } from "utils/tags";
 import { metadataPathForSpace } from "./spaces";
 
@@ -19,5 +20,10 @@ export const addTagToPath = (superstate: Superstate, path: string, tag: string) 
 };
 
 export const addTag = (superstate: Superstate, tag: string) => {
-    return superstate.spaceManager.createSpace(ensureTag(tag), '', null);
-}
+    const normalizedTag = ensureTag(tag);
+    const tagPath = tagSpacePathFromTag(normalizedTag);
+    if (superstate.spacesIndex.has(tagPath)) {
+        return Promise.resolve(superstate.spacesIndex.get(tagPath));
+    }
+    return Promise.resolve(superstate.spaceManager.createSpace(normalizedTag, "", null)).then(() => superstate.reloadSpace(superstate.spaceManager.spaceInfoForPath(tagPath), null, true));
+};

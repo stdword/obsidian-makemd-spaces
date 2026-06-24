@@ -4,6 +4,10 @@ describe("showLinkMenu", () => {
     it("uses the shared search menu tabs without system, tags, or new item creation", () => {
         const openMenu = jest.fn();
         const superstate = {
+            allSpaces: jest.fn(() => [
+                { name: "Folder", path: "Folder", type: "folder" },
+                { name: "tag", path: "spaces://#tag", type: "tag" },
+            ]),
             pathsIndex: new Map([
                 ["/", { name: "Home", path: "/", type: "space", subtype: "vault", label: {}, hidden: false }],
                 ["Folder", { name: "Folder", path: "Folder", type: "space", subtype: "folder", label: {}, hidden: false }],
@@ -29,5 +33,25 @@ describe("showLinkMenu", () => {
         expect(menuConfig.optionLimitsBySection).toEqual({ folders: 75, files: 75 });
         expect(menuConfig.options.map((option: any) => option.value)).toEqual(["Folder", "Note.md"]);
         expect(menuConfig.options.map((option: any) => option.section)).toEqual(["folders", "files"]);
+    });
+
+    it("passes the selected path as a string when an item is chosen", () => {
+        const openMenu = jest.fn();
+        const saveLink = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn(() => [{ name: "Folder", path: "Folder", type: "folder" }]),
+            pathsIndex: new Map(),
+            settings: {},
+            ui: {
+                openMenu,
+            },
+        } as any;
+
+        showLinkMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink);
+
+        const menuConfig = openMenu.mock.calls[0][1];
+        menuConfig.saveOptions(["Folder"], ["Folder"]);
+
+        expect(saveLink).toHaveBeenCalledWith("Folder");
     });
 });

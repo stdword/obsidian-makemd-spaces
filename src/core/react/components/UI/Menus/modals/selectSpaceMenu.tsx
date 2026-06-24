@@ -23,6 +23,7 @@ export const showOpenMenu = (
         },
         selectProps: {
             addKeyword: "Create",
+            editable: true,
         },
     });
 };

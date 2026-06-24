@@ -187,8 +187,17 @@ export class Superstate implements ISuperstate {
         await Promise.all(promises);
     }
 
+    private pathsForTagSpace(spacePath: string): string[] {
+        if (!spacePath?.startsWith("spaces://#")) return [];
+
+        const tag = spacePath.slice("spaces://".length).toLowerCase();
+        const indexedPaths = [...this.tagsMap.getInverse(tag)];
+        const adapterPaths = this.spaceManager.pathsForTag?.(tag) ?? [];
+        return uniq([...indexedPaths, ...adapterPaths]);
+    }
+
     public getSpaceItems(spacePath: string): PathStateWithRank[] {
-        const items = [...this.spacesMap.getInverse(spacePath)];
+        const items = spacePath?.startsWith("spaces://#") ? this.pathsForTagSpace(spacePath) : [...this.spacesMap.getInverse(spacePath)];
         const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
 
         return items
@@ -643,25 +652,28 @@ export class Superstate implements ISuperstate {
         const uri = this.spaceManager.uriByString(space.path);
         if (!uri) return null;
         const type: SpaceType = this.spaceManager.spaceTypeByString(uri);
+        if (!pathState) {
+            const pathCache = await this.spaceManager.readPathCache(space.path);
+            pathState = {
+                path: space.path,
+                name: space.name,
+                tags: pathCache?.tags ?? [],
+                spaces: [],
+                outlinks: [],
+                hidden: false,
+                parent: pathCache?.parent ?? "",
+                metadata: pathCache?.metadata,
+                type: "space",
+                subtype: type,
+                label: pathCache?.label ?? { sticker: "", color: "" },
+            };
+            this.pathsIndex.set(space.path, pathState);
+            this.persister.store(space.path, serializePathState(pathState), "path");
+        }
         const propertyTypes: SpaceProperty[] = [];
         let properties = {};
 
         if (propertyTypes.length > 0) {
-            if (!pathState) {
-                const pathCache = await this.spaceManager.readPathCache(space.path);
-                pathState = {
-                    path: space.path,
-                    name: space.name,
-                    tags: [],
-                    spaces: [],
-                    outlinks: [],
-                    hidden: false,
-                    metadata: pathCache?.metadata,
-                    type: "space",
-                    subtype: type,
-                    label: pathCache?.label,
-                };
-            }
             properties = await this.spaceManager.readProperties(space.defPath).then((f) => linkContextRow(this.pathsIndex, this.contextsIndex, f, propertyTypes, pathState));
         }
 

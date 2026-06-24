@@ -110,17 +110,22 @@ export const showMenu = (props: {
 
     const hideFunction = () => {
         let hasBeenCalled = false;
-        return (supress: boolean) => {
+        return (supress: boolean, immediate?: boolean) => {
             if (props.onHide && !supress) props.onHide();
             if (submenu) submenu.hide(true);
             if (hasBeenCalled) return;
             hasBeenCalled = true;
-            setTimeout(() => {
+            const remove = () => {
                 resizeObserver?.disconnect();
                 root.unmount();
                 if (portalElement.isConnected) props.win.document.body.removeChild(portalElement);
                 if (backdropElement?.isConnected) props.win.document.body.removeChild(backdropElement);
-            }, 50);
+            };
+            if (immediate) {
+                remove();
+            } else {
+                setTimeout(remove, 50);
+            }
         };
     };
     const hide = hideFunction();
@@ -129,9 +134,9 @@ export const showMenu = (props: {
     const root = props.ui.createRoot(portalElement);
     const updateRoot = (newProps: any) => {
         root.render(
-            <MenuWrapper rect={props.rect} ui={props.ui} hide={(supress?: boolean) => hide(supress)} anchor={props.anchor}>
+            <MenuWrapper rect={props.rect} ui={props.ui} hide={(supress?: boolean, immediate?: boolean) => hide(supress, immediate)} anchor={props.anchor}>
                 {cloneElement(props.fc, {
-                    hide: (supress?: boolean) => hide(supress),
+                    hide: (supress?: boolean, immediate?: boolean) => hide(supress, immediate),
                     onSubmenu: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => {
                         const menu = openSubmenu(props.rect, () => {
                             if (props.onHide) {

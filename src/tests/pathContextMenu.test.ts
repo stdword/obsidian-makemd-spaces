@@ -10,7 +10,7 @@ jest.mock(
     { virtual: true },
 );
 
-jest.mock("core/react/components/UI/Menus/properties/colorPickerMenu", () => ({
+jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
     showColorPickerMenu: jest.fn((_superstate, _offset, _win, _color, saveValue) => saveValue("#123456")),
 }));
 

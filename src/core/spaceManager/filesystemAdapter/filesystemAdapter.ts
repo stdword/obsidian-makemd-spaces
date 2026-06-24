@@ -196,6 +196,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                         color: "",
                     },
                     type: "space",
+                    subtype: "tag",
                     parent: "",
                     tags: [],
                     readOnly: false,

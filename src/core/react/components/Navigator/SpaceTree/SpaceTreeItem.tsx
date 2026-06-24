@@ -13,6 +13,7 @@ import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { shouldShowFileTag } from "./fileTags";
+import { canOpenTreeItemPath, isTagTreeItemPath } from "./treeItemPath";
 import { treeItemActiveColorVariables, treeItemColorVariables } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
@@ -53,7 +54,7 @@ export const TreeItem = (props: TreeItemProps) => {
 
     useEffect(() => setPathState(superstate.pathsIndex.get(data.item.path)), [data.item.path]);
     const openAuxClick = (e: React.MouseEvent) => {
-        if (e.button == 1) {
+        if (e.button == 1 && canOpenTreeItemPath(pathState)) {
             superstate.ui.openPath(pathState.path, "tab");
             setActivePath(pathState.path);
             setSelectedPaths([data]);
@@ -67,7 +68,10 @@ export const TreeItem = (props: TreeItemProps) => {
             setSelectedPaths((s) => [...s.filter((f) => f.id != path.id), path]);
             return;
         }
-        if (isFolder) {
+        const isTagSpace = isTagTreeItemPath(path.item);
+        if (isTagSpace) {
+            onCollapse?.(data, Boolean(collapsed));
+        } else if (isFolder) {
             if (superstate.settings.expandFolderOnClick) {
                 if (collapsed) {
                     onCollapse(data, true);
@@ -77,7 +81,9 @@ export const TreeItem = (props: TreeItemProps) => {
                 }
             }
         }
-        superstate.ui.openPath(path.item.path, e.ctrlKey || e.metaKey || e.button == 1 ? (e.altKey ? "split" : "tab") : false);
+        if (canOpenTreeItemPath(path.item)) {
+            superstate.ui.openPath(path.item.path, e.ctrlKey || e.metaKey || e.button == 1 ? (e.altKey ? "split" : "tab") : false);
+        }
         setActivePath(path.item.path);
         setSelectedPaths([path]);
     };
@@ -110,7 +116,7 @@ export const TreeItem = (props: TreeItemProps) => {
         if (e.key === "Control" || e.key === "Meta") {
             if (e.repeat) return;
             const el = hoverTarget;
-            if (el) superstate.ui.openPath(pathState.path, "hover", el);
+            if (el && canOpenTreeItemPath(pathState)) superstate.ui.openPath(pathState.path, "hover", el);
         }
     };
     const onDrop = useCallback((files: File[]) => {
@@ -167,7 +173,7 @@ export const TreeItem = (props: TreeItemProps) => {
     }, []);
     const hoverItem = (e: React.MouseEvent) => {
         setHoverTarget(e.target);
-        if (e.ctrlKey || e.metaKey) {
+        if ((e.ctrlKey || e.metaKey) && canOpenTreeItemPath(pathState)) {
             superstate.ui.openPath(pathState.path, "hover", e.target);
         }
     };
@@ -246,7 +252,6 @@ export const TreeItem = (props: TreeItemProps) => {
                                 }}
                             ></CollapseToggle>
                         )}
-
                         {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} />}
                         <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{pathState?.name ?? data.path}</div>
 

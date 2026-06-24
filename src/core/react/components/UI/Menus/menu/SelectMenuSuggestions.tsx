@@ -129,7 +129,7 @@ const SelectMenuSuggestions = (props: {
     query: string;
     addKeyword: string;
     refs: React.MutableRefObject<HTMLDivElement[]>;
-    hide: () => void;
+    hide: (suppress?: boolean, immediate?: boolean) => void;
     onHide: () => void;
     selectOption: (item: SelectOption, modifiers: PointerModifiers) => void;
     moreOption?: (e: React.MouseEvent, option: string) => void;
@@ -190,7 +190,7 @@ const SelectMenuSuggestions = (props: {
                         props.openSubmenu?.(null);
                         item.onClick(e);
                         if (!item.keepOpen && item.type != SelectOptionType.Submenu && item.type != SelectOptionType.Disclosure) {
-                            props.hide();
+                            props.hide(false, item.closeParentImmediately);
                         }
                     } else {
                         props.openSubmenu?.(null);

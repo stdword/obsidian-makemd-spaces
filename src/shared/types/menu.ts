@@ -68,13 +68,14 @@ export type SelectOption = {
     onSubmenu?: (offset: Rect, onHide: () => void) => MenuObject;
     showChevron?: boolean;
     closeParentOnOpen?: boolean;
+    closeParentImmediately?: boolean;
     keepOpen?: boolean;
     onValueChange?: (value: string) => void;
     onMoreOptions?: (e: React.MouseEvent) => void;
     onRemove?: () => void;
 };
 export type MenuObject = {
-    hide: (suppress?: boolean) => void;
+    hide: (suppress?: boolean, immediate?: boolean) => void;
     update: (props: any) => void;
     isOpen?: () => boolean;
 };

@@ -66,7 +66,7 @@ type SelectMenuComponentProps = {
     tags?: SelectOption[];
     ui: UIManager;
     onHide?: () => void;
-    hide: () => void;
+    hide: (suppress?: boolean, immediate?: boolean) => void;
     wrapperClass?: string;
     suggestionsOnly?: boolean;
     placeholderText?: string;
@@ -490,8 +490,8 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             {options.length || allowNewInSection ? (
                 <SelectMenuSuggestions
                     ui={props.ui}
-                    hide={() => {
-                        props.hide();
+                    hide={(suppress?: boolean, immediate?: boolean) => {
+                        props.hide(suppress, immediate);
                     }}
                     addKeyword={props.addKeyword}
                     refs={refs}

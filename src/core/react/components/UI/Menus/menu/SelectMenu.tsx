@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import SelectMenuComponent from "./SelectMenuComponent";
 import { maxSuggestionsLengthForMenu } from "./selectMenuLimits";
 
-const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => void }, ref: any) => {
+const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress?: boolean, immediate?: boolean) => void }, ref: any) => {
     const [selectedSection, setSelectedSection] = useState<string | null>(null);
     const onSelectSection = useCallback(
         (section: string) => {
@@ -71,14 +71,19 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => voi
             let tag = newTag;
             let newSuggestions = suggestions;
             let newTags = tags;
-            if (!suggestions.find((s) => s.value == newTag.value)) {
+            const existingSuggestion = suggestions.find((s) => s.value == newTag.value);
+            const isNewOption = !existingSuggestion;
+            if (isNewOption) {
                 tag = {
                     id: suggestions.length + 1,
                     name: newTag.name,
                     value: newTag.value ?? newTag.name,
+                    section: newTag.section ?? selectedSection,
                 };
                 newSuggestions = [...suggestions, tag];
                 setSuggestions(newSuggestions);
+            } else {
+                tag = existingSuggestion;
             }
             if (props.multi) {
                 if (!tags.find((t) => t.value == tag.value)) {
@@ -93,8 +98,8 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: () => voi
                 props.saveOptions(
                     newSuggestions.map((f) => f.value),
                     newTags.map((f) => f.value),
-                    true,
-                    selectedSection,
+                    isNewOption,
+                    tag.section ?? selectedSection,
                 );
             }
             if (!props.multi && newTag.type != SelectOptionType.Disclosure) {

@@ -67,6 +67,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     menuOptions.push({
         name: i18n.menu.moveFile,
         icon: "ui//paper-plane",
+        closeParentImmediately: true,
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
             showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
@@ -81,6 +82,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     menuOptions.push({
         name: i18n.buttons.addToSpace,
         icon: "ui//link",
+        closeParentImmediately: true,
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
             showFoldersMenu(
@@ -185,6 +187,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: i18n.menu.moveFile,
         icon: "ui//paper-plane",
+        closeParentImmediately: true,
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
             showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
@@ -197,6 +200,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: i18n.buttons.addToSpace,
         icon: "ui//link",
+        closeParentImmediately: true,
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
             showFoldersMenu(

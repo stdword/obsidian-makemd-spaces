@@ -75,6 +75,7 @@ describe("showOpenMenu", () => {
         expect(menuConfig.options[0].value).toBe("/");
         expect(menuConfig.sections.map((section: any) => section.value)).toEqual(["folders", "tags", "refs"]);
         expect(menuConfig.allowNewBySection).toEqual({ tags: true, refs: true });
+        expect(menuConfig.editable).toBe(true);
         expect(menuConfig.centered).toBe(true);
         expect(menuConfig.optionLimitsBySection).toEqual({ tags: undefined, folders: 75, refs: 75 });
         expect(menuConfig.options.filter((option: any) => option.section == "tags").map((option: any) => option.name)).toEqual(["c", "cpp", "python"]);
@@ -91,5 +92,25 @@ describe("showOpenMenu", () => {
             "Zeta/Shared",
             "Alpha/Sub1/Leaf",
         ]);
+    });
+
+    it("routes new tags through the tags section", () => {
+        const openMenu = jest.fn();
+        const saveLink = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn((): any[] => []),
+            pathsIndex: new Map(),
+            settings: {},
+            ui: {
+                openMenu,
+            },
+        } as any;
+
+        showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink);
+
+        const menuConfig = openMenu.mock.calls[0][1];
+        menuConfig.saveOptions([], ["project"], true, "tags");
+
+        expect(saveLink).toHaveBeenCalledWith("project", true, "tags");
     });
 });

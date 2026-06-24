@@ -86,7 +86,7 @@ export const showSearchMenu = ({
     const tabsDesc = getSearchMenuTabs(superstate.settings, tabs)
     const suggestions: SelectOption[] = []
 
-    if (tabs.contains('files'))
+    if (tabs.includes('files'))
         suggestions.push(...
             [...superstate.pathsIndex.values()]
             .filter((f) => f.type == "file" && (hidden ? true : !f.hidden))
@@ -99,10 +99,10 @@ export const showSearchMenu = ({
             }))
         )
 
-    if (tabs.contains('folders') || tabs.contains('tags')) {
+    if (tabs.includes('folders') || tabs.includes('tags')) {
         const spaces = [...superstate.allSpaces(true, hidden)]
 
-        if (tabs.contains('folders'))
+        if (tabs.includes('folders'))
             suggestions.push(...spaces
                 .filter((s) => s.type == 'vault')
                 .map<SelectOption>((s) => ({
@@ -124,7 +124,7 @@ export const showSearchMenu = ({
                 }))
             )
 
-        if (tabs.contains('tags'))
+        if (tabs.includes('tags'))
             suggestions.push(...spaces
                 .filter((s) => s.type == 'tag')
                 .map<SelectOption>((s) => ({
@@ -153,7 +153,7 @@ export const showSearchMenu = ({
             showAll: true,
             sections: tabsDesc.map(d => ({name: d.id, value: d.id} as SelectSection)),
             optionLimitsBySection: Object.fromEntries(tabsDesc.map(d => [d.id,  d.limit])),
-            allowNewBySection: Object.fromEntries( tabsDesc.map(d => [d.id,  d.allowCreation]) ),
+            allowNewBySection: Object.fromEntries(tabsDesc.filter(d => d.allowCreation).map(d => [d.id,  true]) ),
             showSections: true,
             editable: false,
             ...selectProps,

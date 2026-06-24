@@ -8,14 +8,18 @@ import { windowFromDocument } from "../utils/dom";
 export const openStickerPalette = (superstate: Superstate, win: Window, selectedSticker: (emoji: string) => void) =>
     superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={selectedSticker} />, win, "mk-no-transition");
 
+export const defaultStickerForPathState = (pathState: PathState) => (pathState?.subtype == "tag" ? "lucide//hash" : "");
+
+export const canEditPathSticker = (pathState: PathState, editable?: boolean) => Boolean(editable && pathState?.type == "space" && pathState?.subtype != "tag");
+
 export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean }) => {
     const { pathState } = props;
-    const sticker = pathState?.label?.sticker;
+    const sticker = pathState?.label?.sticker || defaultStickerForPathState(pathState);
     const color = pathState?.label?.color;
 
     const triggerStickerMenu = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (pathState?.type == "space")
+        if (canEditPathSticker(pathState, props.editable))
             openStickerPalette(props.superstate, windowFromDocument(e.view.document), (emoji) => savePathSticker(props.superstate, pathState.path, emoji));
     };
 
@@ -37,7 +41,7 @@ export const PathStickerView = (props: { superstate: Superstate; pathState: Path
                     dangerouslySetInnerHTML={{
                         __html: props.superstate.ui.getSticker(sticker),
                     }}
-                    onClick={(e) => props.editable && triggerStickerMenu(e)}
+                    onClick={triggerStickerMenu}
                 ></button>
             ) : (
                 <div className=""

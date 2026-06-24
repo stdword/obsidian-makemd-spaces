@@ -392,6 +392,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         (folder: TreeNode, open: boolean) => {
             const folderOpen = expandedSpaces?.includes(folder.id);
             const newOpenFolders: string[] = !folderOpen || open ? ([...expandedSpaces, folder.id] as string[]) : (expandedSpaces.filter((openFolder) => folder.id !== openFolder) as string[]);
+            setExpandedSpaces(newOpenFolders);
             superstate.settings.expandedSpaces = newOpenFolders;
             superstate.saveSettings();
         },
@@ -426,7 +427,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             dragCounter.current = 0;
         }
     };
-    const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group")), [flattenedTree]);
+    const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group" && f.item?.subtype != "tag")), [flattenedTree]);
 
     return (
         <div

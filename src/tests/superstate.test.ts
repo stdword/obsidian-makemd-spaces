@@ -9,13 +9,27 @@ jest.mock("core/superstate/workers/indexer/indexer", () => ({
 }));
 
 import { Superstate } from "core/superstate/superstate";
+import { addTag } from "core/superstate/utils/tags";
 import { tagSpacePathFromTag } from "core/utils/strings";
 
 const createSuperstate = () => {
     const spaceManager = {
         allPaths: jest.fn(() => ["icons/logo.svg"]),
         readTags: jest.fn((): string[] => []),
+        pathsForTag: jest.fn((): string[] => []),
+        loadPath: jest.fn(),
+        createSpace: jest.fn(() => Promise.resolve()),
         spaceDefForSpace: jest.fn(() => Promise.resolve({})),
+        spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.replace("spaces://#", "") })),
+        readPathCache: jest.fn((path: string) =>
+            Promise.resolve({
+                metadata: {},
+                label: { sticker: "", color: "" },
+                parent: "",
+                tags: [],
+                path,
+            }),
+        ),
         uriByString: jest.fn(),
         spaceTypeByString: jest.fn(),
         superstate: null as any,
@@ -48,6 +62,50 @@ describe("Superstate tag initialization", () => {
         await superstate.initializeTags();
 
         expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+
+    it("adds new tag spaces to the live space index", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+
+        await addTag(superstate, "project");
+
+        expect(spaceManager.createSpace).toHaveBeenCalledWith("#project", "", null);
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+
+    it("reads tag space children from path tag cache", () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.pathsIndex.set("Tagged.md", {
+            path: "Tagged.md",
+            name: "Tagged",
+            type: "file",
+            subtype: "md",
+            tags: ["#project"],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.pathsIndex.set("Other.md", {
+            path: "Other.md",
+            name: "Other",
+            type: "file",
+            subtype: "md",
+            tags: ["#other"],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
+        superstate.tagsMap.set("Other.md", new Set(["#other"]));
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+        expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#project");
     });
 });
 

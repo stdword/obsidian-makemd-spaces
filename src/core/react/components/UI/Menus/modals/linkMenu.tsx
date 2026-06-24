@@ -8,9 +8,9 @@ export const showLinkMenu = (
     offset: Rect,
     win: Window,
     superstate: Superstate,
-    saveLink: (link: string | string[]) => void,
+    saveLink: (link: string) => void,
 ) => {
-    const tabs: SearchMenuTab[] = [ 'tags', 'folders', 'files' ];
+    const tabs: SearchMenuTab[] = [ 'folders', 'files' ];
 
     return showSearchMenu({
         offset,
@@ -19,7 +19,7 @@ export const showLinkMenu = (
         tabs,
         placeholder: i18n.labels.linkItemInputPlaceholder,
         saveOptions: (_: string[], value: string[]) => {
-            saveLink(value);
+            saveLink(value[0]);
         },
     });
 };

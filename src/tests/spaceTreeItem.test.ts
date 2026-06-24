@@ -1,5 +1,7 @@
 import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
+import { canOpenTreeItemPath, isTagTreeItemPath } from "core/react/components/Navigator/SpaceTree/treeItemPath";
 import { treeItemActiveColorVariables, treeItemColorVariables } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
+import { canEditPathSticker, defaultStickerForPathState } from "shared/components/PathSticker";
 import fs from "fs";
 import path from "path";
 
@@ -15,6 +17,37 @@ describe("shouldShowFileTag", () => {
         expect(shouldShowFileTag(false, "pdf")).toBe(true);
         expect(shouldShowFileTag(false, "")).toBe(false);
         expect(shouldShowFileTag(true, "pdf")).toBe(false);
+    });
+});
+
+describe("PathStickerView helpers", () => {
+    it("uses a hash icon for tag spaces without a custom sticker", () => {
+        expect(defaultStickerForPathState({ type: "space", subtype: "tag", label: { sticker: "", color: "" }, path: "spaces://#art" } as any)).toBe("lucide//hash");
+    });
+
+    it("does not allow tag spaces to open the sticker editor", () => {
+        expect(canEditPathSticker({ type: "space", subtype: "tag", label: { sticker: "", color: "" }, path: "spaces://#art" } as any, true)).toBe(false);
+    });
+});
+
+describe("canOpenTreeItemPath", () => {
+    it("keeps tag space groups inside the navigator tree", () => {
+        const tagPath = { type: "space", subtype: "tag", path: "spaces://#bio", label: { sticker: "", color: "" } } as any;
+
+        expect(isTagTreeItemPath(tagPath)).toBe(true);
+        expect(canOpenTreeItemPath(tagPath)).toBe(false);
+    });
+
+    it("recognizes tag space groups by path when older cache has no subtype", () => {
+        const tagPath = { type: "space", path: "spaces://#bio", label: { sticker: "", color: "" } } as any;
+
+        expect(isTagTreeItemPath(tagPath)).toBe(true);
+        expect(canOpenTreeItemPath(tagPath)).toBe(false);
+    });
+
+    it("keeps folders and files openable", () => {
+        expect(canOpenTreeItemPath({ type: "space", subtype: "folder", path: "Projects", label: { sticker: "", color: "" } })).toBe(true);
+        expect(canOpenTreeItemPath({ type: "file", subtype: "md", path: "Note.md", label: { sticker: "", color: "" } })).toBe(true);
     });
 });
 
