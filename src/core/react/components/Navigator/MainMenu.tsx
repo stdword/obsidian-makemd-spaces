@@ -1,8 +1,7 @@
 import classNames from "classnames";
 
-import { NavigatorContext } from "core/react/context/SidebarContext";
 import { Superstate } from "makemd-core";
-import React, { useContext, useRef } from "react";
+import React, { useRef } from "react";
 import { DEFAULT_SYSTEM_NAME } from "shared/constants";
 
 interface MainMenuComponentProps {
@@ -11,7 +10,6 @@ interface MainMenuComponentProps {
 
 export const MainMenu = (props: MainMenuComponentProps) => {
     const { superstate } = props;
-    const { setActivePath, setDragPaths } = useContext(NavigatorContext);
 
     const ref = useRef<HTMLDivElement>();
     return (
@@ -22,7 +20,7 @@ export const MainMenu = (props: MainMenuComponentProps) => {
                         aria-label={DEFAULT_SYSTEM_NAME}
                         className={`mk-main-menu-button mk-main-menu-button-primary`}
                         ref={ref}
-                        onClick={(e) => {
+                        onClick={() => {
                             props.superstate.ui.mainMenu(ref.current, superstate);
                         }}
                     >

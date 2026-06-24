@@ -41,7 +41,7 @@ export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveF
                     <button
                         onClick={() => {
                             if (props.focus.name.length == 0) {
-                                setFocuses(focuses.filter((f, i) => i != activeFocus));
+                                setFocuses(focuses.filter((_f, i) => i != activeFocus));
                                 props.superstate.saveSettings();
                             } else {
                                 setEditFocus(false);

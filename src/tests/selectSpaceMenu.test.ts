@@ -24,6 +24,8 @@ describe("showSpacesMenu", () => {
                     name: "project",
                     value: "spaces://#project",
                     section: "tag",
+                    icon: "hash",
+                    description: "",
                 }),
             ]),
         );

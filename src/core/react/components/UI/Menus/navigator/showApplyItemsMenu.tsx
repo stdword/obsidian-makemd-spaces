@@ -1,7 +1,6 @@
 import { saveSpaceCache } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import i18n from "shared/i18n";
-import React from "react";
 import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
 import { openStickerPalette } from "../../../../../../shared/components/PathSticker";

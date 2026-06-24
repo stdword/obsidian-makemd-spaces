@@ -27,7 +27,7 @@ export const defaultAddAction = async (superstate: Superstate, _space: SpaceStat
     newPathInSpace(superstate, space, "md", null, false, null, location);
 };
 
-export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, isSubmenu?: boolean, onHide?: () => void) => {
+export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, _isSubmenu?: boolean, onHide?: () => void) => {
     const menuOptions: SelectOption[] = [];
 
     menuOptions.push({
@@ -67,14 +67,14 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
     menuOptions.push({
         name: i18n.labels.createNote,
         icon: "ui//file-text",
-        onClick: (e) => {
+        onClick: () => {
             newPathInSpace(superstate, space, "md", DEFAULT_NEW_NOTE_NAME, dontOpen);
         },
     });
     menuOptions.push({
         name: i18n.buttons.createCanvas,
         icon: "ui//layout-dashboard",
-        onClick: (e) => {
+        onClick: () => {
             newPathInSpace(superstate, space, "canvas", null, dontOpen);
         },
     });
@@ -90,7 +90,7 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
     menuOptions.push({
         name: i18n.buttons.createBase,
         icon: "ui//table",
-        onClick: (e) => {
+        onClick: () => {
             newPathInSpace(superstate, space, "base", null, dontOpen);
         },
     });

@@ -1,20 +1,16 @@
 import classNames from "classnames";
-import { default as i18n, default as t } from "shared/i18n";
 import { Pos } from "shared/types/Pos";
 
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 
-import { showLinkMenu } from "core/react/components/UI/Menus/properties/linkMenu";
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, pinPathToSpaceAtIndex, spaceRowHeight } from "core/superstate/utils/spaces";
-import { isString } from "lodash";
+import { TreeNode, spaceRowHeight } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { PathStickerView } from "shared/components/PathSticker";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
-import { defaultAddAction } from "../../UI/Menus/navigator/showSpaceAddMenu";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { shouldShowFileTag } from "./fileTags";
 import { treeItemActiveColorVariables, treeItemColorVariables } from "./treeItemStyles";
@@ -46,21 +42,14 @@ export interface TreeItemProps {
     dragActive: boolean;
 }
 
-enum PinType {
-    Default,
-    Linked,
-    Live,
-}
-
 export const TreeItem = (props: TreeItemProps) => {
-    const { id, childCount, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled, dragStarted, dragOver, dragEnded } = props;
-    const { activePath: activePath, setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
+    const { id: _id, childCount, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled: _disabled, dragStarted, dragOver, dragEnded } = props;
+    const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
     const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
 
     const innerRef = useRef(null);
     const [dropHighlighted, setDropHighlighted] = useState(false);
     const [pathState, setPathState] = useState<PathState>(superstate.pathsIndex.get(data.item.path));
-    const pinType = pathState?.linkedSpaces?.some((f) => f == data.space) ? PinType.Linked : pathState?.liveSpaces?.some((f) => f == data.space) ? PinType.Live : PinType.Default;
 
     useEffect(() => setPathState(superstate.pathsIndex.get(data.item.path)), [data.item.path]);
     const openAuxClick = (e: React.MouseEvent) => {
@@ -138,7 +127,7 @@ export const TreeItem = (props: TreeItemProps) => {
         if (isFolder) setDropHighlighted(true);
     }, []);
 
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    const { getRootProps, getInputProps } = useDropzone({
         onDrop,
         onDragEnter,
         onDragLeave: () => setDropHighlighted(false),
@@ -150,7 +139,7 @@ export const TreeItem = (props: TreeItemProps) => {
         e.stopPropagation();
         dragEnded(e, data.id);
     };
-    const mouseOut = (e: React.MouseEvent) => {
+    const mouseOut = (_e: React.MouseEvent) => {
         setHoverTarget(null);
     };
     // const newAction = (e: React.MouseEvent) => {
@@ -271,7 +260,7 @@ export const TreeItem = (props: TreeItemProps) => {
                             <CollapseToggle
                                 superstate={props.superstate}
                                 collapsed={collapsed}
-                                onToggle={(c, e) => {
+                                onToggle={(_c, e) => {
                                     e.preventDefault();
                                     onCollapse(data, false);
                                     e.stopPropagation();
@@ -286,7 +275,7 @@ export const TreeItem = (props: TreeItemProps) => {
                             <CollapseToggle
                                 superstate={props.superstate}
                                 collapsed={collapsed}
-                                onToggle={(c, e) => {
+                                onToggle={(_c, e) => {
                                     e.preventDefault();
                                     onCollapse(data, false);
                                     e.stopPropagation();

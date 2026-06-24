@@ -28,7 +28,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     menuOptions.push({
         name: i18n.menu.openFilePane,
         icon: "ui//go-to-file",
-        onClick: async (e) => {
+        onClick: async () => {
             for (const path of paths) {
                 await superstate.ui.openPath(path, "tab");
             }
@@ -107,7 +107,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     menuOptions.push({
         name: i18n.menu.hide,
         icon: "ui//eye-off",
-        onClick: (e) => {
+        onClick: () => {
             hidePaths(superstate, paths);
         },
     });
@@ -166,7 +166,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: i18n.menu.duplicate,
         icon: "ui//documents",
-        onClick: (e) => {
+        onClick: () => {
             superstate.spaceManager.copyPath(path, `${cache.parent}`, `${cache.name}`);
         },
     });
@@ -189,7 +189,6 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         onClick: (e) => {
             const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
             showSpacesMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                const item = superstate.pathsIndex.get(path);
                 superstate.spaceManager.renamePath(path, movePath(path, link));
             });
         },
@@ -219,7 +218,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: superstate.ui.getOS() == "mac" ? i18n.menu.revealInDefault : i18n.menu.revealInExplorer,
         icon: "ui//arrow-up-right",
-        onClick: (e) => {
+        onClick: () => {
             superstate.ui.openPath(path, "system");
         },
     });
@@ -241,7 +240,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         menuOptions.push({
             name: i18n.menu.closeSpace,
             icon: "ui//close",
-            onClick: (e) => {
+            onClick: () => {
                 onClose();
             },
         });
@@ -254,7 +253,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             menuOptions.push({
                 name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
                 icon: "ui//pin-off",
-                onClick: (e) => {
+                onClick: () => {
                     removePathsFromSpace(superstate, spaceCache.path, [path]);
                 },
             });
@@ -265,7 +264,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: i18n.menu.hide,
         icon: "ui//eye-off",
-        onClick: (e) => {
+        onClick: () => {
             hidePath(superstate, path);
         },
     });
@@ -274,7 +273,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: i18n.menu.delete,
         icon: "ui//trash",
-        onClick: (e) => {
+        onClick: () => {
             deletePath(superstate, path);
         },
     });

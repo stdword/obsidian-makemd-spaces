@@ -50,7 +50,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             name: i18n.buttons.changeIcon,
             icon: "ui//sticker",
             showChevron: true,
-            onClick: (e) => {
+            onClick: () => {
                 setTimeout(() => openStickerPalette(superstate, win, (emoji) => savePathSticker(superstate, space.path, emoji)), 60);
             },
         });
@@ -73,7 +73,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.group == true,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort({
                             field: sort.field,
                             asc: sort.asc,
@@ -88,7 +88,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.recursive == true,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort({
                             field: sort.field,
                             asc: sort.asc,
@@ -109,7 +109,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == rankSortOption.field && sort.asc == rankSortOption.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(rankSortOption);
                     },
                 });
@@ -125,7 +125,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == nameSortOption.field && sort.asc == nameSortOption.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(nameSortOption);
                     },
                 });
@@ -140,7 +140,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == nameSortOptionDesc.field && sort.asc == nameSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(nameSortOptionDesc);
                     },
                 });
@@ -156,7 +156,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == numberSortOption.field && sort.asc == numberSortOption.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(numberSortOption);
                     },
                 });
@@ -171,7 +171,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == numberSortOptionDesc.field && sort.asc == numberSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(numberSortOptionDesc);
                     },
                 });
@@ -187,7 +187,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == createdTimeSortOption.field && sort.asc == createdTimeSortOption.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(createdTimeSortOption);
                     },
                 });
@@ -202,7 +202,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == createdTimeSortOptionDesc.field && sort.asc == createdTimeSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(createdTimeSortOptionDesc);
                     },
                 });
@@ -218,7 +218,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == modifiedTimeSortOption.field && sort.asc == modifiedTimeSortOption.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(modifiedTimeSortOption);
                     },
                 });
@@ -233,7 +233,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     icon: "ui//arrow-up-down",
                     value: sort.field == modifiedTimeSortOptionDesc.field && sort.asc == modifiedTimeSortOptionDesc.asc,
                     type: SelectOptionType.Radio,
-                    onClick: (e) => {
+                    onClick: () => {
                         saveSort(modifiedTimeSortOptionDesc);
                     },
                 });
@@ -259,7 +259,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.menu.duplicate,
             icon: "ui//documents",
-            onClick: (e) => {
+            onClick: () => {
                 superstate.spaceManager.copyPath(path.path, `${path.parent}`);
             },
         });
@@ -268,7 +268,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.menu.rename,
             icon: "ui//edit",
-            onClick: (e) => {
+            onClick: () => {
                 superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={space.type == "tag" ? stringFromTag(space.name) : space.name} saveValue={(v) => renamePathByName(superstate, space.path, v)}></InputModal>, win);
             },
         });
@@ -317,7 +317,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     menuOptions.push({
         name: superstate.ui.getOS() == "mac" ? i18n.menu.revealInDefault : i18n.menu.revealInExplorer,
         icon: "ui//arrow-up-right",
-        onClick: (e) => {
+        onClick: () => {
             superstate.ui.openPath((space.space as FilesystemSpaceInfo).folderPath, "system");
         },
     });
@@ -343,7 +343,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 menuOptions.push({
                     name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
                     icon: "ui//pin-off",
-                    onClick: (e) => {
+                    onClick: () => {
                         removePathsFromSpace(superstate, spaceCache.path, [space.path]);
                     },
                 });
@@ -355,7 +355,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.menu.closeSpace,
             icon: "ui//close",
-            onClick: (e) => {
+            onClick: () => {
                 onClose();
             },
         });
@@ -366,7 +366,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.menu.hide,
             icon: "ui//eye-off",
-            onClick: (e) => {
+            onClick: () => {
                 hidePath(superstate, space.path);
             },
         });
@@ -377,7 +377,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.menu.delete,
             icon: "ui//trash",
-            onClick: (e) => {
+            onClick: () => {
                 superstate.ui.openModal(i18n.labels.deleteFolder, <ConfirmationModal confirmAction={() => removeSpace(superstate, space.path)} confirmLabel={i18n.buttons.delete} message={i18n.descriptions.deleteFolder}></ConfirmationModal>, win);
             },
         });

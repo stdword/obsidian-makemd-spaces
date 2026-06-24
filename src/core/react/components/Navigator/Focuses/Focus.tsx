@@ -15,7 +15,7 @@ export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {
     id: UniqueIdentifier;
 }
 
-export const SortablePinnedSpaceItem = ({ id, index, ...props }: SortablePinnedSpaceItemProps) => {
+export const SortablePinnedSpaceItem = ({ id: _id, index, ...props }: SortablePinnedSpaceItemProps) => {
     return <FocusItem index={index} {...props} />;
 };
 
@@ -36,13 +36,13 @@ type PinnedSpaceProps = {
 
 export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, indicator, highlighted, superstate, style, clone, ghost, dragStart, dragOver, dragEnded, index }, ref) => {
     const innerRef = useRef<HTMLDivElement>(null);
-    const { activePath: activePath, focuses: focuses, setEditFocus: setEditFocus, setFocuses: setFocuses, setModifier } = useContext(NavigatorContext);
-    const onDragStarted = (e: React.DragEvent<HTMLDivElement>) => {
+    const { focuses: focuses, setEditFocus: setEditFocus, setFocuses: setFocuses, setModifier } = useContext(NavigatorContext);
+    const onDragStarted = (_e: React.DragEvent<HTMLDivElement>) => {
         if (dragStart && pin) {
             dragStart(index);
         }
     };
-    const onDragEnded = (e: React.DragEvent<HTMLDivElement>) => {
+    const onDragEnded = (_e: React.DragEvent<HTMLDivElement>) => {
         if (dragEnded) {
             dragEnded();
         }
@@ -59,7 +59,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             {
                 name: "Edit Focus",
                 icon: "ui//edit",
-                onClick: (e) => {
+                onClick: () => {
                     setEditFocus(true);
                 },
             },
@@ -73,7 +73,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                         i18n.labels.closeFocus.replace("${1}", focusName),
                         <ConfirmationModal
                             confirmAction={() => {
-                                setFocuses(focuses.filter((f, i) => i != index));
+                                setFocuses(focuses.filter((_f, i) => i != index));
                                 superstate.saveSettings();
                             }}
                             confirmLabel={i18n.menu.yes}
@@ -96,7 +96,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             }}
             ref={innerRef}
             className="mk-waypoint"
-            onClick={(e) => {
+            onClick={() => {
                 superstate.settings.currentWaypoint = index;
                 superstate.saveSettings();
             }}
@@ -128,7 +128,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
         <div ref={innerRef} className="mk-waypoint">
             <div
                 ref={ref}
-                onClick={(e) => {
+                onClick={() => {
                     setFocuses([...focuses, { sticker: "ui//spaces", name: i18n.labels.waypoint, paths: [] }]);
                     superstate.saveSettings();
                 }}

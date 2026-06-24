@@ -1,4 +1,4 @@
-import { DragEndEvent, DragMoveEvent, DragOverEvent, DragOverlay, DragStartEvent, Modifier } from "@dnd-kit/core";
+import { DragOverlay, Modifier } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -13,7 +13,6 @@ import { SortablePinnedSpaceItem } from "./Focus";
 
 export const FocusSelector = (props: { superstate: Superstate }) => {
     const { focuses: focuses, modifier, setModifier, setFocuses: setFocuses } = useContext(NavigatorContext);
-    const { superstate } = props;
 
     const { dragPaths, setDragPaths } = useContext(NavigatorContext);
     const [activeId, setActiveId] = useState(null);
@@ -21,13 +20,12 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
     const dragCounter = useRef(0);
     const [offset, setOffset] = useState(0);
     const [projected, setProjected] = useState<DragProjection>(null);
-    const [dropPlaceholder, setDragPlaceholder] = useState(null);
     useEffect(() => {
         if (overId === null || dragPaths.length == 0) {
             setProjected(null);
             return;
         }
-        const focus = focuses.find((f, i) => i == overId);
+        const focus = focuses.find((_f, i) => i == overId);
         if (!focus) return;
         const _projected: DragProjection = {
             depth: 0,
@@ -50,9 +48,6 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
         setProjected(null);
         setOffset(0);
         dragCounter.current = 0;
-    };
-    const handleDragCancel = () => {
-        resetState();
     };
     const dragEnter = () => {
         dragCounter.current++;
@@ -105,41 +100,6 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
         resetState();
     };
 
-    // useDndMonitor({
-    //   onDragStart: handleDragStart,
-    //   onDragMove: handleDragMove,
-    //   onDragOver: handleDragOver,
-    //   onDragEnd: handleDragEnd,
-    //   onDragCancel: handleDragCancel,
-    // });
-
-    function handleDragStart(event: DragStartEvent) {
-        const {
-            active: { id: activeId },
-        } = event;
-        if (event.active.data.current.type != "path") return;
-        dragStarted(activeId as number);
-    }
-
-    function handleDragMove({ delta }: DragMoveEvent) {
-        // offset.current = { x: Math.max(1, delta.x), y: delta.y };
-    }
-
-    function handleDragOver({ over }: DragOverEvent) {
-        const overId = over?.id;
-        if (overId !== null) {
-            if (activeId == null) {
-                setOverId(overId);
-            } else {
-                setFocuses(arrayMove(focuses, overId as number, parseInt(activeId)));
-            }
-
-            // }
-        }
-    }
-    function handleDragEnd({ active, over }: DragEndEvent) {
-        dragEnded();
-    }
     useEffect(() => {
         window.addEventListener("dragend", resetState);
         return () => {
@@ -197,7 +157,7 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                     ))}
                     <div
                         className="mk-waypoint-new"
-                        onClick={(e) => {
+                        onClick={() => {
                             const newFocuses = [...focuses, { sticker: "ui//spaces", name: "", paths: [] }];
                             props.superstate.settings.currentWaypoint = newFocuses.length - 1;
                             setFocuses(newFocuses);
@@ -210,7 +170,7 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                         <div
                             className="mk-waypoint-menu"
                             ref={menuRef}
-                            onClick={(e) => {
+                            onClick={() => {
                                 props.superstate.ui.mainMenu(menuRef.current, props.superstate);
                             }}
                             dangerouslySetInnerHTML={{

@@ -12,9 +12,9 @@ export const showSpacesMenu = (offset: Rect, win: Window, superstate: Superstate
         .map<SelectOption>((f) => ({
             name: f.name,
             value: f.path,
-            icon: superstate.pathsIndex.get(f.path)?.label?.sticker,
+            icon: f.type == "tag" ? "hash" : superstate.pathsIndex.get(f.path)?.label?.sticker,
             section: f.type == "tag" ? "tag" : f.type == "folder" ? "folder" : "",
-            description: f.type == "tag" ? f.name : f.type == "vault" ? "" : f.type == "folder" ? f.path.replace(/[^\/]+$/, "") : f.path,
+            description: f.type == "tag" ? "" : f.type == "vault" ? "" : f.type == "folder" ? f.path.replace(/[^\/]+$/, "") : f.path,
         }));
 
     return superstate.ui.openMenu(
