@@ -78,7 +78,6 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
         <>
             <div className="mk-palette-search">
                 <input value={query} onChange={handleInputChange} onKeyDown={handleKeyDown} placeholder={i18n.labels.findStickers} />
-                <button className="mk-toolbar-button">{i18n.labels.findStickersButton}</button>
                 <button
                     className="mk-toolbar-button"
                     onClick={() => {

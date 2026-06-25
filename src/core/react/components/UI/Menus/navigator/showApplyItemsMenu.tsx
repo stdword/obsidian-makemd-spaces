@@ -9,26 +9,6 @@ import { showColorPickerMenu } from "../modals/colorPickerMenu";
 
 export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: SpaceState, win: Window, onHide?: () => void, options?: { allowSticker?: boolean }) => {
     const menuOptions: SelectOption[] = [
-        ...(options?.allowSticker == false
-            ? []
-            : [{
-            name: i18n.menu.setDefaultSticker,
-            icon: "ui//sticker",
-            value: "apply-all-sticker",
-            showChevron: true,
-            onClick: () => {
-                setTimeout(
-                    () =>
-                        openStickerPalette(superstate, win, (emoji) =>
-                            saveSpaceCache(superstate, space.space, {
-                                ...space.metadata,
-                                defaultSticker: emoji,
-                            }),
-                        ),
-                    60,
-                );
-            },
-        }]),
         {
             name: i18n.menu.setDefaultColor,
             icon: "ui//palette",
@@ -50,6 +30,26 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
                     true,
                 ),
         },
+        ...(options?.allowSticker == false
+            ? []
+            : [{
+            name: i18n.menu.setDefaultSticker,
+            icon: "ui//sticker",
+            value: "apply-all-sticker",
+            showChevron: true,
+            onClick: () => {
+                setTimeout(
+                    () =>
+                        openStickerPalette(superstate, win, (emoji) =>
+                            saveSpaceCache(superstate, space.space, {
+                                ...space.metadata,
+                                defaultSticker: emoji,
+                            }),
+                        ),
+                    60,
+                );
+            },
+        }]),
     ];
     return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), win, "right", onHide);
 };

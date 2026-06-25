@@ -16,7 +16,7 @@ import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "./treeItemPath";
-import { treeItemActiveColorVariables, treeItemColorVariables } from "./treeItemStyles";
+import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
 
@@ -152,7 +152,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const handleRightClick = (e: React.MouseEvent) => {
         selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string)) ? triggerMultiPathMenu(superstate, selectedPaths, e) : contextMenu(e);
     };
-    const color = pathState?.label?.color || (pathState?.type == "space" ? superstate.spacesIndex.get(pathState.path)?.metadata?.defaultColor : "");
+    const color = treeItemDisplayColor(pathState, pathState?.type == "space" ? superstate.spacesIndex.get(pathState.path)?.metadata?.defaultColor : "");
     const contextMenu = (e: React.MouseEvent) => {
         if (superstate.settings.overrideNativeMenu) {
             return superstate.ui.nativePathMenu(e, pathState.path);

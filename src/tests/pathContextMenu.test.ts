@@ -14,7 +14,7 @@ jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
     showColorPickerMenu: jest.fn((_superstate, _offset, _win, _color, saveValue) => saveValue("#123456")),
 }));
 
-import { triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
+import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
 
@@ -66,6 +66,63 @@ describe("triggerMultiPathMenu", () => {
 
         resolveSecond();
         await openAll;
+    });
+
+    it("hides the color action when a selected file is linked", () => {
+        const openMenu = jest.fn();
+        const superstate = {
+            ui: {
+                openMenu,
+            },
+        };
+        const selectedPaths = [
+            { item: { path: "Folder/Note.md", type: "file", parent: "Folder" }, path: "Folder/Note.md", space: "LinkedSpace" },
+            { item: { path: "Folder/Other.md", type: "file", parent: "Folder" }, path: "Folder/Other.md", space: "Folder" },
+        ];
+        const event = {
+            target: {
+                getBoundingClientRect: jest.fn(() => ({ x: 0, y: 0, width: 0, height: 0 })),
+            },
+            view: {
+                document: { defaultView: {} } as Document,
+            },
+        };
+
+        triggerMultiPathMenu(superstate as any, selectedPaths as any, event as any);
+
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(false);
+    });
+});
+
+describe("showPathContextMenu", () => {
+    it("hides the color action for linked files", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "Folder/Note.md",
+            parent: "Folder",
+            type: "file",
+            subtype: "md",
+            label: { color: "#123456", sticker: "ui//file-text" },
+        };
+        const superstate = {
+            pathsIndex: new Map([["Folder/Note.md", pathState]]),
+            spacesIndex: new Map([["LinkedSpace", { path: "LinkedSpace", name: "Linked Space" }]]),
+            spaceManager: {
+                copyPath: jest.fn(),
+                renamePath: jest.fn(),
+            },
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showPathContextMenu(superstate as any, "Folder/Note.md", "LinkedSpace", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(false);
     });
 });
 

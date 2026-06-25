@@ -19,9 +19,12 @@ import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
 
+const isLinkedFileMenuItem = (item: any, space?: string) => item?.type != "space" && space && item?.parent && space != item.parent;
+
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
     const paths = selectedPaths.map((s) => s.item.path);
     const folderPaths = selectedPaths.filter((s) => s.item?.type == "space" && s.item.path != "/").map((s) => s.item.path);
+    const hasLinkedFile = selectedPaths.some((s) => isLinkedFileMenuItem(s.item, s.space));
     const menuOptions: SelectOption[] = [];
 
     // Open in a New Pane
@@ -37,16 +40,18 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
-    // change color
-    menuOptions.push({
-        name: i18n.menu.changeColor,
-        icon: "ui//palette",
-        type: SelectOptionType.Submenu,
-        closeParentOnOpen: true,
-        onSubmenu: (offset) => {
-            return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, paths, value), false, true);
-        },
-    });
+    if (!hasLinkedFile) {
+        // change color
+        menuOptions.push({
+            name: i18n.menu.changeColor,
+            icon: "ui//palette",
+            type: SelectOptionType.Submenu,
+            closeParentOnOpen: true,
+            onSubmenu: (offset) => {
+                return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, paths, value), false, true);
+            },
+        });
+    }
 
     // change sticker
     if (folderPaths.length > 0) {
@@ -149,17 +154,20 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     if (!cache) return;
 
     const menuOptions: SelectOption[] = [];
+    const isLinkedFile = isLinkedFileMenuItem(cache, space);
 
-    // change color
-    menuOptions.push({
-        name: i18n.menu.changeColor,
-        icon: "ui//palette",
-        type: SelectOptionType.Submenu,
-        closeParentOnOpen: true,
-        onSubmenu: (offset) => {
-            return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
-        },
-    });
+    if (!isLinkedFile) {
+        // change color
+        menuOptions.push({
+            name: i18n.menu.changeColor,
+            icon: "ui//palette",
+            type: SelectOptionType.Submenu,
+            closeParentOnOpen: true,
+            onSubmenu: (offset) => {
+                return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
+            },
+        });
+    }
 
     menuOptions.push(menuSeparator);
 

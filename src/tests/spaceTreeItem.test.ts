@@ -1,6 +1,6 @@
 import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "core/react/components/Navigator/SpaceTree/treeItemPath";
-import { treeItemActiveColorVariables, treeItemColorVariables } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
+import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
 import { canEditPathSticker, defaultStickerForPathState } from "shared/components/PathSticker";
 import fs from "fs";
 import path from "path";
@@ -73,6 +73,32 @@ describe("navigator file label color CSS", () => {
 });
 
 describe("treeItemColorVariables", () => {
+    it("does not use a folder defaultColor as the folder's own display color", () => {
+        expect(
+            treeItemDisplayColor(
+                {
+                    type: "space",
+                    subtype: "folder",
+                    label: { sticker: "ui//folder", color: "" },
+                } as any,
+                "#ff6699",
+            ),
+        ).toBe("");
+    });
+
+    it("uses an explicit folder label color before any defaultColor", () => {
+        expect(
+            treeItemDisplayColor(
+                {
+                    type: "space",
+                    subtype: "folder",
+                    label: { sticker: "ui//folder", color: "#112233" },
+                } as any,
+                "#ff6699",
+            ),
+        ).toBe("#112233");
+    });
+
     it("uses the custom file color for both text and icon", () => {
         expect(treeItemColorVariables("#ff6699", false)).toEqual({
             "--label-color": "#ff6699",
