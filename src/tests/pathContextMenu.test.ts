@@ -198,4 +198,89 @@ describe("showSpaceContextMenu", () => {
         expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(false);
         expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (1 to 9)")?.value).toBe(true);
     });
+
+    it("hides sticker and apply-to-items actions for tag spaces", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "spaces://#art",
+            parent: "",
+            type: "space",
+            subtype: "tag",
+            label: {},
+            spaces: [] as string[],
+        };
+        const tagSpace = {
+            path: "spaces://#art",
+            name: "#art",
+            type: "tag",
+            metadata: {},
+            space: {
+                path: "spaces://#art",
+                folderPath: "/#art",
+            },
+        };
+        const superstate = {
+            pathsIndex: new Map([["spaces://#art", pathState]]),
+            spacesIndex: new Map([["spaces://#art", tagSpace]]),
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        expect(rootOptions.some((option: any) => option.icon === "ui//sticker")).toBe(false);
+        expect(rootOptions.some((option: any) => option.value === "apply-all")).toBe(false);
+    });
+
+    it("hides folder-only sort options for tag spaces", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "spaces://#art",
+            parent: "",
+            type: "space",
+            subtype: "tag",
+            label: {},
+            spaces: [] as string[],
+        };
+        const tagSpace = {
+            path: "spaces://#art",
+            name: "#art",
+            type: "tag",
+            metadata: {
+                sort: {
+                    field: "name",
+                    asc: true,
+                    group: false,
+                    recursive: false,
+                },
+            },
+            space: {
+                path: "spaces://#art",
+                folderPath: "/#art",
+            },
+        };
+        const superstate = {
+            pathsIndex: new Map([["spaces://#art", pathState]]),
+            spacesIndex: new Map([["spaces://#art", tagSpace]]),
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
+        sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+
+        const sortOptions = openMenu.mock.calls[1][1].options;
+        expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(false);
+        expect(sortOptions.some((option: any) => option.name === "Apply to Subfolders")).toBe(false);
+        expect(sortOptions.some((option: any) => option.name === "File Name (A to Z)")).toBe(true);
+    });
 });

@@ -28,6 +28,13 @@ describe("PathStickerView helpers", () => {
     it("does not allow tag spaces to open the sticker editor", () => {
         expect(canEditPathSticker({ type: "space", subtype: "tag", label: { sticker: "", color: "" }, path: "spaces://#art" } as any, true)).toBe(false);
     });
+
+    it("uses tag path as a fallback for older tag space cache", () => {
+        const tagPath = { type: "space", label: { sticker: "", color: "" }, path: "spaces://#art" } as any;
+
+        expect(defaultStickerForPathState(tagPath)).toBe("lucide//hash");
+        expect(canEditPathSticker(tagPath, true)).toBe(false);
+    });
 });
 
 describe("canOpenTreeItemPath", () => {
@@ -57,6 +64,11 @@ describe("navigator file label color CSS", () => {
     it("applies custom file colors through text and icon variables", () => {
         expect(navigatorCss).toMatch(/\.mk-tree-text\.nav-file-title-content\s*{[^}]*color:\s*var\(--label-color\)/);
         expect(navigatorCss).toMatch(/\.nav-file-title\s*>\s*\.mk-path-icon\s*>\s*button\s*>\s*svg\s*{[^}]*color:\s*var\(--icon-color\)/);
+    });
+
+    it("aligns tag group rows with folder section rows", () => {
+        expect(navigatorCss).toMatch(/\.mk-tree-tag\s+\.mk-tree-item\s*{[^}]*padding-left:\s*4px/);
+        expect(navigatorCss).toMatch(/\.mk-tree-tag\s+\.mk-tree-text\s*{[^}]*font-size:\s*14px/);
     });
 });
 

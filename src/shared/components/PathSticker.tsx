@@ -8,17 +8,23 @@ import { windowFromDocument } from "../utils/dom";
 export const openStickerPalette = (superstate: Superstate, win: Window, selectedSticker: (emoji: string) => void) =>
     superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={selectedSticker} />, win, "mk-no-transition");
 
-export const defaultStickerForPathState = (pathState: PathState) => (pathState?.subtype == "tag" ? "lucide//hash" : "");
+export const isTagPathState = (pathState: PathState) => pathState?.subtype == "tag" || pathState?.path?.startsWith("spaces://#");
 
-export const canEditPathSticker = (pathState: PathState, editable?: boolean) => Boolean(editable && pathState?.type == "space" && pathState?.subtype != "tag");
+export const defaultStickerForPathState = (pathState: PathState) => (isTagPathState(pathState) ? "lucide//hash" : "");
 
-export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean }) => {
+export const canEditPathSticker = (pathState: PathState, editable?: boolean) => Boolean(editable && pathState?.type == "space" && !isTagPathState(pathState));
+
+export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean; color?: string; onIconClick?: (e: React.MouseEvent) => void }) => {
     const { pathState } = props;
     const sticker = pathState?.label?.sticker || defaultStickerForPathState(pathState);
-    const color = pathState?.label?.color;
+    const color = props.color ?? pathState?.label?.color;
 
     const triggerStickerMenu = (e: React.MouseEvent) => {
         e.stopPropagation();
+        if (props.onIconClick) {
+            props.onIconClick(e);
+            return;
+        }
         if (canEditPathSticker(pathState, props.editable))
             openStickerPalette(props.superstate, windowFromDocument(e.view.document), (emoji) => savePathSticker(props.superstate, pathState.path, emoji));
     };

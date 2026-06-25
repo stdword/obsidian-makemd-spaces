@@ -7,9 +7,11 @@ import { openStickerPalette } from "../../../../../../shared/components/PathStic
 import { defaultMenu } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 
-export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: SpaceState, win: Window, onHide?: () => void) => {
-    const options: SelectOption[] = [
-        {
+export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: SpaceState, win: Window, onHide?: () => void, options?: { allowSticker?: boolean }) => {
+    const menuOptions: SelectOption[] = [
+        ...(options?.allowSticker == false
+            ? []
+            : [{
             name: i18n.menu.setDefaultSticker,
             icon: "ui//sticker",
             value: "apply-all-sticker",
@@ -26,7 +28,7 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
                     60,
                 );
             },
-        },
+        }]),
         {
             name: i18n.menu.setDefaultColor,
             icon: "ui//palette",
@@ -49,5 +51,5 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
                 ),
         },
     ];
-    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, options), win, "right", onHide);
+    return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), win, "right", onHide);
 };

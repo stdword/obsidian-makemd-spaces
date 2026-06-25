@@ -4,6 +4,7 @@ import { Pos } from "shared/types/Pos";
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
+import { savePathColor } from "core/superstate/utils/label";
 import { TreeNode, spaceRowHeight } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
@@ -12,6 +13,7 @@ import { PathStickerView } from "shared/components/PathSticker";
 import { PathState } from "shared/types/PathState";
 import { windowFromDocument } from "shared/utils/dom";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
+import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "./treeItemPath";
 import { treeItemActiveColorVariables, treeItemColorVariables } from "./treeItemStyles";
@@ -68,7 +70,6 @@ export const TreeItem = (props: TreeItemProps) => {
             setSelectedPaths((s) => [...s.filter((f) => f.id != path.id), path]);
             return;
         }
-        const isTagSpace = isTagTreeItemPath(path.item);
         if (isTagSpace) {
             onCollapse?.(data, Boolean(collapsed));
         } else if (isFolder) {
@@ -151,7 +152,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const handleRightClick = (e: React.MouseEvent) => {
         selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string)) ? triggerMultiPathMenu(superstate, selectedPaths, e) : contextMenu(e);
     };
-    const color = pathState?.label?.color;
+    const color = pathState?.label?.color || (pathState?.type == "space" ? superstate.spacesIndex.get(pathState.path)?.metadata?.defaultColor : "");
     const contextMenu = (e: React.MouseEvent) => {
         if (superstate.settings.overrideNativeMenu) {
             return superstate.ui.nativePathMenu(e, pathState.path);
@@ -197,11 +198,16 @@ export const TreeItem = (props: TreeItemProps) => {
     const isFolder = pathState?.metadata?.isFolder || isSpace;
     const extension = pathState?.metadata?.file?.extension;
     const showFileTag = shouldShowFileTag(isSpace, extension);
+    const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
+    const openTagColorPicker = (e: React.MouseEvent) => {
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        showColorPickerMenu(superstate, rect, windowFromDocument(e.view.document), color ?? "", (value) => savePathColor(superstate, pathState.path, value), false, false, false, "right");
+    };
     const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
     return (
         <>
             <div
-                className={classNames("mk-tree-wrapper", data.type == "group" ? "mk-tree-section" : "", clone && "mk-clone", ghost && "mk-ghost", highlighted ? "is-highlighted" : "")}
+                className={classNames("mk-tree-wrapper", data.type == "group" && !isTagSpace ? "mk-tree-section" : "", data.type == "group" && isTagSpace ? "mk-tree-tag" : "", clone && "mk-clone", ghost && "mk-ghost", highlighted ? "is-highlighted" : "")}
                 style={treeItemColorVariables(color, isFolder) as TreeItemStyle}
                 ref={innerRef}
                 onMouseLeave={mouseOut}
@@ -252,7 +258,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 }}
                             ></CollapseToggle>
                         )}
-                        {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} />}
+                        {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} color={color} onIconClick={isTagSpace ? openTagColorPicker : undefined} />}
                         <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{pathState?.name ?? data.path}</div>
 
                         {data.type == "group" && data.childrenCount > 0 && (

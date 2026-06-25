@@ -303,7 +303,7 @@ export const removePathsFromSpace = async (superstate: Superstate, spacePath: st
     if (!space) return;
 
     if (space.type == "tag") {
-        paths.forEach((path) => deleteTagFromPath(superstate, path, space.name));
+        await Promise.all(paths.map((path) => deleteTagFromPath(superstate, path, space.name)));
     } else if (space.type == "folder" || space.type == "vault") {
         await saveSpaceMetadataValue(
             superstate,
@@ -318,7 +318,7 @@ export const newPathInSpace = async (superstate: Superstate, space: SpaceState, 
     let newPath;
     if (space.type == "tag") {
         newPath = await superstate.spaceManager.createItemAtPath("/", type, name, content);
-        await superstate.spaceManager.addTag(newPath, space.name);
+        await addTagToPath(superstate, newPath, space.name);
     } else {
         newPath = await superstate.spaceManager.createItemAtPath(space.path, type, name, content);
     }

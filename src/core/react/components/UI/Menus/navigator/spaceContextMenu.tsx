@@ -3,7 +3,7 @@ import { hidePath, renamePathByName } from "core/superstate/utils/path";
 import { addPathToSpaceAtIndex, removePathsFromSpace, removeSpace, updateSpaceSort } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
-import { openStickerPalette } from "shared/components/PathSticker";
+import { isTagPathState, openStickerPalette } from "shared/components/PathSticker";
 import { default as i18n } from "shared/i18n";
 import { PathState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
@@ -23,6 +23,7 @@ import { showSpaceAddMenu } from "./showSpaceAddMenu";
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void) => {
     const space = superstate.spacesIndex.get(path.path);
     if (!space) return;
+    const isTagSpace = space.type == "tag" || isTagPathState(path);
     const menuOptions: SelectOption[] = [];
 
     menuOptions.push({
@@ -45,7 +46,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, space.path, value), false, true);
         },
     });
-    if (space.path !== "/") {
+    if (space.path !== "/" && !isTagSpace) {
         menuOptions.push({
             name: i18n.buttons.changeIcon,
             icon: "ui//sticker",
@@ -68,36 +69,38 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 const sort = currentSpace.metadata?.sort ?? space.metadata.sort;
                 const saveSort = (sortOption: SpaceSort) => updateSpaceSort(superstate, currentSpace.path, sortOption);
                 const sortOptions: SelectOption[] = [];
-                sortOptions.push({
-                    name: i18n.menu.groupSpaces,
-                    icon: "ui//arrow-up-down",
-                    value: sort.group == true,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort({
-                            field: sort.field,
-                            asc: sort.asc,
-                            group: !sort.group,
-                            recursive: sort.recursive,
-                        });
-                    },
-                });
-                sortOptions.push(menuSeparator);
-                sortOptions.push({
-                    name: i18n.menu.recursiveSort,
-                    icon: "ui//arrow-up-down",
-                    value: sort.recursive == true,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort({
-                            field: sort.field,
-                            asc: sort.asc,
-                            group: sort.group,
-                            recursive: !sort.recursive,
-                        });
-                    },
-                });
-                sortOptions.push(menuSeparator);
+                if (!isTagSpace) {
+                    sortOptions.push({
+                        name: i18n.menu.groupSpaces,
+                        icon: "ui//arrow-up-down",
+                        value: sort.group == true,
+                        type: SelectOptionType.Radio,
+                        onClick: () => {
+                            saveSort({
+                                field: sort.field,
+                                asc: sort.asc,
+                                group: !sort.group,
+                                recursive: sort.recursive,
+                            });
+                        },
+                    });
+                    sortOptions.push(menuSeparator);
+                    sortOptions.push({
+                        name: i18n.menu.recursiveSort,
+                        icon: "ui//arrow-up-down",
+                        value: sort.recursive == true,
+                        type: SelectOptionType.Radio,
+                        onClick: () => {
+                            saveSort({
+                                field: sort.field,
+                                asc: sort.asc,
+                                group: sort.group,
+                                recursive: !sort.recursive,
+                            });
+                        },
+                    });
+                    sortOptions.push(menuSeparator);
+                }
                 const rankSortOption: SpaceSort = {
                     field: "rank",
                     asc: true,
@@ -244,13 +247,15 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     }
 
     // apply to all sub-items
-    menuOptions.push({
-        name: i18n.menu.applyItems,
-        icon: "ui//apply-items",
-        value: "apply-all",
-        type: SelectOptionType.Submenu,
-        onSubmenu: (offset, onHide) => showApplyItemsMenu(offset, superstate, space, win, onHide),
-    });
+    if (!isTagSpace) {
+        menuOptions.push({
+            name: i18n.menu.applyItems,
+            icon: "ui//apply-items",
+            value: "apply-all",
+            type: SelectOptionType.Submenu,
+            onSubmenu: (offset, onHide) => showApplyItemsMenu(offset, superstate, space, win, onHide),
+        });
+    }
 
     if (space.type != "vault") {
         menuOptions.push(menuSeparator);

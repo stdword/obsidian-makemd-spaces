@@ -13,7 +13,7 @@ import { DragProjection } from "./dragPath";
 
 export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (paths.length == 1) {
-        dropPathInTree(superstate, paths[0], active, over, projected, flattenedTree, activeSpaces, modifier);
+        await dropPathInTree(superstate, paths[0], active, over, projected, flattenedTree, activeSpaces, modifier);
         return;
     }
     if (projected) {
@@ -28,7 +28,7 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         const newRank = parentId == overItem.id ? -1 : (overItem.rank ?? -1);
 
         if (!newSpace) return;
-        dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
+        await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
     }
 };
 
@@ -44,14 +44,14 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
 
         let newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == overItem.id) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
         if (!active) {
-            dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);
+            await dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);
             return;
         }
         const activeIndex = clonedItems.findIndex(({ id }) => id === active);
         const activeItem = clonedItems[activeIndex];
 
         const oldSpace = activeItem.parentId == null ? null : clonedItems.find(({ id }) => id === activeItem.parentId)?.item.path;
-        dropPathInSpaceAtIndex(superstate, activeItem.item.path, oldSpace, newSpace, projected.sortable && newRank, modifier);
+        await dropPathInSpaceAtIndex(superstate, activeItem.item.path, oldSpace, newSpace, projected.sortable && newRank, modifier);
     }
 };
 
@@ -86,33 +86,33 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
 
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
         if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
-            pinPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
+            await pinPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
         } else {
-            movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
+            await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
         }
     }
     if (newSpaceCache.type == "tag") {
-        addTagToPath(superstate, path, newSpaceCache.name);
+        await addTagToPath(superstate, path, newSpaceCache.name);
     }
 
     if (oldSpacePath && oldSpacePath != newSpacePath) {
-        removePathsFromSpace(superstate, oldSpacePath, [path]);
+        await removePathsFromSpace(superstate, oldSpacePath, [path]);
     }
 };
 export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: string[], newSpacePath: string, index: number, modifier?: DropModifiers) => {
     const newSpaceCache = superstate.spacesIndex.get(newSpacePath);
     if (!newSpaceCache) return;
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
-        paths.forEach((path) => {
+        await Promise.all(paths.map((path) => {
             if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
-                pinPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
+                return pinPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
             } else {
-                movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
+                return movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
             }
-        });
+        }));
     }
 
     if (newSpaceCache.type == "tag") {
-        paths.forEach((path) => addTagToPath(superstate, path, newSpaceCache.name));
+        await Promise.all(paths.map((path) => addTagToPath(superstate, path, newSpaceCache.name)));
     }
 };

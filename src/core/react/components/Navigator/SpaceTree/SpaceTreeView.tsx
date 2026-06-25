@@ -17,6 +17,7 @@ import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
 import { eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
+import { isTagTreeItemPath } from "./treeItemPath";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
@@ -43,7 +44,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
             }
         });
     }
-    if (!root) tree.splice(0, 0, spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, tree.length));
+    if (!root) tree.splice(0, 0, spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length));
     return tree;
 };
 
@@ -51,6 +52,9 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
     const tree: TreeNode[] = [];
 
     const pathIndex = superstate.pathsIndex.get(space.path);
+    const spaceSort = space.metadata?.sort ?? defaultSpaceSort;
+    let children = superstate.getSpaceItems(space.path) ?? [];
+    children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (pathIndex)
         tree.push({
             id: space.path,
@@ -63,16 +67,13 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
             rank: null,
             collapsed: expandedSpaces.includes(space.path) ? false : true,
             sortable: space.sortable,
-            childrenCount: [...(superstate.spacesMap.getInverse(space.path) ?? [])].length,
+            childrenCount: children.length,
             type: "group",
         });
-    const spaceSort = space.metadata?.sort ?? defaultSpaceSort;
 
     if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {
         return tree;
     }
-    let children = superstate.getSpaceItems(space.path) ?? [];
-    children = hideFolderNoteFileFromItems(superstate, space.path, children);
     children.sort(spaceSortFn(spaceSort)).forEach((item) => {
         const _parentId = space.path;
         if (item.type != "space") {
@@ -427,7 +428,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             dragCounter.current = 0;
         }
     };
-    const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group" && f.item?.subtype != "tag")), [flattenedTree]);
+    const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group" && !isTagTreeItemPath(f.item))), [flattenedTree]);
 
     return (
         <div

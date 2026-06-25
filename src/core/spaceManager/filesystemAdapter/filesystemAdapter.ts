@@ -609,11 +609,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public renameTag(path: string, tag: string, newTag: string) {
-        this.fileSystem.renameTagForFile(path, tag, newTag);
+        return this.fileSystem.renameTagForFile(path, tag, newTag);
     }
 
     public deleteTag(path: string, tag: string) {
-        this.fileSystem.removeTagFromFile(path, tag);
+        return this.fileSystem.removeTagFromFile(path, tag);
     }
 
     public pathsForTag(tag: string) {

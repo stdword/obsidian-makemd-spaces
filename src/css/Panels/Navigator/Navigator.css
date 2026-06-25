@@ -133,6 +133,18 @@
     gap: 4px;
     flex-grow: 0 !important;
 }
+.mk-tree-tag .mk-tree-item {
+    padding-left: 4px;
+}
+.mk-tree-tag .mk-collapse {
+    --icon-size: 12px;
+}
+.mk-tree-tag .mk-tree-text {
+    font-size: 14px;
+    display: flex;
+    gap: 4px;
+    flex-grow: 0 !important;
+}
 .mk-sidebar:hover .mk-tree-new {
     opacity: 0.5;
 }
