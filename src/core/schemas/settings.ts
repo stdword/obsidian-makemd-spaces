@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
     overrideNativeMenu: false,
     revealActiveFile: false,
     spaceRowHeight: 29,
+    tagSpaceFolderPath: "",
     searchMenuFoldersLimit: 75,
     searchMenuFilesLimit: 75,
     searchMenuRefsLimit: 75,

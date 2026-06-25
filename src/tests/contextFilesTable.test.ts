@@ -182,9 +182,9 @@ describe("savePathColor", () => {
         expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "Note.md" });
     });
 
-    it("does not persist folder color into context.mdb files rows", async () => {
+    it("persists folder color into the path label instead of defaultColor", async () => {
         const saveTable = jest.fn(() => Promise.resolve(true));
-        const saveSpace = jest.fn();
+        const saveLabel = jest.fn(() => Promise.resolve());
         const updateSpaceMetadata = jest.fn(() => Promise.resolve(true));
         const dispatchEvent = jest.fn();
         const contextTable = {
@@ -201,7 +201,7 @@ describe("savePathColor", () => {
             spaceManager: {
                 contextForSpace: jest.fn(() => Promise.resolve(contextTable)),
                 saveTable,
-                saveSpace,
+                saveLabel,
             },
             updateSpaceMetadata,
             dispatchEvent,
@@ -210,9 +210,9 @@ describe("savePathColor", () => {
         await savePathColor(superstate as any, "Folder", "#e30d0d");
 
         expect(saveTable).not.toHaveBeenCalled();
-        expect(saveSpace).toHaveBeenCalledWith("Folder", expect.any(Function));
-        expect(updateSpaceMetadata).toHaveBeenCalledWith("Folder", { defaultColor: "#e30d0d" });
-        expect(superstate.pathsIndex.get("Folder")?.label.color).toBe("");
-        expect(dispatchEvent).not.toHaveBeenCalled();
+        expect(saveLabel).toHaveBeenCalledWith("Folder", "color", "#e30d0d");
+        expect(updateSpaceMetadata).not.toHaveBeenCalled();
+        expect(superstate.pathsIndex.get("Folder")?.label.color).toBe("#e30d0d");
+        expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "Folder" });
     });
 });

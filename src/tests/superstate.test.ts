@@ -17,6 +17,7 @@ const createSuperstate = () => {
         allPaths: jest.fn(() => ["icons/logo.svg"]),
         readTags: jest.fn((): string[] => []),
         pathsForTag: jest.fn((): string[] => []),
+        pathExists: jest.fn((_path: string) => false),
         loadPath: jest.fn(),
         createSpace: jest.fn(() => Promise.resolve()),
         spaceDefForSpace: jest.fn(() => Promise.resolve({})),
@@ -72,9 +73,64 @@ describe("Superstate tag initialization", () => {
 
         await addTag(superstate, "project");
 
-        expect(spaceManager.createSpace).toHaveBeenCalledWith("#project", "", null);
+        expect(spaceManager.createSpace).toHaveBeenCalledWith("#project", "/", null);
         expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+
+    it("creates configured tag parent folders before adding a new tag space", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.settings = { tagSpaceFolderPath: "Meta/Tags" };
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+        spaceManager.pathExists = jest.fn((path: string) => path == "/");
+
+        await addTag(superstate, "project");
+
+        expect(spaceManager.createSpace).toHaveBeenNthCalledWith(1, "Meta", "/", null);
+        expect(spaceManager.createSpace).toHaveBeenNthCalledWith(2, "Tags", "Meta", null);
+        expect(spaceManager.createSpace).toHaveBeenNthCalledWith(3, "#project", "Meta/Tags", null);
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+
+    it("adds tag spaces when a file metadata reload introduces a new tag", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+        const dispatchEvent = jest.spyOn(superstate, "dispatchEvent");
+
+        superstate.pathsIndex.set("Tagged.md", {
+            path: "Tagged.md",
+            name: "Tagged",
+            type: "file",
+            subtype: "md",
+            tags: [],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.tagsMap.set("Tagged.md", new Set());
+
+        await superstate.pathReloaded(
+            "Tagged.md",
+            {
+                path: "Tagged.md",
+                name: "Tagged",
+                type: "file",
+                subtype: "md",
+                tags: ["#project"],
+                spaces: [],
+                outlinks: [],
+                hidden: false,
+                label: { sticker: "", color: "" },
+            },
+            true,
+            false,
+        );
+
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+        expect(dispatchEvent).toHaveBeenCalledWith("spaceStateUpdated", { path: "spaces://$tags" });
     });
 
     it("reads tag space children from path tag cache", () => {

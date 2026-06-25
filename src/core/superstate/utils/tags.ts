@@ -1,5 +1,6 @@
 import { Superstate } from "makemd-core";
 import { tagSpacePathFromTag } from "core/utils/strings";
+import { tagFolderName, tagSpaceFolderBasePath } from "core/utils/spaces/space";
 import { ensureTag } from "utils/tags";
 import { metadataPathForSpace } from "./spaces";
 
@@ -25,5 +26,24 @@ export const addTag = (superstate: Superstate, tag: string) => {
     if (superstate.spacesIndex.has(tagPath)) {
         return Promise.resolve(superstate.spacesIndex.get(tagPath));
     }
-    return Promise.resolve(superstate.spaceManager.createSpace(normalizedTag, "", null)).then(() => superstate.reloadSpace(superstate.spaceManager.spaceInfoForPath(tagPath), null, true));
+    const basePath = tagSpaceFolderBasePath(superstate.settings);
+    const tagParentPath = basePath || "/";
+    const ensureFolderPath = async (folderPath: string) => {
+        if (!folderPath) return;
+
+        const parts = folderPath.split("/").filter((part) => part.length > 0);
+        let currentParent = "/";
+        let currentPath = "";
+        for (const part of parts) {
+            currentPath = currentPath ? `${currentPath}/${part}` : part;
+            if (!(await superstate.spaceManager.pathExists(currentPath))) {
+                await superstate.spaceManager.createSpace(part, currentParent, null);
+            }
+            currentParent = currentPath;
+        }
+    };
+
+    return ensureFolderPath(basePath)
+        .then(() => superstate.spaceManager.createSpace(tagFolderName(normalizedTag), tagParentPath, null))
+        .then(() => superstate.reloadSpace(superstate.spaceManager.spaceInfoForPath(tagPath), null, true));
 };

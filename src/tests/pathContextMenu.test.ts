@@ -70,7 +70,7 @@ describe("triggerMultiPathMenu", () => {
 });
 
 describe("showSpaceContextMenu", () => {
-    it("updates the home space color in def.json when a color is selected", async () => {
+    it("updates the home space label color when a color is selected", async () => {
         const dispatchEvent = jest.fn();
         const saveLabel = jest.fn(() => Promise.resolve());
         const saveTable = jest.fn(() => Promise.resolve(true));
@@ -131,12 +131,12 @@ describe("showSpaceContextMenu", () => {
         const changeColor = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//palette");
         await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
-        expect(saveLabel).not.toHaveBeenCalled();
+        expect(saveLabel).toHaveBeenCalledWith("/", "color", "#123456");
         expect(saveTable).not.toHaveBeenCalled();
-        expect(saveSpace).toHaveBeenCalledWith("/", expect.any(Function));
-        expect(updateSpaceMetadata).toHaveBeenCalledWith("/", { defaultColor: "#123456" });
-        expect(superstate.pathsIndex.get("/")?.label.color).toBe("");
-        expect(dispatchEvent).not.toHaveBeenCalled();
+        expect(saveSpace).not.toHaveBeenCalled();
+        expect(updateSpaceMetadata).not.toHaveBeenCalled();
+        expect(superstate.pathsIndex.get("/")?.label.color).toBe("#123456");
+        expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "/" });
     });
 
     it("rebuilds sort submenu radio values from the latest space state", () => {

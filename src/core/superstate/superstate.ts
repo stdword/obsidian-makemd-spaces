@@ -730,22 +730,22 @@ export class Superstate implements ISuperstate {
         this.tagsMap.set(path, new Set(cache.tags));
         this.linksMap.set(path, new Set(cache.outlinks));
 
-        if (!_.isEqual(cache.spaces, Array.from(this.spacesMap.get(path)))) {
-            this.spacesMap.set(path, new Set(cache.spaces));
-            //initiate missing tags
-            const promises = cache.tags
-                .map((f) => fileSystemSpaceInfoFromTag(this.spaceManager, f))
-                .filter((f) => !this.spacesIndex.has(f.path))
-                .map(async (f) => {
+        const missingTagSpaces = cache.tags
+            .map((f) => fileSystemSpaceInfoFromTag(this.spaceManager, f))
+            .filter((f) => !this.spacesIndex.has(f.path));
+        if (missingTagSpaces.length > 0) {
+            await Promise.all(
+                missingTagSpaces.map(async (f) => {
                     await this.reloadSpace(f);
                     this.reloadContext(f, { force: false, calculate: true });
                     await this.reloadPath(f.path);
-                    return;
-                });
-            const allPromises = Promise.all(promises);
-            await allPromises.then(() => {
-                this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
-            });
+                }),
+            );
+            this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
+        }
+
+        if (!_.isEqual(cache.spaces, Array.from(this.spacesMap.get(path)))) {
+            this.spacesMap.set(path, new Set(cache.spaces));
         }
         if (force) {
             const allContextsWithFile = cache.spaces.map((f) => this.spacesIndex.get(f)?.space).filter((f) => f);

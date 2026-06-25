@@ -1,4 +1,3 @@
-import { saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { defaultContextSchemaID } from "shared/schemas/context";
 import { defaultContextFields } from "shared/schemas/fields";
 import { normalizeContextPath, PathPropertyName, PathPropertyPinned } from "shared/types/context";
@@ -17,7 +16,15 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
     if (!pathState) return;
 
     if (isFolderPathState(pathState)) {
-        await saveSpaceMetadataValue(superstate as any, path, "defaultColor", color);
+        await superstate.spaceManager.saveLabel(path, "color", color);
+        superstate.pathsIndex.set(path, {
+            ...pathState,
+            label: {
+                ...pathState.label,
+                color,
+            },
+        });
+        superstate.dispatchEvent("pathStateUpdated", { path });
         return;
     }
 

@@ -6,7 +6,7 @@ describe("FilesystemSpaceAdapter", () => {
         const manager = {
             superstate: {
                 settings: {
-                    enableDefaultSpaces: true,
+                    tagSpaceFolderPath: "",
                 },
             },
             spaceInfoForPath: (path: string) => ({ path, name: path }),
@@ -17,6 +17,26 @@ describe("FilesystemSpaceAdapter", () => {
         const tagSpace = fileSystemSpaceInfoFromTag(manager as any, "#books/psy");
 
         expect(tagSpace.name).toBe("books/psy");
+        expect(tagSpace.path).toBe("spaces://#books/psy");
+        expect(tagSpace.folderPath).toBe("#books+psy");
+    });
+
+    it("stores tag space folders under the configured tag folder", () => {
+        const manager = {
+            superstate: {
+                settings: {
+                    tagSpaceFolderPath: "Tags",
+                },
+            },
+            spaceInfoForPath: (path: string) => ({ path, name: path }),
+            uriByString: jest.fn(),
+            spaceTypeByString: jest.fn(),
+        };
+
+        const tagSpace = fileSystemSpaceInfoFromTag(manager as any, "#books/psy");
+
+        expect(tagSpace.folderPath).toBe("Tags/#books+psy");
+        expect(tagSpace.defPath).toBe("Tags/#books+psy/.space/def.json");
         expect(tagSpace.path).toBe("spaces://#books/psy");
     });
 
