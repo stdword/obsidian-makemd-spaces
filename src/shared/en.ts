@@ -178,10 +178,6 @@ export const en = {
             name: "Search Menu Ref Limit",
             desc: "Maximum ref suggestions in search menus. Leave empty to show all refs.",
         },
-        tagSpaceFolderPath: {
-            name: "Tag Space Folder",
-            desc: "Folder where tag spaces are stored. Leave empty to store tag folders in the vault root.",
-        },
         folderIndentationLines: {
             name: "Show Folder Indentation Lines",
             desc: "Turn on to show a line on the left of folders to indicate indentation",

@@ -5,14 +5,11 @@ import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "shared/utils/array";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { stringFromTag, tagPathToTag, validateName } from "utils/tags";
-import { tagSpaceFolderBasePath } from "core/utils/spaces/space";
 
 const tagKeys = ["tags"];
 
-export const loadTags = (app: App, settings: MakeMDSettings): string[] => {
-    const basePath = tagSpaceFolderBasePath(settings);
-    const tagFolder = basePath ? app.vault.getAbstractFileByPath(basePath) : app.vault.getRoot();
-    const folder = tagFolder instanceof TFolder ? tagFolder : null;
+export const loadTags = (app: App, _settings: MakeMDSettings): string[] => {
+    const folder = app.vault.getRoot();
     return uniq([...Object.keys(app.metadataCache.getTags()).map((f) => f.toLowerCase()), ...(folder?.children.filter((f) => f instanceof TFolder && f.name.charAt(0) == "#").map((f) => tagPathToTag(f.name)) ?? [])]);
 };
 

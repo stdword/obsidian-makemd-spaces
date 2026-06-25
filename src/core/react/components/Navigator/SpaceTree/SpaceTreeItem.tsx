@@ -52,9 +52,9 @@ export const TreeItem = (props: TreeItemProps) => {
 
     const innerRef = useRef(null);
     const [dropHighlighted, setDropHighlighted] = useState(false);
-    const [pathState, setPathState] = useState<PathState>(superstate.pathsIndex.get(data.item.path));
+    const [pathState, setPathState] = useState<PathState>(superstate.pathStateForPath(data.item.path) ?? data.item);
 
-    useEffect(() => setPathState(superstate.pathsIndex.get(data.item.path)), [data.item.path]);
+    useEffect(() => setPathState(superstate.pathStateForPath(data.item.path) ?? data.item), [data.item]);
     const openAuxClick = (e: React.MouseEvent) => {
         if (e.button == 1 && canOpenTreeItemPath(pathState)) {
             superstate.ui.openPath(pathState.path, "tab");
@@ -162,7 +162,7 @@ export const TreeItem = (props: TreeItemProps) => {
     };
     const pathStateUpdated = (payload: { path: string }) => {
         if (payload.path == pathState?.path) {
-            const _pathState = superstate.pathsIndex.get(pathState.path);
+            const _pathState = superstate.pathStateForPath(pathState.path);
             if (_pathState) setPathState(_pathState);
         }
     };

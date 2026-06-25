@@ -145,13 +145,13 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 };
 
 export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void) => {
-    const cache = superstate.pathsIndex.get(path);
+    const cache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
 
+    if (!cache) return;
     if (cache.type == "space") {
         showSpaceContextMenu(superstate, cache, rect, win, space, onClose);
         return;
     }
-    if (!cache) return;
 
     const menuOptions: SelectOption[] = [];
     const isLinkedFile = isLinkedFileMenuItem(cache, space);

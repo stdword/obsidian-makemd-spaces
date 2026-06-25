@@ -3,8 +3,8 @@ import { Filter } from "./predicate";
 export type SpaceSort = {
     field: string;
     asc: boolean;
-    group: boolean;
-    recursive: boolean;
+    group?: boolean;
+    recursive?: boolean;
 };
 
 export type FilterDef = {
@@ -23,6 +23,9 @@ export type SpaceDefinition = {
     sort?: SpaceSort;
     links?: string[];
     tags?: string[];
+    color?: string;
+    "rank-order"?: string[];
+    pinned?: string[];
     defaultSticker?: string;
     defaultColor?: string;
 };

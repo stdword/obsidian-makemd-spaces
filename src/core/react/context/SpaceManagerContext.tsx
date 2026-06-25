@@ -18,7 +18,7 @@ export const SpaceManagerProvider: React.FC<React.PropsWithChildren<{ superstate
         const manager = superstate.spaceManager as NavigatorSpaceManager;
 
         manager.isPreviewMode = false;
-        manager.getPathState = (path: string) => superstate.pathsIndex.get(path) ?? null;
+        manager.getPathState = (path: string) => superstate.pathStateForPath(path) ?? null;
         manager.getPathsIndexMap = () => superstate.pathsIndex;
         manager.getContextsIndexMap = () => superstate.contextsIndex;
 

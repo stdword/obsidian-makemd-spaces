@@ -1,5 +1,6 @@
-import { folderForTagSpace, pathInSpaceFolder, spaceFolderPathFromSpace } from "core/utils/spaces/space";
+import { pathInSpaceFolder, spaceFolderPathFromSpace } from "core/utils/spaces/space";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
+import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { builtinSpaces } from "core/types/space";
@@ -11,7 +12,7 @@ import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
 
 export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): FilesystemSpaceInfo => {
     const path = tagSpacePathFromTag(tag.toLowerCase());
-    const folderPath = folderForTagSpace(tag, manager.superstate.settings);
+    const folderPath = tagToTagPath(tag);
     return {
         name: tag.replace(/^#/, ""),
         path,

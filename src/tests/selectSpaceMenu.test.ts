@@ -1,13 +1,21 @@
 import { showOpenMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
 
 describe("showOpenMenu", () => {
-    it("includes tag spaces even though their paths use the spaces protocol", () => {
+    it("includes tag spaces that are visible in Obsidian even though their paths use the spaces protocol", async () => {
         const openMenu = jest.fn();
         const superstate = {
             allSpaces: jest.fn(() => [
                 { name: "project", path: "spaces://#project", type: "tag" },
+                { name: "archive", path: "spaces://#archive", type: "tag" },
                 { name: "Internal", path: "spaces://$tags", type: "default" },
                 { name: "Folder", path: "Folder", type: "folder" },
+            ]),
+            spaceManager: {
+                readTags: jest.fn(() => ["#project"]),
+            },
+            spacesIndex: new Map([
+                ["spaces://#project", { name: "project", path: "spaces://#project", type: "tag" }],
+                ["spaces://#archive", { name: "archive", path: "spaces://#archive", type: "tag" }],
             ]),
             pathsIndex: new Map(),
             ui: {
@@ -15,7 +23,7 @@ describe("showOpenMenu", () => {
             },
         } as any;
 
-        showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
 
         const menuConfig = openMenu.mock.calls[0][1];
         expect(menuConfig.options).toEqual(
@@ -34,11 +42,14 @@ describe("showOpenMenu", () => {
                 expect.objectContaining({
                     value: "spaces://$tags",
                 }),
+                expect.objectContaining({
+                    value: "spaces://#archive",
+                }),
             ]),
         );
     });
 
-    it("sorts tags by name and folders by parent section depth", () => {
+    it("sorts tags by name and folders by parent section depth", async () => {
         const openMenu = jest.fn();
         const superstate = {
             allSpaces: jest.fn(() => [
@@ -58,6 +69,14 @@ describe("showOpenMenu", () => {
                 { name: "Shared", path: "Alpha/Shared", type: "folder" },
                 { name: "Sub1", path: "Alpha/Sub1", type: "folder" },
             ]),
+            spaceManager: {
+                readTags: jest.fn(() => ["#it/languages/python", "#it/languages/cpp", "#it/languages/c"]),
+            },
+            spacesIndex: new Map([
+                ["spaces://#it/languages/python", { name: "python", path: "spaces://#it/languages/python", type: "tag" }],
+                ["spaces://#it/languages/cpp", { name: "cpp", path: "spaces://#it/languages/cpp", type: "tag" }],
+                ["spaces://#it/languages/c", { name: "c", path: "spaces://#it/languages/c", type: "tag" }],
+            ]),
             pathsIndex: new Map(),
             settings: {
                 searchMenuFoldersLimit: 75,
@@ -69,7 +88,7 @@ describe("showOpenMenu", () => {
             },
         } as any;
 
-        showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
 
         const menuConfig = openMenu.mock.calls[0][1];
         expect(menuConfig.options[0].value).toBe("/");
@@ -94,11 +113,15 @@ describe("showOpenMenu", () => {
         ]);
     });
 
-    it("routes new tags through the tags section", () => {
+    it("routes new tags through the tags section", async () => {
         const openMenu = jest.fn();
         const saveLink = jest.fn();
         const superstate = {
             allSpaces: jest.fn((): any[] => []),
+            spaceManager: {
+                readTags: jest.fn((): string[] => []),
+            },
+            spacesIndex: new Map(),
             pathsIndex: new Map(),
             settings: {},
             ui: {
@@ -106,7 +129,7 @@ describe("showOpenMenu", () => {
             },
         } as any;
 
-        showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink);
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink);
 
         const menuConfig = openMenu.mock.calls[0][1];
         menuConfig.saveOptions([], ["project"], true, "tags");

@@ -43,6 +43,7 @@ export abstract class ISuperstate {
     initializePaths: () => Promise<void>;
     initializeSpaces: () => Promise<void>;
     getSpaceItems: (spacePath: string, filesOnly?: boolean) => PathStateWithRank[];
+    pathStateForPath: (path: string) => PathState;
     loadFromCache: () => Promise<void>;
     dispatchEvent: (event: keyof SuperstateEvent, payload: any) => void;
     initializeBuiltins: () => Promise<void>;

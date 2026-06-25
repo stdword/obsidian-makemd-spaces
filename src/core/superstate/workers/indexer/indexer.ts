@@ -191,7 +191,7 @@ export class Indexer {
         if (job.type == "contexts") {
             const spaces = this.cache
                 .allSpaces()
-                .filter((f) => f.type != "default")
+                .filter((f) => f.type != "default" && f.type != "tag")
                 .map((f) => f.space);
             const payloads = new Map<string, any>();
             for (const space of spaces) {

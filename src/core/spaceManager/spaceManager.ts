@@ -32,7 +32,7 @@ export class SpaceManager implements SpaceManagerInterface {
     }
 
     public getPathState = (path: string) => {
-        return this.superstate.pathsIndex.get(path);
+        return this.superstate.pathStateForPath(path);
     };
     public getPathsIndexMap = () => {
         return this.superstate.pathsIndex;

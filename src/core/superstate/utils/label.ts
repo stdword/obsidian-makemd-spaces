@@ -13,6 +13,15 @@ const contextColorRow = (row: Record<string, string> | null, path: string, color
 
 export const savePathColor = async (superstate: ISuperstate, path: string, color: string) => {
     const pathState = superstate.pathsIndex.get(path);
+    const spaceState = superstate.spacesIndex.get(path);
+    if (!pathState && spaceState?.type == "tag") {
+        await superstate.updateSpaceMetadata(path, {
+            ...spaceState.metadata,
+            color,
+        });
+        superstate.dispatchEvent("pathStateUpdated", { path });
+        return;
+    }
     if (!pathState) return;
 
     if (isFolderPathState(pathState)) {

@@ -19,7 +19,6 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { SpaceAdapter } from "shared/types/spaceManager";
 import { safelyParseJSON } from "shared/utils/json";
 import { excludeSpacesPredicate } from "utils/hide";
-import { tagToTagPath } from "utils/tags";
 import { SpaceManager } from "../spaceManager";
 
 export class FilesystemSpaceAdapter implements SpaceAdapter {
@@ -595,7 +594,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             return;
         }
         const tagPath = tagSpacePathFromTag(tag);
-        const metadata = await this.spaceDefForSpace(tagToTagPath(tag));
+        const metadata = this.spaceManager.superstate.spacesIndex.get(tagPath)?.metadata ?? (await this.spaceDefForSpace(tagPath));
         const spaceExists = ensureArray(metadata.links) ?? [];
         const pathExists = spaceExists.find((f) => f == path);
         if (!pathExists) {
@@ -603,7 +602,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         }
 
         const newMetadata = { ...metadata, links: spaceExists };
-        await this.saveSpace(tagPath, (oldMetadata) => ({ ...oldMetadata, ...newMetadata }));
         await this.spaceManager.superstate.updateSpaceMetadata(tagPath, newMetadata);
         this.spaceManager.superstate.reloadPath(path, true).then(() => this.spaceManager.superstate.dispatchEvent("pathStateUpdated", { path: path }));
     }

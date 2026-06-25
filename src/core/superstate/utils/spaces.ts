@@ -131,6 +131,14 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
     const spaceState = superstate.spacesIndex.get(space);
     if (!spaceState) return;
 
+    if (spaceState.type == "tag") {
+        const currentOrder = spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path);
+        const nextOrder = currentOrder.filter((itemPath) => itemPath != path);
+        nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
+        await saveSpaceMetadataValue(superstate, space, "rank-order", nextOrder);
+        return;
+    }
+
     const fixedRank = rank;
     superstate.addToContextStateQueue(() =>
         reorderPathsInContext(superstate.spaceManager, [path], fixedRank, spaceState.space)
@@ -211,8 +219,10 @@ export const createSpace = async (superstate: Superstate, path: string, newSpace
 };
 
 export const saveSpaceMetadataValue = async (superstate: Superstate, space: string, key: keyof SpaceDefinition, value: any) => {
-    superstate.spaceManager.saveSpace(space, (metadata) => ({ ...metadata, [key]: value }));
     const spaceCache = superstate.spacesIndex.get(space);
+    if (spaceCache?.type != "tag") {
+        superstate.spaceManager.saveSpace(space, (metadata) => ({ ...metadata, [key]: value }));
+    }
     await superstate.updateSpaceMetadata(space, { ...spaceCache.metadata, [key]: value });
 };
 
@@ -221,7 +231,10 @@ export const saveSpaceProperties = async (superstate: Superstate, space: string,
 };
 
 export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceInfo, metadata: SpaceDefinition) => {
-    await superstate.spaceManager.saveSpace(spaceInfo.path, (oldMetadata) => ({ ...oldMetadata, ...metadata }));
+    const spaceCache = superstate.spacesIndex.get(spaceInfo.path);
+    if (spaceCache?.type != "tag") {
+        await superstate.spaceManager.saveSpace(spaceInfo.path, (oldMetadata) => ({ ...oldMetadata, ...metadata }));
+    }
 
     return superstate.updateSpaceMetadata(spaceInfo.path, metadata);
 };

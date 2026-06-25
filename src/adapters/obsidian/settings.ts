@@ -84,11 +84,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     type: "optional-number",
                 },
                 {
-                    name: "tagSpaceFolderPath",
-                    category: "system",
-                    type: "text",
-                },
-                {
                     name: "folderIndentationLines",
                     category: "appearance",
                     type: "boolean",

@@ -96,6 +96,39 @@ describe("triggerMultiPathMenu", () => {
 });
 
 describe("showPathContextMenu", () => {
+    it("opens the space context menu for virtual tag spaces without path cache", () => {
+        const openMenu = jest.fn();
+        const tagPathState = {
+            path: "spaces://#art",
+            name: "art",
+            type: "space",
+            subtype: "tag",
+            label: { color: "", sticker: "" },
+        };
+        const tagSpace = {
+            path: "spaces://#art",
+            name: "art",
+            type: "tag",
+            metadata: { sort: { field: "rank", asc: true } },
+            space: { path: "spaces://#art", name: "art", folderPath: "", defPath: "", notePath: "", dbPath: "" },
+        };
+        const superstate = {
+            pathsIndex: new Map(),
+            pathStateForPath: jest.fn(() => tagPathState),
+            spacesIndex: new Map([["spaces://#art", tagSpace]]),
+            ui: {
+                openMenu,
+                openPath: jest.fn(),
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showPathContextMenu(superstate as any, "spaces://#art", null, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        expect(openMenu).toHaveBeenCalled();
+    });
+
     it("hides the color action for linked files", () => {
         const openMenu = jest.fn();
         const pathState = {

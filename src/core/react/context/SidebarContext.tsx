@@ -57,7 +57,9 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
 
     const [activeFocus, setActiveFocus] = useState<number>(props.superstate.settings.currentWaypoint);
 
-    const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>((props.superstate.focuses[activeFocus]?.paths ?? []).map((f) => props.superstate.pathsIndex.get(f)).filter((f) => f));
+    const pathStateForFocusPath = (path: string) => props.superstate.pathStateForPath(path);
+
+    const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>((props.superstate.focuses[activeFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
 
     const setActiveViewSpaceByPath = (path: string) => {
         const newWaypoint = props.superstate.focuses[activeFocus] ?? {
@@ -93,14 +95,14 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
 
     const refreshSpaces = (payload: { path: string }) => {
         if (props.superstate.focuses[props.superstate.settings.currentWaypoint]?.paths?.includes(payload.path)) {
-            setActiveViewSpaces((props.superstate.focuses[props.superstate.settings.currentWaypoint]?.paths ?? []).map((f) => props.superstate.pathsIndex.get(f)).filter((f) => f));
+            setActiveViewSpaces((props.superstate.focuses[props.superstate.settings.currentWaypoint]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
         }
     };
     const reloadPaths = () => {
         setFocuses(props.superstate.focuses);
         const _activeFocus = props.superstate.settings.currentWaypoint;
         setActiveFocus(_activeFocus);
-        setActiveViewSpaces((props.superstate.focuses[_activeFocus]?.paths ?? []).map((f) => props.superstate.pathsIndex.get(f)).filter((f) => f));
+        setActiveViewSpaces((props.superstate.focuses[_activeFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
     };
 
     useEffect(() => {

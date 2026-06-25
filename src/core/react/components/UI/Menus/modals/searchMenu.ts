@@ -3,6 +3,7 @@ import { MakeMDSettings } from "shared/types/settings";
 import i18n from "shared/i18n";
 import { Superstate } from "makemd-core";
 import { Rect } from "shared/types/Pos";
+import { syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
 
 export type SearchMenuTab = "folders" | "files" | "tags" | "refs";
 export function getSearchMenuTabs(settings: MakeMDSettings, tabs: SearchMenuTab[]) {
@@ -62,7 +63,7 @@ export const searchMenuOptionSort = (a: SelectOption, b: SelectOption) => {
     return aSort.localeCompare(bSort, undefined, { numeric: true, sensitivity: "base" });
 };
 
-export const showSearchMenu = ({
+export const showSearchMenu = async ({
     offset,
     win,
     superstate,
@@ -83,6 +84,7 @@ export const showSearchMenu = ({
 }) => {
     offset; // offset var is not used
 
+    const visibleTagPaths = tabs.includes('tags') ? await syncTagSpacesFromObsidian(superstate) : null;
     const tabsDesc = getSearchMenuTabs(superstate.settings, tabs)
     const suggestions: SelectOption[] = []
 
@@ -126,7 +128,7 @@ export const showSearchMenu = ({
 
         if (tabs.includes('tags'))
             suggestions.push(...spaces
-                .filter((s) => s.type == 'tag')
+                .filter((s) => s.type == 'tag' && visibleTagPaths.has(s.path))
                 .map<SelectOption>((s) => ({
                     section: 'tags',
                     icon: 'lucide//hash',

@@ -9,7 +9,8 @@ jest.mock("core/superstate/workers/indexer/indexer", () => ({
 }));
 
 import { Superstate } from "core/superstate/superstate";
-import { addTag } from "core/superstate/utils/tags";
+import { savePathColor } from "core/superstate/utils/label";
+import { addTag, syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
 import { tagSpacePathFromTag } from "core/utils/strings";
 
 const createSuperstate = () => {
@@ -54,7 +55,7 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
-    it("creates space states for tags read from the vault", async () => {
+    it("does not create space states for Obsidian tags during initialization", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.readTags = jest.fn(() => ["#project"]);
         spaceManager.uriByString = jest.fn(() => ({}));
@@ -62,8 +63,8 @@ describe("Superstate tag initialization", () => {
 
         await superstate.initializeTags();
 
-        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
-        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
     });
 
     it("adds new tag spaces to the live space index", async () => {
@@ -73,27 +74,222 @@ describe("Superstate tag initialization", () => {
 
         await addTag(superstate, "project");
 
-        expect(spaceManager.createSpace).toHaveBeenCalledWith("#project", "/", null);
+        expect(spaceManager.createSpace).not.toHaveBeenCalled();
         expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
-        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        expect(superstate.pathStateForPath(tagSpacePathFromTag("#project"))).toEqual(
+            expect.objectContaining({
+                path: tagSpacePathFromTag("#project"),
+                type: "space",
+                subtype: "tag",
+            }),
+        );
     });
 
-    it("creates configured tag parent folders before adding a new tag space", async () => {
+    it("syncs missing Obsidian tags into virtual tag spaces on demand", async () => {
         const { superstate, spaceManager } = createSuperstate();
-        superstate.settings = { tagSpaceFolderPath: "Meta/Tags" };
+        spaceManager.readTags = jest.fn(() => ["#project"]);
         spaceManager.uriByString = jest.fn(() => ({}));
         spaceManager.spaceTypeByString = jest.fn(() => "tag");
-        spaceManager.pathExists = jest.fn((path: string) => path == "/");
+
+        const visibleTagPaths = await syncTagSpacesFromObsidian(superstate);
+
+        expect(visibleTagPaths).toEqual(new Set([tagSpacePathFromTag("#project")]));
+        expect(spaceManager.createSpace).not.toHaveBeenCalled();
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+
+    it("stores tag spaces only in compact space cache", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
 
         await addTag(superstate, "project");
 
-        expect(spaceManager.createSpace).toHaveBeenNthCalledWith(1, "Meta", "/", null);
-        expect(spaceManager.createSpace).toHaveBeenNthCalledWith(2, "Tags", "Meta", null);
-        expect(spaceManager.createSpace).toHaveBeenNthCalledWith(3, "#project", "Meta/Tags", null);
-        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+        expect(superstate.persister.store).toHaveBeenCalledTimes(1);
+        const [path, cache, type] = superstate.persister.store.mock.calls[0];
+        expect(path).toBe(tagSpacePathFromTag("#project"));
+        expect(type).toBe("space");
+        expect(JSON.parse(cache)).toEqual({
+            type: "tag",
+            name: "project",
+            path: tagSpacePathFromTag("#project"),
+            metadata: {
+                sort: {
+                    field: "rank",
+                    asc: true,
+                },
+                "rank-order": [],
+                pinned: [],
+            },
+            space: {
+                dbPath: "",
+                defPath: "",
+                folderPath: "",
+                notePath: "",
+            },
+        });
+        expect(superstate.persister.store).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), expect.any(String), "path");
     });
 
-    it("adds tag spaces when a file metadata reload introduces a new tag", async () => {
+    it("does not persist context cache for tag spaces", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+
+        await addTag(superstate, "project");
+
+        await expect(superstate.reloadContext(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).space)).resolves.toBe(false);
+        expect(superstate.contextsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        expect(superstate.persister.store).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), expect.any(String), "context");
+    });
+
+    it("stores tag color in space metadata", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+
+        await addTag(superstate, "project");
+        superstate.persister.store.mockClear();
+
+        await savePathColor(superstate, tagSpacePathFromTag("#project"), "var(--mk-color-teal)");
+
+        expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).metadata.color).toBe("var(--mk-color-teal)");
+        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        const stored = JSON.parse(superstate.persister.store.mock.calls[0][1]);
+        expect(stored.metadata.color).toBe("var(--mk-color-teal)");
+    });
+
+    it("hydrates tag spaces from space cache and softly ignores old tag path and context cache", async () => {
+        const { superstate } = createSuperstate();
+        superstate.persister.loadAll = jest.fn((type: string) => {
+            if (type == "space")
+                return Promise.resolve([
+                    {
+                        path: tagSpacePathFromTag("#project"),
+                        cache: JSON.stringify({
+                            type: "tag",
+                            name: "project",
+                            path: tagSpacePathFromTag("#project"),
+                            metadata: { color: "teal", sort: { field: "rank", asc: false }, "rank-order": ["Tagged.md"], pinned: [] },
+                            space: { dbPath: "", defPath: "", folderPath: "", notePath: "" },
+                        }),
+                    },
+                ]);
+            if (type == "path")
+                return Promise.resolve([
+                    {
+                        path: tagSpacePathFromTag("#project"),
+                        cache: JSON.stringify({ path: tagSpacePathFromTag("#project"), type: "space", subtype: "tag", label: { sticker: "", color: "" } }),
+                    },
+                ]);
+            if (type == "context")
+                return Promise.resolve([
+                    {
+                        path: tagSpacePathFromTag("#project"),
+                        cache: JSON.stringify({ path: tagSpacePathFromTag("#project"), contextTable: {}, dbExists: true }),
+                    },
+                ]);
+            return Promise.resolve([]);
+        });
+
+        await superstate.loadFromCache();
+
+        expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).metadata).toEqual({
+            color: "teal",
+            sort: { field: "rank", asc: false },
+            "rank-order": ["Tagged.md"],
+            pinned: [],
+        });
+        expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).space.path).toBe(tagSpacePathFromTag("#project"));
+        expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        expect(superstate.contextsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        expect(superstate.persister.remove).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), "path");
+        expect(superstate.persister.remove).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), "context");
+    });
+
+    it("prefers virtual tag space state over stale tag path cache for display names", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+
+        await addTag(superstate, "📖/psy/self");
+        superstate.pathsIndex.set(tagSpacePathFromTag("#📖/psy/self"), {
+            path: tagSpacePathFromTag("#📖/psy/self"),
+            name: tagSpacePathFromTag("#📖/psy/self"),
+            type: "space",
+            subtype: "tag",
+            tags: [],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+
+        expect(superstate.pathStateForPath(tagSpacePathFromTag("#📖/psy/self")).name).toBe("📖/psy/self");
+    });
+
+    it("trusts stored tag space names from cache without read-time normalization", async () => {
+        const { superstate } = createSuperstate();
+        const tagPath = tagSpacePathFromTag("#📖/psy/self");
+        superstate.persister.loadAll = jest.fn((type: string) =>
+            Promise.resolve(
+                type == "space"
+                    ? [
+                          {
+                              path: tagPath,
+                              cache: JSON.stringify({
+                                  type: "tag",
+                                  name: tagPath,
+                                  path: tagPath,
+                                  metadata: {
+                                      sort: { field: "rank", asc: true },
+                                      "rank-order": [],
+                                      pinned: [],
+                                  },
+                                  space: {
+                                      defPath: "",
+                                      notePath: "",
+                                      folderPath: "",
+                                      dbPath: "",
+                                  },
+                              }),
+                          },
+                      ]
+                    : [],
+            ),
+        );
+
+        await superstate.loadFromCache();
+
+        expect(superstate.spacesIndex.get(tagPath).name).toBe(tagPath);
+        expect(superstate.pathStateForPath(tagPath).name).toBe(tagPath);
+    });
+
+    it("stores tag space names normalized from tag paths", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const tagPath = tagSpacePathFromTag("#📖/psy/self");
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+
+        await superstate.reloadSpace(
+            {
+                path: tagPath,
+                name: tagPath,
+                defPath: "",
+                notePath: "",
+                folderPath: "",
+                dbPath: "",
+            },
+            undefined,
+            true,
+        );
+
+        const stored = JSON.parse(superstate.persister.store.mock.calls[0][1]);
+        expect(stored.name).toBe("📖/psy/self");
+    });
+
+    it("does not add tag spaces when a file metadata reload introduces a new Obsidian tag", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.uriByString = jest.fn(() => ({}));
         spaceManager.spaceTypeByString = jest.fn(() => "tag");
@@ -129,8 +325,8 @@ describe("Superstate tag initialization", () => {
             false,
         );
 
-        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
-        expect(dispatchEvent).toHaveBeenCalledWith("spaceStateUpdated", { path: "spaces://$tags" });
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+        expect(dispatchEvent).not.toHaveBeenCalledWith("spaceStateUpdated", { path: "spaces://$tags" });
     });
 
     it("reads tag space children from path tag cache", () => {
@@ -162,6 +358,84 @@ describe("Superstate tag initialization", () => {
 
         expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
         expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#project");
+    });
+
+    it("syncs tag space rank-order from the same item lookup used by the tree", () => {
+        const { superstate } = createSuperstate();
+        const tagPath = tagSpacePathFromTag("#project");
+        superstate.spacesIndex.set(tagPath, {
+            type: "tag",
+            name: "project",
+            path: tagPath,
+            metadata: {
+                sort: { field: "rank", asc: true },
+                "rank-order": [],
+                pinned: [],
+            },
+            space: { path: tagPath, name: "project", defPath: "", notePath: "", folderPath: "", dbPath: "" },
+        } as any);
+        superstate.pathsIndex.set("Tagged.md", {
+            path: "Tagged.md",
+            name: "Tagged",
+            type: "file",
+            subtype: "md",
+            tags: ["#project"],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
+        superstate.persister.store.mockClear();
+
+        expect(superstate.getSpaceItems(tagPath).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+
+        expect(superstate.spacesIndex.get(tagPath).metadata["rank-order"]).toEqual(["Tagged.md"]);
+        expect(JSON.parse(superstate.persister.store.mock.calls[0][1]).metadata["rank-order"]).toEqual(["Tagged.md"]);
+    });
+
+    it("uses tag metadata rank-order for tag space item ranks", () => {
+        const { superstate } = createSuperstate();
+        superstate.spacesIndex.set(tagSpacePathFromTag("#project"), {
+            type: "tag",
+            name: "project",
+            path: tagSpacePathFromTag("#project"),
+            metadata: {
+                sort: { field: "rank", asc: true },
+                "rank-order": ["Other.md", "Tagged.md"],
+                pinned: [],
+            },
+            space: { path: tagSpacePathFromTag("#project"), name: "project", defPath: "", notePath: "" },
+        } as any);
+        superstate.pathsIndex.set("Tagged.md", {
+            path: "Tagged.md",
+            name: "Tagged",
+            type: "file",
+            subtype: "md",
+            tags: ["#project"],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.pathsIndex.set("Other.md", {
+            path: "Other.md",
+            name: "Other",
+            type: "file",
+            subtype: "md",
+            tags: ["#project"],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
+        superstate.tagsMap.set("Other.md", new Set(["#project"]));
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => [item.path, item.rank])).toEqual([
+            ["Tagged.md", 1],
+            ["Other.md", 0],
+        ]);
     });
 });
 

@@ -5,8 +5,8 @@ import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { defaultSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
-import { folderForTagSpace, pathIsSpace } from "core/utils/spaces/space";
-import { spacePathFromName, tagSpacePathFromTag } from "core/utils/strings";
+import { pathIsSpace } from "core/utils/spaces/space";
+import { tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import { applyContextLabelsToPaths } from "core/superstate/cacheParsers";
@@ -38,10 +38,74 @@ import { SuperstateEvent } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { parseMDBStringValue } from "utils/properties";
 import { fastSearch, searchPath } from "./workers/search/impl";
+import { ensureArray } from "core/utils/strings";
 export type SuperProperty = {
     id: string;
     name: string;
 };
+
+const isTagSpacePath = (path: string) => path?.startsWith("spaces://#");
+
+const tagSpaceNameFromPath = (path: string) => (isTagSpacePath(path) ? path.slice("spaces://#".length) : path);
+
+const tagSpaceInfoForCache = (space: SpaceInfo): SpaceInfo => ({
+    ...space,
+    defPath: "",
+    notePath: "",
+    folderPath: "",
+    dbPath: "",
+} as SpaceInfo);
+
+const tagSpaceInfoForStore = (): SpaceInfo =>
+    ({
+        defPath: "",
+        notePath: "",
+        folderPath: "",
+        dbPath: "",
+    }) as unknown as SpaceInfo;
+
+const tagSpaceMetadata = (metadata: SpaceDefinition = {}): SpaceDefinition => ({
+    ...(metadata.color ? { color: metadata.color } : {}),
+    sort: {
+        field: metadata.sort?.field ?? "rank",
+        asc: metadata.sort?.asc ?? true,
+    },
+    "rank-order": ensureArray(metadata["rank-order"]),
+    pinned: ensureArray(metadata.pinned),
+});
+
+const tagSpaceState = (space: SpaceInfo, metadata?: SpaceDefinition): SpaceState => ({
+    type: "tag",
+    name: space.name,
+    path: space.path,
+    metadata: tagSpaceMetadata(metadata),
+    space: tagSpaceInfoForCache(space),
+});
+
+const tagSpaceStateForStore = (space: SpaceState): SpaceState =>
+    ({
+        type: "tag",
+        name: tagSpaceNameFromPath(space.path),
+        path: space.path,
+        metadata: tagSpaceMetadata(space.metadata),
+        space: tagSpaceInfoForStore(),
+    }) as SpaceState;
+
+const tagPathStateForSpace = (space: SpaceState): PathState => ({
+    path: space.path,
+    name: space.name,
+    type: "space",
+    subtype: "tag",
+    label: {
+        sticker: "",
+        color: space.metadata?.color ?? "",
+    },
+    tags: [],
+    spaces: [],
+    outlinks: [],
+    hidden: false,
+    metadata: {},
+});
 
 export class Superstate implements ISuperstate {
     public static create(indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager): Superstate {
@@ -182,7 +246,9 @@ export class Superstate implements ISuperstate {
         const allSpaces = [...this.spaceManager.allSpaces().values()];
 
         const promises = allSpaces.map((f) => this.reloadSpace(f, null, true));
-        [...this.spacesIndex.keys()].filter((f) => !allSpaces.some((g) => g.path == f)).forEach((f) => this.onSpaceDeleted(f));
+        [...this.spacesIndex.keys()]
+            .filter((f) => this.spacesIndex.get(f)?.type != "tag" && !allSpaces.some((g) => g.path == f))
+            .forEach((f) => this.onSpaceDeleted(f));
 
         await Promise.all(promises);
     }
@@ -196,9 +262,30 @@ export class Superstate implements ISuperstate {
         return uniq([...indexedPaths, ...adapterPaths]);
     }
 
+    private syncTagSpaceRankOrder(spacePath: string, items: string[]): string[] {
+        const spaceState = this.spacesIndex.get(spacePath);
+        const currentOrder = ensureArray(spaceState?.metadata?.["rank-order"]);
+        if (spaceState?.type != "tag") return currentOrder;
+
+        const nextOrder = [...currentOrder.filter((path) => items.includes(path)), ...items.filter((path) => !currentOrder.includes(path))];
+        if (_.isEqual(currentOrder, nextOrder)) return currentOrder;
+
+        const nextSpaceState = {
+            ...spaceState,
+            metadata: {
+                ...spaceState.metadata,
+                "rank-order": nextOrder,
+            },
+        };
+        this.spacesIndex.set(spacePath, nextSpaceState);
+        this.persister?.store(spacePath, JSON.stringify(tagSpaceStateForStore(nextSpaceState)), "space");
+        return nextOrder;
+    }
+
     public getSpaceItems(spacePath: string): PathStateWithRank[] {
-        const items = spacePath?.startsWith("spaces://#") ? this.pathsForTagSpace(spacePath) : [...this.spacesMap.getInverse(spacePath)];
-        const ranks = this.contextsIndex.get(spacePath)?.paths ?? [];
+        const isTagSpace = isTagSpacePath(spacePath);
+        const items = isTagSpace ? this.pathsForTagSpace(spacePath) : [...this.spacesMap.getInverse(spacePath)];
+        const ranks = isTagSpace ? this.syncTagSpaceRankOrder(spacePath, items) : (this.contextsIndex.get(spacePath)?.paths ?? []);
 
         return items
             .map<PathStateWithRank>((f) => {
@@ -228,10 +315,13 @@ export class Superstate implements ISuperstate {
         allSpaces.forEach((s) => {
             const space = safelyParseJSON(s.cache);
             if (space && space.type) {
-                this.spacesIndex.set(s.path, space);
+                this.spacesIndex.set(s.path, space.type == "tag" ? tagSpaceState({ ...space.space, name: space.name, path: space.path }, space.metadata) : space);
             }
         });
         allContexts.forEach((s) => {
+            if (isTagSpacePath(s.path)) {
+                return;
+            }
             const space = safelyParseJSON(s.cache);
             if (space) {
                 this.contextsIndex.set(s.path, space);
@@ -239,6 +329,9 @@ export class Superstate implements ISuperstate {
         });
 
         allPaths.forEach((f) => {
+            if (isTagSpacePath(f.path)) {
+                return;
+            }
             const cache = parsePathState(f.cache);
             if (cache) {
                 this.pathsIndex.set(f.path, cache);
@@ -254,6 +347,18 @@ export class Superstate implements ISuperstate {
         this.eventsDispatcher.dispatchEvent(event, payload);
     }
 
+    public pathStateForPath(path: string): PathState {
+        if (isTagSpacePath(path)) {
+            const spaceState = this.spacesIndex.get(path);
+            if (spaceState?.type == "tag") return tagPathStateForSpace(spaceState);
+        }
+        const pathState = this.pathsIndex.get(path);
+        if (pathState) return pathState;
+        const spaceState = this.spacesIndex.get(path);
+        if (spaceState?.type == "tag") return tagPathStateForSpace(spaceState);
+        return null;
+    }
+
     public async initializeBuiltins() {
         const allBuiltins = builtinSpaces;
         const promises = Object.keys(allBuiltins).map((f) => this.reloadPath("spaces://$" + f, true));
@@ -261,9 +366,7 @@ export class Superstate implements ISuperstate {
     }
 
     public async initializeTags() {
-        const allTags = this.spaceManager.readTags().map((f) => fileSystemSpaceInfoFromTag(this.spaceManager, f));
-        const promises = [...allTags].map((l) => this.reloadSpace(l, null, true));
-        await Promise.all(promises);
+        return;
     }
 
     public async onSpaceDefinitionChanged(space: SpaceState, oldDef?: SpaceDefinition) {
@@ -307,10 +410,26 @@ export class Superstate implements ISuperstate {
     }
 
     public async onTagRenamed(tag: string, newTag: string) {
-        const oldPath = spacePathFromName(tag);
+        const oldPath = tagSpacePathFromTag(tag);
         const newSpaceInfo = fileSystemSpaceInfoFromTag(this.spaceManager, newTag);
-        await this.onSpaceRenamed(oldPath, newSpaceInfo);
-        await this.onPathRename(oldPath, newSpaceInfo.path);
+        const oldSpace = this.spacesIndex.get(oldPath);
+        if (oldSpace?.type == "tag") {
+            const newSpace = tagSpaceState(newSpaceInfo, oldSpace.metadata);
+            this.spacesIndex.set(newSpaceInfo.path, newSpace);
+            this.spacesIndex.delete(oldPath);
+            this.persister.remove(oldPath, "space");
+            this.persister.store(newSpaceInfo.path, JSON.stringify(tagSpaceStateForStore(newSpace)), "space");
+        }
+        let focusChanged = false;
+        this.focuses.forEach((focus) => {
+            if (focus.paths.includes(oldPath)) {
+                focus.paths = focus.paths.map((f) => (f == oldPath ? newSpaceInfo.path : f));
+                focusChanged = true;
+            }
+        });
+        if (focusChanged) {
+            await this.spaceManager.saveFocuses(this.focuses);
+        }
         this.dispatchEvent("spaceChanged", { path: oldPath, newPath: newSpaceInfo.path });
 
         const allContextsWithTag: SpaceInfo[] = [];
@@ -319,7 +438,7 @@ export class Superstate implements ISuperstate {
             if (contextCache?.contexts.includes(tag)) {
                 this.addToContextStateQueue(() => renameTagInContexts(this.spaceManager, tag, newTag, allContextsWithTag));
             }
-            if (spaceCache.metadata?.contexts.includes(tag)) {
+            if (spaceCache.metadata?.contexts?.includes(tag)) {
                 saveSpaceCache(this, spaceCache.space, { ...spaceCache.metadata, contexts: spaceCache.metadata.contexts.map((f) => (f == tag ? newTag : f)) });
             }
         }
@@ -330,11 +449,9 @@ export class Superstate implements ISuperstate {
         this.tagsMap.getInverse(tag).forEach((path) => {
             this.deleteTagInPath(tag, path);
         });
-        const spacePath = folderForTagSpace(tag, this.settings);
-        await this.spaceManager.deletePath(spacePath);
         this.onSpaceDeleted(tagSpacePathFromTag(tag));
         for (const spaceCache of this.spacesIndex.values()) {
-            if (spaceCache.metadata?.contexts.includes(tag)) {
+            if (spaceCache.metadata?.contexts?.includes(tag)) {
                 saveSpaceCache(this, spaceCache.space, { ...spaceCache.metadata, contexts: spaceCache.metadata.contexts.filter((f) => f != tag) });
             }
         }
@@ -549,6 +666,7 @@ export class Superstate implements ISuperstate {
         },
     ) {
         if (!space) return false;
+        if (isTagSpacePath(space.path)) return false;
 
         return this.indexer.reload<{ cache: ContextState; changed: boolean }>({ type: "context", path: space.path, payload: options }).then((r) => {
             return this.contextReloaded(space.path, r.cache, r.changed, options?.force);
@@ -556,6 +674,7 @@ export class Superstate implements ISuperstate {
     }
 
     public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
+        if (isTagSpacePath(path)) return false;
         if (!cache) return false;
         if (!changed && !force) {
             return false;
@@ -622,6 +741,13 @@ export class Superstate implements ISuperstate {
         if (!space) {
             return this.reloadSpaceByPath(spacePath);
         }
+        if (space.type == "tag") {
+            const newSpaceCache = tagSpaceState(space.space, metadata);
+            this.spacesIndex.set(spacePath, newSpaceCache);
+            this.persister.store(spacePath, JSON.stringify(tagSpaceStateForStore(newSpaceCache)), "space");
+            this.dispatchEvent("spaceStateUpdated", { path: space.path });
+            return newSpaceCache;
+        }
         let spaceDefChanged = false;
 
         const spaceSort = metadata?.sort ?? { field: "rank", asc: true, group: true };
@@ -646,12 +772,21 @@ export class Superstate implements ISuperstate {
 
     public async reloadSpace(space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized = true) {
         if (!space) return;
-        const metadata = spaceMetadata ?? (await this.spaceManager.spaceDefForSpace(space.path));
-
-        let pathState = this.pathsIndex.get(space.path);
         const uri = this.spaceManager.uriByString(space.path);
         if (!uri) return null;
         const type: SpaceType = this.spaceManager.spaceTypeByString(uri);
+        if (type == "tag") {
+            const cache = tagSpaceState(space, spaceMetadata ?? this.spacesIndex.get(space.path)?.metadata);
+            this.spacesIndex.set(space.path, cache);
+            this.persister.store(space.path, JSON.stringify(tagSpaceStateForStore(cache)), "space");
+            if (initialized) {
+                this.dispatchEvent("spaceStateUpdated", { path: space.path });
+            }
+            return cache;
+        }
+
+        let pathState = this.pathsIndex.get(space.path);
+        const metadata = spaceMetadata ?? (await this.spaceManager.spaceDefForSpace(space.path));
         if (!pathState) {
             const pathCache = await this.spaceManager.readPathCache(space.path);
             pathState = {
@@ -729,20 +864,6 @@ export class Superstate implements ISuperstate {
 
         this.tagsMap.set(path, new Set(cache.tags));
         this.linksMap.set(path, new Set(cache.outlinks));
-
-        const missingTagSpaces = cache.tags
-            .map((f) => fileSystemSpaceInfoFromTag(this.spaceManager, f))
-            .filter((f) => !this.spacesIndex.has(f.path));
-        if (missingTagSpaces.length > 0) {
-            await Promise.all(
-                missingTagSpaces.map(async (f) => {
-                    await this.reloadSpace(f);
-                    this.reloadContext(f, { force: false, calculate: true });
-                    await this.reloadPath(f.path);
-                }),
-            );
-            this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
-        }
 
         if (!_.isEqual(cache.spaces, Array.from(this.spacesMap.get(path)))) {
             this.spacesMap.set(path, new Set(cache.spaces));

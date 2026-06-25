@@ -1,6 +1,3 @@
-import { deletePath } from "core/superstate/utils/path";
-import { folderForTagSpace } from "core/utils/spaces/space";
-import { pathToParentPath } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 import { PathPropertyName, PathPropertyPinned } from "shared/types/context";
 import { DBRow, SpaceTable } from "shared/types/mdb";
@@ -42,12 +39,5 @@ export const createNewRow = (mdb: SpaceTable, row: DBRow, index?: number) => {
 };
 
 export const renameTagSpacePath = async (superstate: Superstate, tag: string, newTag: string) => {
-    const spacePath = folderForTagSpace(tag, superstate.settings);
-
-    if (await superstate.spaceManager.pathExists(spacePath)) {
-        superstate.spaceManager.renamePath(spacePath, pathToParentPath(spacePath) + "/" + newTag);
-    } else {
-        deletePath(superstate, spacePath);
-    }
     superstate.onTagRenamed(tag, newTag);
 };

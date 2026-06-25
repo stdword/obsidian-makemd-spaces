@@ -3,8 +3,6 @@ import { Superstate } from "makemd-core";
 import { SPACE_SUB_FOLDER } from "shared/constants";
 import { PathState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
-import { encodeSpaceName } from "../strings";
 
 export const pathInSpaceFolder = (basePath: string, path: string) => `${basePath}/${SPACE_SUB_FOLDER}/${path}`;
 
@@ -36,18 +34,7 @@ export const spaceFolderForMDBPath = (path: string, _manager: SpaceManager): str
     return parentPath;
 };
 
-export const tagSpaceFolderBasePath = (settings: MakeMDSettings) => {
-    const path = removeTrailingSlashFromFolder((settings?.tagSpaceFolderPath ?? "").trim().replace(/^\/+/, ""));
-    return path == "/" ? "" : path;
-};
-
-export const tagFolderName = (tag: string) => encodeSpaceName((tag?.startsWith("#") ? tag : `#${tag}`).toLowerCase());
-
-export const folderForTagSpace = (tag: string, settings: MakeMDSettings) => {
-    const basePath = tagSpaceFolderBasePath(settings);
-    const folderName = tagFolderName(tag);
-    return basePath ? `${basePath}/${folderName}` : folderName;
-};
+export const folderForTagSpace = (space: string, _settings: MakeMDSettings) => "/" + space;
 
 export const spacesFromFileCache = (cache: PathState, superstate: Superstate) => {
     return (cache?.spaces ?? [])

@@ -51,7 +51,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
 const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode, expandedSpaces: string[]) => {
     const tree: TreeNode[] = [];
 
-    const pathIndex = superstate.pathsIndex.get(space.path);
+    const pathIndex = superstate.pathStateForPath(space.path);
     const spaceSort = space.metadata?.sort ?? defaultSpaceSort;
     let children = superstate.getSpaceItems(space.path) ?? [];
     children = hideFolderNoteFileFromItems(superstate, space.path, children);
