@@ -68,7 +68,8 @@ export type PathState = {
     parent?: string;
     type?: string;
     subtype?: string;
-    label: PathLabel;
+    label?: PathLabel;
+    effectiveLabel?: PathLabel;
     metadata?: Record<string, any>;
     properties?: Record<string, any>;
     hidden?: boolean;

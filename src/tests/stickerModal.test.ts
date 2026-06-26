@@ -16,4 +16,21 @@ describe("StickerModal", () => {
 
         expect(markup).not.toContain(">Find</button>");
     });
+
+    it("shows the sticker name as the hover tooltip", () => {
+        const ui = {
+            allStickers: (): any[] => [
+                {
+                    type: "lucide",
+                    name: "brain",
+                    value: "brain",
+                    html: "<svg></svg>",
+                },
+            ],
+        };
+
+        const markup = renderToStaticMarkup(React.createElement(StickerModal, { ui: ui as any, selectedSticker: jest.fn() }));
+
+        expect(markup).toContain('aria-label="brain"');
+    });
 });

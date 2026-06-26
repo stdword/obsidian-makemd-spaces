@@ -16,8 +16,9 @@ export const canEditPathSticker = (pathState: PathState, editable?: boolean) => 
 
 export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean; color?: string; onIconClick?: (e: React.MouseEvent) => void }) => {
     const { pathState } = props;
-    const sticker = pathState?.label?.sticker || defaultStickerForPathState(pathState);
-    const color = props.color ?? pathState?.label?.color;
+    const effectiveLabel = pathState?.effectiveLabel ?? pathState?.label;
+    const sticker = effectiveLabel?.sticker || defaultStickerForPathState(pathState);
+    const color = props.color ?? effectiveLabel?.color;
 
     const triggerStickerMenu = (e: React.MouseEvent) => {
         e.stopPropagation();

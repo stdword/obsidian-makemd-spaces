@@ -50,7 +50,8 @@ export class API implements IAPI {
 
     public path = {
         label: (path: string) => {
-            return this.spaceManager.getPathState(path)?.label;
+            const pathState = this.spaceManager.getPathState(path);
+            return pathState?.effectiveLabel ?? pathState?.label;
         },
         open: (path: string, target?: TargetLocation, source?: string) => {
             const resolvedPath = source ? this.spaceManager.resolvePath(path, source) : path;

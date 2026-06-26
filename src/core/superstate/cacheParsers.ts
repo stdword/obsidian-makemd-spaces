@@ -26,11 +26,12 @@ export const applyContextLabelsToPaths = (contextTable: SpaceTable, pathsIndex: 
         const pathState = pathsIndex.get(normalizeContextPath(rowPath));
         if (!pathState) return;
         const isFolder = rowPath?.endsWith("/") || pathState.type == "space" || pathState.subtype == "folder" || pathState.metadata?.file?.isFolder;
-        if (isFolder || !row.color || row.color == pathState.label?.color) return;
+        if (isFolder || !row.color || row.color == pathState.effectiveLabel?.color) return;
         pathsIndex.set(pathState.path, {
             ...pathState,
-            label: {
+            effectiveLabel: {
                 ...pathState.label,
+                ...pathState.effectiveLabel,
                 color: row.color,
             },
         });
@@ -181,8 +182,9 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         return "ui//file";
     };
 
+    const sourceLabel = pathCache?.label ?? { sticker: "", color: "" };
     const cache: PathState = {
-        label: pathCache?.label,
+        label: sourceLabel,
         path,
         name: displayName,
     };
@@ -225,9 +227,13 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     tags.push(...fileTags);
 
     const parentDefaultSticker = spacesCache.get(parent)?.metadata?.defaultSticker;
-    const sticker = defaultSticker(parentDefaultSticker, type, subtype, path, pathCache?.file?.extension, pathCache?.label?.sticker);
+    const ownSpaceMetadata = spacesCache.get(path)?.metadata;
+    const ownSticker = ownSpaceMetadata?.sticker ?? "";
+    const sticker = type == "space" ? defaultSticker(parentDefaultSticker, type, subtype, path, pathCache?.file?.extension, ownSticker) : defaultSticker("", type, subtype, path, pathCache?.file?.extension, "");
     const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
-    const color = initiateString(pathCache?.label?.color, parentDefaultColor) ?? "";
+    const ownColor = ownSpaceMetadata?.color ?? "";
+    const fileColors = spacesCache.get(parent)?.metadata?.["file-colors"] ?? {};
+    const color = type == "space" ? (initiateString(ownColor, parentDefaultColor) ?? "") : (fileColors[path] ?? parentDefaultColor ?? "");
 
     const outlinks = pathCache?.resolvedLinks ?? [];
     const spaceNames = [];
@@ -239,6 +245,9 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         subtype,
         parent,
         label: {
+            ...sourceLabel,
+        },
+        effectiveLabel: {
             sticker,
             color,
         },

@@ -217,7 +217,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.saveSettings = () => this.saveSettings();
         this.loadViews();
 
-        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space", "context"]);
+        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space"]);
 
         await cachePersister.initialize()
         this.superstate.persister = cachePersister;

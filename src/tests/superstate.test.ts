@@ -82,6 +82,10 @@ describe("Superstate tag initialization", () => {
                 path: tagSpacePathFromTag("#project"),
                 type: "space",
                 subtype: "tag",
+                effectiveLabel: {
+                    sticker: "lucide//hash",
+                    color: "",
+                },
             }),
         );
     });
@@ -107,23 +111,19 @@ describe("Superstate tag initialization", () => {
         await addTag(superstate, "project");
 
         expect(superstate.persister.store).toHaveBeenCalledTimes(1);
-        const [path, cache, type] = superstate.persister.store.mock.calls[0];
+        const [path, cache, type, version] = superstate.persister.store.mock.calls[0];
         expect(path).toBe(tagSpacePathFromTag("#project"));
         expect(type).toBe("space");
+        expect(version).toBe("");
         expect(JSON.parse(cache)).toEqual({
             type: "tag",
             name: "project",
             path: tagSpacePathFromTag("#project"),
             metadata: {
-                sort: {
-                    field: "rank",
-                    asc: true,
-                },
                 "rank-order": [],
                 pinned: [],
             },
             space: {
-                dbPath: "",
                 defPath: "",
                 folderPath: "",
                 notePath: "",

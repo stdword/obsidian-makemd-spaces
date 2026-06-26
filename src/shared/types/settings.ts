@@ -1,3 +1,5 @@
+import { SpaceSort } from "./spaceDef";
+
 export type DeleteFileOption = "trash" | "permanent" | "system-trash";
 
 export interface MakeMDSettings {
@@ -20,6 +22,8 @@ export interface MakeMDSettings {
     deleteFileOption: DeleteFileOption;
     expandFolderOnClick: boolean;
     folderIndentationLines: boolean;
+    defaultFoldersAtTop: boolean;
+    defaultSpaceSort: SpaceSort;
     openSpacesOnLaunch: boolean;
     overrideNativeMenu: boolean;
     revealActiveFile: boolean;

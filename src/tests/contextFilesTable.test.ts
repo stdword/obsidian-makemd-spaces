@@ -116,7 +116,7 @@ describe("context files table", () => {
 
         applyContextLabelsToPaths(result.cache.contextTable, pathsIndex);
 
-        expect(pathsIndex.get("Note.md")?.label).toEqual({
+        expect(pathsIndex.get("Note.md")?.effectiveLabel).toEqual({
             color: "#e30d0d",
             sticker: "ui//file-text",
         });
@@ -151,6 +151,12 @@ describe("savePathColor", () => {
     it("persists file color into context.mdb files rows instead of path labels", async () => {
         const saveLabel = jest.fn();
         const saveTable = jest.fn(() => Promise.resolve(true));
+        const saveSpace = jest.fn(() => Promise.resolve(true));
+        const updateSpaceMetadata = jest.fn((spacePath, metadata) => {
+            const space = superstate.spacesIndex.get(spacePath);
+            superstate.spacesIndex.set(spacePath, { ...space, metadata });
+            return Promise.resolve(true);
+        });
         const dispatchEvent = jest.fn();
         const contextTable = {
             schema: { id: defaultContextSchemaID, name: "Items", type: "db", primary: "true" },
@@ -158,31 +164,30 @@ describe("savePathColor", () => {
             rows: [{ path: "Note.md", color: "" }],
         };
         const superstate = {
-            pathsIndex: new Map([["Note.md", { path: "Note.md", label: { color: "", sticker: "" }, spaces: ["Vault"] }]]),
-            spacesIndex: new Map([["Vault", { path: "Vault", space: { path: "Vault" } }]]),
+            pathsIndex: new Map([["Note.md", { path: "Note.md", label: { color: "", sticker: "" }, effectiveLabel: { color: "", sticker: "ui//file-text" }, spaces: ["Vault"] }]]),
+            spacesIndex: new Map([["Vault", { path: "Vault", type: "folder", space: { path: "Vault" }, metadata: {} }]]),
             spaceManager: {
                 contextForSpace: jest.fn(() => Promise.resolve(contextTable)),
                 saveTable,
                 saveLabel,
+                saveSpace,
             },
+            updateSpaceMetadata,
             dispatchEvent,
         };
 
         await savePathColor(superstate as any, "Note.md", "#e30d0d");
 
         expect(saveLabel).not.toHaveBeenCalled();
-        expect(saveTable).toHaveBeenCalledWith(
-            "Vault",
-            expect.objectContaining({
-                rows: [{ path: "Note.md", color: "#e30d0d", isPinned: "false" }],
-            }),
-            true,
-        );
-        expect(superstate.pathsIndex.get("Note.md")?.label.color).toBe("#e30d0d");
+        expect(saveTable).not.toHaveBeenCalled();
+        expect(saveSpace).toHaveBeenCalledWith("Vault", expect.any(Function));
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("Vault", { "file-colors": { "Note.md": "#e30d0d" } });
+        expect(superstate.pathsIndex.get("Note.md")?.label.color).toBe("");
+        expect(superstate.pathsIndex.get("Note.md")?.effectiveLabel.color).toBe("#e30d0d");
         expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "Note.md" });
     });
 
-    it("persists folder color into the path label instead of defaultColor", async () => {
+    it("persists folder color into folder space metadata instead of parent defaults", async () => {
         const saveTable = jest.fn(() => Promise.resolve(true));
         const saveLabel = jest.fn(() => Promise.resolve());
         const updateSpaceMetadata = jest.fn(() => Promise.resolve(true));
@@ -211,8 +216,6 @@ describe("savePathColor", () => {
 
         expect(saveTable).not.toHaveBeenCalled();
         expect(saveLabel).toHaveBeenCalledWith("Folder", "color", "#e30d0d");
-        expect(updateSpaceMetadata).not.toHaveBeenCalled();
-        expect(superstate.pathsIndex.get("Folder")?.label.color).toBe("#e30d0d");
-        expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "Folder" });
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("Folder", { color: "#e30d0d", defaultColor: "" });
     });
 });

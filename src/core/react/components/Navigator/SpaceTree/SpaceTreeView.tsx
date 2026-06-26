@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, defaultSpaceSort, pathStateToTreeNode, spaceRowHeight, spaceSortFn, spaceToTreeNode } from "core/superstate/utils/spaces";
+import { TreeNode, effectiveSpaceSort, pathStateToTreeNode, spaceRowHeight, spaceSortFn, spaceToTreeNode } from "core/superstate/utils/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
 import { DragProjection, getDragDepth, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
@@ -29,7 +29,9 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     // Only check expandedSpaces - don't force collapse based on activeId
     // This fixes the issue where folders with folder notes couldn't be expanded
     const spaceCollapsed = !expandedSpaces.includes(id);
-    const spaceSort = space.metadata?.sort?.field && !sort.recursive ? space.metadata?.sort : (sort ?? defaultSpaceSort);
+    const parentSort = effectiveSpaceSort(sort, superstate.settings);
+    const hasOwnSort = Object.keys(space.metadata?.sort ?? {}).length > 0;
+    const spaceSort = hasOwnSort && !parentSort.recursive ? effectiveSpaceSort(space.metadata?.sort, superstate.settings) : parentSort;
     let children = superstate.getSpaceItems(space.path) ?? [];
     children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (!spaceCollapsed || root) {
@@ -52,7 +54,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
     const tree: TreeNode[] = [];
 
     const pathIndex = superstate.pathStateForPath(space.path);
-    const spaceSort = space.metadata?.sort ?? defaultSpaceSort;
+    const spaceSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
     let children = superstate.getSpaceItems(space.path) ?? [];
     children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (pathIndex)

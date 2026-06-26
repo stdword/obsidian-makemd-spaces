@@ -37,9 +37,3 @@ export const compareByFieldCaseInsensitive = (field: string, dir: boolean) => (_
         numeric: true,
     });
 };
-
-export const compareByFieldNumerical = (field: string, dir: boolean) => (_a: Record<string, any>, _b: Record<string, any>) => {
-    const a = dir ? _a : _b;
-    const b = dir ? _b : _a;
-    return +a[field] - +b[field];
-};

@@ -1,17 +1,12 @@
-import { defaultTableDataForContext } from "core/utils/contexts/contextDefaults";
-
 import { FileCache, FilesystemMiddleware } from "core/middleware/filesystem";
 import { AFile } from "shared/types/afile";
 import { PathLabel } from "shared/types/caches";
 
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
-import { builtinSpaces, spaceLinksKey, spaceSortKey } from "core/types/space";
-import { linkContextRow, mergeContextRows, syncContextRow } from "core/utils/contexts/linkContextRow";
+import { builtinSpaces } from "core/types/space";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
-import { defaultContextTable } from "schemas/mdb";
-import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
-import { DEFAULT_SYSTEM_NAME, SPACE_CONTEXT_FILE, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT, SPACE_DEF_FILE } from "shared/constants";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
 import { SpaceDefinition } from "shared/types/spaceDef";
@@ -44,10 +39,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         this.spaceManager.onFocusesUpdated();
     };
 
-    public onSpaceUpdated = (payload: { path: string; type: string }) => {
-        if (payload.type == SPACE_CONTEXT_FILE)
-            this.spaceManager.onSpaceUpdated(payload.path, "context");
-    };
+    public onSpaceUpdated = (_payload: { path: string; type: string }) => {};
     public loadPath = async (path: string) => {
         return this.fileSystem.loadPath(path);
     };
@@ -266,141 +258,51 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.parentPathForPath(path);
     }
 
-    public async readTable(path: string, schema: string) {
-        const spaceInfo = this.spaceInfoForPath(path);
-        const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath);
-        let table: SpaceTable;
-        if (!mdbFile && schema == defaultContextDBSchema.id) {
-            table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-        } else {
-            table = (await this.fileSystem.readFileFragments(mdbFile, "mdbTable", schema)) as SpaceTable;
-            if (!table && schema == defaultContextDBSchema.id) {
-                table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-            }
-        }
-        const pathsIndexMap = this.spaceManager.superstate.pathsIndex;
-        const contextsIndexMap = this.spaceManager.superstate.contextsIndex;
-        const pathState = pathsIndexMap.get(path);
-
-        let rows = table.rows;
-        if (schema == defaultContextDBSchema.id)
-            rows = mergeContextRows(
-                this.spaceManager.superstate.getSpaceItems(path).map((f) => f.path),
-                table.rows,
-                pathsIndexMap,
-                this.spaceManager.superstate.spacesMap,
-                pathState,
-            ).map((f) => syncContextRow(pathsIndexMap, f, table.cols, pathState));
-        rows = rows.map((f) => linkContextRow(pathsIndexMap, contextsIndexMap, f, table.cols, pathState));
-        return { ...table, rows };
+    public async readTable(_path: string, _schema: string): Promise<SpaceTable> {
+        return null;
     }
     public async spaceInitiated(_path: string) {
         return true;
     }
     public async contextInitiated(path: string) {
-        const spaceInfo = this.spaceInfoForPath(path);
-        return await this.fileSystem.fileExists(spaceInfo.dbPath);
+        return !!(await this.spaceDefForSpace(path));
     }
-    public async tablesForSpace(path: string) {
-        const spaceInfo = this.spaceInfoForPath(path);
-        const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath);
-        if (!mdbFile) {
-            return defaultContextTable.rows;
-        }
-        const schemas = await this.fileSystem.readFileFragments(mdbFile, "schemas", null);
-        if (schemas.length == 0) {
-            return defaultContextTable.rows;
-        }
-        return schemas;
+    public async tablesForSpace(_path: string): Promise<SpaceTableSchema[]> {
+        return [];
     }
-    private defaultDBTablesForContext(spaceInfo: SpaceInfo) {
-        const table = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-        return {
-            [table.schema.id]: {
-                uniques: table.cols.filter((c) => c.unique == "true").map((c) => c.name),
-                cols: table.cols.map((c) => c.name),
-                rows: table.rows,
-            },
-        };
-    }
-    public async createDefaultTable(path: string) {
-        const spaceInfo = this.spaceInfoForPath(path);
-        const dbPath = this.spaceInfoForPath(path).dbPath;
-        const extension = dbPath.split(".").pop();
-        const folder = dbPath.split("/").slice(0, -1).join("/");
-        const filename = dbPath.split("/").pop().split(".")[0];
-        return this.fileSystem.newFile(folder, filename, extension, this.defaultDBTablesForContext(spaceInfo));
+    public async createDefaultTable(_path: string): Promise<void> {
+        return;
     }
 
-    public async createTable(path: string, schema: SpaceTableSchema) {
-        let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        if (!mdbFile) {
-            mdbFile = await this.createDefaultTable(path);
-        }
-        return this.fileSystem.newFileFragment(mdbFile, "schema", schema.id, schema);
+    public async createTable(_path: string, _schema: SpaceTableSchema) {
+        return;
     }
-    public async saveTableSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-        let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        if (!mdbFile) {
-            mdbFile = await this.createDefaultTable(path);
-        }
-        return this.fileSystem.saveFileFragment(mdbFile, "schema", schemaId, saveSchema);
+    public async saveTableSchema(_path: string, _schemaId: string, _saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
+        return false;
     }
-    public async saveTable(path: string, table: SpaceTable, force?: boolean) {
-        let mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        if (!mdbFile) {
-            if (force) {
-                mdbFile = await this.createDefaultTable(path);
-            } else {
-                return false;
-            }
-        }
-
-        return this.fileSystem.saveFileFragment(mdbFile, "mdbTable", table.schema.id, () => table);
+    public async saveTable(_path: string, _table: SpaceTable, _force?: boolean) {
+        return false;
     }
-    public async deleteTable(path: string, name: string) {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        return this.fileSystem.deleteFileFragment(mdbFile, "schema", name);
+    public async deleteTable(_path: string, _name: string) {
+        return;
     }
-    public async readAllTables(path: string): Promise<SpaceTables> {
-        const spaceInfo = this.spaceInfoForPath(path);
-        const mdbFile = await this.fileSystem.getFile(spaceInfo.dbPath);
-        if (!mdbFile) {
-            const defaultTable = defaultTableDataForContext(this.spaceManager.superstate, spaceInfo);
-            return {
-                [defaultTable.schema.id]: defaultTable,
-            };
-        }
-        return this.fileSystem.readFileFragments(mdbFile, "mdbTables", null);
+    public async readAllTables(_path: string): Promise<SpaceTables> {
+        return {};
     }
 
-    public async contextForSpace(path: string): Promise<SpaceTable> {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        if (!mdbFile) {
-            return defaultTableDataForContext(this.spaceManager.superstate, this.spaceInfoForPath(path));
-        }
-        return this.fileSystem.readFileFragments(mdbFile, "mdbTable", defaultContextSchemaID);
+    public async contextForSpace(_path: string): Promise<SpaceTable> {
+        return null;
     }
 
-    public async addSpaceProperty(path: string, property: SpaceProperty) {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path)?.dbPath);
-
-        if (!mdbFile) {
-            await this.createDefaultTable(path);
-        }
-        return this.fileSystem.newFileFragment(mdbFile, "field", property.name, property);
+    public async addSpaceProperty(_path: string, _property: SpaceProperty) {
+        return;
     }
-    public async deleteSpaceProperty(path: string, property: SpaceProperty) {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        return this.fileSystem.deleteFileFragment(mdbFile, "field", property);
+    public async deleteSpaceProperty(_path: string, _property: SpaceProperty) {
+        return;
     }
 
-    public async saveSpaceProperty(path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
-        const mdbFile = await this.fileSystem.getFile(this.spaceInfoForPath(path).dbPath);
-        if (!mdbFile) {
-            await this.createDefaultTable(path);
-        }
-        return this.fileSystem.saveFileFragment(mdbFile, "field", oldProperty, (prev) => ({ ...prev, ...property }));
+    public async saveSpaceProperty(_path: string, _property: SpaceProperty, _oldProperty: SpaceProperty) {
+        return false;
     }
     public async addProperty(path: string, property: SpaceProperty) {
         const file = await this.fileSystem.getFile(path);
@@ -413,6 +315,13 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public async readLabel(path: string) {
+        if (path?.split("/").pop() == SPACE_DEF_FILE) {
+            const metadata = parseSpaceMetadata(safelyParseJSON(await this.fileSystem.readTextFromFile(path)) ?? {}, this.spaceManager.superstate.settings);
+            return {
+                sticker: metadata.sticker ?? "",
+                color: metadata.color ?? "",
+            } as PathLabel;
+        }
         const pathCache = this.fileSystem.getFileCache(path)?.label as PathLabel;
         if (!pathCache) {
             const file = await this.fileSystem.getFile(path);
@@ -426,18 +335,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
     public async saveLabel(path: string, label: keyof PathLabel, value: any) {
         if (this.spaceManager.superstate.spacesIndex.has(path)) {
-            const spaceInfo = this.spaceInfoForPath(path);
-            let defFile = await this.fileSystem.getFile(spaceInfo.defPath);
-            if (!defFile) {
-                const defPath = this.spaceInfoForPath(path).defPath;
-                const extension = defPath.split(".").pop();
-                const folder = defPath.split("/").slice(0, -1).join("/");
-                const filename = defPath.split("/").pop().split(".")[0];
-
-                defFile = await this.fileSystem.newFile(folder, filename, extension, SPACE_DEF_DEFAULT_CONTENT());
-            }
-            await this.fileSystem.saveFileLabel(defFile, label, value);
-
+            await this.saveSpace(path, (metadata) => ({ ...metadata, [label]: value }));
             return;
         }
 
@@ -514,16 +412,58 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.allCaches();
     }
 
+    private spaceDefinitionForStore(metadata: SpaceDefinition): SpaceDefinition {
+        const storedDefinition = {
+            color: metadata.color ?? "",
+            sticker: metadata.sticker ?? "",
+            defaultColor: metadata.defaultColor ?? "",
+            defaultSticker: metadata.defaultSticker ?? "",
+            "rank-order": metadata["rank-order"] ?? [],
+            links: metadata.links ?? [],
+            pinned: metadata.pinned ?? [],
+            "file-colors": metadata["file-colors"] ?? {},
+        } as SpaceDefinition;
+        if (Object.prototype.hasOwnProperty.call(metadata, "sort")) {
+            storedDefinition.sort = metadata.sort;
+        }
+        return storedDefinition;
+    }
+
+    private async writeSpaceDefinition(space: SpaceInfo, metadata: SpaceDefinition) {
+        let defFile = await this.fileSystem.getFile(space.defPath);
+        const metadataForStore = this.spaceDefinitionForStore(metadata);
+        if (!defFile) {
+            const extension = space.defPath.split(".").pop();
+            const folder = space.defPath.split("/").slice(0, -1).join("/");
+            const filename = space.defPath.split("/").pop().split(".")[0];
+            if (!(await this.fileSystem.fileExists(folder))) {
+                await this.fileSystem.createFolder(folder);
+            }
+            defFile = await this.fileSystem.newFile(folder, filename, extension, SPACE_DEF_DEFAULT_CONTENT(metadataForStore));
+        }
+        await this.fileSystem.saveFileFragment(defFile, "definition", null, () => metadataForStore);
+    }
+
     public async spaceDefForSpace(path: string) {
         const space = this.spaceInfoForPath(path);
         if (!space) return null;
 
         const metaCache = space.defPath ? await this.fileSystem.readTextFromFile(space.defPath) : null;
         if (!metaCache) {
-            return parseSpaceMetadata({}, this.spaceManager.superstate.settings);
+            const metadata = parseSpaceMetadata({}, this.spaceManager.superstate.settings);
+            await this.writeSpaceDefinition(space, metadata);
+            return metadata;
         }
         const spaceDef = safelyParseJSON(metaCache) ?? {};
-        return parseSpaceMetadata(spaceDef, this.spaceManager.superstate.settings);
+        const metadata = parseSpaceMetadata(spaceDef, this.spaceManager.superstate.settings);
+        const metadataForStore = {
+            ...metadata,
+            sort: spaceDef.sort,
+        };
+        if (JSON.stringify(spaceDef) != JSON.stringify(this.spaceDefinitionForStore(metadataForStore))) {
+            await this.writeSpaceDefinition(space, metadataForStore);
+        }
+        return metadata;
     }
 
     public async createSpace(name: string, parentPath: string, definition: SpaceDefinition) {
@@ -535,32 +475,32 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public async saveSpace(path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) {
-        const metadata = definitionFn(await this.spaceDefForSpace(path)) ?? {};
-
         const spaceInfo = this.spaceInfoForPath(path);
-        let defFile = await this.fileSystem.getFile(spaceInfo.defPath);
-
-        if (!defFile) {
-            const defPath = this.spaceInfoForPath(path).defPath;
-            const extension = defPath.split(".").pop();
-            const folder = defPath.split("/").slice(0, -1).join("/");
-            const filename = defPath.split("/").pop().split(".")[0];
-
-            defFile = await this.fileSystem.newFile(folder, filename, extension, SPACE_DEF_DEFAULT_CONTENT());
-        }
-        const noteFile = defFile;
+        const rawDefinition = safelyParseJSON(spaceInfo.defPath ? await this.fileSystem.readTextFromFile(spaceInfo.defPath) : null) ?? {};
+        const currentMetadata = parseSpaceMetadata(rawDefinition, this.spaceManager.superstate.settings);
+        const metadata = definitionFn(currentMetadata) ?? {};
+        const sortChanged = JSON.stringify(metadata.sort) != JSON.stringify(currentMetadata.sort);
+        const metadataForStore = {
+            ...metadata,
+            sort: sortChanged ? metadata.sort : rawDefinition.sort,
+        };
         if (properties) {
+            let noteFile = await this.fileSystem.getFile(spaceInfo.defPath);
+            if (!noteFile) {
+                const extension = spaceInfo.defPath.split(".").pop();
+                const folder = spaceInfo.defPath.split("/").slice(0, -1).join("/");
+                const filename = spaceInfo.defPath.split("/").pop().split(".")[0];
+                if (!(await this.fileSystem.fileExists(folder))) {
+                    await this.fileSystem.createFolder(folder);
+                }
+                noteFile = await this.fileSystem.newFile(folder, filename, extension, SPACE_DEF_DEFAULT_CONTENT(this.spaceDefinitionForStore(metadataForStore)));
+            }
             await this.fileSystem.saveFileFragment(noteFile, "property", null, (frontmatter) => ({
                 ...frontmatter,
                 ...(properties ?? {}),
             }));
         }
-        await this.fileSystem.saveFileFragment(defFile, "definition", null, (_frontmatter) => ({
-            [spaceLinksKey]: metadata.links,
-            [spaceSortKey]: metadata.sort,
-            defaultSticker: metadata.defaultSticker,
-            defaultColor: metadata.defaultColor,
-        }));
+        await this.writeSpaceDefinition(spaceInfo, metadataForStore);
         // await this.spaceManager.onPathPropertyChanged(file.path);
         // await this.spaceManager.onSpaceCreated(path);
         return;

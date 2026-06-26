@@ -1,9 +1,9 @@
 
-import { dbResultsToDBTables, deleteFromDB, getZippedDB, insertIntoDB, replaceDB, saveZippedDBFile, selectDB } from "adapters/mdb/db/db";
+import { dbResultsToDBTables, deleteFromDB, dropTable, getZippedDB, insertIntoDB, replaceDB, saveZippedDBFile, selectDB } from "adapters/mdb/db/db";
 import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
-import { DBRow, DBTables } from "shared/types/mdb";
+import { DBRow, DBTable, DBTables } from "shared/types/mdb";
 import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database } from "sql.js";
 import { LocalCachePersister } from "../../../shared/types/persister";
@@ -25,7 +25,7 @@ export class LocalStorageCache implements LocalCachePersister {
     public async initialize () {
 
         this.db = await getZippedDB(this.mdbAdapter, await this.mdbAdapter.sqlJS(), this.storageDBPath);
-        let tables;
+        let tables: DBTable[];
         try {
             tables =  dbResultsToDBTables(
                 this.db.exec(
@@ -38,6 +38,11 @@ export class LocalStorageCache implements LocalCachePersister {
             }
         if (tables.length == 0) {
             replaceDB(this.db, this.defaultTables);
+        } else {
+            tables
+                .flatMap((table) => table.rows.map((row: DBRow) => row.name as string))
+                .filter((tableName) => !this.defaultTables[tableName])
+                .forEach((tableName) => dropTable(this.db, tableName));
         }
         this.initialized = true;
     }
@@ -50,12 +55,12 @@ export class LocalStorageCache implements LocalCachePersister {
         replaceDB(this.db, this.defaultTables);
     }
     /** Store file metadata by path. */
-    public async store(path: string, cache: string, type: string): Promise<void> {
+    public async store(path: string, cache: string, type: string, version = this.indexVersion): Promise<void> {
         if (!this.initialized) return;
         if (!this.db) return;
 
         await insertIntoDB(this.db, {
-            [type]: {...this.defaultTables[type], rows: [{ path, cache, version: this.indexVersion}]},
+            [type]: {...this.defaultTables[type], rows: [{ path, cache, version }]},
         }, true)
         this.debounceSaveSpaceDatabase();
         return;
@@ -70,7 +75,7 @@ export class LocalStorageCache implements LocalCachePersister {
     public cleanType (type: string) {
         if (!this.initialized) return;
         if (!this.db) return;
-        deleteFromDB(this.db, type, `version != '${this.indexVersion}'`)
+        deleteFromDB(this.db, type, `version != '${this.indexVersion}' AND version != ''`)
         return;
     }
     private debounceSaveSpaceDatabase = debounce(

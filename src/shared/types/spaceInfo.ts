@@ -1,6 +1,5 @@
 export type FilesystemSpaceInfo = SpaceInfo & {
     folderPath: string;
-    dbPath: string;
 };
 
 export type SpaceInfo = {

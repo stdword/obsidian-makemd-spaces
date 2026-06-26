@@ -1,4 +1,3 @@
-import { saveSpaceMetadataValue } from "core/superstate/utils/spaces";
 import { ISuperstate as Superstate } from "shared/types/superstate";
 
 export const savePathSticker = async (
@@ -8,19 +7,24 @@ export const savePathSticker = async (
 ) => {
   const pathState = superstate.pathsIndex.get(path);
   if (!pathState) return;
-  const isFolder = pathState.type == "space" || pathState.subtype == "folder" || pathState.metadata?.file?.isFolder;
-  if (isFolder) {
-    return saveSpaceMetadataValue(superstate as any, path, "defaultSticker", sticker);
+  const spaceState = superstate.spacesIndex.get(path);
+  if (spaceState?.type == "folder" || spaceState?.type == "vault" || spaceState?.type == "default") {
+    await superstate.spaceManager.saveSpace(path, (metadata) => ({ ...metadata, sticker }));
+    await superstate.updateSpaceMetadata(path, { ...(spaceState.metadata ?? {}), sticker });
+  } else {
+    await superstate.spaceManager.saveLabel(path, "sticker", sticker);
   }
   superstate.pathsIndex.set(path, {
     ...pathState,
-    label: {
-      ...pathState.label,
+    effectiveLabel: {
+      ...pathState.effectiveLabel,
       sticker,
     },
   });
   superstate.dispatchEvent("pathStateUpdated", { path });
-};export const removeIconsForPaths = (superstate: Superstate, paths: string[]) => {
+};
+
+export const removeIconsForPaths = (superstate: Superstate, paths: string[]) => {
   paths.forEach((path) => {
     savePathSticker(superstate, path, "");
   });

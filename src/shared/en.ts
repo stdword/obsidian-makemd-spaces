@@ -51,12 +51,12 @@ export const en = {
         recursiveSort: "Apply to Subfolders",
         fileNameSortAlphaAsc: "File Name (A to Z)",
         fileNameSortAlphaDesc: "File Name (Z to A)",
-        fileNameSortNumericalAsc: "File Name (1 to 9)",
-        fileNameSortNumericalDesc: "File Name (9 to 1)",
         createdTimeSortAsc: "Created Time (new to old)",
         createdTimeSortDesc: "Created Time (old to new)",
         modifiedTimeSortAsc: "Modified Time (new to old)",
         modifiedTimeSortDesc: "Modified Time (old to new)",
+        clearSort: "Reset to Default",
+
         changeColor: "Color",
 
         openFilePane: "Open File Pane",
@@ -181,6 +181,14 @@ export const en = {
         folderIndentationLines: {
             name: "Show Folder Indentation Lines",
             desc: "Turn on to show a line on the left of folders to indicate indentation",
+        },
+        defaultFoldersAtTop: {
+            name: "Folders at the Top",
+            desc: "Place folders before files when a space does not define its own folder grouping.",
+        },
+        defaultSpaceSort: {
+            name: "Default Sort",
+            desc: "Sort order used when a space does not define its own sort.",
         },
         openSpacesOnLaunch: {
             name: "Open Spaces as Default Tab",

@@ -1,4 +1,4 @@
-export const treeItemDisplayColor = (pathState: any, _defaultColor = "") => pathState?.label?.color ?? "";
+export const treeItemDisplayColor = (pathState: any, _defaultColor = "") => pathState?.effectiveLabel?.color ?? pathState?.label?.color ?? "";
 
 export const treeItemColorVariables = (color: string, isFolder: boolean) =>
     color?.length > 0

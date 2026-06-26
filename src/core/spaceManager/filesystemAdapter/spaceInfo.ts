@@ -1,10 +1,10 @@
-import { pathInSpaceFolder, spaceFolderPathFromSpace } from "core/utils/spaces/space";
+import { pathInSpaceFolder } from "core/utils/spaces/space";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { builtinSpaces } from "core/types/space";
-import { DEFAULT_SYSTEM_NAME, SPACE_CONTEXT_FILE, SPACE_DEF_FILE, SPACE_DEF_PATH } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE, SPACE_DEF_PATH } from "shared/constants";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { folderPathToString } from "utils/path";
@@ -20,7 +20,6 @@ export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): 
         folderPath,
         defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
         notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
-        dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
     };
 };
 
@@ -37,7 +36,6 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
             folderPath,
             defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
             notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
-            dbPath: spaceFolderPathFromSpace(folderPath + "/", manager) + SPACE_CONTEXT_FILE,
         };
     }
     const uri = manager.uriByString(contextPath);
@@ -66,8 +64,7 @@ export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: str
             path: folder,
             folderPath: folder,
             defPath: SPACE_DEF_PATH,
-            notePath: vaultName + ".md",
-            dbPath: spaceFolderPathFromSpace(folder, manager) + SPACE_CONTEXT_FILE,
+            notePath: "",
         };
     }
     const folderName = folderPathToString(folder);
@@ -78,6 +75,5 @@ export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: str
         folderPath: folder,
         defPath: folder + `/${SPACE_DEF_PATH}`,
         notePath: folder + "/" + folderName + ".md",
-        dbPath: spaceFolderPathFromSpace(folder + "/", manager) + SPACE_CONTEXT_FILE,
     };
 };

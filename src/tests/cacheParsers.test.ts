@@ -48,7 +48,8 @@ describe("parseMetadata", () => {
             null,
         );
 
-        expect(cache.label.color).toBe("#00aaee");
+        expect(cache.label.color).toBe("");
+        expect(cache.effectiveLabel.color).toBe("#00aaee");
     });
 
     it("derives display name from file metadata without label name", () => {
@@ -130,7 +131,8 @@ describe("parseMetadata", () => {
                 null,
             );
 
-            expect(cache.label.sticker).toBe(sticker);
+            expect(cache.label.sticker).toBe("ui//cached");
+            expect(cache.effectiveLabel.sticker).toBe(sticker);
         });
     });
 

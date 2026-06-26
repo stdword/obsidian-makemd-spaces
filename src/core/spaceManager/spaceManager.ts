@@ -1,8 +1,5 @@
 import { resolvePath } from "core/superstate/utils/path";
-import { serializeOptionValue } from "core/utils/serializer";
-import { ensureString } from "core/utils/strings";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
-import { defaultContextSchemaID } from "shared/schemas/context";
 import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
@@ -11,9 +8,7 @@ import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
 import { SpaceAdapter, SpaceManagerInterface } from "shared/types/spaceManager";
 import { ISuperstate } from "shared/types/superstate";
-import { uniq } from "shared/utils/array";
 import { parseURI } from "shared/utils/uri";
-import { parseMultiString } from "utils/parsers";
 import { PathCache } from "../../shared/types/caches";
 
 export class SpaceManager implements SpaceManagerInterface {
@@ -22,13 +17,8 @@ export class SpaceManager implements SpaceManagerInterface {
     public superstate: ISuperstate;
     public api: IAPI;
 
-    public onSpaceUpdated(path: string, type: SpaceFragmentType) {
-        if (!this.superstate.spacesIndex.has(path)) {
-            return;
-        }
-        if (type == "context") {
-            this.superstate.reloadContextByPath(path);
-        }
+    public onSpaceUpdated(_path: string, _type: SpaceFragmentType) {
+        return;
     }
 
     public getPathState = (path: string) => {
@@ -64,7 +54,6 @@ export class SpaceManager implements SpaceManagerInterface {
         await this.superstate.onSpaceDefinitionChanged(space);
 
         await this.superstate.onPathCreated(path);
-        await this.superstate.reloadContextByPath(path, { calculate: true, force: true });
     };
     public onSpaceRenamed = async (path: string, oldPath: string) => {
         await this.superstate.onSpaceRenamed(oldPath, this.spaceInfoForPath(path));
@@ -178,16 +167,11 @@ export class SpaceManager implements SpaceManagerInterface {
     public createTable(path: string, schema: SpaceTableSchema) {
         return this.adapterForPath(path)
             .createTable(path, schema)
-            .then(() => this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
+            .then(() => true);
     }
 
     public saveTableSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-        return this.adapterForPath(path)
-            .saveTableSchema(path, schemaId, saveSchema)
-            .then((f) => {
-                if (f) return this.superstate.reloadContextByPath(path, { force: true, calculate: true });
-                return f;
-            });
+        return this.adapterForPath(path).saveTableSchema(path, schemaId, saveSchema);
     }
     public saveTable(path: string, table: SpaceTable, force?: boolean) {
         return this.adapterForPath(path).saveTable(path, table, force);
@@ -195,9 +179,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public deleteTable(path: string, name: string) {
         return this.adapterForPath(path)
             .deleteTable(path, name)
-            .then(() => {
-                return this.superstate.reloadContextByPath(path, { force: true, calculate: true });
-            });
+            .then(() => true);
     }
 
     public readAllTables(path: string) {
@@ -280,35 +262,25 @@ export class SpaceManager implements SpaceManagerInterface {
     }
 
     public addSpaceProperty(path: string, property: SpaceProperty) {
-        if (property.schemaId == defaultContextSchemaID && property.type.startsWith("option")) {
-            const allOptions = uniq([...(this.superstate.spacesMap.getInverse(path) ?? [])].flatMap((f) => parseMultiString(ensureString(this.superstate.pathsIndex.get(f)?.metadata?.property?.[property.name])) ?? []));
-            const values = serializeOptionValue(
-                allOptions.map((f) => ({ value: f, name: f })),
-                {},
-            );
-            property.value = values;
-        }
         return this.adapterForPath(path)
             .addSpaceProperty(path, property)
-            .then(() => {
-                return this.superstate.reloadContextByPath(path, { force: true, calculate: true });
-            });
+            .then(() => true);
     }
     public deleteSpaceProperty(path: string, property: SpaceProperty) {
         return this.adapterForPath(path)
             .deleteSpaceProperty(path, property)
-            .then(() => this.superstate.reloadContextByPath(path, { force: true, calculate: true }));
+            .then(() => true);
     }
     public saveSpaceProperty(path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
         return this.adapterForPath(path)
             .saveSpaceProperty(path, property, oldProperty)
-            .then(() => {
+            .then((saved) => {
                 if (oldProperty.name != property.name) {
                     this.superstate.getSpaceItems(path).forEach((f) => {
                         this.renameProperty(f.path, oldProperty.name, property.name);
                     });
                 }
-                return this.superstate.reloadContextByPath(path, { force: true, calculate: true });
+                return saved;
             });
     }
 

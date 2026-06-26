@@ -103,6 +103,7 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
                 {stickers.map((icon, i) => (
                     <div
                         key={i}
+                        aria-label={icon.name}
                         onClick={() => {
                             props.selectedSticker(stickers[i].type + "//" + stickers[i].value);
                             props.hide();

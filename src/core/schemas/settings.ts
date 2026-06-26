@@ -18,6 +18,11 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
 
     // settings
     deleteFileOption: "system-trash",
+    defaultFoldersAtTop: true,
+    defaultSpaceSort: {
+        field: "name",
+        asc: true,
+    },
     expandFolderOnClick: true,
     folderIndentationLines: true,
     openSpacesOnLaunch: true,

@@ -63,6 +63,11 @@ export const searchMenuOptionSort = (a: SelectOption, b: SelectOption) => {
     return aSort.localeCompare(bSort, undefined, { numeric: true, sensitivity: "base" });
 };
 
+const pathStickerForSearch = (superstate: Superstate, path: string) => {
+    const pathState = (superstate as any).pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
+    return pathState?.effectiveLabel?.sticker ?? pathState?.label?.sticker;
+};
+
 export const showSearchMenu = async ({
     offset,
     win,
@@ -94,7 +99,7 @@ export const showSearchMenu = async ({
             .filter((f) => f.type == "file" && (hidden ? true : !f.hidden))
             .map<SelectOption>((f) => ({
                 section: 'files',
-                icon: f.label?.sticker,
+                icon: f.effectiveLabel?.sticker ?? f.label?.sticker,
                 name: f.name,
                 description: f.path.replace(/[^\/]+$/, ""),
                 value: f.path,
@@ -109,7 +114,7 @@ export const showSearchMenu = async ({
                 .filter((s) => s.type == 'vault')
                 .map<SelectOption>((s) => ({
                     section: '',
-                    icon: superstate.pathsIndex.get(s.path)?.label?.sticker,
+                    icon: pathStickerForSearch(superstate, s.path),
                     name: s.name,
                     description: '',
                     value: s.path,
@@ -119,7 +124,7 @@ export const showSearchMenu = async ({
                 .filter((s) => s.type == 'folder')
                 .map<SelectOption>((s) => ({
                     section: 'folders',
-                    icon: superstate.pathsIndex.get(s.path)?.label?.sticker,
+                    icon: pathStickerForSearch(superstate, s.path),
                     name: s.name,
                     description: s.path.replace(/[^\/]+$/, ""),
                     value: s.path,

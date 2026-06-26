@@ -224,9 +224,7 @@ describe("showSpaceContextMenu", () => {
         expect(saveLabel).toHaveBeenCalledWith("/", "color", "#123456");
         expect(saveTable).not.toHaveBeenCalled();
         expect(saveSpace).not.toHaveBeenCalled();
-        expect(updateSpaceMetadata).not.toHaveBeenCalled();
-        expect(superstate.pathsIndex.get("/")?.label.color).toBe("#123456");
-        expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "/" });
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("/", { color: "#123456" });
     });
 
     it("rebuilds sort submenu radio values from the latest space state", () => {
@@ -270,13 +268,15 @@ describe("showSpaceContextMenu", () => {
         const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
         expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(true);
+        expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (1 to 9)")).toBeUndefined();
+        expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (9 to 1)")).toBeUndefined();
 
         superstate.spacesIndex.set("Projects", {
             ...initialSpace,
             metadata: {
                 sort: {
-                    field: "number",
-                    asc: true,
+                    field: "mtime",
+                    asc: false,
                     group: false,
                     recursive: false,
                 },
@@ -286,7 +286,186 @@ describe("showSpaceContextMenu", () => {
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
         expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(false);
-        expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (1 to 9)")?.value).toBe(true);
+        expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "Modified Time (new to old)")?.value).toBe(true);
+    });
+
+    it("passes submenu onHide to sort menu so selecting a sort closes the parent menu", () => {
+        const openMenu = jest.fn();
+        const onHide = jest.fn();
+        const pathState = {
+            path: "Projects",
+            parent: "",
+            type: "space",
+            label: {},
+            spaces: ["Projects"],
+        };
+        const superstate = {
+            settings: {
+                defaultFoldersAtTop: true,
+                defaultSpaceSort: {
+                    field: "name",
+                    asc: true,
+                },
+            },
+            pathsIndex: new Map([["Projects", pathState]]),
+            spacesIndex: new Map([
+                [
+                    "Projects",
+                    {
+                        path: "Projects",
+                        name: "Projects",
+                        type: "folder",
+                        metadata: {},
+                        space: {
+                            path: "Projects",
+                            folderPath: "Projects",
+                        },
+                    },
+                ],
+            ]),
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const offset = { x: 1, y: 2, width: 3, height: 4 };
+        const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
+        sortMenu.onSubmenu(offset, onHide);
+
+        expect(openMenu.mock.calls[1][0]).toBe(offset);
+        expect(openMenu.mock.calls[1][3]).toBe("right");
+        expect(openMenu.mock.calls[1][4]).toBe(onHide);
+    });
+
+    it("does not create space metadata when clearing sort without an explicit sort", async () => {
+        const openMenu = jest.fn();
+        const saveSpace = jest.fn();
+        const updateSpaceMetadata = jest.fn();
+        const pathState = {
+            path: "Projects",
+            parent: "",
+            type: "space",
+            label: {},
+            spaces: ["Projects"],
+        };
+        const superstate = {
+            settings: {
+                defaultFoldersAtTop: true,
+                defaultSpaceSort: {
+                    field: "name",
+                    asc: true,
+                },
+            },
+            pathsIndex: new Map([["Projects", pathState]]),
+            spacesIndex: new Map([
+                [
+                    "Projects",
+                    {
+                        path: "Projects",
+                        name: "Projects",
+                        type: "folder",
+                        metadata: {},
+                        space: {
+                            path: "Projects",
+                            folderPath: "Projects",
+                        },
+                    },
+                ],
+            ]),
+            spaceManager: {
+                saveSpace,
+            },
+            updateSpaceMetadata,
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
+        sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+        const clearSort = openMenu.mock.calls[1][1].options.find((option: any) => option.name === "Reset to Default");
+
+        await clearSort.onClick();
+
+        expect(saveSpace).not.toHaveBeenCalled();
+        expect(updateSpaceMetadata).not.toHaveBeenCalled();
+    });
+
+    it("does not create def.json when clearing sort from superstate without an existing def.json", async () => {
+        const openMenu = jest.fn();
+        const saveSpace = jest.fn();
+        const updateSpaceMetadata = jest.fn(() => Promise.resolve());
+        const pathExists = jest.fn(() => Promise.resolve(false));
+        const pathState = {
+            path: "Projects",
+            parent: "",
+            type: "space",
+            label: {},
+            spaces: ["Projects"],
+        };
+        const superstate = {
+            settings: {
+                defaultFoldersAtTop: true,
+                defaultSpaceSort: {
+                    field: "name",
+                    asc: true,
+                },
+            },
+            pathsIndex: new Map([["Projects", pathState]]),
+            spacesIndex: new Map([
+                [
+                    "Projects",
+                    {
+                        path: "Projects",
+                        name: "Projects",
+                        type: "folder",
+                        metadata: {
+                            sort: {
+                                field: "rank",
+                                asc: true,
+                            },
+                        },
+                        space: {
+                            path: "Projects",
+                            folderPath: "Projects",
+                            defPath: "Projects/.space/def.json",
+                        },
+                    },
+                ],
+            ]),
+            spaceManager: {
+                pathExists,
+                saveSpace,
+            },
+            updateSpaceMetadata,
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
+        sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+        const clearSort = openMenu.mock.calls[1][1].options.find((option: any) => option.name === "Reset to Default");
+
+        await clearSort.onClick();
+
+        expect(pathExists).toHaveBeenCalledWith("Projects/.space/def.json");
+        expect(saveSpace).not.toHaveBeenCalled();
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("Projects", {
+            sort: undefined,
+        });
     });
 
     it("hides sticker and apply-to-items actions for tag spaces", () => {

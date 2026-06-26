@@ -1,6 +1,6 @@
 import { savePathColor } from "core/superstate/utils/label";
 import { hidePath, renamePathByName } from "core/superstate/utils/path";
-import { addPathToSpaceAtIndex, removePathsFromSpace, removeSpace, updateSpaceSort } from "core/superstate/utils/spaces";
+import { addPathToSpaceAtIndex, effectiveSpaceSort, removePathsFromSpace, removeSpace, updateSpaceSort } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
 import { isTagPathState, openStickerPalette } from "shared/components/PathSticker";
@@ -44,7 +44,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         icon: "ui//palette",
         type: SelectOptionType.Submenu,
         closeParentOnOpen: true,
-        onSubmenu: (offset) => {
+        onSubmenu: (offset, onHide) => {
             return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, space.path, value), false, true);
         },
     });
@@ -59,194 +59,69 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    if (space.metadata?.sort) {
-        menuOptions.push(menuSeparator);
+    menuOptions.push(menuSeparator);
 
-        menuOptions.push({
-            name: i18n.menu.sortBy,
-            icon: "ui//sort-desc",
-            type: SelectOptionType.Submenu,
-            onSubmenu: (offset) => {
-                const currentSpace = superstate.spacesIndex.get(space.path) ?? space;
-                const sort = currentSpace.metadata?.sort ?? space.metadata.sort;
-                const saveSort = (sortOption: SpaceSort) => updateSpaceSort(superstate, currentSpace.path, sortOption);
-                const sortOptions: SelectOption[] = [];
-                if (!isTagSpace) {
-                    sortOptions.push({
-                        name: i18n.menu.groupSpaces,
-                        icon: "ui//arrow-up-down",
-                        value: sort.group == true,
-                        type: SelectOptionType.Radio,
-                        onClick: () => {
-                            saveSort({
-                                field: sort.field,
-                                asc: sort.asc,
-                                group: !sort.group,
-                                recursive: sort.recursive,
-                            });
-                        },
-                    });
-                    sortOptions.push(menuSeparator);
-                    sortOptions.push({
-                        name: i18n.menu.recursiveSort,
-                        icon: "ui//arrow-up-down",
-                        value: sort.recursive == true,
-                        type: SelectOptionType.Radio,
-                        onClick: () => {
-                            saveSort({
-                                field: sort.field,
-                                asc: sort.asc,
-                                group: sort.group,
-                                recursive: !sort.recursive,
-                            });
-                        },
-                    });
-                    sortOptions.push(menuSeparator);
-                }
-                const rankSortOption: SpaceSort = {
-                    field: "rank",
-                    asc: true,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
+    menuOptions.push({
+        name: i18n.menu.sortBy,
+        icon: "ui//sort-desc",
+        type: SelectOptionType.Submenu,
+        onSubmenu: (offset, onHide) => {
+            const currentSpace = superstate.spacesIndex.get(space.path) ?? space;
+            const sort = effectiveSpaceSort(currentSpace.metadata?.sort, superstate.settings);
+            const saveSort = (sortOption: Partial<SpaceSort> | null) => updateSpaceSort(superstate, currentSpace.path, sortOption);
+            const sortOptions: SelectOption[] = [];
+            const sortFieldOptions: { name: string; sort: Pick<SpaceSort, "field" | "asc"> }[] = [
+                { name: i18n.menu.customSort, sort: { field: "rank", asc: true } },
+                { name: i18n.menu.fileNameSortAlphaAsc, sort: { field: "name", asc: true } },
+                { name: i18n.menu.fileNameSortAlphaDesc, sort: { field: "name", asc: false } },
+                { name: i18n.menu.createdTimeSortAsc, sort: { field: "ctime", asc: false } },
+                { name: i18n.menu.createdTimeSortDesc, sort: { field: "ctime", asc: true } },
+                { name: i18n.menu.modifiedTimeSortAsc, sort: { field: "mtime", asc: false } },
+                { name: i18n.menu.modifiedTimeSortDesc, sort: { field: "mtime", asc: true } },
+            ];
+            if (!isTagSpace) {
                 sortOptions.push({
-                    name: i18n.menu.customSort,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == rankSortOption.field && sort.asc == rankSortOption.asc,
+                    name: i18n.menu.groupSpaces,
+                    icon: "lucide//folder-up",
+                    value: sort.group == true,
                     type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(rankSortOption);
-                    },
+                    onClick: () => saveSort({ group: !sort.group }),
                 });
                 sortOptions.push(menuSeparator);
-                const nameSortOption: SpaceSort = {
-                    field: "name",
-                    asc: true,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
+            }
+            sortFieldOptions.forEach((option, index) => {
+                if ([1, 3, 5, 7].includes(index)) sortOptions.push(menuSeparator);
                 sortOptions.push({
-                    name: i18n.menu.fileNameSortAlphaAsc,
+                    name: option.name,
                     icon: "ui//arrow-up-down",
-                    value: sort.field == nameSortOption.field && sort.asc == nameSortOption.asc,
+                    value: sort.field == option.sort.field && sort.asc == option.sort.asc,
                     type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(nameSortOption);
-                    },
+                    onClick: () => saveSort(option.sort),
                 });
-                const nameSortOptionDesc: SpaceSort = {
-                    field: "name",
-                    asc: false,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.fileNameSortAlphaDesc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == nameSortOptionDesc.field && sort.asc == nameSortOptionDesc.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(nameSortOptionDesc);
-                    },
-                });
+            });
+
+            if (!isTagSpace) {
                 sortOptions.push(menuSeparator);
-                const numberSortOption: SpaceSort = {
-                    field: "number",
-                    asc: true,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
                 sortOptions.push({
-                    name: i18n.menu.fileNameSortNumericalAsc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == numberSortOption.field && sort.asc == numberSortOption.asc,
+                    name: i18n.menu.recursiveSort,
+                    icon: "lucide//folder-tree",
+                    value: sort.recursive == true,
                     type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(numberSortOption);
-                    },
-                });
-                const numberSortOptionDesc: SpaceSort = {
-                    field: "number",
-                    asc: false,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.fileNameSortNumericalDesc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == numberSortOptionDesc.field && sort.asc == numberSortOptionDesc.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(numberSortOptionDesc);
-                    },
-                });
-                sortOptions.push(menuSeparator);
-                const createdTimeSortOption: SpaceSort = {
-                    field: "ctime",
-                    asc: false,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.createdTimeSortAsc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == createdTimeSortOption.field && sort.asc == createdTimeSortOption.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(createdTimeSortOption);
-                    },
-                });
-                const createdTimeSortOptionDesc: SpaceSort = {
-                    field: "ctime",
-                    asc: true,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.createdTimeSortDesc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == createdTimeSortOptionDesc.field && sort.asc == createdTimeSortOptionDesc.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(createdTimeSortOptionDesc);
-                    },
-                });
-                sortOptions.push(menuSeparator);
-                const modifiedTimeSortOption: SpaceSort = {
-                    field: "mtime",
-                    asc: false,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.modifiedTimeSortAsc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == modifiedTimeSortOption.field && sort.asc == modifiedTimeSortOption.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(modifiedTimeSortOption);
-                    },
-                });
-                const modifiedTimeSortOptionDesc: SpaceSort = {
-                    field: "mtime",
-                    asc: true,
-                    group: sort.group,
-                    recursive: sort.recursive,
-                };
-                sortOptions.push({
-                    name: i18n.menu.modifiedTimeSortDesc,
-                    icon: "ui//arrow-up-down",
-                    value: sort.field == modifiedTimeSortOptionDesc.field && sort.asc == modifiedTimeSortOptionDesc.asc,
-                    type: SelectOptionType.Radio,
-                    onClick: () => {
-                        saveSort(modifiedTimeSortOptionDesc);
-                    },
+                    onClick: () => saveSort({ recursive: !sort.recursive }),
                 });
 
-                return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, sortOptions), win);
-            },
-        });
-    }
+                sortOptions.push({
+                    name: i18n.menu.clearSort,
+                    icon: "lucide//filter-x",
+                    // value: sort.recursive == true,
+                    type: SelectOptionType.Radio,
+                    onClick: () => saveSort(null),
+                });
+            }
+
+            return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, sortOptions), win, "right", onHide);
+        },
+    });
 
     // apply to all sub-items
     if (!isTagSpace) {

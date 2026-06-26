@@ -12,7 +12,7 @@ export const pathStateToContextRow = (pathState: PathState): DBRow => {
     const path = isFolder && pathState.path != "/" && !pathState.path.endsWith("/") ? `${pathState.path}/` : pathState.path;
     return {
         [PathPropertyName]: path,
-        color: isFolder ? "" : (pathState.label?.color ?? ""),
+        color: isFolder ? "" : (pathState.effectiveLabel?.color ?? pathState.label?.color ?? ""),
         [PathPropertyPinned]: "false",
     };
 };

@@ -2,6 +2,7 @@ import { App, PluginSettingTab, Setting } from "obsidian";
 import i18n from "shared/i18n";
 import MakeMDPlugin from "../../main";
 import { MakeMDSettings } from "../../shared/types/settings";
+import { SpaceSort } from "../../shared/types/spaceDef";
 
 type SettingObject = {
     name: keyof MakeMDSettings;
@@ -35,6 +36,23 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
 
     display(): void {
         const { containerEl } = this;
+        const encodeSort = (sort: Partial<SpaceSort>) => `${sort.field}:${sort.asc ? "asc" : "desc"}`;
+        const decodeSort = (value: string): SpaceSort => {
+            const [field, direction] = value.split(":");
+            return {
+                field,
+                asc: direction == "asc",
+            };
+        };
+        const sortOptions = [
+            { name: i18n.menu.customSort, value: encodeSort({ field: "rank", asc: true }) },
+            { name: i18n.menu.fileNameSortAlphaAsc, value: encodeSort({ field: "name", asc: true }) },
+            { name: i18n.menu.fileNameSortAlphaDesc, value: encodeSort({ field: "name", asc: false }) },
+            { name: i18n.menu.createdTimeSortAsc, value: encodeSort({ field: "ctime", asc: false }) },
+            { name: i18n.menu.createdTimeSortDesc, value: encodeSort({ field: "ctime", asc: true }) },
+            { name: i18n.menu.modifiedTimeSortAsc, value: encodeSort({ field: "mtime", asc: false }) },
+            { name: i18n.menu.modifiedTimeSortDesc, value: encodeSort({ field: "mtime", asc: true }) },
+        ];
 
         const settings: {
             categories: string[];
@@ -62,6 +80,19 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                         control: "slider",
                         limits: [20, 40, 1],
                     },
+                },
+                {
+                    name: "defaultSpaceSort",
+                    category: "appearance",
+                    type: "space-sort",
+                    props: {
+                        options: sortOptions,
+                    },
+                },
+                {
+                    name: "defaultFoldersAtTop",
+                    category: "appearance",
+                    type: "boolean",
                 },
                 {
                     name: "searchMenuTagsLimit",
@@ -192,6 +223,19 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     dropdown.setValue(this.plugin.superstate.settings[setting.name] as string);
                     dropdown.onChange((value: string) => {
                         Object.assign(this.plugin.superstate.settings, { [setting.name]: value });
+                        this.plugin.saveSettings();
+                        if (setting.onChange) setting.onChange(value);
+                    });
+                });
+            }
+            if (setting.type == "space-sort") {
+                newSetting.addDropdown((dropdown) => {
+                    setting.props.options?.forEach((option) => {
+                        dropdown.addOption(option.value, option.name);
+                    });
+                    dropdown.setValue(encodeSort(this.plugin.superstate.settings.defaultSpaceSort));
+                    dropdown.onChange((value: string) => {
+                        Object.assign(this.plugin.superstate.settings, { [setting.name]: decodeSort(value) });
                         this.plugin.saveSettings();
                         if (setting.onChange) setting.onChange(value);
                     });

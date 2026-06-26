@@ -1,7 +1,6 @@
 import { spaceLinksKey, spaceSortKey } from "core/types/space";
-import { reorderPathsInContext } from "core/utils/contexts/context";
 import { ensureArray, ensureBoolean, ensureString } from "core/utils/strings";
-import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep, compareByFieldNumerical } from "core/utils/tree";
+import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { SpaceProperty } from "shared/types/mdb";
@@ -17,21 +16,48 @@ import { defaultValueForType } from "utils/properties";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
 
-const parseSpaceSort = (value: any): SpaceSort => {
+const hasOwn = (value: Record<string, any>, key: string) => value != null && Object.prototype.hasOwnProperty.call(value, key);
+
+export const defaultSortForSettings = (settings: MakeMDSettings): SpaceSort => ({
+    field: settings?.defaultSpaceSort?.field ?? "name",
+    asc: hasOwn(settings?.defaultSpaceSort as Record<string, any>, "asc") ? ensureBoolean(settings.defaultSpaceSort.asc) : true,
+    group: settings?.defaultFoldersAtTop ?? true,
+    recursive: false,
+});
+
+export const effectiveSpaceSort = (value: Partial<SpaceSort>, settings: MakeMDSettings): SpaceSort => {
+    const fallback = defaultSortForSettings(settings);
     return {
-        field: ensureString(value?.["field"] ?? "rank"),
-        asc: ensureBoolean(value?.["asc"]),
-        group: ensureBoolean(value?.["group"]),
-        recursive: ensureBoolean(value?.["recursive"]),
+        field: ensureString(value?.["field"] ?? fallback.field),
+        asc: hasOwn(value as Record<string, any>, "asc") ? ensureBoolean(value.asc) : fallback.asc,
+        group: hasOwn(value as Record<string, any>, "group") ? ensureBoolean(value.group) : fallback.group,
+        recursive: hasOwn(value as Record<string, any>, "recursive") ? ensureBoolean(value.recursive) : fallback.recursive,
     };
 };
 
+export const storedSpaceSort = (value: any): Partial<SpaceSort> | undefined => {
+    if (!value || typeof value != "object") return undefined;
+    const sort: Partial<SpaceSort> = {};
+    if (hasOwn(value, "field")) sort.field = ensureString(value.field);
+    if (hasOwn(value, "asc")) sort.asc = ensureBoolean(value.asc);
+    if (hasOwn(value, "group")) sort.group = ensureBoolean(value.group);
+    if (hasOwn(value, "recursive")) sort.recursive = ensureBoolean(value.recursive);
+    return Object.keys(sort).length > 0 ? sort : undefined;
+};
+
 export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: MakeMDSettings): SpaceDefinition => {
+    const sort = metadata.sort ?? metadata[spaceSortKey];
+    const legacyLabel = metadata.label ?? {};
     return {
-        sort: parseSpaceSort(metadata[spaceSortKey]),
-        links: ensureArray(metadata[spaceLinksKey]),
-        defaultSticker: ensureString(metadata.defaultSticker),
+        color: ensureString(metadata.color ?? legacyLabel.color),
+        sticker: ensureString(metadata.sticker ?? legacyLabel.sticker),
         defaultColor: ensureString(metadata.defaultColor),
+        defaultSticker: ensureString(metadata.defaultSticker),
+        sort: storedSpaceSort(sort),
+        "rank-order": ensureArray(metadata["rank-order"]),
+        links: ensureArray(metadata.links ?? metadata[spaceLinksKey]),
+        pinned: ensureArray(metadata.pinned),
+        "file-colors": metadata["file-colors"] ?? {},
     };
 };
 
@@ -87,7 +113,7 @@ export const spaceRowHeight = (_superstate: Superstate, preset: number, section:
 };
 
 export const defaultSpaceSort = {
-    field: "rank",
+    field: "name",
     asc: true,
     group: true,
     recursive: false,
@@ -101,9 +127,7 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: Cache
     if (sortStrategy.group) {
         sortFns.push(compareByField("type", false));
     }
-    if (sortStrategy.field == "number") {
-        sortFns.push(compareByFieldNumerical("name", sortStrategy.asc));
-    } else if (sortStrategy.field == "name") {
+    if (sortStrategy.field == "name") {
         sortFns.push(compareByFieldCaseInsensitive(sortStrategy.field, sortStrategy.asc));
     } else if (sortStrategy.field.startsWith("props")) {
         const propName = sortStrategy.field.split(".")[1];
@@ -131,23 +155,13 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
     const spaceState = superstate.spacesIndex.get(space);
     if (!spaceState) return;
 
-    if (spaceState.type == "tag") {
+    if (spaceState.type == "tag" || spaceState.type == "folder" || spaceState.type == "vault") {
         const currentOrder = spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path);
         const nextOrder = currentOrder.filter((itemPath) => itemPath != path);
         nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
         await saveSpaceMetadataValue(superstate, space, "rank-order", nextOrder);
         return;
     }
-
-    const fixedRank = rank;
-    superstate.addToContextStateQueue(() =>
-        reorderPathsInContext(superstate.spaceManager, [path], fixedRank, spaceState.space)
-            .then(() => {
-                const promises = [...superstate.spacesMap.getInverse(spaceState.path)].map((f) => superstate.reloadPath(f));
-                return Promise.all(promises);
-            })
-            .then(() => superstate.dispatchEvent("spaceStateUpdated", { path: spaceState.path })),
-    );
 };
 
 export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: PathState, newParent: string, index: number, copy?: boolean) => {
@@ -232,11 +246,12 @@ export const saveSpaceProperties = async (superstate: Superstate, space: string,
 
 export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceInfo, metadata: SpaceDefinition) => {
     const spaceCache = superstate.spacesIndex.get(spaceInfo.path);
+    const nextMetadata = { ...(spaceCache?.metadata ?? {}), ...metadata };
     if (spaceCache?.type != "tag") {
         await superstate.spaceManager.saveSpace(spaceInfo.path, (oldMetadata) => ({ ...oldMetadata, ...metadata }));
     }
 
-    return superstate.updateSpaceMetadata(spaceInfo.path, metadata);
+    return superstate.updateSpaceMetadata(spaceInfo.path, nextMetadata);
 };
 
 export const addPathToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
@@ -297,14 +312,52 @@ export const removeSpace = async (superstate: Superstate, space: string) => {
     }
 };
 
-export const updateSpaceSort = (superstate: Superstate, path: string, sort: SpaceSort) => {
+export const updateSpaceSort = async (superstate: Superstate, path: string, sort: Partial<SpaceSort> | null) => {
     const space = superstate.spacesIndex.get(path);
+    if (!space)
+        return;
 
-    if (space)
-        saveSpaceCache(superstate, space.space, {
+    if (sort == null) {
+        if (!space.metadata?.sort)
+            return;
+        if (space.type != "tag") {
+            const defPath = space.space?.defPath;
+            const defExists = defPath ? await superstate.spaceManager.pathExists(defPath) : false;
+            if (defExists) {
+                superstate.spaceManager.saveSpace(path, (metadata) => ({
+                    ...metadata,
+                    sort: undefined,
+                }));
+            }
+        }
+        await superstate.updateSpaceMetadata(path, {
             ...space.metadata,
-            sort,
+            sort: undefined,
         });
+        return;
+    }
+
+    const currentSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
+    const nextSort = effectiveSpaceSort({ ...currentSort, ...sort }, superstate.settings);
+    if (JSON.stringify(currentSort) == JSON.stringify(nextSort))
+        return;
+
+    if (space.type == "tag") {
+        await superstate.updateSpaceMetadata(path, {
+            ...space.metadata,
+            sort: sort as SpaceSort,
+        });
+        return;
+    }
+
+    superstate.spaceManager.saveSpace(path, (metadata) => ({
+        ...metadata,
+        sort: sort ? sort as SpaceSort : undefined,
+    }));
+    await superstate.updateSpaceMetadata(path, {
+        ...space.metadata,
+        sort: sort as SpaceSort,
+    });
 };
 
 export const metadataPathForSpace = (_superstate: Superstate, space: SpaceInfo) => {

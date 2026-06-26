@@ -32,8 +32,9 @@ export const modifyTabSticker = (plugin: MakeMDPlugin) => {
         const file = plugin.app.workspace.getActiveFile();
         if (!file) return;
         const pathCache = plugin.superstate.pathsIndex.get(file.path);
-        if (pathCache?.label.sticker && leaf.tabHeaderInnerIconEl) {
-            const [stickerType, stickerPath] = parseStickerString(pathCache.label.sticker);
+        const sticker = pathCache?.effectiveLabel?.sticker ?? pathCache?.label?.sticker;
+        if (sticker && leaf.tabHeaderInnerIconEl) {
+            const [stickerType, stickerPath] = parseStickerString(sticker);
             if (stickerType == "image") {
                 const path = plugin.superstate.ui.getUIPath(plugin.superstate.imagesCache.get(stickerPath));
                 if (path) {
@@ -41,7 +42,7 @@ export const modifyTabSticker = (plugin: MakeMDPlugin) => {
                     markTabStickerIcon(leaf.tabHeaderInnerIconEl);
                 }
             } else {
-                const icon = stickerFromString(pathCache.label.sticker, plugin);
+                const icon = stickerFromString(sticker, plugin);
                 leaf.tabHeaderInnerIconEl.innerHTML = icon;
                 markTabStickerIcon(leaf.tabHeaderInnerIconEl);
             }
