@@ -3,7 +3,7 @@ import i18n from "shared/i18n";
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { defaultSpaceSort, effectiveSpaceSort, saveProperties, saveSpaceCache, saveSpaceMetadataValue } from "core/superstate/utils/spaces";
+import { effectiveSpaceSort, saveSpaceCache } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
 import { pathIsSpace } from "core/utils/spaces/space";
 import { tagSpacePathFromTag } from "core/utils/strings";
@@ -33,6 +33,7 @@ import { SuperstateEvent } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { fastSearch, searchPath } from "./workers/search/impl";
 import { ensureArray } from "core/utils/strings";
+
 export type SuperProperty = {
     id: string;
     name: string;
@@ -42,12 +43,13 @@ const isTagSpacePath = (path: string) => path?.startsWith("spaces://#");
 
 const tagSpaceNameFromPath = (path: string) => (isTagSpacePath(path) ? path.slice("spaces://#".length) : path);
 
-const tagSpaceInfoForCache = (space: SpaceInfo): SpaceInfo => ({
-    ...(({ dbPath: _dbPath, ...spaceInfo }) => spaceInfo)(space as SpaceInfo & { dbPath?: string }),
-    defPath: "",
-    notePath: "",
-    folderPath: "",
-} as SpaceInfo);
+const tagSpaceInfoForCache = (space: SpaceInfo): SpaceInfo =>
+    ({
+        ...(({ dbPath: _dbPath, ...spaceInfo }) => spaceInfo)(space as SpaceInfo & { dbPath?: string }),
+        defPath: "",
+        notePath: "",
+        folderPath: "",
+    }) as SpaceInfo;
 
 const tagSpaceInfoForStore = (): SpaceInfo =>
     ({
@@ -305,9 +307,7 @@ export class Superstate implements ISuperstate {
         const allSpaces = [...this.spaceManager.allSpaces().values()];
 
         const promises = allSpaces.map((f) => this.reloadSpace(f, null, true));
-        [...this.spacesIndex.keys()]
-            .filter((f) => this.spacesIndex.get(f)?.type != "tag" && !allSpaces.some((g) => g.path == f))
-            .forEach((f) => this.onSpaceDeleted(f));
+        [...this.spacesIndex.keys()].filter((f) => this.spacesIndex.get(f)?.type != "tag" && !allSpaces.some((g) => g.path == f)).forEach((f) => this.onSpaceDeleted(f));
 
         await Promise.all(promises);
     }

@@ -11,7 +11,6 @@ interface Listener<T> {
     context?: any;
 }
 
-
 export class EventDispatcher<T extends EventTypeToPayload> {
     private listeners: Map<keyof T, Listener<T[keyof T]>[]>;
 
@@ -38,7 +37,10 @@ export class EventDispatcher<T extends EventTypeToPayload> {
     removeListener<K extends keyof T>(eventType: K, listener: EventListener<T[K]>): void {
         const listeners = this.listeners.get(eventType);
         if (listeners) {
-            this.listeners.set(eventType, listeners.filter(l => l.callback !== listener));
+            this.listeners.set(
+                eventType,
+                listeners.filter((l) => l.callback !== listener),
+            );
         }
     }
 

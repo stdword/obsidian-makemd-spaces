@@ -1,12 +1,12 @@
 
 import { dbResultsToDBTables, deleteFromDB, dropTable, getZippedDB, insertIntoDB, replaceDB, saveZippedDBFile, selectDB } from "adapters/mdb/db/db";
-import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
 import { DBRow, DBTable, DBTables } from "shared/types/mdb";
 import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database } from "sql.js";
 import { LocalCachePersister } from "../../../shared/types/persister";
+import { ZippedSqliteStorage } from "./sqliteStorage";
 
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */
 export class LocalStorageCache implements LocalCachePersister {
@@ -14,7 +14,7 @@ export class LocalStorageCache implements LocalCachePersister {
     private initialized: boolean;
     public indexVersion = Date.now().toString();
     private defaultTables : DBTables;
-    public constructor( public storageDBPath: string, private mdbAdapter: MDBFileTypeAdapter, types: string[]) {
+    public constructor( public storageDBPath: string, private storage: ZippedSqliteStorage, types: string[]) {
         this.defaultTables = types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {})
     }
 
@@ -24,7 +24,7 @@ export class LocalStorageCache implements LocalCachePersister {
     }
     public async initialize () {
 
-        this.db = await getZippedDB(this.mdbAdapter, await this.mdbAdapter.sqlJS(), this.storageDBPath);
+        this.db = await getZippedDB(this.storage, await this.storage.sqlJS(), this.storageDBPath);
         let tables: DBTable[];
         try {
             tables =  dbResultsToDBTables(
@@ -33,7 +33,7 @@ export class LocalStorageCache implements LocalCachePersister {
                     )
             );
             } catch (e) {
-                this.mdbAdapter.plugin.superstate.ui.error(e);
+                this.storage.plugin.superstate.ui.error(e);
             tables = [];
             }
         if (tables.length == 0) {
@@ -80,7 +80,7 @@ export class LocalStorageCache implements LocalCachePersister {
     }
     private debounceSaveSpaceDatabase = debounce(
       () => {
-          saveZippedDBFile(this.mdbAdapter, this.storageDBPath, this.db.export().buffer as ArrayBuffer)
+          saveZippedDBFile(this.storage, this.storageDBPath, this.db.export().buffer as ArrayBuffer)
       },
       5000,
       {

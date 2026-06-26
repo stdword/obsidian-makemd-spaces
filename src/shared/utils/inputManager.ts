@@ -1,58 +1,58 @@
-
-
 export class InputManager {
-  private events: { [key: string]: Function[] } = {};
-  constructor() {
-    this.addListeners();
-  }
-
-  on(eventName: string, listener: Function) {
-    if (!this.events[eventName]) {
-      this.events[eventName] = [];
+    private events: { [key: string]: Function[] } = {};
+    constructor() {
+        this.addListeners();
     }
 
-    this.events[eventName].push(listener);
-  }
+    on(eventName: string, listener: Function) {
+        if (!this.events[eventName]) {
+            this.events[eventName] = [];
+        }
 
-  off(eventName: string, listener: Function) {
-    const listeners = this.events[eventName];
-    if (listeners) {
-      this.events[eventName] = listeners.filter(l => l !== listener);
+        this.events[eventName].push(listener);
     }
-  }
-  
-  emit(eventName: string, data: any) {
-    const listeners = this.events[eventName];
-    if (listeners) {
-      let propagate = false;
-      listeners.slice().reverse().forEach(listener => {
-        if (propagate) return;
-        propagate = listener(data)
-      });
+
+    off(eventName: string, listener: Function) {
+        const listeners = this.events[eventName];
+        if (listeners) {
+            this.events[eventName] = listeners.filter((l) => l !== listener);
+        }
     }
-  }
 
-  addListeners() {
-    window.addEventListener('mousedown', this.handleMouseEvent, true);
-    window.addEventListener('click', this.handleMouseEvent, true);
-    window.addEventListener('contextmenu', this.handleMouseEvent, true);
-    window.addEventListener('keydown', this.handleKeyEvent);
-    window.addEventListener('keyup', this.handleKeyEvent);
-  }
+    emit(eventName: string, data: any) {
+        const listeners = this.events[eventName];
+        if (listeners) {
+            let propagate = false;
+            listeners
+                .slice()
+                .reverse()
+                .forEach((listener) => {
+                    if (propagate) return;
+                    propagate = listener(data);
+                });
+        }
+    }
 
-  removeListeners() {
-    window.removeEventListener('mousedown', this.handleMouseEvent);
-    window.removeEventListener('click', this.handleMouseEvent);
-    window.removeEventListener('contextmenu', this.handleMouseEvent);
-    window.removeEventListener('keydown', this.handleKeyEvent);
-    window.removeEventListener('keyup', this.handleKeyEvent);
-  }
-  handleMouseEvent = (event: MouseEvent) => {
-    this.emit(event.type, event);
-  }
+    addListeners() {
+        window.addEventListener("mousedown", this.handleMouseEvent, true);
+        window.addEventListener("click", this.handleMouseEvent, true);
+        window.addEventListener("contextmenu", this.handleMouseEvent, true);
+        window.addEventListener("keydown", this.handleKeyEvent);
+        window.addEventListener("keyup", this.handleKeyEvent);
+    }
 
-  handleKeyEvent = (event: KeyboardEvent) => {
-    this.emit(event.type, event);
-  }
+    removeListeners() {
+        window.removeEventListener("mousedown", this.handleMouseEvent);
+        window.removeEventListener("click", this.handleMouseEvent);
+        window.removeEventListener("contextmenu", this.handleMouseEvent);
+        window.removeEventListener("keydown", this.handleKeyEvent);
+        window.removeEventListener("keyup", this.handleKeyEvent);
+    }
+    handleMouseEvent = (event: MouseEvent) => {
+        this.emit(event.type, event);
+    };
 
+    handleKeyEvent = (event: KeyboardEvent) => {
+        this.emit(event.type, event);
+    };
 }

@@ -10,7 +10,6 @@ import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "shared/utils/json";
 import { SPACE_SUB_FOLDER } from "shared/constants";
 
-import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 
 import { ObsidianBaseFiletypeAdapter } from "adapters/obsidian/filetypes/baseAdapter";
@@ -22,6 +21,7 @@ import { modifyTabSticker } from "adapters/obsidian/utils/modifyTabSticker";
 
 import { LocalCachePersister } from "shared/types/persister";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
+import { LocalSqliteStorage } from "adapters/mdb/localCache/sqliteStorage";
 import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 
 import { attachCommands } from "commands";
@@ -48,7 +48,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     app: App;
     files: FilesystemMiddleware;
     obsidianAdapter: ObsidianFileSystem;
-    mdbFileAdapter: MDBFileTypeAdapter;
 
     activeEditorView?: MarkdownView;
 
@@ -188,13 +187,11 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     async onload() {
         const start = Date.now();
-        this.mdbFileAdapter = new MDBFileTypeAdapter(this);
 
         this.files = FilesystemMiddleware.create();
         this.obsidianAdapter = new ObsidianFileSystem(this, this.files);
         this.files.initiateFileSystemAdapter(this.obsidianAdapter, true);
 
-        this.files.initiateFiletypeAdapter(this.mdbFileAdapter);
         this.files.initiateFiletypeAdapter(new JSONFiletypeAdapter(this));
 
         this.files.initiateFiletypeAdapter(new ObsidianMarkdownFiletypeAdapter(this));
@@ -217,7 +214,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.saveSettings = () => this.saveSettings();
         this.loadViews();
 
-        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, this.mdbFileAdapter, ["path", "space"]);
+        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, new LocalSqliteStorage(this, this.files), ["path", "space"]);
 
         await cachePersister.initialize()
         this.superstate.persister = cachePersister;

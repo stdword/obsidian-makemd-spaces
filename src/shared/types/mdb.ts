@@ -6,23 +6,9 @@ export type DBTable = {
     rows: DBRows;
 };
 
-export enum ContextSchemaType {
-    SpaceType = 0,
-    ContextType = 1,
-    FrameType = 2,
-    TableType = 3,
-    CommandType = 4,
-}
-
 export type SpaceTableColumn = SpaceProperty & { table?: string };
 
 export type DBTables = Record<string, DBTable>;
-
-export type MDB = {
-    schemas: SpaceTableSchema[];
-    fields: SpaceProperty[];
-    tables: { [key: string]: DBTable };
-};
 
 export type SpaceTable = {
     schema: SpaceTableSchema;

@@ -1,28 +1,20 @@
 import { getParentPathFromString } from "utils/path";
 
-import { MDBFileTypeAdapter } from "adapters/mdb/mdbAdapter";
 import JSZip from "jszip";
-import { defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextSchemaID } from "shared/schemas/fields";
 import { defaultContextFields } from "shared/schemas/fields";
-import { DBRows, DBTable, DBTables, SpaceTables } from "shared/types/mdb";
+import { DBTable, DBTables } from "shared/types/mdb";
 import { uniq } from "shared/utils/array";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeSQLStatement } from "shared/utils/sanitizers";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
 import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializers";
+import { ZippedSqliteStorage } from "../localCache/sqliteStorage";
 
 JSZip.support.nodebuffer = false;
 
-export const getDBFile = async (plugin: MDBFileTypeAdapter, path: string) => {
-    if (!(await plugin.middleware.fileExists(path))) {
-        return null;
-    }
-    const file = await plugin.middleware.readBinaryToFile(path);
-    return file;
-};
-
-export const getDB = async (plugin: MDBFileTypeAdapter, sqlJS: SqlJsStatic, path: string) => {
-    const buf = await getDBFile(plugin, path);
+export const getZippedDB = async (storage: ZippedSqliteStorage, sqlJS: SqlJsStatic, path: string) => {
+    const buf = await getZippedDBFile(storage, path);
     if (buf) {
         const db = await new sqlJS.Database(new Uint8Array(buf));
         try {
@@ -35,27 +27,13 @@ export const getDB = async (plugin: MDBFileTypeAdapter, sqlJS: SqlJsStatic, path
     return new sqlJS.Database();
 };
 
-export const getZippedDB = async (plugin: MDBFileTypeAdapter, sqlJS: SqlJsStatic, path: string) => {
-    const buf = await getZippedDBFile(plugin, path);
-    if (buf) {
-        const db = await new sqlJS.Database(new Uint8Array(buf));
-        try {
-            db.exec("SELECT name FROM sqlite_schema");
-        } catch {
-            return new sqlJS.Database();
-        }
-        return db;
-    }
-    return new sqlJS.Database();
-};
-
-export const getZippedDBFile = async (plugin: MDBFileTypeAdapter, path: string) => {
-    if (!(await plugin.middleware.fileExists(path))) {
+export const getZippedDBFile = async (storage: ZippedSqliteStorage, path: string) => {
+    if (!(await storage.middleware.fileExists(path))) {
         return null;
     }
     const zip = new JSZip();
 
-    const file = await plugin.middleware.readBinaryToFile(path);
+    const file = await storage.middleware.readBinaryToFile(path);
     let buffer;
     try {
         buffer = await zip.loadAsync(file).then(() => zip.file("data.mdb").async("arraybuffer"));
@@ -63,9 +41,9 @@ export const getZippedDBFile = async (plugin: MDBFileTypeAdapter, path: string) 
     return buffer;
 };
 
-export const saveZippedDBFile = async (plugin: MDBFileTypeAdapter, path: string, binary: ArrayBuffer) => {
-    if (!(await plugin.middleware.fileExists(removeTrailingSlashFromFolder(getParentPathFromString(path))))) {
-        await plugin.middleware.createFolder(getParentPathFromString(path));
+export const saveZippedDBFile = async (storage: ZippedSqliteStorage, path: string, binary: ArrayBuffer) => {
+    if (!(await storage.middleware.fileExists(removeTrailingSlashFromFolder(getParentPathFromString(path))))) {
+        await storage.middleware.createFolder(getParentPathFromString(path));
     }
     const zip = new JSZip();
     zip.file("data.mdb", binary);
@@ -76,29 +54,8 @@ export const saveZippedDBFile = async (plugin: MDBFileTypeAdapter, path: string,
             level: 5,
         },
     });
-    const file = plugin.middleware.writeBinaryToFile(path, zipFile);
+    const file = storage.middleware.writeBinaryToFile(path, zipFile);
     return file;
-};
-
-export const saveDBFile = async (plugin: MDBFileTypeAdapter, path: string, binary: ArrayBuffer) => {
-    if (!(await plugin.middleware.fileExists(removeTrailingSlashFromFolder(getParentPathFromString(path))))) {
-        await plugin.middleware.createFolder(getParentPathFromString(path));
-    }
-    const file = plugin.middleware.writeBinaryToFile(path, binary);
-    return file;
-};
-
-export const mdbTablesToDBTables = (tables: SpaceTables, uniques?: { [x: string]: string[] }): DBTables => {
-    return Object.keys(tables).reduce((p, c) => {
-        return {
-            ...p,
-            [c]: {
-                uniques: uniques?.[c] ?? [],
-                cols: tables[c].cols.map((f) => f.name),
-                rows: tables[c].rows,
-            },
-        };
-    }, {}) as DBTables;
 };
 
 export const dbResultsToDBTables = (res: QueryExecResult[]): DBTable[] => {
@@ -139,29 +96,6 @@ export const insertIntoDB = (db: Database, tables: DBTables, replace?: boolean) 
     );
     try {
         db.exec(`${sqlstr}`);
-    } catch (e) {}
-};
-
-export const updateDB = (db: Database, tables: DBTables, updateCol: string, updateRef: string) => {
-    const sqlstr = serializeSQLStatements(
-        Object.keys(tables).map((t) => {
-            const tableFields = tables[t].cols.filter((f) => f != updateRef);
-            const rowsQuery = tables[t].rows.reduce((prev, curr) => {
-                return `${prev} UPDATE "${t}" SET ${serializeSQLValues(tableFields.map((c) => `${c}='${sanitizeSQLStatement(curr?.[c]) ?? ""}'`))} WHERE ${updateCol}='${sanitizeSQLStatement(curr?.[updateRef]) ?? ""}';`;
-            }, "");
-            return rowsQuery;
-        }),
-    );
-    try {
-        db.exec(sqlstr);
-    } catch (e) {}
-};
-
-export const execQuery = (db: Database, sqlstr: string) => {
-    //Fastest, but doesn't handle errors
-    // Run the query without returning anything
-    try {
-        db.exec(sqlstr);
     } catch (e) {}
 };
 
@@ -227,59 +161,4 @@ export const replaceDB = (db: Database, tables: DBTables) => {
         return false;
     }
     return true;
-};
-
-export const saveZippedDBToPath = async (plugin: MDBFileTypeAdapter, path: string, tables: DBTables): Promise<boolean> => {
-    const sqlJS = await plugin.sqlJS();
-    //rewrite the entire table, useful for storing ranks and col order, not good for performance
-    const db = await getZippedDB(plugin, sqlJS, path);
-    if (!db) {
-        db.close();
-        return false;
-    }
-    replaceDB(db, tables);
-
-    await saveZippedDBFile(plugin, path, db.export().buffer as ArrayBuffer);
-    db.close();
-
-    return true;
-};
-
-export const saveDBToPath = async (plugin: MDBFileTypeAdapter, path: string, tables: DBTables, mdb = true): Promise<boolean> => {
-    const sqlJS = await plugin.sqlJS();
-    //rewrite the entire table, useful for storing ranks and col order, not good for performance
-    const db = await getDB(plugin, sqlJS, path);
-    if (!db) {
-        db.close();
-        return false;
-    }
-    if (mdb) {
-        let mdbStruct: DBRows = [];
-        try {
-            mdbStruct = dbResultsToDBTables(db.exec(`SELECT name FROM sqlite_master WHERE type='table' AND name='m_schema' OR name='m_fields';`))[0]?.rows ?? [];
-        } catch (e) {}
-        if (!mdbStruct.some((f) => f.name == "m_schema")) {
-            const createSchemaTable = `CREATE TABLE m_schema ("id" char, "name" char, "type" char, "def" char, "predicate" char, "primary" char)`;
-            try {
-                db.exec(createSchemaTable);
-            } catch (e) {}
-        }
-        if (!mdbStruct.some((f) => f.name == "m_fields")) {
-            const createFieldsTable = `CREATE TABLE m_fields ("name" char, "schemaId" char, "type" char, "value" char, "hidden" char, "attrs" char, "unique" char, "primary" char)`;
-            try {
-                db.exec(createFieldsTable);
-            } catch (e) {}
-        }
-    } else {
-        dropTable(db, "m_schema");
-        dropTable(db, "m_fields");
-    }
-    const result = replaceDB(db, tables);
-    if (result) {
-        await saveDBFile(plugin, path, db.export().buffer as ArrayBuffer);
-    }
-
-    db.close();
-
-    return result;
 };

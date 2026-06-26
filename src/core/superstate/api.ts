@@ -6,7 +6,7 @@ import { SpaceManagerInterface } from "shared/types/spaceManager";
 import { PathState } from "shared/types/superstate";
 import { SpaceTable } from "shared/types/mdb";
 import { stickerForField } from "schemas/mdb";
-import { defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextSchemaID } from "shared/schemas/fields";
 import { IAPI } from "shared/types/api";
 import { PathPropertyName } from "shared/types/context";
 import { DBRow, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";

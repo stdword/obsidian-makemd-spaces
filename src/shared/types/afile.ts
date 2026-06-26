@@ -1,5 +1,3 @@
-import { PathLabel } from "./caches";
-
 export type AFile = {
     path: string;
     name: string;
@@ -11,11 +9,3 @@ export type AFile = {
     mtime?: number;
     size?: number;
 };
-
-export type VaultItem = {
-    path: string;
-    parent: string;
-    created: string;
-    folder: string;
-    rank?: string;
-} & PathLabel;

@@ -16,7 +16,7 @@ jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
 
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
-import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/fields";
 
 describe("triggerMultiPathMenu", () => {
     it("opens every selected path in a new tab from the multi-path open action", async () => {

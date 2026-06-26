@@ -1,11 +1,19 @@
-import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
 import { PathPropertyName, PathPropertyPinned } from "shared/types/context";
-import { DBTable, SpaceProperty } from "shared/types/mdb";
+import { DBTable, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
 import { SpaceInfo } from "shared/types/spaceInfo";
 
 export const fieldSchema = {
     uniques: ["name,schemaId"],
     cols: ["name", "schemaId", "type", "value", "attrs", "hidden", "unique", "primary"],
+};
+
+export const defaultContextSchemaID = "files";
+export const defaultContextFileColumns = ["path", "color", "isPinned"];
+export const defaultContextDBSchema: SpaceTableSchema = {
+    id: defaultContextSchemaID,
+    name: "Items",
+    type: "db",
+    primary: "true",
 };
 
 export const defaultContextFields: DBTable = {

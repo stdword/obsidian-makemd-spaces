@@ -11,7 +11,7 @@ import { pathStateToContextRow } from "core/utils/contexts/contextDefaults";
 import { linkContextRow, mergeContextRows, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
-import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/fields";
 import { defaultContextFields } from "shared/schemas/fields";
 import { normalizeContextPath, PathPropertyName, PathPropertyPinned } from "shared/types/context";
 import { IndexMap } from "shared/types/indexMap";

@@ -6,10 +6,3 @@ export type EmojiData = Record<
         v?: string[];
     }[]
 >;
-
-export type Emoji = {
-    label: string;
-    desc: string;
-    unicode: string;
-    variants?: string[];
-};

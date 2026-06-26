@@ -4,8 +4,7 @@ import { DBTable, DBTables, SpaceProperty, SpaceTable, SpaceTableSchema } from "
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { safelyParseJSON } from "shared/utils/json";
 import { parsePropString } from "utils/parsers";
-import { defaultContextDBSchema } from "../shared/schemas/context";
-import { defaultContextFields, defaultTagFields } from "../shared/schemas/fields";
+import { defaultContextDBSchema, defaultContextFields, defaultTagFields } from "../shared/schemas/fields";
 
 export const fieldTypeForField = (f: SpaceProperty) => {
     if (!f) return null;

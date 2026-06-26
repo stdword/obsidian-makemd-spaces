@@ -1,6 +1,6 @@
 import initSqlJs from "sql.js";
 import { replaceDB } from "adapters/mdb/db/db";
-import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/fields";
 
 describe("mdb db schema", () => {
     it("creates isPinned as a BOOLEAN column in the context files table", async () => {

@@ -1,6 +1,5 @@
 export const PathPropertyName = "path";
 export const PathPropertyPinned = "isPinned";
-export const PathPropertyCreated = "ctime";
 
 export const normalizeContextPath = (path: string): string => {
     if (!path || path == "/") return path;

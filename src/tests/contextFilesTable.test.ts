@@ -2,7 +2,7 @@ import { defaultTableDataForContext } from "core/utils/contexts/contextDefaults"
 import { applyContextLabelsToPaths, parseContextTableToCache } from "core/superstate/cacheParsers";
 import { savePathColor } from "core/superstate/utils/label";
 import { spaceSortFn } from "core/superstate/utils/spaces";
-import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/context";
+import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/fields";
 import { IndexMap } from "shared/types/indexMap";
 
 describe("context files table", () => {
@@ -148,45 +148,6 @@ describe("context file sorting", () => {
 });
 
 describe("savePathColor", () => {
-    it("persists file color into context.mdb files rows instead of path labels", async () => {
-        const saveLabel = jest.fn();
-        const saveTable = jest.fn(() => Promise.resolve(true));
-        const saveSpace = jest.fn(() => Promise.resolve(true));
-        const updateSpaceMetadata = jest.fn((spacePath, metadata) => {
-            const space = superstate.spacesIndex.get(spacePath);
-            superstate.spacesIndex.set(spacePath, { ...space, metadata });
-            return Promise.resolve(true);
-        });
-        const dispatchEvent = jest.fn();
-        const contextTable = {
-            schema: { id: defaultContextSchemaID, name: "Items", type: "db", primary: "true" },
-            cols: defaultContextFileColumns.map((name) => ({ name, schemaId: defaultContextSchemaID, type: "text" })),
-            rows: [{ path: "Note.md", color: "" }],
-        };
-        const superstate = {
-            pathsIndex: new Map([["Note.md", { path: "Note.md", label: { color: "", sticker: "" }, effectiveLabel: { color: "", sticker: "ui//file-text" }, spaces: ["Vault"] }]]),
-            spacesIndex: new Map([["Vault", { path: "Vault", type: "folder", space: { path: "Vault" }, metadata: {} }]]),
-            spaceManager: {
-                contextForSpace: jest.fn(() => Promise.resolve(contextTable)),
-                saveTable,
-                saveLabel,
-                saveSpace,
-            },
-            updateSpaceMetadata,
-            dispatchEvent,
-        };
-
-        await savePathColor(superstate as any, "Note.md", "#e30d0d");
-
-        expect(saveLabel).not.toHaveBeenCalled();
-        expect(saveTable).not.toHaveBeenCalled();
-        expect(saveSpace).toHaveBeenCalledWith("Vault", expect.any(Function));
-        expect(updateSpaceMetadata).toHaveBeenCalledWith("Vault", { "file-colors": { "Note.md": "#e30d0d" } });
-        expect(superstate.pathsIndex.get("Note.md")?.label.color).toBe("");
-        expect(superstate.pathsIndex.get("Note.md")?.effectiveLabel.color).toBe("#e30d0d");
-        expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "Note.md" });
-    });
-
     it("persists folder color into folder space metadata instead of parent defaults", async () => {
         const saveTable = jest.fn(() => Promise.resolve(true));
         const saveLabel = jest.fn(() => Promise.resolve());

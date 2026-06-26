@@ -15,10 +15,8 @@ import { TargetLocation } from "shared/types/path";
 import { openPathInElement } from "shared/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
-
 import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
 import { removeSpace } from "core/superstate/utils/spaces";
-import { editableRange } from "shared/utils/codemirror/selectiveEditor";
 import { getLineRangeFromRef } from "shared/utils/obsidian";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
@@ -237,7 +235,7 @@ export class ObsidianUI implements UIAdapter {
                         } else {
                             if (selectiveRange[0] && selectiveRange[1]) {
                                 leaf.view.editor?.cm.dispatch({
-                                    annotations: [editableRange.of(selectiveRange)],
+                                    // annotations: [editableRange.of(selectiveRange)],
                                 });
                             }
                         }
