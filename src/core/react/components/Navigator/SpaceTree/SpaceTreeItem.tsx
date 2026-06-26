@@ -5,7 +5,7 @@ import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { savePathColor } from "core/superstate/utils/label";
-import { TreeNode, spaceRowHeight } from "core/superstate/utils/spaces";
+import { TreeNode } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -24,7 +24,7 @@ export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) =>
 export interface TreeItemProps {
     id: string;
     disabled: boolean;
-    childCount?: number;
+    childLineHeight?: number;
     clone?: boolean;
     collapsed?: boolean;
     depth: number;
@@ -46,7 +46,7 @@ export interface TreeItemProps {
 }
 
 export const TreeItem = (props: TreeItemProps) => {
-    const { id: _id, childCount, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled: _disabled, dragStarted, dragOver, dragEnded } = props;
+    const { id: _id, childLineHeight = 0, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled: _disabled, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
     const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
 
@@ -241,7 +241,7 @@ export const TreeItem = (props: TreeItemProps) => {
                         style={
                             {
                                 "--spacing": `${spacing}px`,
-                                "--childrenCount": `${data.type == "space" && !collapsed ? childCount * spaceRowHeight(superstate, superstate.settings.spaceRowHeight, false) - 13 : 0}px`,
+                                "--childrenCount": `${childLineHeight}px`,
                                 ...treeItemActiveColorVariables(color, isFolder),
                             } as TreeItemStyle
                         }

@@ -15,6 +15,7 @@ import { windowFromDocument } from "shared/utils/dom";
 import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
+import { calculateFolderLineHeight } from "./treeLineHeight";
 
 const isTagSpacePath = (path: string) => path?.startsWith("spaces://#");
 
@@ -192,7 +193,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                 data={flattenedTree[virtualRow.index]}
                                 disabled={false}
                                 depth={flattenedTree[virtualRow.index].depth}
-                                childCount={flattenedTree[virtualRow.index].childrenCount}
+                                childLineHeight={calculateFolderLineHeight(flattenedTree, rowHeights, virtualRow.index, flattenedTree[virtualRow.index].collapsed)}
                                 indentationWidth={indentationWidth}
                                 dragStarted={props.dragStarted}
                                 dragOver={props.dragOver}

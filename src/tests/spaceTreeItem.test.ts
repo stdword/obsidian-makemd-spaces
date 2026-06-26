@@ -1,4 +1,5 @@
 import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
+import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "core/react/components/Navigator/SpaceTree/treeItemPath";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
 import { canEditPathSticker, defaultStickerForPathState } from "shared/components/PathSticker";
@@ -55,6 +56,24 @@ describe("canOpenTreeItemPath", () => {
     it("keeps folders and files openable", () => {
         expect(canOpenTreeItemPath({ type: "space", subtype: "folder", path: "Projects", label: { sticker: "", color: "" } })).toBe(true);
         expect(canOpenTreeItemPath({ type: "file", subtype: "md", path: "Note.md", label: { sticker: "", color: "" } })).toBe(true);
+    });
+});
+
+describe("calculateFolderLineHeight", () => {
+    it("extends a parent folder line through expanded nested descendants", () => {
+        const flattenedTree = [
+            { id: "Atlas/AI", depth: 1, type: "space" },
+            { id: "Atlas/AI/0 Notes", depth: 2, type: "space" },
+            { id: "Atlas/AI/0 Notes/file-a.md", depth: 3, type: "file" },
+            { id: "Atlas/AI/0 Notes/file-b.md", depth: 3, type: "file" },
+            { id: "Atlas/AI/0 Notes/file-c.md", depth: 3, type: "file" },
+            { id: "Atlas/AI/1 Collections", depth: 2, type: "space" },
+            { id: "Atlas/AI/2 Resources", depth: 2, type: "space" },
+            { id: "spaces://#psy/self", depth: 0, type: "group" },
+        ] as any;
+        const rowHeights = flattenedTree.map(() => 25);
+
+        expect(calculateFolderLineHeight(flattenedTree, rowHeights, 0, false)).toBe(137);
     });
 });
 

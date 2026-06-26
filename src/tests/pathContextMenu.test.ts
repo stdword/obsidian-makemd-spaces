@@ -326,6 +326,47 @@ describe("showSpaceContextMenu", () => {
         expect(rootOptions.some((option: any) => option.value === "apply-all")).toBe(false);
     });
 
+    it("hides creation, rename, duplicate, reveal, and native menu actions for tag spaces", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "spaces://#art",
+            parent: "",
+            type: "space",
+            subtype: "tag",
+            label: {},
+            spaces: [] as string[],
+        };
+        const tagSpace = {
+            path: "spaces://#art",
+            name: "#art",
+            type: "tag",
+            metadata: {},
+            space: {
+                path: "spaces://#art",
+                folderPath: "/#art",
+            },
+        };
+        const superstate = {
+            pathsIndex: new Map([["spaces://#art", pathState]]),
+            spacesIndex: new Map([["spaces://#art", tagSpace]]),
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => true),
+                nativePathMenu: jest.fn(),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        expect(rootOptions.some((option: any) => option.name === "New")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === "Duplicate")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === "Rename")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === "Reveal in Finder")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === "More options")).toBe(false);
+    });
+
     it("hides folder-only sort options for tag spaces", () => {
         const openMenu = jest.fn();
         const pathState = {

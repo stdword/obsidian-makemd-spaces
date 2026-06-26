@@ -26,16 +26,18 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     const isTagSpace = space.type == "tag" || isTagPathState(path);
     const menuOptions: SelectOption[] = [];
 
-    menuOptions.push({
-        name: i18n.menu.new,
-        icon: "ui//plus",
-        type: SelectOptionType.Submenu,
-        onSubmenu: (offset, onHide) => {
-            return showSpaceAddMenu(superstate, offset, win, space, false, true, onHide);
-        },
-    });
+    if (!isTagSpace) {
+        menuOptions.push({
+            name: i18n.menu.new,
+            icon: "ui//plus",
+            type: SelectOptionType.Submenu,
+            onSubmenu: (offset, onHide) => {
+                return showSpaceAddMenu(superstate, offset, win, space, false, true, onHide);
+            },
+        });
 
-    menuOptions.push(menuSeparator);
+        menuOptions.push(menuSeparator);
+    }
 
     menuOptions.push({
         name: i18n.menu.changeColor,
@@ -257,7 +259,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    if (space.type != "vault") {
+    if (space.type != "vault" && !isTagSpace) {
         menuOptions.push(menuSeparator);
 
         // duplicate
@@ -318,26 +320,28 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    menuOptions.push(menuSeparator);
+    if (!isTagSpace) {
+        menuOptions.push(menuSeparator);
 
-    // reveal in OS
-    menuOptions.push({
-        name: superstate.ui.getOS() == "mac" ? i18n.menu.revealInDefault : i18n.menu.revealInExplorer,
-        icon: "ui//arrow-up-right",
-        onClick: () => {
-            superstate.ui.openPath((space.space as FilesystemSpaceInfo).folderPath, "system");
-        },
-    });
-
-    // obsidian menu
-    if (superstate.ui.hasNativePathMenu(space.path)) {
+        // reveal in OS
         menuOptions.push({
-            name: i18n.menu.openNativeMenu,
-            icon: "ui//options",
-            onClick: (e) => {
-                superstate.ui.nativePathMenu(e, space.path);
+            name: superstate.ui.getOS() == "mac" ? i18n.menu.revealInDefault : i18n.menu.revealInExplorer,
+            icon: "ui//arrow-up-right",
+            onClick: () => {
+                superstate.ui.openPath((space.space as FilesystemSpaceInfo).folderPath, "system");
             },
         });
+
+        // obsidian menu
+        if (superstate.ui.hasNativePathMenu(space.path)) {
+            menuOptions.push({
+                name: i18n.menu.openNativeMenu,
+                icon: "ui//options",
+                onClick: (e) => {
+                    superstate.ui.nativePathMenu(e, space.path);
+                },
+            });
+        }
     }
 
     menuOptions.push(menuSeparator);
