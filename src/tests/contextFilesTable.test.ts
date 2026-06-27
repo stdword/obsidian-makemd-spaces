@@ -179,4 +179,50 @@ describe("savePathColor", () => {
         expect(saveLabel).toHaveBeenCalledWith("Folder", "color", "#e30d0d");
         expect(updateSpaceMetadata).toHaveBeenCalledWith("Folder", { color: "#e30d0d", defaultColor: "" });
     });
+
+    it("removes a file color entry when the file color is cleared", async () => {
+        const saveSpace = jest.fn(async (_path: string, definition: (metadata: any) => any) => {
+            const nextMetadata = definition(spaceState.metadata);
+            spaceState.metadata = nextMetadata;
+        });
+        const updateSpaceMetadata = jest.fn(async (_path: string, metadata: any) => {
+            spaceState.metadata = metadata;
+        });
+        const dispatchEvent = jest.fn();
+        const fileState = {
+            path: "Folder/Note.md",
+            type: "file",
+            subtype: "md",
+            label: { color: "", sticker: "" },
+            effectiveLabel: { color: "#e30d0d", sticker: "ui//file-text" },
+            spaces: ["Folder"],
+            metadata: { file: { extension: "md" } },
+        };
+        const spaceState = {
+            path: "Folder",
+            space: { path: "Folder" },
+            metadata: {
+                "file-colors": {
+                    "Folder/Note.md": "#e30d0d",
+                },
+            },
+        };
+        const superstate = {
+            pathsIndex: new Map([["Folder/Note.md", fileState]]),
+            spacesIndex: new Map([["Folder", spaceState]]),
+            spaceManager: {
+                saveSpace,
+            },
+            updateSpaceMetadata,
+            dispatchEvent,
+        };
+
+        await savePathColor(superstate as any, "Folder/Note.md", "");
+
+        expect(saveSpace).toHaveBeenCalledWith("Folder", expect.any(Function));
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("Folder", { "file-colors": {} });
+        expect(spaceState.metadata["file-colors"]).toEqual({});
+        expect(superstate.pathsIndex.get("Folder/Note.md")?.effectiveLabel?.color).toBe("");
+        expect(dispatchEvent).toHaveBeenCalledWith("pathStateUpdated", { path: "Folder/Note.md" });
+    });
 });

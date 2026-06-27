@@ -5,6 +5,7 @@ export const savePathSticker = async (superstate: Superstate, path: string, stic
     if (!pathState) return;
     const spaceState = superstate.spacesIndex.get(path);
     if (spaceState?.type == "folder" || spaceState?.type == "vault" || spaceState?.type == "default") {
+        if ((spaceState.metadata?.sticker ?? "") == sticker) return;
         await superstate.spaceManager.saveSpace(path, (metadata) => ({ ...metadata, sticker }));
         await superstate.updateSpaceMetadata(path, { ...(spaceState.metadata ?? {}), sticker });
     } else {

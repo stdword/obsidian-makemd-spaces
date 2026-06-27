@@ -7,6 +7,10 @@ describe("FilesystemSpaceAdapter", () => {
         const files = new Map<string, any>();
         const text = new Map<string, string>();
         const folders = new Set<string>();
+        const parentForPath = (path: string) => {
+            const index = path.lastIndexOf("/");
+            return index == -1 ? "" : path.slice(0, index);
+        };
         const fileSystem = {
             eventDispatch: {
                 addListener: jest.fn(),
@@ -14,8 +18,17 @@ describe("FilesystemSpaceAdapter", () => {
             getFile: jest.fn(async (path: string) => files.get(path) ?? null),
             readTextFromFile: jest.fn(async (path: string) => text.get(path) ?? null),
             fileExists: jest.fn(async (path: string) => files.has(path) || folders.has(path)),
+            childrenForFolder: jest.fn(async (path: string) => [
+                ...[...files.keys()].filter((filePath) => parentForPath(filePath) == path),
+                ...[...folders].filter((folderPath) => parentForPath(folderPath) == path),
+            ]),
             createFolder: jest.fn(async (path: string) => {
                 folders.add(path);
+            }),
+            deleteFile: jest.fn(async (path: string) => {
+                files.delete(path);
+                text.delete(path);
+                folders.delete(path);
             }),
             newFile: jest.fn(async (folder: string, filename: string, extension: string, content: string) => {
                 const path = folder ? `${folder}/${filename}.${extension}` : `${filename}.${extension}`;
@@ -40,6 +53,9 @@ describe("FilesystemSpaceAdapter", () => {
             notePath: "",
         }));
         adapter.spaceManager = {
+            onPathPropertyChanged: jest.fn(),
+            onPathDeleted: jest.fn(),
+            onSpaceDeleted: jest.fn(),
             superstate: {
                 settings: {
                     defaultFoldersAtTop: true,
@@ -48,9 +64,13 @@ describe("FilesystemSpaceAdapter", () => {
                         asc: true,
                     },
                 },
+                getSpaceItems: jest.fn(() => [
+                    { path: "Projects/Alpha.md", name: "Alpha" },
+                    { path: "Projects/Beta.md", name: "Beta" },
+                ]),
             },
         };
-        return { adapter, text };
+        return { adapter, text, files, folders, fileSystem };
     };
 
     it("keeps nested Obsidian tag names intact when building tag spaces", () => {
@@ -113,22 +133,13 @@ describe("FilesystemSpaceAdapter", () => {
         });
     });
 
-    it("does not write default sort when creating def.json while reading missing metadata", async () => {
+    it("does not create def.json while reading missing metadata", async () => {
         const { adapter, text } = createAdapter();
 
         const metadata = await adapter.spaceDefForSpace("Projects");
 
         expect(metadata.sort).toBeUndefined();
-        expect(JSON.parse(text.get("Projects/.space/def.json"))).toEqual({
-            color: "",
-            sticker: "",
-            defaultColor: "",
-            defaultSticker: "",
-            "rank-order": [],
-            links: [],
-            pinned: [],
-            "file-colors": {},
-        });
+        expect(text.has("Projects/.space/def.json")).toBe(false);
     });
 
     it("writes only the changed sort fragment when creating def.json for a sort change", async () => {
@@ -137,5 +148,117 @@ describe("FilesystemSpaceAdapter", () => {
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: { group: true } }));
 
         expect(JSON.parse(text.get("Projects/.space/def.json")).sort).toEqual({ group: true });
+    });
+
+    it("deletes def.json and empty .space folder after clearing the last folder sticker", async () => {
+        const { adapter, text, files, folders } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "ui//folder" }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "" }));
+
+        expect(text.has("Projects/.space/def.json")).toBe(false);
+        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(folders.has("Projects/.space")).toBe(false);
+    });
+
+    it("deletes only def.json when clearing the last setting but .space has other files", async () => {
+        const { adapter, text, files, folders } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, color: "#ffaa00" }));
+        files.set("Projects/.space/notes.md", { path: "Projects/.space/notes.md" });
+        text.set("Projects/.space/notes.md", "keep");
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, color: "" }));
+
+        expect(text.has("Projects/.space/def.json")).toBe(false);
+        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(folders.has("Projects/.space")).toBe(true);
+        expect(files.has("Projects/.space/notes.md")).toBe(true);
+    });
+
+    it.each([
+        ["defaultColor", "#112233"],
+        ["defaultSticker", "ui//folder"],
+        ["sort", { group: true }],
+    ])("deletes def.json after clearing the last %s setting", async (key, value) => {
+        const { adapter, text, files, folders } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, [key]: value }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, [key]: undefined }));
+
+        expect(text.has("Projects/.space/def.json")).toBe(false);
+        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(folders.has("Projects/.space")).toBe(false);
+    });
+
+    it("keeps def.json when rank-order still carries a custom order", async () => {
+        const { adapter, text, files } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({
+            ...metadata,
+            sort: { field: "rank", asc: true },
+            "rank-order": ["Projects/Beta.md", "Projects/Alpha.md"],
+        }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: undefined }));
+
+        expect(files.has("Projects/.space/def.json")).toBe(true);
+        expect(JSON.parse(text.get("Projects/.space/def.json"))["rank-order"]).toEqual(["Projects/Beta.md", "Projects/Alpha.md"]);
+    });
+
+    it("deletes def.json after clearing manual sort when rank-order is alphabetical", async () => {
+        const { adapter, text, files, folders } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({
+            ...metadata,
+            sort: { field: "rank", asc: true },
+            "rank-order": ["Projects/Alpha.md", "Projects/Beta.md"],
+        }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: undefined }));
+
+        expect(text.has("Projects/.space/def.json")).toBe(false);
+        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(folders.has("Projects/.space")).toBe(false);
+    });
+
+    it("deletes def.json when file-colors only contains cleared colors", async () => {
+        const { adapter, text, files, folders } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({
+            ...metadata,
+            "file-colors": {
+                "Projects/Note.md": "",
+            },
+        }));
+
+        expect(text.has("Projects/.space/def.json")).toBe(false);
+        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(folders.has("Projects/.space")).toBe(false);
+    });
+
+    it("treats deleting def.json as a folder space metadata change", () => {
+        const { adapter } = createAdapter();
+
+        adapter.onDelete({ file: { path: "Projects/.space/def.json", extension: "json", isFolder: false } });
+
+        expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
+        expect(adapter.spaceManager.onPathDeleted).not.toHaveBeenCalled();
+        expect(adapter.spaceManager.onSpaceDeleted).not.toHaveBeenCalled();
+    });
+
+    it("treats raw def.json updates as a folder space metadata change", () => {
+        const { adapter } = createAdapter();
+
+        adapter.onSpaceUpdated({ path: "Projects", type: "def.json" });
+
+        expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
+    });
+
+    it("treats deleting a .space folder as parent folder space metadata change", () => {
+        const { adapter } = createAdapter();
+
+        adapter.onDelete({ file: { path: "Projects/.space", extension: "", isFolder: true } });
+
+        expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
+        expect(adapter.spaceManager.onPathDeleted).not.toHaveBeenCalled();
+        expect(adapter.spaceManager.onSpaceDeleted).not.toHaveBeenCalled();
     });
 });

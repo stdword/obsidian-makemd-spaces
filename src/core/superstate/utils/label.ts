@@ -39,12 +39,10 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
     const spaces = (pathState.spaces ?? []).map((spacePath) => superstate.spacesIndex.get(spacePath)).filter((space) => space?.space);
     await Promise.all(
         spaces.map(async (spaceState) => {
+            const { [path]: _oldColor, ...fileColors } = spaceState.metadata?.["file-colors"] ?? {};
             await saveSpaceCache(superstate as any, spaceState.space, {
                 ...spaceState.metadata,
-                "file-colors": {
-                    ...(spaceState.metadata?.["file-colors"] ?? {}),
-                    [path]: color,
-                },
+                "file-colors": color ? { ...fileColors, [path]: color } : fileColors,
             });
         }),
     );

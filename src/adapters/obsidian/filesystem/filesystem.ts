@@ -14,7 +14,7 @@ import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
-import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME } from "shared/constants";
+import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE } from "shared/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
     static stateFileName = "superstate.mdc";
@@ -138,23 +138,22 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.plugin.superstate.initialize();
     }
     public onRaw = async (path: string) => {
+        const spaceUpdate = this.spaceUpdateForInternalPath(path);
         const fileStat = await this.plugin.app.vault.adapter.stat(path);
-        if (!fileStat) return;
+        if (!fileStat) {
+            if (spaceUpdate) {
+                this.dispatchSpaceInternalPathUpdate(spaceUpdate);
+            }
+            return;
+        }
         const currentMTime = this.pathLastUpdated.get(path) ?? 0;
         const needsUpdate = fileStat.mtime > currentMTime;
 
         if (!needsUpdate) return;
 
         this.pathLastUpdated.set(path, fileStat.mtime);
-        const parentPath = this.parentPathForPath(path);
-        if (parentPath.split("/").pop() == SPACE_SUB_FOLDER) {
-            if (path == `${SPACE_SUB_FOLDER}/${FOCUSES_FILE}`) {
-                this.middleware.onFocusesUpdated();
-                return;
-            }
-            const type = path.split("/").pop();
-            const spacePath = this.parentPathForPath(parentPath);
-            this.middleware.onSpaceUpdated(spacePath, type);
+        if (spaceUpdate) {
+            this.dispatchSpaceInternalPathUpdate(spaceUpdate);
             return;
         }
 
@@ -163,6 +162,31 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             this.plugin.superstate.dispatchEvent("settingsChanged", null);
         }
     };
+
+    private spaceUpdateForInternalPath(path: string) {
+        if (!path) return null;
+        const parts = path.split("/");
+        const lastPart = parts[parts.length - 1];
+        if (lastPart == SPACE_SUB_FOLDER) {
+            return {
+                spacePath: parts.slice(0, -1).join("/") || "/",
+                type: SPACE_DEF_FILE,
+            };
+        }
+        if (parts.length < 2 || parts[parts.length - 2] != SPACE_SUB_FOLDER) return null;
+        return {
+            spacePath: parts.slice(0, -2).join("/") || "/",
+            type: lastPart,
+        };
+    }
+
+    private dispatchSpaceInternalPathUpdate(update: { spacePath: string; type: string }) {
+        if (update.spacePath == "/" && update.type == FOCUSES_FILE) {
+            this.middleware.onFocusesUpdated();
+            return;
+        }
+        this.middleware.onSpaceUpdated(update.spacePath, update.type);
+    }
 
     public keysForCacheType(_type: string): string[] {
         return [];

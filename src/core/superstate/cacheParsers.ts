@@ -237,6 +237,8 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
 
     const outlinks = pathCache?.resolvedLinks ?? [];
     const spaceNames = [];
+    const isFolderPath = type == "space" || subtype == "folder" || pathCache?.file?.isFolder;
+    const pathMetadata = isFolderPath ? _.omit(pathCache, ["definition"]) : pathCache;
     const pathState: PathState = {
         ...cache,
         name: displayName,
@@ -253,7 +255,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         },
 
         metadata: {
-            ...pathCache,
+            ...pathMetadata,
         },
         outlinks,
     };

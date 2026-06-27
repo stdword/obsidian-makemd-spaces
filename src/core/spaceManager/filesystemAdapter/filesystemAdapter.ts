@@ -6,7 +6,7 @@ import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpa
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
-import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT, SPACE_DEF_FILE } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT, SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
 import { SpaceDefinition } from "shared/types/spaceDef";
@@ -39,7 +39,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         this.spaceManager.onFocusesUpdated();
     };
 
-    public onSpaceUpdated = (_payload: { path: string; type: string }) => {};
+    public onSpaceUpdated = (payload: { path: string; type: string }) => {
+        if (payload.type == SPACE_DEF_FILE) {
+            this.spaceManager.onPathPropertyChanged(payload.path);
+        }
+    };
     public loadPath = async (path: string) => {
         return this.fileSystem.loadPath(path);
     };
@@ -60,10 +64,24 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.writeTextToFile(`${this.dataPath}/${FOCUSES_FILE}`, JSON.stringify(focuses));
     }
 
+    private spacePathFromDefPath(path: string) {
+        if (!path || path.split("/").pop() != SPACE_DEF_FILE) return null;
+        const parentFolder = path.split("/").slice(-2, -1)[0];
+        if (parentFolder != SPACE_SUB_FOLDER) return null;
+        const spacePath = path.split("/").slice(0, -2).join("/");
+        return spacePath || "/";
+    }
+
+    private spacePathFromSpaceFolderPath(path: string) {
+        if (!path || path.split("/").pop() != SPACE_SUB_FOLDER) return null;
+        const spacePath = path.split("/").slice(0, -1).join("/");
+        return spacePath || "/";
+    }
+
     private async onMetadataChange(payload: { path: string }) {
         if (!payload.path) return;
-        if (payload.path.endsWith(".json")) {
-            const spacePathFromDef = payload.path.split("/").slice(0, -2).join("/");
+        const spacePathFromDef = this.spacePathFromDefPath(payload.path);
+        if (spacePathFromDef) {
             this.spaceManager.onPathPropertyChanged(spacePathFromDef);
             return;
         }
@@ -265,7 +283,8 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return true;
     }
     public async contextInitiated(path: string) {
-        return !!(await this.spaceDefForSpace(path));
+        const space = this.spaceInfoForPath(path);
+        return !!space?.defPath && (await this.fileSystem.fileExists(space.defPath));
     }
     public async tablesForSpace(_path: string): Promise<SpaceTableSchema[]> {
         return [];
@@ -370,6 +389,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
     onDelete = (payload: { file: AFile }) => {
         if (!payload.file) return;
+        const changedSpacePath = this.spacePathFromDefPath(payload.file.path) ?? this.spacePathFromSpaceFolderPath(payload.file.path);
+        if (changedSpacePath) {
+            this.spaceManager.onPathPropertyChanged(changedSpacePath);
+            return;
+        }
         if (!payload.file.isFolder && payload.file.extension != "mdb") {
             this.spaceManager.onPathDeleted(payload.file.path);
         } else if (payload.file.isFolder) {
@@ -444,6 +468,48 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         await this.fileSystem.saveFileFragment(defFile, "definition", null, () => metadataForStore);
     }
 
+    private spaceFolderForDefinition(space: SpaceInfo) {
+        return space.defPath.split("/").slice(0, -1).join("/");
+    }
+
+    private async deleteEmptySpaceDefinition(space: SpaceInfo) {
+        if (await this.fileSystem.fileExists(space.defPath)) {
+            await this.fileSystem.deleteFile(space.defPath);
+        }
+
+        const folder = this.spaceFolderForDefinition(space);
+        if (!folder || !(await this.fileSystem.fileExists(folder))) return;
+
+        const children = await this.fileSystem.childrenForFolder(folder);
+        if ((children ?? []).length == 0) {
+            await this.fileSystem.deleteFile(folder);
+        }
+    }
+
+    private async rankOrderIsAlphabetical(spacePath: string, rankOrder: string[]) {
+        if (rankOrder.length == 0) return true;
+        const items = this.spaceManager.superstate.getSpaceItems?.(spacePath) ?? [];
+        if (items.length != rankOrder.length) return false;
+
+        const nameByPath = new Map(items.map((item: any) => [item.path, item.name ?? item.path]));
+        if (!rankOrder.every((path) => nameByPath.has(path))) return false;
+
+        const alphabetical = [...rankOrder].sort((a, b) => String(nameByPath.get(a)).localeCompare(String(nameByPath.get(b)), undefined, { sensitivity: "base" }));
+        return JSON.stringify(rankOrder) == JSON.stringify(alphabetical);
+    }
+
+    private async spaceDefinitionHasContent(spacePath: string, metadata: SpaceDefinition) {
+        if (metadata.color || metadata.sticker || metadata.defaultColor || metadata.defaultSticker) return true;
+        if ((metadata.links ?? []).length > 0) return true;
+        if ((metadata.pinned ?? []).length > 0) return true;
+        if (Object.values(metadata["file-colors"] ?? {}).some((color) => !!color)) return true;
+        if (metadata.sort && Object.keys(metadata.sort).length > 0) return true;
+
+        const rankOrder = metadata["rank-order"] ?? [];
+        if (rankOrder.length == 0) return false;
+        return !(await this.rankOrderIsAlphabetical(spacePath, rankOrder));
+    }
+
     public async spaceDefForSpace(path: string) {
         const space = this.spaceInfoForPath(path);
         if (!space) return null;
@@ -451,7 +517,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         const metaCache = space.defPath ? await this.fileSystem.readTextFromFile(space.defPath) : null;
         if (!metaCache) {
             const metadata = parseSpaceMetadata({}, this.spaceManager.superstate.settings);
-            await this.writeSpaceDefinition(space, metadata);
             return metadata;
         }
         const spaceDef = safelyParseJSON(metaCache) ?? {};
@@ -500,7 +565,13 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                 ...(properties ?? {}),
             }));
         }
-        await this.writeSpaceDefinition(spaceInfo, metadataForStore);
+        const storedDefinition = this.spaceDefinitionForStore(metadataForStore);
+        const hasProperties = !!properties || Object.keys(rawDefinition.property ?? {}).length > 0;
+        if (hasProperties || (await this.spaceDefinitionHasContent(path, storedDefinition))) {
+            await this.writeSpaceDefinition(spaceInfo, metadataForStore);
+        } else {
+            await this.deleteEmptySpaceDefinition(spaceInfo);
+        }
         // await this.spaceManager.onPathPropertyChanged(file.path);
         // await this.spaceManager.onSpaceCreated(path);
         return;

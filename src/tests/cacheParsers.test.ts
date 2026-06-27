@@ -165,4 +165,38 @@ describe("parseMetadata", () => {
 
         expect(cache.label.sticker).toBe("emoji//1f4c1");
     });
+
+    it("does not copy space definition into folder path metadata", () => {
+        const { cache } = parseMetadata(
+            "Projects",
+            settings,
+            new Map(),
+            {
+                metadata: {},
+                definition: {
+                    sticker: "emoji//1f4c1",
+                    defaultColor: "#00aaee",
+                },
+                ctime: 0,
+                name: "Projects",
+                label: {
+                    sticker: "emoji//1f4c1",
+                    color: "",
+                },
+                contentTypes: [],
+                tags: [],
+                type: "space",
+                subtype: "folder",
+                parent: "",
+                readOnly: false,
+            } as any,
+            "Projects",
+            "space",
+            "folder",
+            "",
+            null,
+        );
+
+        expect(cache.metadata.definition).toBeUndefined();
+    });
 });

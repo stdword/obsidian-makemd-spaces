@@ -51,7 +51,7 @@ export abstract class ISuperstate {
     onTagRenamed: (tag: string, newTag: string) => Promise<void>;
     onTagDeleted: (tag: string) => Promise<void>;
     deleteTagInPath: (tag: string, path: string) => Promise<void>;
-    onMetadataChange: (path: string) => void;
+    onMetadataChange: (path: string) => Promise<void>;
     reloadSpaceByPath: (path: string, metadata?: SpaceDefinition) => Promise<SpaceState>;
     onPathRename: (oldPath: string, newPath: string) => Promise<void>;
     onPathCreated: (path: string) => Promise<void>;

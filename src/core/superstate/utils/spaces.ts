@@ -152,10 +152,13 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: Cache
 };
 
 export const updatePathRankInSpace = async (superstate: Superstate, path: string, rank: number, space: string) => {
+    if (typeof rank != "number" || !Number.isFinite(rank)) return;
+
     const spaceState = superstate.spacesIndex.get(space);
     if (!spaceState) return;
 
     if (spaceState.type == "tag" || spaceState.type == "folder" || spaceState.type == "vault") {
+        if (effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings).field != "rank") return;
         const currentOrder = spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path);
         const nextOrder = currentOrder.filter((itemPath) => itemPath != path);
         nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);

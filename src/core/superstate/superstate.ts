@@ -325,6 +325,7 @@ export class Superstate implements ISuperstate {
         const spaceState = this.spacesIndex.get(spacePath);
         const currentOrder = ensureArray(spaceState?.metadata?.["rank-order"]);
         if (!spaceState || !["tag", "folder", "vault"].includes(spaceState.type)) return currentOrder;
+        if (spaceState.type != "tag" && effectiveSpaceSort(spaceState.metadata?.sort, this.settings).field != "rank") return currentOrder;
 
         const nextOrder = [...currentOrder.filter((path) => items.includes(path)), ...items.filter((path) => !currentOrder.includes(path))];
         if (_.isEqual(currentOrder, nextOrder)) return currentOrder;
@@ -368,9 +369,16 @@ export class Superstate implements ISuperstate {
         const allPaths = await this.persister.loadAll("path");
         const allSpaces = await this.persister.loadAll("space");
 
-        allSpaces.forEach((s) => {
+        for (const s of allSpaces) {
             const space = safelyParseJSON(s.cache);
             if (space && space.type) {
+                if (space.type != "tag") {
+                    const defPath = space.space?.defPath ?? this.spaceManager.spaceInfoForPath(s.path)?.defPath;
+                    if (!defPath || !(await this.spaceManager.pathExists(defPath))) {
+                        this.persister.remove(s.path, "space");
+                        continue;
+                    }
+                }
                 const normalizedSpace = space.type == "tag" ? tagSpaceState({ ...space.space, name: space.name, path: space.path }, space.metadata) : folderSpaceStateFromStore(space);
                 this.spacesIndex.set(s.path, normalizedSpace);
                 const normalizedStore = normalizedSpace.type == "tag" ? tagSpaceStateForStore(normalizedSpace) : folderSpaceStateForStore(normalizedSpace);
@@ -378,7 +386,7 @@ export class Superstate implements ISuperstate {
                     this.persister.store(s.path, JSON.stringify(normalizedStore), "space", normalizedSpace.type == "tag" ? "" : undefined);
                 }
             }
-        });
+        }
 
         allPaths.forEach((f) => {
             if (isTagSpacePath(f.path)) {
@@ -526,18 +534,17 @@ export class Superstate implements ISuperstate {
         this.dispatchEvent("pathStateUpdated", { path });
     }
 
-    public onMetadataChange(path: string) {
+    public async onMetadataChange(path: string) {
         if (!this.pathsIndex.has(path)) {
             return;
         }
-        this.reloadPath(path).then(() => {
-            const pathState = this.pathsIndex.get(path);
-            const spaceState = this.spacesIndex.get(path);
-            if (spaceState) {
-                this.reloadSpace(spaceState.space).then((f) => this.onSpaceDefinitionChanged(f, spaceState.metadata));
-            }
-            this.dispatchEvent("pathStateUpdated", { path: path });
-        });
+        await this.reloadPath(path);
+        const spaceState = this.spacesIndex.get(path);
+        if (spaceState) {
+            const nextSpaceState = await this.reloadSpace(spaceState.space);
+            await this.onSpaceDefinitionChanged(nextSpaceState, spaceState.metadata);
+        }
+        this.dispatchEvent("pathStateUpdated", { path: path });
     }
 
     public reloadSpaceByPath(path: string, metadata?: SpaceDefinition) {

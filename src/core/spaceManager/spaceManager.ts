@@ -66,7 +66,7 @@ export class SpaceManager implements SpaceManagerInterface {
     };
 
     public onPathPropertyChanged = async (path: string) => {
-        this.superstate.onMetadataChange(path);
+        await this.superstate.onMetadataChange(path);
     };
 
     public resolvePath(path: string, source?: string) {
@@ -220,8 +220,10 @@ export class SpaceManager implements SpaceManagerInterface {
         if (pathCache && pathCache.type == "space") {
             const defPath = this.spaceInfoForPath(path).defPath;
 
-            pathCache.label = { ...pathCache.label, ...(await this.readLabel(defPath)) };
-            pathCache.property = await this.readProperties(defPath);
+            if (defPath && (await this.pathExists(defPath))) {
+                pathCache.label = { ...pathCache.label, ...(await this.readLabel(defPath)) };
+                pathCache.property = await this.readProperties(defPath);
+            }
         }
         return pathCache;
     }

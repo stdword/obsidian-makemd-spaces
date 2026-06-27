@@ -437,6 +437,164 @@ describe("Superstate tag initialization", () => {
             ["Other.md", 0],
         ]);
     });
+
+    it("refreshes folder display metadata after def.json is removed", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const events: any[] = [];
+        superstate.dispatchEvent = jest.fn((event: string, payload: any) => {
+            const eventPath = payload?.path ?? "Projects";
+            events.push({
+                event,
+                payload,
+                metadata: superstate.spacesIndex.get("Projects")?.metadata,
+                effectiveLabel: superstate.pathsIndex.get(eventPath)?.effectiveLabel,
+                sortable: superstate.spacesIndex.get("Projects")?.sortable,
+            });
+        });
+        spaceManager.uriByString = jest.fn(() => ({ path: "Projects" }));
+        spaceManager.spaceTypeByString = jest.fn(() => "folder");
+        spaceManager.spaceDefForSpace = jest.fn(() =>
+            Promise.resolve({
+                color: "",
+                sticker: "",
+                defaultColor: "",
+                defaultSticker: "",
+                sort: undefined,
+                "rank-order": [],
+                links: [],
+                pinned: [],
+                "file-colors": {},
+            }),
+        );
+        spaceManager.readPathCache = jest.fn((path: string) =>
+            Promise.resolve({
+                metadata: {},
+                label: { sticker: "", color: "" },
+                parent: "",
+                tags: [],
+                path,
+            }),
+        );
+        (superstate as any).indexer.reload = jest.fn((job: any) => {
+            const cache =
+                job.path == "Projects/Note.md"
+                    ? {
+                          path: "Projects/Note.md",
+                          name: "Note",
+                          type: "file",
+                          subtype: "md",
+                          tags: [] as string[],
+                          spaces: ["Projects"],
+                          outlinks: [] as string[],
+                          hidden: false,
+                          parent: "Projects",
+                          label: { sticker: "", color: "" },
+                          metadata: { file: { extension: "md" } },
+                      }
+                    : {
+                          path: "Projects",
+                          name: "Projects",
+                          type: "space",
+                          subtype: "folder",
+                          tags: [] as string[],
+                          spaces: [] as string[],
+                          outlinks: [] as string[],
+                          hidden: false,
+                          parent: "",
+                          label: { sticker: "", color: "" },
+                          metadata: {},
+                      };
+            return Promise.resolve({ cache, changed: true });
+        });
+        superstate.spacesIndex.set("Projects", {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                sticker: "ui//folder",
+                color: "#ffaa00",
+                sort: { field: "rank", asc: true },
+                links: [],
+            },
+            sortable: true,
+            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/def.json", notePath: "", folderPath: "Projects" },
+        } as any);
+        superstate.pathsIndex.set("Projects", {
+            path: "Projects",
+            name: "Projects",
+            type: "space",
+            subtype: "folder",
+            tags: [],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            parent: "",
+            label: { sticker: "", color: "" },
+            effectiveLabel: { sticker: "ui//folder", color: "#ffaa00" },
+            metadata: {},
+        } as any);
+        superstate.pathsIndex.set("Projects/Note.md", {
+            path: "Projects/Note.md",
+            name: "Note",
+            type: "file",
+            subtype: "md",
+            tags: [],
+            spaces: ["Projects"],
+            outlinks: [],
+            hidden: false,
+            parent: "Projects",
+            label: { sticker: "", color: "" },
+            effectiveLabel: { sticker: "ui//file-text", color: "#ffaa00" },
+            metadata: { file: { extension: "md" } },
+        } as any);
+        superstate.spacesMap.set("Projects/Note.md", new Set(["Projects"]));
+
+        await superstate.onMetadataChange("Projects");
+
+        expect(superstate.spacesIndex.get("Projects").metadata).toEqual({
+            color: "",
+            sticker: "",
+            defaultColor: "",
+            defaultSticker: "",
+            sort: undefined,
+            "rank-order": [],
+            links: [],
+            pinned: [],
+            "file-colors": {},
+        });
+        expect(superstate.pathsIndex.get("Projects").effectiveLabel).toEqual({
+            sticker: "ui//folder",
+            color: "",
+        });
+        expect(superstate.pathsIndex.get("Projects/Note.md").effectiveLabel).toEqual({
+            sticker: "ui//file-text",
+            color: "",
+        });
+        expect(superstate.spacesIndex.get("Projects").sortable).toBe(false);
+        superstate.getSpaceItems("Projects");
+        expect(superstate.spacesIndex.get("Projects").metadata["rank-order"]).toEqual([]);
+        expect(events).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    event: "pathStateUpdated",
+                    payload: { path: "Projects/Note.md" },
+                    effectiveLabel: { sticker: "ui//file-text", color: "" },
+                }),
+                expect.objectContaining({
+                    event: "pathStateUpdated",
+                    payload: { path: "Projects" },
+                    effectiveLabel: { sticker: "ui//folder", color: "" },
+                    sortable: false,
+                }),
+                expect.objectContaining({
+                    event: "spaceStateUpdated",
+                    payload: { path: "Projects" },
+                    metadata: expect.objectContaining({ sticker: "", color: "", sort: undefined }),
+                    sortable: false,
+                }),
+            ]),
+        );
+    });
 });
 
 describe("Superstate SVG handling", () => {
