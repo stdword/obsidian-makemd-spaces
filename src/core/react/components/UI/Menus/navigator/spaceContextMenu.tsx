@@ -100,8 +100,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 });
             });
 
+            sortOptions.push(menuSeparator);
             if (!isTagSpace) {
-                sortOptions.push(menuSeparator);
                 sortOptions.push({
                     name: i18n.menu.recursiveSort,
                     icon: "lucide//folder-tree",
@@ -109,15 +109,14 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     type: SelectOptionType.Radio,
                     onClick: () => saveSort({ recursive: !sort.recursive }),
                 });
-
-                sortOptions.push({
-                    name: i18n.menu.clearSort,
-                    icon: "lucide//filter-x",
-                    // value: sort.recursive == true,
-                    type: SelectOptionType.Radio,
-                    onClick: () => saveSort(null),
-                });
             }
+
+            sortOptions.push({
+                name: i18n.menu.clearSort,
+                icon: "lucide//filter-x",
+                type: SelectOptionType.Radio,
+                onClick: () => saveSort(null),
+            });
 
             return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, sortOptions), win, "right", onHide);
         },

@@ -14,11 +14,12 @@ export const defaultStickerForPathState = (pathState: PathState) => (isTagPathSt
 
 export const canEditPathSticker = (pathState: PathState, editable?: boolean) => Boolean(editable && pathState?.type == "space" && !isTagPathState(pathState));
 
-export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean; color?: string; onIconClick?: (e: React.MouseEvent) => void }) => {
+export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean; color?: string; ariaLabel?: string; onIconClick?: (e: React.MouseEvent) => void }) => {
     const { pathState } = props;
     const effectiveLabel = pathState?.effectiveLabel ?? pathState?.label;
     const sticker = effectiveLabel?.sticker || defaultStickerForPathState(pathState);
     const color = props.color ?? effectiveLabel?.color;
+    const ariaLabel = props.ariaLabel ?? pathState.name;
 
     const triggerStickerMenu = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -34,7 +35,7 @@ export const PathStickerView = (props: { superstate: Superstate; pathState: Path
         <div className={`mk-path-icon ${sticker ? "" : "mk-path-icon-placeholder"}`}>
             {pathState?.type == "space" ? (
                 <button
-                    aria-label={pathState.name}
+                    aria-label={ariaLabel}
                     style={
                         color?.length > 0
                             ? ({
@@ -52,7 +53,7 @@ export const PathStickerView = (props: { superstate: Superstate; pathState: Path
                 ></button>
             ) : (
                 <div className=""
-                    aria-label={pathState.name}
+                    aria-label={ariaLabel}
                     dangerouslySetInnerHTML={{
                         __html: props.superstate.ui.getSticker(sticker),
                     }}

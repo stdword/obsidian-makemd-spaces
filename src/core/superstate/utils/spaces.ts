@@ -35,6 +35,11 @@ export const effectiveSpaceSort = (value: Partial<SpaceSort>, settings: MakeMDSe
     };
 };
 
+export const childSpaceSort = (value: Partial<SpaceSort>, parentSort: Partial<SpaceSort>, settings: MakeMDSettings): SpaceSort => {
+    const effectiveParentSort = effectiveSpaceSort(parentSort, settings);
+    return effectiveParentSort.recursive ? effectiveParentSort : effectiveSpaceSort(value, settings);
+};
+
 export const storedSpaceSort = (value: any): Partial<SpaceSort> | undefined => {
     if (!value || typeof value != "object") return undefined;
     const sort: Partial<SpaceSort> = {};
@@ -43,6 +48,14 @@ export const storedSpaceSort = (value: any): Partial<SpaceSort> | undefined => {
     if (hasOwn(value, "group")) sort.group = ensureBoolean(value.group);
     if (hasOwn(value, "recursive")) sort.recursive = ensureBoolean(value.recursive);
     return Object.keys(sort).length > 0 ? sort : undefined;
+};
+
+const mergedStoredSpaceSort = (current: Partial<SpaceSort>, update: Partial<SpaceSort>): Partial<SpaceSort> | undefined => {
+    const next = {
+        ...(current ?? {}),
+        ...(update ?? {}),
+    };
+    return storedSpaceSort(next);
 };
 
 export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: MakeMDSettings): SpaceDefinition => {
@@ -75,8 +88,9 @@ export interface TreeNode {
     childrenCount: number;
     collapsed: boolean;
     rank: number;
+    sort?: SpaceSort;
 }
-export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sortable: boolean, depth: number, parentId: string, parentPath: string, childrenCount: number): TreeNode => {
+export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sortable: boolean, depth: number, parentId: string, parentPath: string, childrenCount: number, sort?: SpaceSort): TreeNode => {
     return {
         id: parentId ? parentId + "/" + path.path : path.path,
         parentId,
@@ -90,6 +104,7 @@ export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sor
         sortable: sortable,
         childrenCount: childrenCount,
         type: "space",
+        sort,
     };
 };
 export const pathStateToTreeNode = (_superstate: Superstate, item: PathStateWithRank, space: string, path: string, depth: number, i: number, collapsed: boolean, sortable: boolean, childrenCount: number, parentId: string): TreeNode => ({
@@ -119,9 +134,27 @@ export const defaultSpaceSort = {
     recursive: false,
 };
 
+export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
+    const fieldLabel = sort.field == "name" ? "AZ" : sort.field == "ctime" ? "+" : sort.field == "mtime" ? "~" : sort.field == "rank" ? "#" : sort.field;
+    const directionLabel = sort.field == "name" ? (sort.asc ? "↓" : "↑") : sort.asc ? "↓" : "↑";
+    return `${!tagSpace && sort.group ? ":" : ""}${fieldLabel}${directionLabel}${!tagSpace && sort.recursive ? "*" : ""}`;
+};
+
 export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: CacheState) => {
     if (sortStrategy.field == "rank") {
-        return a.rank - b.rank;
+        const aRanked = typeof a.rank == "number" && a.rank >= 0;
+        const bRanked = typeof b.rank == "number" && b.rank >= 0;
+        if (aRanked && bRanked && a.rank != b.rank) {
+            return a.rank - b.rank;
+        }
+        const fallbackFns = [];
+        if (sortStrategy.group) {
+            fallbackFns.push(compareByField("type", false));
+        }
+        fallbackFns.push(compareByFieldCaseInsensitive("name", true));
+        return fallbackFns.reduce((p, c) => {
+            return p == 0 ? c(a, b) : p;
+        }, 0);
     }
     const sortFns = [];
     if (sortStrategy.group) {
@@ -340,26 +373,26 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
         return;
     }
 
-    const currentSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
-    const nextSort = effectiveSpaceSort({ ...currentSort, ...sort }, superstate.settings);
-    if (JSON.stringify(currentSort) == JSON.stringify(nextSort))
+    const currentStoredSort = storedSpaceSort(space.metadata?.sort);
+    const nextStoredSort = mergedStoredSpaceSort(currentStoredSort, sort);
+    if (JSON.stringify(currentStoredSort) == JSON.stringify(nextStoredSort))
         return;
 
     if (space.type == "tag") {
         await superstate.updateSpaceMetadata(path, {
             ...space.metadata,
-            sort: sort as SpaceSort,
+            sort: nextStoredSort,
         });
         return;
     }
 
-    superstate.spaceManager.saveSpace(path, (metadata) => ({
+    await superstate.spaceManager.saveSpace(path, (metadata) => ({
         ...metadata,
-        sort: sort ? sort as SpaceSort : undefined,
+        sort: nextStoredSort,
     }));
     await superstate.updateSpaceMetadata(path, {
         ...space.metadata,
-        sort: sort as SpaceSort,
+        sort: nextStoredSort,
     });
 };
 

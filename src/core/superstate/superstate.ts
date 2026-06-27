@@ -326,6 +326,7 @@ export class Superstate implements ISuperstate {
         const currentOrder = ensureArray(spaceState?.metadata?.["rank-order"]);
         if (!spaceState || !["tag", "folder", "vault"].includes(spaceState.type)) return currentOrder;
         if (spaceState.type != "tag" && effectiveSpaceSort(spaceState.metadata?.sort, this.settings).field != "rank") return currentOrder;
+        if (spaceState.type != "tag" && currentOrder.length == 0) return currentOrder;
 
         const nextOrder = [...currentOrder.filter((path) => items.includes(path)), ...items.filter((path) => !currentOrder.includes(path))];
         if (_.isEqual(currentOrder, nextOrder)) return currentOrder;

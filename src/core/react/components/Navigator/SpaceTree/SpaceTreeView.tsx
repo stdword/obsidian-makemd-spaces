@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, effectiveSpaceSort, pathStateToTreeNode, spaceRowHeight, spaceSortFn, spaceToTreeNode } from "core/superstate/utils/spaces";
+import { TreeNode, childSpaceSort, effectiveSpaceSort, pathStateToTreeNode, spaceRowHeight, spaceSortFn, spaceToTreeNode } from "core/superstate/utils/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
 import { DragProjection, getDragDepth, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
@@ -30,8 +30,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     // This fixes the issue where folders with folder notes couldn't be expanded
     const spaceCollapsed = !expandedSpaces.includes(id);
     const parentSort = effectiveSpaceSort(sort, superstate.settings);
-    const hasOwnSort = Object.keys(space.metadata?.sort ?? {}).length > 0;
-    const spaceSort = hasOwnSort && !parentSort.recursive ? effectiveSpaceSort(space.metadata?.sort, superstate.settings) : parentSort;
+    const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
     let children = superstate.getSpaceItems(space.path) ?? [];
     children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (!spaceCollapsed || root) {
@@ -46,7 +45,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
             }
         });
     }
-    if (!root) tree.splice(0, 0, spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length));
+    if (!root) tree.splice(0, 0, spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length, spaceSort));
     return tree;
 };
 
@@ -71,6 +70,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
             sortable: space.sortable,
             childrenCount: children.length,
             type: "group",
+            sort: spaceSort,
         });
 
     if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {

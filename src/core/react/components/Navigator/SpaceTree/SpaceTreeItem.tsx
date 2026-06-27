@@ -5,7 +5,7 @@ import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { savePathColor } from "core/superstate/utils/label";
-import { TreeNode } from "core/superstate/utils/spaces";
+import { TreeNode, spaceSortLabel } from "core/superstate/utils/spaces";
 import { Superstate } from "makemd-core";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
@@ -199,6 +199,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const extension = pathState?.metadata?.file?.extension;
     const showFileTag = shouldShowFileTag(isSpace, extension);
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
+    const stickerLabel = data.sort && pathState?.type == "space" ? `${pathState.name}\n${spaceSortLabel(data.sort, isTagSpace)}` : pathState?.name;
     const openTagColorPicker = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         showColorPickerMenu(superstate, rect, windowFromDocument(e.view.document), color ?? "", (value) => savePathColor(superstate, pathState.path, value), false, false, false, "right");
@@ -258,7 +259,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 }}
                             ></CollapseToggle>
                         )}
-                        {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} color={color} onIconClick={isTagSpace ? openTagColorPicker : undefined} />}
+                        {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} color={color} ariaLabel={stickerLabel} onIconClick={isTagSpace ? openTagColorPicker : undefined} />}
                         <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{pathState?.name ?? data.path}</div>
 
                         {data.type == "group" && data.childrenCount > 0 && (

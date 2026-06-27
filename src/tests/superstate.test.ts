@@ -10,6 +10,7 @@ jest.mock("core/superstate/workers/indexer/indexer", () => ({
 
 import { Superstate } from "core/superstate/superstate";
 import { savePathColor } from "core/superstate/utils/label";
+import { spaceSortFn } from "core/superstate/utils/spaces";
 import { addTag, syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
 import { tagSpacePathFromTag } from "core/utils/strings";
 
@@ -436,6 +437,46 @@ describe("Superstate tag initialization", () => {
             ["Tagged.md", 1],
             ["Other.md", 0],
         ]);
+    });
+
+    it("leaves empty folder rank-order unset so manual sort falls back to name ascending", () => {
+        const { superstate } = createSuperstate();
+        superstate.spacesIndex.set("Projects", {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                sort: { field: "rank", asc: true },
+                "rank-order": [],
+                pinned: [],
+            },
+            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+        } as any);
+        [
+            ["Projects/2 Resources", "2 Resources"],
+            ["Projects/0 Notes", "0 Notes"],
+            ["Projects/1 Collections", "1 Collections"],
+        ].forEach(([path, name]) => {
+            superstate.pathsIndex.set(path, {
+                path,
+                name,
+                type: "space",
+                subtype: "folder",
+                tags: [],
+                spaces: ["Projects"],
+                outlinks: [],
+                hidden: false,
+                label: { sticker: "", color: "" },
+            });
+            superstate.spacesMap.set(path, new Set(["Projects"]));
+        });
+        superstate.persister.store.mockClear();
+
+        const items = superstate.getSpaceItems("Projects");
+
+        expect(superstate.spacesIndex.get("Projects").metadata["rank-order"]).toEqual([]);
+        expect(superstate.persister.store).not.toHaveBeenCalled();
+        expect([...items].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((item: any) => item.name)).toEqual(["0 Notes", "1 Collections", "2 Resources"]);
     });
 
     it("refreshes folder display metadata after def.json is removed", async () => {
