@@ -1,4 +1,4 @@
-import { pathInSpaceFolder } from "core/utils/spaces/space";
+import { pathInSpaceFolder } from "core/utils/superstate/space";
 import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { tagToTagPath } from "utils/tags";
 

@@ -7,7 +7,7 @@ import i18n from "shared/i18n";
 import { PathState, SpaceState } from "shared/types/PathState";
 
 import { arrayMove } from "@dnd-kit/sortable";
-import { movePathToNewSpaceAtIndex, pinPathToSpaceAtIndex, removePathsFromSpace, updatePathRankInSpace } from "core/superstate/utils/spaces";
+import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, removePathsFromSpace, updatePathRankInSpace } from "core/superstate/utils/spaces";
 import { addTagToPath } from "core/superstate/utils/tags";
 import { DragProjection } from "./dragPath";
 
@@ -86,7 +86,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
 
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
         if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
-            await pinPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
+            await linkPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
         } else {
             await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
         }
@@ -105,7 +105,7 @@ export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: str
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
         await Promise.all(paths.map((path) => {
             if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
-                return pinPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
+                return linkPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
             } else {
                 return movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
             }

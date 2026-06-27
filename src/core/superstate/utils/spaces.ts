@@ -3,16 +3,13 @@ import { ensureArray, ensureBoolean, ensureString } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
-import { SpaceProperty } from "shared/types/mdb";
 import { TargetLocation } from "shared/types/path";
 import { CacheState, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { PathStateWithRank } from "shared/types/superstate";
-import { sanitizeColumnName } from "shared/utils/sanitizers";
 import { movePath } from "shared/utils/uri";
-import { defaultValueForType } from "utils/properties";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
 
@@ -220,24 +217,6 @@ export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: Pa
     updatePathRankInSpace(superstate, newPath, index, newParent);
 };
 
-export const insertContextInSpace = (superstate: Superstate, path: string, newTag: string) => {
-    const spaceCache = superstate.spacesIndex.get(path);
-    const contexts = [...spaceCache.metadata.contexts.filter((f) => f != newTag), newTag];
-    saveSpaceMetadataValue(superstate, path, "contexts", contexts);
-};
-
-export const removeContextInSpace = (superstate: Superstate, path: string, oldTag: string) => {
-    const spaceCache = superstate.spacesIndex.get(path);
-    const contexts = spaceCache.metadata.contexts.filter((f) => f != oldTag);
-    saveSpaceMetadataValue(superstate, path, "contexts", contexts);
-};
-
-export const renameContextInSpace = (superstate: Superstate, path: string, oldTag: string, newTag: string) => {
-    const spaceCache = superstate.spacesIndex.get(path);
-    const contexts = spaceCache.metadata.contexts.map((f) => (f == oldTag ? newTag : f));
-    saveSpaceMetadataValue(superstate, path, "contexts", contexts);
-};
-
 export const createSpace = async (superstate: Superstate, path: string, newSpace?: SpaceDefinition) => {
     const space = superstate.spacesIndex.get(path);
 
@@ -294,7 +273,7 @@ export const addPathToSpaceAtIndex = async (superstate: Superstate, space: Space
     if (space.type == "tag") {
         return addTagToPath(superstate, path, space.name);
     } else {
-        return pinPathToSpaceAtIndex(superstate, space, path, rank);
+        return linkPathToSpaceAtIndex(superstate, space, path, rank);
     }
 };
 
@@ -302,7 +281,7 @@ export const addPathsToSpaceAtIndex = async (superstate: Superstate, space: Spac
     if (space.type == "tag") {
         return addTagToPath(superstate, path, space.name);
     } else {
-        return pinPathToSpaceAtIndex(superstate, space, path, rank);
+        return linkPathToSpaceAtIndex(superstate, space, path, rank);
     }
 };
 
@@ -321,7 +300,7 @@ export const defaultSpace = async (superstate: Superstate, activeFile: PathState
     return spaceState;
 };
 
-export const pinPathToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
+export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
     if (path == space.path) {
         // superstate.ui.notify('Pinning space to itself not currently allowed')
         return;
@@ -434,38 +413,10 @@ export const saveLabel = (superstate: Superstate, path: string, label: string, v
     superstate.spaceManager.saveLabel(path, label, value);
 };
 
-export const saveNewProperty = async (superstate: Superstate, path: string, property: SpaceProperty) => {
-    if (superstate.spacesIndex.has(path)) {
-        if (sanitizeColumnName(property.name) == "") {
-            superstate.ui.notify(i18n.notice.noPropertyName);
-            return false;
-        }
-        return superstate.spaceManager.saveProperties(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), { [property.name]: defaultValueForType(property.type) });
-    } else {
-        superstate.spaceManager.saveProperties(path, { [property.name]: defaultValueForType(property.type) });
-    }
-};
-
 export const saveProperties = (superstate: Superstate, path: string, properties: Record<string, any>) => {
     if (superstate.spacesIndex.has(path)) {
         return saveSpaceProperties(superstate, path, properties);
     } else {
         return superstate.spaceManager.saveProperties(path, properties);
     }
-};
-
-export const renameProperty = (superstate: Superstate, path: string, oldName: string, newName: string) => {
-    if (superstate.spacesIndex.has(path)) {
-        superstate.spaceManager.renameProperty(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), oldName, newName);
-        return;
-    }
-    superstate.spaceManager.renameProperty(path, oldName, newName);
-};
-
-export const deleteProperty = (superstate: Superstate, path: string, name: string) => {
-    if (superstate.spacesIndex.has(path)) {
-        superstate.spaceManager.deleteProperty(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), name);
-        return;
-    }
-    superstate.spaceManager.deleteProperty(path, name);
 };

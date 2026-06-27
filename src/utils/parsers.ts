@@ -1,6 +1,5 @@
 import { ensureArray, ensureString, indexOfCharElseEOS } from "core/utils/strings";
 import { format } from "date-fns";
-import { ContextLookup, PathPropertyName } from "shared/types/context";
 import { safelyParseJSON } from "../shared/utils/json";
 import { detectPropertyType } from "./properties";
 import { serializeMultiDisplayString, serializeMultiString } from "./serializers";
@@ -61,7 +60,6 @@ export const parseProperty = (field: string, value: any, type?: string): string 
             break;
         case "option-multi":
         case "link-multi":
-        case "context-multi":
             if (typeof value === "string") {
                 return parseLinkString(value);
             }
@@ -84,7 +82,6 @@ export const parseProperty = (field: string, value: any, type?: string): string 
             );
             break;
         case "link":
-        case "context":
             {
                 if (Array.isArray(value) && value.length == 1 && Array.isArray(value[0]) && value[0].length == 1 && typeof value[0][0] === "string") {
                     return value[0][0];
@@ -104,19 +101,6 @@ export const parseProperty = (field: string, value: any, type?: string): string 
     return "";
 };
 
-export const parseObject = (value: string, multi: boolean) => {
-    return multi ? ensureArray(safelyParseJSON(value)) : (safelyParseJSON(value) ?? {});
-};
-
-export const parsePropString = (str: string): ContextLookup => {
-    const [p1, p2] = str?.match(/(\\.|[^.])+/g) ?? [];
-    if (p2)
-        return {
-            field: p1,
-            property: p2,
-        };
-    return { field: PathPropertyName, property: p1 };
-};
 export const parseLinkString = (string: string) => {
     if (!string) return "";
     const match = /\[\[(.*?)\]\]/g.exec(string);

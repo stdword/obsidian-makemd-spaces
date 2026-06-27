@@ -1,7 +1,4 @@
 import { parseFlexValue } from "core/schemas/parseFieldValue";
-import { format } from "date-fns";
-import { fieldTypeForField } from "schemas/mdb";
-import { SpaceProperty } from "shared/types/mdb";
 import { parseMultiString } from "utils/parsers";
 import { uniq } from "../shared/utils/array";
 
@@ -63,51 +60,6 @@ export const detectPropertyType = (value: any, key: string): string => {
     return "text";
 };
 
-export const defaultValueForType = (type: string) => {
-    if (type == "date") {
-        return format(Date.now(), "yyyy-MM-dd");
-    }
-    if (type == "number") {
-        return 0;
-    }
-    if (type == "boolean") {
-        return true;
-    }
-    if (type == "link") {
-        return "[[Select Note]]";
-    }
-    if (type == "option") {
-        return "one, two";
-    }
-    if (type == "text") {
-        return " ";
-    }
-    if (type == "image") {
-        return "https://images.unsplash.com/photo-1675789652575-0a5d2425b6c2?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2070&q=80";
-    }
-};
-
-export const parseParameters = (fieldValues: Record<string, string>, fields: SpaceProperty[]): Record<string, any> => {
-    return Object.keys(fieldValues)
-        .filter((f) => f != "$api")
-        .reduce((f, g) => {
-            const col = fields.find((c) => c.name == g);
-            return { ...f, [g]: parseMDBStringValue(fieldTypeForField(col), fieldValues[g], false) };
-        }, {});
-};
-
-export const parsePropertyValue = (value: any, type: string): any => {
-    if (!type) return value;
-    if (type == "number") {
-        return parseFloat(value);
-    } else if (type == "boolean") {
-        return value == "true";
-    } else if (type.includes("-multi")) {
-        return parseMultiString(value).map((f) => parseMDBStringValue(type.replace("-multi", ""), f, false));
-    }
-    return value;
-};
-
 export const parseMDBStringValue = (type: string, value: string, frontmatter?: boolean): any => {
     if (!type) {
         return value;
@@ -133,23 +85,8 @@ export const parseMDBStringValue = (type: string, value: string, frontmatter?: b
         return !isNaN(date.getTime()) ? date : value;
     } else if (type.includes("-multi")) {
         return parseMultiString(value).map((f) => parseMDBStringValue(type.replace("-multi", ""), f, frontmatter));
-    } else if (type.includes("link") || type.includes("context")) {
+    } else if (type.includes("link")) {
         return frontmatter ? `[[${value}]]` : value;
     }
     return value;
-};
-export const yamlTypeToMDBType = (YAMLtype: string) => {
-    switch (YAMLtype) {
-        case "duration":
-            return "text";
-            break;
-        case "unknown":
-            return "text";
-            break;
-    }
-    return YAMLtype;
-};
-export const propertyIsObjectType = (property: SpaceProperty) => {
-    if (property.type == "object" || property.type == "object-multi" || property.type == "super") return true;
-    return false;
 };

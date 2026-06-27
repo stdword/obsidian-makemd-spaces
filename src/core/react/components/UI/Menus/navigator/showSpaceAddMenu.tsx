@@ -1,4 +1,4 @@
-import { createSpace, defaultSpace, newPathInSpace, pinPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/superstate/utils/spaces";
+import { createSpace, defaultSpace, newPathInSpace, linkPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
 import { isString } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";

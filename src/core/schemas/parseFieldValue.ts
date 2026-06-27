@@ -24,9 +24,7 @@ export const parseFieldValue = (value: string, type: string): Record<string, any
     }
     if (!type) return {};
     if (!valueProp) {
-        if (type == "context") {
-            valueProp = {};
-        } else if (type.startsWith("date")) {
+        if (type.startsWith("date")) {
             if (value?.length > 0) {
                 valueProp = {
                     format: value,

@@ -1,13 +1,12 @@
 import { LocalCachePersister } from "shared/types/persister";
 
-import { Metadata } from "shared/types/metadata";
 import { MakeMDSettings } from "shared/types/settings";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { IAPI } from "./api";
 import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
 import { PathState, SpaceState, SuperstateEvent } from "./PathState";
-import { FilterGroupDef, SpaceDefinition } from "./spaceDef";
+import { SpaceDefinition } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 import { SpaceManagerInterface } from "./spaceManager";
 import { IUIManager } from "./uiManager";
@@ -26,16 +25,13 @@ export abstract class ISuperstate {
     pathsIndex: Map<string, PathState>;
     spacesIndex: Map<string, SpaceState>;
     imagesCache: Map<string, string>;
-    spacesDBLoaded: boolean;
     spacesMap: IndexMap;
     linksMap: IndexMap;
     tagsMap: IndexMap;
     liveSpaceLinkMap: IndexMap;
-    allMetadata: Record<string, { name: string; properties: Metadata[] }>;
     focuses: Focus[];
     persister: LocalCachePersister;
 
-    refreshMetadata: () => void;
     initializeIndex: () => Promise<void>;
     initialize: () => Promise<void>;
     initializePaths: () => Promise<void>;
@@ -62,7 +58,6 @@ export abstract class ISuperstate {
     reloadSpace: (space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized?: boolean) => Promise<SpaceState>;
     reloadPath: (path: string, force?: boolean) => Promise<boolean>;
     onPathReloaded: (path: string) => Promise<boolean>;
-    search: (path: string, query?: string, queries?: FilterGroupDef[]) => Promise<PathStateWithRank[]>;
 }
 
 export type PathStateWithRank = PathState & { rank?: number };

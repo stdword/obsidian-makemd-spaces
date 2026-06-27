@@ -5,33 +5,29 @@ import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { effectiveSpaceSort, saveSpaceCache } from "core/superstate/utils/spaces";
 import { builtinSpaces } from "core/types/space";
-import { pathIsSpace } from "core/utils/spaces/space";
+import { pathIsSpace } from "core/utils/superstate/space";
 import { tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
-import _, { debounce } from "lodash";
+import _ from "lodash";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
 import { MakeMDSettings } from "shared/types/settings";
-import { FilterGroupDef, SpaceDefinition, SpaceType } from "shared/types/spaceDef";
+import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { safelyParseJSON } from "shared/utils/json";
 import { API } from "./api";
 
-import { allMetadata } from "core/utils/metadata";
-import { Metadata } from "shared/types/metadata";
 import { Indexer } from "./workers/indexer/indexer";
 import { PathLabel } from "shared/types/caches";
 
-import Fuse, { FuseIndex } from "fuse.js";
 import { SuperstateEvent } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
-import { fastSearch, searchPath } from "./workers/search/impl";
 import { ensureArray } from "core/utils/strings";
 
 export type SuperProperty = {
@@ -189,37 +185,15 @@ export class Superstate implements ISuperstate {
     //Persistant Cache
     public imagesCache: Map<string, string>;
 
-    public spacesDBLoaded: boolean;
-
     //Maps
     public spacesMap: IndexMap; //file to space mapping
     public linksMap: IndexMap; //link between paths
     public tagsMap: IndexMap; //file to tag mapping
     public liveSpaceLinkMap: IndexMap;
-    //Workers
-    public allMetadata: Record<
-        string,
-        {
-            name: string;
-            properties: Metadata[];
-        }
-    >;
     private indexer: Indexer;
 
     public focuses: Focus[];
-    public searchIndex: FuseIndex<PathState>;
-    public async search(_path: string, query?: string, queries?: FilterGroupDef[]) {
-        const navigatorSearchResults = (paths: PathState[]) => paths.filter((f) => !f.path.startsWith("spaces://"));
-        if (query) {
-            return navigatorSearchResults(fastSearch(query, this.pathsIndex, 10, this.searchIndex));
-        }
-        return navigatorSearchResults(searchPath({ queries: queries, pathsIndex: this.pathsIndex, count: 10 }));
-    }
-    public reindexSearch() {
-        this.indexer.reload<Record<string, unknown>>({ type: "index", path: "" }).then((r) => {
-            this.searchIndex = Fuse.parseIndex(r as any);
-        });
-    }
+
     private constructor(
         public indexVersion: string,
         public onChange: () => void,
@@ -234,7 +208,6 @@ export class Superstate implements ISuperstate {
         this.ui = uiManager;
         this.ui.superstate = this;
 
-        this.allMetadata = {};
         this.api = new API(this);
         // Initialize SpaceManager's API reference
         spaceManager.api = new API(this, spaceManager);
@@ -255,18 +228,9 @@ export class Superstate implements ISuperstate {
         //Intiate Workers
         this.indexer = new Indexer(2, this);
 
-        this.eventsDispatcher.addListener("pathStateUpdated", () => {
-            debounce(() => this.reindexSearch(), 300)();
-        });
-        this.eventsDispatcher.addListener("superstateReindex", () => {
-            debounce(() => this.reindexSearch(), 300)();
-        });
         // window['make'] = this;
     }
 
-    public refreshMetadata() {
-        this.allMetadata = allMetadata(this);
-    }
     public async initializeIndex() {
         await this.loadFromCache();
     }
@@ -286,7 +250,6 @@ export class Superstate implements ISuperstate {
 
         await this.initializePaths();
 
-        this.refreshMetadata();
         this.dispatchEvent("superstateUpdated", null);
         this.ui.notify(`Make.md - Superstate Loaded in ${(Date.now() - start) / 1000} seconds`, "console");
         this.persister.cleanType("space");

@@ -1,5 +1,4 @@
 import { PathLabel } from "./caches";
-import { SpaceProperty } from "./mdb";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 
@@ -11,7 +10,6 @@ export type SuperstateEvent = {
     spaceChanged: { path: string; newPath: string };
     spaceDeleted: { path: string };
     spaceStateUpdated: { path: string };
-    contextStateUpdated: { path: string };
     settingsChanged: null;
     focusesChanged: null;
     superstateUpdated: null;
@@ -33,7 +31,6 @@ export type SpaceState = {
     sortBy?: string;
     sortable?: boolean;
 
-    propertyTypes?: SpaceProperty[];
     properties?: Record<string, any>;
 } & CacheState;
 
