@@ -1,4 +1,4 @@
-import { indexAllPaths, parseAllContexts, parseAllPaths, parseContext, parsePath } from "./impl";
+import { indexAllPaths, parseAllPaths, parsePath } from "./impl";
 const ctx: Worker = self as any;
 
 ctx.onmessage = async evt => {
@@ -6,10 +6,6 @@ ctx.onmessage = async evt => {
         let result;
         if (job.type == 'path') {
             result = parsePath(payload);
-        } else if (job.type == 'context') {
-            result = parseContext(payload)
-        } else if (job.type == 'contexts') {
-            result = parseAllContexts(payload)
         } else if (job.type == 'paths') {
             result = parseAllPaths(payload)
         } else if (job.type == 'index') {

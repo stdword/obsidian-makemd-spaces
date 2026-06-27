@@ -1,5 +1,5 @@
 import { PathLabel } from "./caches";
-import { SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "./mdb";
+import { SpaceProperty } from "./mdb";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 
@@ -36,20 +36,6 @@ export type SpaceState = {
     propertyTypes?: SpaceProperty[];
     properties?: Record<string, any>;
 } & CacheState;
-
-export type ContextState = {
-    path: string;
-    schemas: SpaceTableSchema[];
-    contextTable: SpaceTable;
-    //outlinks contained
-    outlinks: string[];
-    //contexts to notify if values change
-    contexts: string[];
-    paths: string[];
-    spaceMap: { [key: string]: { [key: string]: string[] } };
-    dbExists: boolean;
-    mdb: SpaceTables;
-};
 
 export type TagsCache = {
     tag: string;

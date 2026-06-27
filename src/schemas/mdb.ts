@@ -1,10 +1,8 @@
 import { parseFieldValue } from "core/schemas/parseFieldValue";
 import { PathPropertyName } from "shared/types/context";
-import { DBTable, DBTables, SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
-import { SpaceInfo } from "shared/types/spaceInfo";
+import { SpaceProperty } from "shared/types/mdb";
 import { safelyParseJSON } from "shared/utils/json";
 import { parsePropString } from "utils/parsers";
-import { defaultContextDBSchema, defaultContextFields, defaultTagFields } from "../shared/schemas/fields";
 
 export const fieldTypeForField = (f: SpaceProperty) => {
     if (!f) return null;
@@ -36,56 +34,4 @@ export const defaultValueForPropertyType = (_name: string, value: string, type: 
         return value;
     }
     return "";
-};
-export const defaultContextTable: DBTable = {
-    uniques: [],
-    cols: ["id", "name", "type", "def", "predicate", "primary"],
-    rows: [defaultContextDBSchema] as SpaceTableSchema[],
-};
-
-export const defaultMDBTableForContext = (_space: SpaceInfo) => {
-    return defaultFolderMDBTable;
-};
-
-export const defaultFolderMDBTable: SpaceTable = {
-    schema: defaultContextDBSchema,
-    cols: defaultContextFields.rows as SpaceProperty[],
-    rows: [],
-};
-
-export const fieldsToTable = (fields: SpaceProperty[], schemas: SpaceTableSchema[]): DBTables => {
-    return fields
-        .filter((s) => schemas.find((g) => g.id == s.schemaId && g.type == "db"))
-        .reduce<DBTables>((p, c) => {
-            return {
-                ...p,
-                ...(p[c.schemaId]
-                    ? {
-                          [c.schemaId]: {
-                              uniques: c.unique == "true" ? [...p[c.schemaId].uniques, c.name] : p[c.schemaId].uniques,
-                              cols: [...p[c.schemaId].cols, c.name],
-                              rows: [],
-                          },
-                      }
-                    : {
-                          [c.schemaId]: {
-                              uniques: c.unique == "true" ? [c.name] : [],
-                              cols: [c.name],
-                              rows: [],
-                          },
-                      }),
-            };
-        }, {});
-};
-
-export const defaultTablesForContext = (_space: SpaceInfo) => {
-    return defaultFolderTables;
-};
-
-export const defaultFolderTables = {
-    ...fieldsToTable(defaultContextFields.rows as SpaceProperty[], defaultContextTable.rows as SpaceTableSchema[]),
-};
-
-export const defaultTagTables = {
-    ...fieldsToTable(defaultTagFields.rows as SpaceProperty[], defaultContextTable.rows as SpaceTableSchema[]),
 };

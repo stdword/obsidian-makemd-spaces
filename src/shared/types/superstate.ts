@@ -6,13 +6,13 @@ import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { IAPI } from "./api";
 import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
-import { ContextState, PathState, SpaceState, SuperstateEvent } from "./PathState";
+import { PathState, SpaceState, SuperstateEvent } from "./PathState";
 import { FilterGroupDef, SpaceDefinition } from "./spaceDef";
 import { SpaceInfo } from "./spaceInfo";
 import { SpaceManagerInterface } from "./spaceManager";
 import { IUIManager } from "./uiManager";
 
-export type { ContextState, PathState, SpaceState, SuperstateEvent };
+export type { PathState, SpaceState, SuperstateEvent };
 
 export abstract class ISuperstate {
     initialized: boolean;
@@ -25,7 +25,6 @@ export abstract class ISuperstate {
     ui: IUIManager;
     pathsIndex: Map<string, PathState>;
     spacesIndex: Map<string, SpaceState>;
-    contextsIndex: Map<string, ContextState>;
     imagesCache: Map<string, string>;
     spacesDBLoaded: boolean;
     spacesMap: IndexMap;
@@ -38,7 +37,6 @@ export abstract class ISuperstate {
 
     refreshMetadata: () => void;
     initializeIndex: () => Promise<void>;
-    addToContextStateQueue: (operation: () => Promise<any>) => void;
     initialize: () => Promise<void>;
     initializePaths: () => Promise<void>;
     initializeSpaces: () => Promise<void>;
@@ -58,9 +56,6 @@ export abstract class ISuperstate {
     onPathDeleted: (path: string) => void;
     onSpaceRenamed: (oldPath: string, newSpaceInfo: SpaceInfo) => Promise<void>;
     onSpaceDeleted: (space: string) => void;
-    reloadContextByPath: (path: string, options?: { calculate?: boolean; force?: boolean }) => Promise<boolean>;
-    reloadContext: (space: SpaceInfo, options?: { calculate?: boolean; force?: boolean }) => Promise<boolean>;
-    contextReloaded: (path: string, cache: ContextState, changed: boolean, force?: boolean) => Promise<boolean>;
     allSpaces: (ordered?: boolean, hidden?: boolean) => SpaceState[];
     spaceOrder: () => string[];
     updateSpaceMetadata: (spacePath: string, metadata: SpaceDefinition) => Promise<SpaceState>;

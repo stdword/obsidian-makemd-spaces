@@ -1,18 +1,13 @@
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { parseFieldValue } from "core/schemas/parseFieldValue";
-import { addRowInTable, updateTableRow, updateValueInContext } from "core/utils/contexts/context";
 import { SelectOption, SpaceManager } from "makemd-core";
 import { SpaceManagerInterface } from "shared/types/spaceManager";
 import { PathState } from "shared/types/superstate";
-import { SpaceTable } from "shared/types/mdb";
 import { stickerForField } from "schemas/mdb";
-import { defaultContextSchemaID } from "shared/schemas/fields";
 import { IAPI } from "shared/types/api";
-import { PathPropertyName } from "shared/types/context";
-import { DBRow, SpaceProperty, SpaceTableSchema } from "shared/types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { TargetLocation } from "shared/types/path";
 import { windowFromDocument } from "shared/utils/dom";
-import { sanitizeTableName } from "shared/utils/sanitizers";
 import { parseMDBStringValue } from "utils/properties";
 import { ISuperstate } from "shared/types/superstate";
 import { newPathInSpace, saveProperties } from "./utils/spaces";
@@ -21,8 +16,6 @@ import { newPathInSpace, saveProperties } from "./utils/spaces";
 export interface APISpaceManager {
     getPathState(path: string): PathState | null;
     resolvePath(path: string, source?: string): string;
-    readTable(path: string, table: string): Promise<SpaceTable | null>;
-    createTable(path: string, schema: SpaceTableSchema): void;
 }
 
 export class API implements IAPI {
@@ -80,99 +73,6 @@ export class API implements IAPI {
         },
         contextMenu: (e: React.MouseEvent, path: string) => {
             showPathContextMenu(this.superstate, path, null, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document));
-        },
-    };
-    public table = {
-        select: (path: string, table: string) => {
-            return this.spaceManager.readTable(path, table)?.then((f) => f?.rows);
-        },
-        update: (path: string, table: string, index: number, row: DBRow) => {
-            const space = this.superstate.spacesIndex.get(path);
-            if (space) return updateTableRow(this.spaceManager as SpaceManager, space.space, table, index, row);
-        },
-        insert: (path: string, schema: string, _row: DBRow) => {
-            const row: DBRow = Object.keys(_row).reduce((f, g) => {
-                if (g == "undefined" || g == "null") return f;
-                return {
-                    ...f,
-                    [g]: _row[g],
-                };
-            }, {});
-            if (schema == defaultContextSchemaID) {
-                this.context.insert(path, schema, row[PathPropertyName], row);
-                return;
-            }
-            const space = this.superstate.spacesIndex.get(path);
-            if (space) return addRowInTable(this.spaceManager as SpaceManager, row, space.space, schema);
-            return Promise.resolve();
-        },
-
-        create: (path: string, table: string, _properties: SpaceProperty[]) => {
-            const newSchema: SpaceTableSchema = {
-                id: sanitizeTableName(table),
-                name: table,
-                type: "db",
-            };
-            this.spaceManager.createTable(path, newSchema);
-        },
-        open: async (space: string, table: string, index: number, target?: TargetLocation) => {
-            const context = await this.spaceManager.readTable(space, table);
-            if (table == defaultContextSchemaID) {
-                const path = this.spaceManager.resolvePath(context?.rows[index]?.[PathPropertyName], space);
-                this.superstate.ui.openPath(path, target);
-            } else {
-                // For non-default schemas, open the edit modal instead of a path
-                this.table.editModal(space, table, index);
-            }
-        },
-        contextMenu: async (e: React.MouseEvent, space: string, table: string, index: number) => {
-            const context = await this.spaceManager.readTable(space, table);
-            if (table == defaultContextSchemaID) {
-                const path = context?.rows[index]?.[PathPropertyName];
-                showPathContextMenu(this.superstate, path, space, { x: e.clientX, y: e.clientY, width: 0, height: 0 }, windowFromDocument(e.view.document));
-            }
-        },
-        editModal: async (_space: string, _table: string, _index: number, _properties?: DBRow, _win?: Window) => {
-            return;
-        },
-        createModal: async (space: string, table: string, properties?: DBRow, win?: Window) => {
-            // Open modal in create mode with index = -1
-            await this.table.editModal(space, table, -1, properties, win);
-        },
-    };
-    public context = {
-        select: (path: string, table: string) => {
-            return this.spaceManager.readTable(path, table).then((f) => f?.rows);
-        },
-        update: (path: string, file: string, field: string, value: string) => {
-            const space = this.superstate.spacesIndex.get(path);
-            if (space) updateValueInContext(this.spaceManager as SpaceManager, file, field, value, space.space);
-        },
-        insert: async (path: string, schema: string, name: string, row: DBRow) => {
-            if (schema == defaultContextSchemaID) {
-                newPathInSpace(this.superstate, this.superstate.spacesIndex.get(path), "md", name, true).then((f) => {
-                    if (row) {
-                        delete row[PathPropertyName];
-                        saveProperties(this.superstate, f, {
-                            ...(row ?? {}),
-                        });
-                    }
-                });
-            } else {
-                const table = await this.spaceManager.readTable(path, schema);
-
-                if (table) {
-                    const prop = table.cols.find((f) => f.primary == "true");
-
-                    const newRow = prop
-                        ? {
-                              ...(row ?? {}),
-                              [prop.name]: name,
-                          }
-                        : row;
-                    this.table.insert(path, schema, newRow);
-                }
-            }
         },
     };
 }

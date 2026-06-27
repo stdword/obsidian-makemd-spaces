@@ -1,4 +1,3 @@
-import { renameTagSpacePath } from "core/utils/contexts/contextDefaults";
 import { Superstate } from "makemd-core";
 import { pathToString } from "utils/path";
 import { encodeSpaceName } from "../core/utils/strings";
@@ -10,7 +9,7 @@ export const renameTag = async (superstate: Superstate, tag: string, toTag: stri
     for (const path of paths) {
         superstate.spaceManager.renameTag(path, tag, newTag);
     }
-    await renameTagSpacePath(superstate, tag, newTag);
+    superstate.onTagRenamed(tag, newTag);
     for (const subtag of tags) {
         await renameTag(superstate, subtag, subtag.replace(tag, newTag));
     }

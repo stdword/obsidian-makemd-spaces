@@ -44,7 +44,6 @@ export const indexOfCharElseEOS = (char: string, str: string) => {
 };
 
 export const spaceNameFromSpacePath = (contextPath: string, superstate: Superstate) => superstate.pathsIndex.get(contextPath)?.name ?? contextPath;
-export const schemaNameFromSpacePath = (contextPath: string, schemaId: string, superstate: Superstate) => superstate.contextsIndex.get(contextPath)?.schemas.find((f) => f.id == schemaId)?.name ?? schemaId;
 export const spacePathFromName = (spaceName: string) => "spaces://" + encodeSpaceName(spaceName);
 export const encodeSpaceName = (spaceName: string) => spaceName?.replace(/\//g, "+");
 export const tagSpacePathFromTag = (tag: string) => "spaces://" + tag;

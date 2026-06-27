@@ -12,6 +12,8 @@ type CachedMetadataContentTypes = {
     definition: any;
 };
 
+const stringifyJSON = (value: Record<string, any>) => JSON.stringify(value, null, 2);
+
 export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>, CachedMetadataContentTypes> {
     public supportedFileTypes: string[] = ["json"];
     public id = "json.make.md";
@@ -101,7 +103,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
 
             const currentJSON = safelyParseJSON(await this.middleware.readTextFromFile(file.path)) ?? {};
 
-            await this.middleware.writeTextToFile(file.path, JSON.stringify({ ...currentJSON, label: currentProperties }));
+            await this.middleware.writeTextToFile(file.path, stringifyJSON({ ...currentJSON, label: currentProperties }));
             this.parseCache(file, true);
         }
         if (fragmentType == "definition") {
@@ -109,7 +111,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
 
             const newProperties = content(currentProperties);
             const currentJSON = safelyParseJSON(await this.middleware.readTextFromFile(file.path)) ?? {};
-            await this.middleware.writeTextToFile(file.path, JSON.stringify({ ...currentJSON, ...newProperties }));
+            await this.middleware.writeTextToFile(file.path, stringifyJSON({ ...currentJSON, ...newProperties }));
             this.parseCache(file, true);
         }
         if (fragmentType == "property") {
@@ -117,7 +119,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
 
             const newProperties = content(currentProperties);
             const currentJSON = safelyParseJSON(await this.middleware.readTextFromFile(file.path))?.property ?? {};
-            await this.middleware.writeTextToFile(file.path, JSON.stringify({ ...currentJSON, property: newProperties }));
+            await this.middleware.writeTextToFile(file.path, stringifyJSON({ ...currentJSON, property: newProperties }));
             this.parseCache(file, true);
         }
         return true;
@@ -127,7 +129,7 @@ export class JSONFiletypeAdapter implements FileTypeAdapter<Record<string, any>,
             const currentProperties = await this.readContent(file, fragmentType, fragmentId);
             delete currentProperties[fragmentId];
             const currentJSON = safelyParseJSON(await this.middleware.readTextFromFile(file.path)) ?? {};
-            await this.middleware.writeTextToFile(file.path, JSON.stringify({ ...currentJSON, property: currentProperties }));
+            await this.middleware.writeTextToFile(file.path, stringifyJSON({ ...currentJSON, property: currentProperties }));
             this.parseCache(file, true);
         }
     }

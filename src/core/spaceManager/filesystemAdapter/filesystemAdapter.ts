@@ -8,7 +8,7 @@ import { builtinSpaces } from "core/types/space";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
 import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT, SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
 import { Focus } from "shared/types/focus";
-import { SpaceProperty, SpaceTable, SpaceTables, SpaceTableSchema } from "shared/types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { SpaceAdapter } from "shared/types/spaceManager";
@@ -61,7 +61,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (!(await this.fileSystem.fileExists(this.dataPath))) {
             await this.fileSystem.createFolder(this.dataPath);
         }
-        return this.fileSystem.writeTextToFile(`${this.dataPath}/${FOCUSES_FILE}`, JSON.stringify(focuses));
+        return this.fileSystem.writeTextToFile(`${this.dataPath}/${FOCUSES_FILE}`, JSON.stringify(focuses, null, 2));
     }
 
     private spacePathFromDefPath(path: string) {
@@ -276,52 +276,8 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.parentPathForPath(path);
     }
 
-    public async readTable(_path: string, _schema: string): Promise<SpaceTable> {
-        return null;
-    }
     public async spaceInitiated(_path: string) {
         return true;
-    }
-    public async contextInitiated(path: string) {
-        const space = this.spaceInfoForPath(path);
-        return !!space?.defPath && (await this.fileSystem.fileExists(space.defPath));
-    }
-    public async tablesForSpace(_path: string): Promise<SpaceTableSchema[]> {
-        return [];
-    }
-    public async createDefaultTable(_path: string): Promise<void> {
-        return;
-    }
-
-    public async createTable(_path: string, _schema: SpaceTableSchema) {
-        return;
-    }
-    public async saveTableSchema(_path: string, _schemaId: string, _saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-        return false;
-    }
-    public async saveTable(_path: string, _table: SpaceTable, _force?: boolean) {
-        return false;
-    }
-    public async deleteTable(_path: string, _name: string) {
-        return;
-    }
-    public async readAllTables(_path: string): Promise<SpaceTables> {
-        return {};
-    }
-
-    public async contextForSpace(_path: string): Promise<SpaceTable> {
-        return null;
-    }
-
-    public async addSpaceProperty(_path: string, _property: SpaceProperty) {
-        return;
-    }
-    public async deleteSpaceProperty(_path: string, _property: SpaceProperty) {
-        return;
-    }
-
-    public async saveSpaceProperty(_path: string, _property: SpaceProperty, _oldProperty: SpaceProperty) {
-        return false;
     }
     public async addProperty(path: string, property: SpaceProperty) {
         const file = await this.fileSystem.getFile(path);

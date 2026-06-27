@@ -1,5 +1,4 @@
 import { Superstate } from "makemd-core";
-import { fieldTypeForField } from "schemas/mdb";
 import { Metadata, fileProperties, labelProperties, pathCacheMetadata } from "shared/types/metadata";
 
 export const allMetadata = (
@@ -25,18 +24,6 @@ export const allMetadata = (
     },
     context: {
         name: "metadata.contexts",
-        properties: [...superstate.contextsIndex.values()].flatMap((f) =>
-            f?.contextTable?.cols
-                .filter((f) => f.primary != "true")
-                .map((g) => ({
-                    id: "contexts." + f.path + "." + g.name,
-                    label: g.name,
-                    field: f.path + "." + g.name,
-                    vType: fieldTypeForField(g),
-                    defaultFilter: "contains",
-                    type: "context",
-                    description: f.path + " context property",
-                })),
-        ),
+        properties: [],
     },
 });

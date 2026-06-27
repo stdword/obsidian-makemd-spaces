@@ -16,7 +16,6 @@ jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
 
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
-import { defaultContextFileColumns, defaultContextSchemaID } from "shared/schemas/fields";
 
 describe("triggerMultiPathMenu", () => {
     it("opens every selected path in a new tab from the multi-path open action", async () => {
@@ -163,7 +162,6 @@ describe("showSpaceContextMenu", () => {
     it("updates the home space label color when a color is selected", async () => {
         const dispatchEvent = jest.fn();
         const saveLabel = jest.fn(() => Promise.resolve());
-        const saveTable = jest.fn(() => Promise.resolve(true));
         const saveSpace = jest.fn();
         const updateSpaceMetadata = jest.fn(() => Promise.resolve(true));
         const openMenu = jest.fn();
@@ -175,11 +173,6 @@ describe("showSpaceContextMenu", () => {
                 color: "",
             },
             spaces: ["/"],
-        };
-        const contextTable = {
-            schema: { id: defaultContextSchemaID, name: "Items", type: "db", primary: "true" },
-            cols: defaultContextFileColumns.map((name) => ({ name, schemaId: defaultContextSchemaID, type: "text" })),
-            rows: [{ path: "/", color: "" }],
         };
         const superstate = {
             settings: {
@@ -203,8 +196,6 @@ describe("showSpaceContextMenu", () => {
             ]),
             spaceManager: {
                 saveLabel,
-                contextForSpace: jest.fn(() => Promise.resolve(contextTable)),
-                saveTable,
                 saveSpace,
             },
             updateSpaceMetadata,
@@ -222,7 +213,6 @@ describe("showSpaceContextMenu", () => {
         await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
         expect(saveLabel).toHaveBeenCalledWith("/", "color", "#123456");
-        expect(saveTable).not.toHaveBeenCalled();
         expect(saveSpace).not.toHaveBeenCalled();
         expect(updateSpaceMetadata).toHaveBeenCalledWith("/", { color: "#123456" });
     });

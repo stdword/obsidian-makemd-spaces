@@ -2,7 +2,7 @@ import { resolvePath } from "core/superstate/utils/path";
 import { builtinSpacePathPrefix } from "shared/schemas/builtin";
 import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
-import { SpaceProperty, SpaceTable, SpaceTableSchema } from "shared/types/mdb";
+import { SpaceProperty } from "shared/types/mdb";
 import { URI } from "shared/types/path";
 import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
@@ -26,9 +26,6 @@ export class SpaceManager implements SpaceManagerInterface {
     };
     public getPathsIndexMap = () => {
         return this.superstate.pathsIndex;
-    };
-    public getContextsIndexMap = () => {
-        return this.superstate.contextsIndex;
     };
     public onFocusesUpdated = () => {
         this.readFocuses().then((f) => {
@@ -148,42 +145,8 @@ export class SpaceManager implements SpaceManagerInterface {
     public childrenForSpace(path: string) {
         return this.adapterForPath(path).childrenForSpace(path);
     }
-    public contextForSpace(path: string) {
-        return this.adapterForPath(path).contextForSpace(path);
-    }
-    public async tablesForSpace(path: string) {
-        return this.adapterForPath(path).tablesForSpace(path);
-    }
     public spaceInitiated(path: string) {
         return this.adapterForPath(path).spaceInitiated(path);
-    }
-    public contextInitiated(path: string) {
-        return this.adapterForPath(path).contextInitiated(path);
-    }
-    public readTable(path: string, schema: string) {
-        return this.adapterForPath(path).readTable(path, schema);
-    }
-
-    public createTable(path: string, schema: SpaceTableSchema) {
-        return this.adapterForPath(path)
-            .createTable(path, schema)
-            .then(() => true);
-    }
-
-    public saveTableSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) {
-        return this.adapterForPath(path).saveTableSchema(path, schemaId, saveSchema);
-    }
-    public saveTable(path: string, table: SpaceTable, force?: boolean) {
-        return this.adapterForPath(path).saveTable(path, table, force);
-    }
-    public deleteTable(path: string, name: string) {
-        return this.adapterForPath(path)
-            .deleteTable(path, name)
-            .then(() => true);
-    }
-
-    public readAllTables(path: string) {
-        return this.adapterForPath(path).readAllTables(path);
     }
     //basic item operations
     public allPaths(type?: string[]) {
@@ -263,28 +226,6 @@ export class SpaceManager implements SpaceManagerInterface {
         return this.adapterForPath(path).deleteProperty(path, property);
     }
 
-    public addSpaceProperty(path: string, property: SpaceProperty) {
-        return this.adapterForPath(path)
-            .addSpaceProperty(path, property)
-            .then(() => true);
-    }
-    public deleteSpaceProperty(path: string, property: SpaceProperty) {
-        return this.adapterForPath(path)
-            .deleteSpaceProperty(path, property)
-            .then(() => true);
-    }
-    public saveSpaceProperty(path: string, property: SpaceProperty, oldProperty: SpaceProperty) {
-        return this.adapterForPath(path)
-            .saveSpaceProperty(path, property, oldProperty)
-            .then((saved) => {
-                if (oldProperty.name != property.name) {
-                    this.superstate.getSpaceItems(path).forEach((f) => {
-                        this.renameProperty(f.path, oldProperty.name, property.name);
-                    });
-                }
-                return saved;
-            });
-    }
 
     public addTag(path: string, tag: string) {
         return this.adapterForPath(path).addTag(path, tag);

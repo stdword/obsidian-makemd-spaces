@@ -3,11 +3,11 @@ import { PathLabel } from "shared/types/caches";
 import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
 import { PathCache } from "./caches";
-import { SpaceProperty, SpaceTable, SpaceTableSchema, SpaceTables } from "./mdb";
+import { SpaceProperty } from "./mdb";
 import { SpaceDefinition, SpaceType } from "./spaceDef";
 import { SpaceFragmentType } from "./spaceFragment";
 import { SpaceInfo } from "./spaceInfo";
-import { ContextState, ISuperstate, PathState } from "./superstate";
+import { ISuperstate, PathState } from "./superstate";
 
 export interface SpaceManagerInterface {
     primarySpaceAdapter: SpaceAdapter;
@@ -16,7 +16,6 @@ export interface SpaceManagerInterface {
     api: IAPI;
     getPathState: (path: string) => PathState;
     getPathsIndexMap: () => Map<string, PathState>;
-    getContextsIndexMap: () => Map<string, ContextState>;
     loadPath: (path: string) => Promise<PathCache | void>;
     onSpaceUpdated(path: string, type: SpaceFragmentType): void;
     onFocusesUpdated(): void;
@@ -40,16 +39,7 @@ export interface SpaceManagerInterface {
     renameSpace(path: string, newPath: string): Promise<string>;
     deleteSpace(path: string): void;
     childrenForSpace(path: string): string[];
-    contextForSpace(path: string): Promise<SpaceTable>;
-    tablesForSpace(path: string): Promise<SpaceTableSchema[]>;
     spaceInitiated(path: string): Promise<boolean>;
-    contextInitiated(path: string): Promise<boolean>;
-    readTable(path: string, schema: string): Promise<SpaceTable>;
-    createTable(path: string, schema: SpaceTableSchema): Promise<boolean>;
-    saveTableSchema(path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema): Promise<boolean>;
-    saveTable(path: string, table: SpaceTable, force?: boolean): Promise<boolean>;
-    deleteTable(path: string, name: string): Promise<boolean>;
-    readAllTables(path: string): Promise<SpaceTables>;
     allPaths(type?: string[]): string[];
     createItemAtPath(parent: string, type: string, name: string, content?: any): Promise<string>;
     renamePath(oldPath: string, newPath: string): Promise<string>;
@@ -70,9 +60,6 @@ export interface SpaceManagerInterface {
     readProperties(path: string): Promise<{ [key: string]: any }>;
     renameProperty(path: string, property: string, newProperty: string): void;
     deleteProperty(path: string, property: string): void;
-    addSpaceProperty(path: string, property: SpaceProperty): Promise<boolean>;
-    deleteSpaceProperty(path: string, property: SpaceProperty): Promise<boolean>;
-    saveSpaceProperty(path: string, property: SpaceProperty, oldProperty: SpaceProperty): Promise<boolean>;
     addTag(path: string, tag: string): void;
     deleteTag(path: string, tag: string): void;
     renameTag(path: string, tag: string, newTag: string): void;
@@ -104,18 +91,6 @@ export abstract class SpaceAdapter {
     public spaceInitiated: (path: string) => Promise<boolean>;
 
     //Space Features
-    public contextForSpace: (path: string) => Promise<SpaceTable>;
-
-    //Context
-    public contextInitiated: (path: string) => Promise<boolean>;
-    public tablesForSpace: (path: string) => Promise<SpaceTableSchema[]>;
-    public readTable: (path: string, name: string) => Promise<SpaceTable>;
-    public readAllTables: (path: string) => Promise<SpaceTables>;
-    public createTable: (path: string, schema: SpaceTableSchema) => Promise<void>;
-    public saveTableSchema: (path: string, schemaId: string, saveSchema: (prev: SpaceTableSchema) => SpaceTableSchema) => Promise<boolean>;
-    public saveTable: (path: string, table: SpaceTable, force?: boolean) => Promise<boolean>;
-    public deleteTable: (path: string, name: string) => Promise<void>;
-
     //basic item operations
     public resolvePath: (path: string, source: string) => string;
     public pathExists: (path: string) => Promise<boolean>;
@@ -141,9 +116,6 @@ export abstract class SpaceAdapter {
     public readLabel: (path: string) => Promise<PathLabel>;
     public saveLabel: (path: string, key: string, value: any) => void;
 
-    public addSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
-    public deleteSpaceProperty: (path: string, property: SpaceProperty) => Promise<void>;
-    public saveSpaceProperty: (path: string, property: SpaceProperty, oldProperty: SpaceProperty) => Promise<boolean>;
 
     //tag management
     public addTag: (path: string, tag: string) => void;

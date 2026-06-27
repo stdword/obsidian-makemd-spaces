@@ -133,18 +133,6 @@ describe("Superstate tag initialization", () => {
         expect(superstate.persister.store).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), expect.any(String), "path");
     });
 
-    it("does not persist context cache for tag spaces", async () => {
-        const { superstate, spaceManager } = createSuperstate();
-        spaceManager.uriByString = jest.fn(() => ({}));
-        spaceManager.spaceTypeByString = jest.fn(() => "tag");
-
-        await addTag(superstate, "project");
-
-        await expect(superstate.reloadContext(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).space)).resolves.toBe(false);
-        expect(superstate.contextsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
-        expect(superstate.persister.store).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), expect.any(String), "context");
-    });
-
     it("stores tag color in space metadata", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.uriByString = jest.fn(() => ({}));
@@ -161,7 +149,7 @@ describe("Superstate tag initialization", () => {
         expect(stored.metadata.color).toBe("var(--mk-color-teal)");
     });
 
-    it("hydrates tag spaces from space cache and softly ignores old tag path and context cache", async () => {
+    it("hydrates tag spaces from space cache and softly ignores old tag path cache", async () => {
         const { superstate } = createSuperstate();
         superstate.persister.loadAll = jest.fn((type: string) => {
             if (type == "space")
@@ -184,13 +172,6 @@ describe("Superstate tag initialization", () => {
                         cache: JSON.stringify({ path: tagSpacePathFromTag("#project"), type: "space", subtype: "tag", label: { sticker: "", color: "" } }),
                     },
                 ]);
-            if (type == "context")
-                return Promise.resolve([
-                    {
-                        path: tagSpacePathFromTag("#project"),
-                        cache: JSON.stringify({ path: tagSpacePathFromTag("#project"), contextTable: {}, dbExists: true }),
-                    },
-                ]);
             return Promise.resolve([]);
         });
 
@@ -204,9 +185,7 @@ describe("Superstate tag initialization", () => {
         });
         expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).space.path).toBe(tagSpacePathFromTag("#project"));
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
-        expect(superstate.contextsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
         expect(superstate.persister.remove).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), "path");
-        expect(superstate.persister.remove).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), "context");
     });
 
     it("prefers virtual tag space state over stale tag path cache for display names", async () => {

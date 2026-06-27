@@ -1,131 +1,15 @@
 import _ from "lodash";
 import { PathCache } from "shared/types/caches";
-import { DBRow, SpaceProperty, SpaceTable, SpaceTables } from "shared/types/mdb";
-import { ContextState, PathState, SpaceState } from "shared/types/PathState";
+import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
-import { SpaceInfo } from "shared/types/spaceInfo";
-import { orderStringArrayByArray, uniq } from "shared/utils/array";
+import { uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
-import { pathStateToContextRow } from "core/utils/contexts/contextDefaults";
-import { linkContextRow, mergeContextRows, syncContextRow } from "core/utils/contexts/linkContextRow";
 import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
 import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
-import { defaultContextDBSchema, defaultContextSchemaID } from "shared/schemas/fields";
-import { defaultContextFields } from "shared/schemas/fields";
-import { normalizeContextPath, PathPropertyName, PathPropertyPinned } from "shared/types/context";
-import { IndexMap } from "shared/types/indexMap";
 import { excludePathPredicate } from "utils/hide";
-import { parseLinkString, parseMultiString } from "utils/parsers";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
-
-export const applyContextLabelsToPaths = (contextTable: SpaceTable, pathsIndex: Map<string, PathState>) => {
-    contextTable?.rows?.forEach((row) => {
-        const rowPath = row[PathPropertyName];
-        const pathState = pathsIndex.get(normalizeContextPath(rowPath));
-        if (!pathState) return;
-        const isFolder = rowPath?.endsWith("/") || pathState.type == "space" || pathState.subtype == "folder" || pathState.metadata?.file?.isFolder;
-        if (isFolder || !row.color || row.color == pathState.effectiveLabel?.color) return;
-        pathsIndex.set(pathState.path, {
-            ...pathState,
-            effectiveLabel: {
-                ...pathState.label,
-                ...pathState.effectiveLabel,
-                color: row.color,
-            },
-        });
-    });
-};
-
-export const parseContextTableToCache = (
-    space: SpaceInfo,
-    mdb: SpaceTables,
-    paths: string[],
-    dbExists: boolean,
-    pathsIndex: Map<string, PathState>,
-    spacesMap: IndexMap,
-    _settings: MakeMDSettings,
-    contextsIndex: Map<string, ContextState>,
-    options: { force?: boolean; calculate?: boolean },
-): { changed: boolean; cache: ContextState } => {
-    const spaceMap: { [key: string]: { [key: string]: string[] } } = {};
-
-    if (!space) return { changed: false, cache: null };
-    if (!mdb) {
-        return {
-            changed: false,
-            cache: {
-                path: space.path,
-                schemas: [],
-                outlinks: [],
-                contexts: [],
-                paths: [],
-                contextTable: null,
-                spaceMap,
-                dbExists: false,
-                mdb: {},
-            },
-        };
-    }
-    const schemas = Object.values(mdb).map((f) => f.schema);
-    const cols = defaultContextFields.rows as SpaceProperty[];
-    const schema = mdb[defaultContextSchemaID]?.schema ?? defaultContextDBSchema;
-    const contextPaths = mdb[defaultContextSchemaID]?.rows?.map((f) => normalizeContextPath(f[PathPropertyName])) ?? [];
-
-    const missingPaths = paths.filter((f) => !contextPaths.includes(f));
-    const newPaths = [...orderStringArrayByArray(paths ?? [], contextPaths), ...missingPaths];
-    const spacePath = pathsIndex.get(space.path);
-    let rows = mergeContextRows(paths, mdb[defaultContextSchemaID]?.rows ?? [], pathsIndex, spacesMap, spacePath);
-
-    rows = rows.map((_row) => {
-        const row = _row as DBRow;
-        const normalizedPath = normalizeContextPath(row[PathPropertyName]);
-        const pathState = pathsIndex.get(normalizedPath);
-        const fileRow = pathState ? pathStateToContextRow(pathState) : {};
-        const normalizedRow = {
-            ...fileRow,
-            [PathPropertyName]: fileRow[PathPropertyName] ?? row[PathPropertyName],
-            color: fileRow[PathPropertyName]?.endsWith("/") ? "" : row.color ?? fileRow.color ?? "",
-            [PathPropertyPinned]: row[PathPropertyPinned] ?? fileRow[PathPropertyPinned] ?? "false",
-        };
-        return syncContextRow(pathsIndex, normalizedRow, cols, spacePath);
-    });
-    if (options?.calculate)
-        rows = rows.map((f) => linkContextRow(pathsIndex, contextsIndex, f, cols, spacePath));
-
-    const contextTable: SpaceTable = {
-        schema,
-        cols,
-        rows: rows,
-    } as SpaceTable;
-
-    const contextCols = contextTable.cols?.filter((f) => f.type.startsWith("context")) ?? [];
-    const linkCols = contextTable.cols?.filter((f) => f.type.startsWith("link")) ?? [];
-    const contexts = uniq(contextCols.map((f) => f.value));
-    contextCols.forEach((f) => {
-        spaceMap[f.name] = {};
-        contextTable.rows.forEach((g) => {
-            parseMultiString(g[f.name]).forEach((h) => (spaceMap[f.name][h] = [...(spaceMap[f.name][h] ?? []), g[PathPropertyName]]));
-        });
-    });
-
-    const outlinks = uniq(contextTable.rows.reduce((p, c) => uniq([...p, ...[...contextCols, ...linkCols].flatMap((f) => parseMultiString(c[f.name]).map((f) => parseLinkString(f)))]), []));
-    const changed = !_.isEqual(contextTable, mdb[defaultContextSchemaID]);
-    mdb[defaultContextSchemaID] = contextTable;
-    const cache: ContextState = {
-        contextTable,
-        path: space.path,
-        contexts: contexts,
-        outlinks: outlinks,
-        paths: newPaths,
-        schemas,
-        spaceMap,
-        dbExists,
-        mdb,
-    };
-    return { changed, cache };
-};
 
 const stripExtension = (fileName: string) => {
     const dotIndex = fileName.lastIndexOf(".");

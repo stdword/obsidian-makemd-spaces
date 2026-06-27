@@ -6,13 +6,6 @@ export const pathDisplayName = (path: string, superstate: Superstate) => {
 
     const uri = superstate.spaceManager.uriByString(path);
     if (uri.refType) {
-        if (uri.refType == "context") {
-            const schema = superstate.contextsIndex.get(uri.basePath)?.schemas.find((s) => s.id == uri.ref);
-            const space = superstate.spacesIndex.get(uri.basePath);
-            if (schema && space) return `${space.name} / ${schema.name}`;
-            return "";
-        }
-
         return uri.ref;
     }
     return superstate.pathsIndex.get(uri.basePath)?.name || path;

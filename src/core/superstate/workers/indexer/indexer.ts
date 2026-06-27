@@ -1,7 +1,7 @@
 import { stringifyJob } from "core/utils/superstate/serializer";
 import { Superstate } from "makemd-core";
 import { WorkerJobType } from "shared/types/PathState";
-import { BatchContextWorkerPayload, BatchPathWorkerPayload, ContextWorkerPayload, PathWorkerPayload } from "./impl";
+import { BatchPathWorkerPayload, PathWorkerPayload } from "./impl";
 //@ts-ignore
 import SuperstateWorker from "./indexer.worker";
 /** Callback when a file is resolved. */
@@ -148,77 +148,6 @@ export class Indexer {
             });
             this.busy[workerId] = true;
             return;
-        }
-        if (job.type == "context") {
-            const space = this.cache.spacesIndex.get(job.path)?.space;
-            if (!space || !space.path) {
-                this.message(workerId, {
-                    job,
-                    payload: {
-                        space,
-                        mdb: null,
-                        paths: [...this.cache.spacesMap.getInverse(job.path)],
-                        settings: this.cache.settings,
-                        pathsIndex: this.cache.pathsIndex,
-                        spacesMap: this.cache.spacesMap,
-                        contextsIndex: this.cache.contextsIndex,
-                        options: job.payload,
-                    } as ContextWorkerPayload,
-                });
-                this.busy[workerId] = true;
-                return;
-            }
-            const dbExists = await this.cache.spaceManager.contextInitiated(space.path);
-            this.cache.spaceManager.readAllTables(space.path).then((mdb) => {
-                this.message(workerId, {
-                    job,
-                    payload: {
-                        space,
-                        mdb,
-                        paths: [...this.cache.spacesMap.getInverse(job.path)],
-                        spacesMap: this.cache.spacesMap,
-                        settings: this.cache.settings,
-                        dbExists,
-                        contextsIndex: this.cache.contextsIndex,
-                        pathsIndex: this.cache.pathsIndex,
-                        options: job.payload,
-                    },
-                });
-                this.busy[workerId] = true;
-            });
-            return;
-        }
-        if (job.type == "contexts") {
-            const spaces = this.cache
-                .allSpaces()
-                .filter((f) => f.type != "default" && f.type != "tag")
-                .map((f) => f.space);
-            const payloads = new Map<string, any>();
-            for (const space of spaces) {
-                const dbExists = await this.cache.spaceManager.contextInitiated(space.path);
-                await this.cache.spaceManager.readAllTables(space.path).then((mdb) => {
-                    payloads.set(space.path, {
-                        space,
-                        mdb,
-                        paths: [...this.cache.spacesMap.getInverse(space.path)],
-                        settings: this.cache.settings,
-                        spacesMap: this.cache.spacesMap,
-                        contextsIndex: this.cache.contextsIndex,
-                        dbExists,
-                    });
-                });
-            }
-            this.message(workerId, {
-                job,
-                payload: {
-                    map: payloads,
-                    pathsIndex: this.cache.pathsIndex,
-                    settings: this.cache.settings,
-                    spacesMap: this.cache.spacesMap,
-                    contextsIndex: this.cache.contextsIndex,
-                } as BatchContextWorkerPayload,
-            });
-            this.busy[workerId] = true;
         }
     }
 

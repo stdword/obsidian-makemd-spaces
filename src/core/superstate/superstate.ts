@@ -13,7 +13,7 @@ import _, { debounce } from "lodash";
 import { tagsSpacePath } from "shared/schemas/builtin";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
-import { ContextState, PathState, SpaceState } from "shared/types/PathState";
+import { PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
 import { MakeMDSettings } from "shared/types/settings";
 import { FilterGroupDef, SpaceDefinition, SpaceType } from "shared/types/spaceDef";
@@ -185,7 +185,6 @@ export class Superstate implements ISuperstate {
     //Index
     public pathsIndex: Map<string, PathState>;
     public spacesIndex: Map<string, SpaceState>;
-    public contextsIndex: Map<string, ContextState>;
 
     //Persistant Cache
     public imagesCache: Map<string, string>;
@@ -205,7 +204,6 @@ export class Superstate implements ISuperstate {
             properties: Metadata[];
         }
     >;
-    private contextStateQueue: Promise<unknown>;
     private indexer: Indexer;
 
     public focuses: Focus[];
@@ -244,7 +242,6 @@ export class Superstate implements ISuperstate {
         //Initiate Indexes
         this.pathsIndex = new Map();
         this.spacesIndex = new Map();
-        this.contextsIndex = new Map();
         this.focuses = [];
         //Initiate Maps
         this.spacesMap = new IndexMap();
@@ -254,7 +251,6 @@ export class Superstate implements ISuperstate {
 
         //Initiate Persistance
         this.imagesCache = new Map();
-        this.contextStateQueue = Promise.resolve();
 
         //Intiate Workers
         this.indexer = new Indexer(2, this);
@@ -275,12 +271,6 @@ export class Superstate implements ISuperstate {
         await this.loadFromCache();
     }
 
-    public addToContextStateQueue(operation: () => Promise<unknown>) {
-        //Simple queue (FIFO) for processing context changes
-        this.contextStateQueue = this.contextStateQueue.then(operation).catch(() => {
-            //do nuth'ing
-        });
-    }
     public persister: LocalCachePersister;
     public async initialize() {
         if (!this.persister) {
@@ -361,10 +351,6 @@ export class Superstate implements ISuperstate {
             })
             .filter((f) => f?.hidden != true && f.path != spacePath);
     }
-    private async initializeContexts() {
-        return;
-    }
-
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null);
         const allPaths = await this.persister.loadAll("path");
@@ -653,43 +639,18 @@ export class Superstate implements ISuperstate {
             this.spacesMap.rename(oldPath, newSpaceInfo.path);
             this.spacesMap.renameInverse(oldPath, newSpaceInfo.path);
             this.spacesIndex.delete(oldPath);
-            this.contextsIndex.delete(oldPath);
             await this.reloadSpace(newSpaceInfo, oldmetadata).then((f) => this.onSpaceDefinitionChanged(f, oldmetadata));
         }
     }
     public onSpaceDeleted(space: string) {
         if (this.spacesIndex.has(space)) {
             this.spacesIndex.delete(space);
-            this.contextsIndex.delete(space);
         }
         this.spacesMap.delete(space);
         this.spacesMap.deleteInverse(space);
         this.persister.remove(space, "space");
 
         this.dispatchEvent("spaceDeleted", { path: space });
-    }
-
-    public async reloadContextByPath(
-        path: string,
-        options?: {
-            calculate?: boolean;
-            force?: boolean;
-        },
-    ) {
-        return this.reloadContext(this.spaceManager.spaceInfoForPath(path), options);
-    }
-    public async reloadContext(
-        space: SpaceInfo,
-        options?: {
-            calculate?: boolean;
-            force?: boolean;
-        },
-    ) {
-        return false;
-    }
-
-    public async contextReloaded(path: string, cache: ContextState, changed: boolean, force?: boolean) {
-        return false;
     }
 
     public allSpaces(ordered?: boolean): SpaceState[] {

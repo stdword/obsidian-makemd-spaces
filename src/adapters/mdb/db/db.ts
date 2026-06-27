@@ -1,8 +1,6 @@
 import { getParentPathFromString } from "utils/path";
 
 import JSZip from "jszip";
-import { defaultContextSchemaID } from "shared/schemas/fields";
-import { defaultContextFields } from "shared/schemas/fields";
 import { DBTable, DBTables } from "shared/types/mdb";
 import { uniq } from "shared/utils/array";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
@@ -120,16 +118,10 @@ export const replaceDB = (db: Database, tables: DBTables) => {
     const sqlStatements: string[] = [];
     Object.keys(tables).forEach((t) => {
         const tableFields = tables[t].cols;
-        const columnTypeForField = (field: string) => {
-            const propertyType = t == defaultContextSchemaID ? defaultContextFields.rows.find((col) => col.name == field)?.type : null;
-            if (propertyType == "boolean") return "BOOLEAN";
-            if (propertyType == "number") return "REAL";
-            return "char";
-        };
         const fieldQuery = serializeSQLFieldNames(
             uniq(tableFields)
                 .filter((f) => f)
-                .map((f) => `'${sanitizeSQLStatement(f)}' ${columnTypeForField(f)}`),
+                .map((f) => `'${sanitizeSQLStatement(f)}' char`),
         );
 
         const createQuery = `CREATE TABLE IF NOT EXISTS "${t}" (${fieldQuery}); `;
