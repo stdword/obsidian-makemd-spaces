@@ -158,7 +158,6 @@ body .mk-tree-new {
 }
 .mk-tree-item {
     --icon-size: 16px;
-    --icon-container-size: 18px;
     margin-left: var(--spacing) !important;
     flex-direction: row !important;
     --vertical-padding: 2px;
@@ -198,8 +197,8 @@ body .mk-tree-new {
 }
 
 .mk-path-icon {
-    width: var(--icon-container-size);
-    height: var(--icon-container-size);
+    width: var(--icon-size);
+    height: var(--icon-size);
     display: flex;
     font-family: emoji;
     align-items: center;
@@ -217,8 +216,8 @@ body .mk-tree-new {
     border: 0;
     border-radius: 4px;
     box-shadow: none;
-    height: var(--icon-container-size);
-    width: var(--icon-container-size);
+    height: var(--icon-size);
+    width: var(--icon-size);
     padding: 0 !important;
 }
 
@@ -237,8 +236,13 @@ body .mk-tree-new {
 }
 
 .mk-tree-text.nav-file-title-content {
+    padding-top: 1px;
     color: var(--label-color);
 }
+.mk-tree-text.nav-folder-title-content {
+    padding-bottom: 1px;
+}
+
 
 body .mk-tree-wrapper .mk-drag-handle {
     visibility: hidden;
