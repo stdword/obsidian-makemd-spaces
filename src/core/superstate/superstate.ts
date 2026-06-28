@@ -10,7 +10,7 @@ import { tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
-import { tagsSpacePath } from "shared/schemas/builtin";
+import { isTagSpacePath, tagsSpacePath, tagSpaceNameFromPath } from "shared/schemas/builtin";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { PathState, SpaceState } from "shared/types/PathState";
@@ -35,9 +35,6 @@ export type SuperProperty = {
     name: string;
 };
 
-const isTagSpacePath = (path: string) => path?.startsWith("spaces://#");
-
-const tagSpaceNameFromPath = (path: string) => (isTagSpacePath(path) ? path.slice("spaces://#".length) : path);
 
 const tagSpaceInfoForCache = (space: SpaceInfo): SpaceInfo =>
     ({
@@ -123,8 +120,7 @@ const fallbackStickerForPathState = (pathState: PathState): string => {
     if (!pathState) return "";
     if (pathState.type == "space") {
         if (pathState.path == "/") return "ui//home";
-        if (pathState.path?.startsWith("spaces://#")) return "lucide//hash";
-        if (pathState.path?.startsWith("spaces://")) return "ui//hash";
+        if (isTagSpacePath(pathState.path)) return "lucide//hash";
         return "ui//folder";
     }
     const fileExtension = pathState.metadata?.file?.extension?.toLowerCase() || pathState.subtype?.toLowerCase() || pathState.path?.split(".").pop()?.toLowerCase();
@@ -266,9 +262,10 @@ export class Superstate implements ISuperstate {
     }
 
     private pathsForTagSpace(spacePath: string): string[] {
-        if (!spacePath?.startsWith("spaces://#")) return [];
+        if (!isTagSpacePath(spacePath))
+            return [];
 
-        const tag = spacePath.slice("spaces://".length).toLowerCase();
+        const tag = '#' + tagSpaceNameFromPath(spacePath).toLowerCase();
         const indexedPaths = [...this.tagsMap.getInverse(tag)];
         const adapterPaths = this.spaceManager.pathsForTag?.(tag) ?? [];
         return uniq([...indexedPaths, ...adapterPaths]);

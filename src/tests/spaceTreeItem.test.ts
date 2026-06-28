@@ -1,8 +1,8 @@
 import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
-import { canOpenTreeItemPath, isTagTreeItemPath } from "core/react/components/Navigator/SpaceTree/treeItemPath";
-import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
-import { canEditPathSticker, defaultStickerForPathState } from "shared/components/PathSticker";
+import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
+import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
+import { canEditPathSticker } from "shared/components/PathSticker";
 import fs from "fs";
 import path from "path";
 
@@ -18,23 +18,6 @@ describe("shouldShowFileTag", () => {
         expect(shouldShowFileTag(false, "pdf")).toBe(true);
         expect(shouldShowFileTag(false, "")).toBe(false);
         expect(shouldShowFileTag(true, "pdf")).toBe(false);
-    });
-});
-
-describe("PathStickerView helpers", () => {
-    it("uses a hash icon for tag spaces without a custom sticker", () => {
-        expect(defaultStickerForPathState({ type: "space", subtype: "tag", label: { sticker: "", color: "" }, path: "spaces://#art" } as any)).toBe("lucide//hash");
-    });
-
-    it("does not allow tag spaces to open the sticker editor", () => {
-        expect(canEditPathSticker({ type: "space", subtype: "tag", label: { sticker: "", color: "" }, path: "spaces://#art" } as any, true)).toBe(false);
-    });
-
-    it("uses tag path as a fallback for older tag space cache", () => {
-        const tagPath = { type: "space", label: { sticker: "", color: "" }, path: "spaces://#art" } as any;
-
-        expect(defaultStickerForPathState(tagPath)).toBe("lucide//hash");
-        expect(canEditPathSticker(tagPath, true)).toBe(false);
     });
 });
 
@@ -126,12 +109,33 @@ describe("treeItemColorVariables", () => {
         });
     });
 
-    it("keeps folder icons white on colored folder backgrounds", () => {
+    it("keeps folder colors scoped to the icon so the folder name stays visible", () => {
         expect(treeItemColorVariables("#ff6699", true)).toEqual({
-            "--label-color": "#ff6699",
             "--icon-color": "#ffffff",
             position: "relative",
         });
+    });
+});
+
+describe("treeItemDisplayName", () => {
+    it("falls back to the space name when a vault path state has an empty name", () => {
+        expect(
+            treeItemDisplayName(
+                { type: "space", subtype: "vault", path: "/", name: "" },
+                { path: "/" },
+                new Map([["/", { name: "Home" }]]),
+            ),
+        ).toBe("Home");
+    });
+
+    it("keeps non-empty path state names before fallbacks", () => {
+        expect(
+            treeItemDisplayName(
+                { type: "space", path: "/", name: "Vault" },
+                { path: "/" },
+                new Map([["/", { name: "Home" }]]),
+            ),
+        ).toBe("Vault");
     });
 });
 
@@ -145,5 +149,11 @@ describe("treeItemActiveColorVariables", () => {
 
     it("does not override the active icon color for uncolored files", () => {
         expect(treeItemActiveColorVariables("", false)).toEqual({});
+    });
+
+    it("does not color active folder names with the folder icon color", () => {
+        expect(treeItemActiveColorVariables("#ff6699", true)).toEqual({
+            "--icon-color": "#ffffff",
+        });
     });
 });

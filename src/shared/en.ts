@@ -125,6 +125,7 @@ export const en = {
 
         deleteFolder: "Delete Folder",
         deleteFiles: "Delete Files",
+        deleteFile: "Delete File/Folder",
         moveTo: "Move to",
         addTo: "Pin to",
         copyTo: "Copy to",
@@ -136,6 +137,7 @@ export const en = {
     descriptions: {
         deleteFolder: "Deleting the folder will also delete its contents.",
         deleteFiles: "Delete ${1} files/folders and their contents?",
+        deleteFile: "Delete file/folder and its contents?",
 
         hiddenFileOptions: "Hidden File Options",
     },

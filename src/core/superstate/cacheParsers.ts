@@ -6,7 +6,7 @@ import { uniq } from "shared/utils/array";
 
 import { builtinSpaces } from "core/types/space";
 import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
-import { builtinSpacePathPrefix, tagsSpacePath } from "shared/schemas/builtin";
+import { builtinSpacePathPrefix, isTagSpacePath, tagsSpacePath } from "shared/schemas/builtin";
 import { excludePathPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
@@ -52,7 +52,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const defaultSticker = (sticker: string, type: string, subtype: string, path: string, extension?: string, savedSticker?: string): string => {
         if (type == "space") {
             if (path == "/") return "ui//home";
-            if (path.startsWith("spaces://")) return "ui//hash";
+            if (isTagSpacePath(path)) return "ui//hash";
             if (savedSticker?.length > 0) return savedSticker;
             if (sticker?.length > 0) return sticker;
             return "ui//folder";

@@ -15,8 +15,8 @@ import { windowFromDocument } from "shared/utils/dom";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
-import { canOpenTreeItemPath, isTagTreeItemPath } from "./treeItemPath";
-import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor } from "./treeItemStyles";
+import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
+import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
 
@@ -199,7 +199,8 @@ export const TreeItem = (props: TreeItemProps) => {
     const extension = pathState?.metadata?.file?.extension;
     const showFileTag = shouldShowFileTag(isSpace, extension);
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
-    const stickerLabel = data.sort && pathState?.type == "space" ? `${pathState.name}\n${spaceSortLabel(data.sort, isTagSpace)}` : pathState?.name;
+    const displayName = treeItemDisplayName(pathState, data, superstate.spacesIndex);
+    const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
     const openTagColorPicker = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         showColorPickerMenu(superstate, rect, windowFromDocument(e.view.document), color ?? "", (value) => savePathColor(superstate, pathState.path, value), false, false, false, "right");
@@ -259,8 +260,17 @@ export const TreeItem = (props: TreeItemProps) => {
                                 }}
                             ></CollapseToggle>
                         )}
-                        {pathState && <PathStickerView superstate={superstate} pathState={pathState} editable={data.type == "space" || (data.type == "group" && data.path != "/")} color={color} ariaLabel={stickerLabel} onIconClick={isTagSpace ? openTagColorPicker : undefined} />}
-                        <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{pathState?.name ?? data.path}</div>
+                        {pathState &&
+                            <PathStickerView
+                                superstate={superstate}
+                                pathState={pathState}
+                                editable={data.type == "space" || (data.type == "group" && data.path != "/")}
+                                color={color}
+                                ariaLabel={stickerLabel}
+                                onIconClick={(isTagSpace || pathState?.path == "/") ? openTagColorPicker : undefined}
+                            />
+                        }
+                        <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{displayName}</div>
 
                         {data.type == "group" && data.childrenCount > 0 && (
                             <CollapseToggle

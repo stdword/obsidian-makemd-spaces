@@ -16,8 +16,8 @@ import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
 import { calculateFolderLineHeight } from "./treeLineHeight";
+import { isTagSpacePath } from "shared/schemas/builtin";
 
-const isTagSpacePath = (path: string) => path?.startsWith("spaces://#");
 
 const ensureTagSpaceLoaded = (superstate: Superstate, tagPath: string) => {
     if (superstate.spacesIndex.has(tagPath)) {

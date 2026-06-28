@@ -3,7 +3,7 @@ import { hidePath, renamePathByName } from "core/superstate/utils/path";
 import { addPathToSpaceAtIndex, effectiveSpaceSort, removePathsFromSpace, removeSpace, updateSpaceSort } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
-import { isTagPathState, openStickerPalette } from "shared/components/PathSticker";
+import { openStickerPalette } from "shared/components/PathSticker";
 import { default as i18n } from "shared/i18n";
 import { PathState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
@@ -16,14 +16,15 @@ import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
-import { showFoldersMenu, showOpenMenu } from "../modals/selectSpaceMenu";
+import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
+import { isTagSpacePath } from "shared/schemas/builtin";
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void) => {
     const space = superstate.spacesIndex.get(path.path);
     if (!space) return;
-    const isTagSpace = space.type == "tag" || isTagPathState(path);
+    const isTagSpace = space.type == "tag" || isTagSpacePath(path.path);
     const menuOptions: SelectOption[] = [];
 
     if (!isTagSpace) {

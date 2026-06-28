@@ -17,7 +17,7 @@ import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
 import { eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
-import { isTagTreeItemPath } from "./treeItemPath";
+import { isTagTreeItemPath } from "shared/schemas/builtin";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;

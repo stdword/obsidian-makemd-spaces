@@ -18,13 +18,23 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
+import { isTagSpacePath } from "shared/schemas/builtin";
 
-const isLinkedFileMenuItem = (item: any, space?: string) => item?.type != "space" && space && item?.parent && space != item.parent;
+function isLinkedFileMenuItem(item: any, space?: string) {
+    return (
+        !isTagSpacePath(space) && item?.type != "space" && space && item?.parent && space != item.parent
+    )
+}
 
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
     const paths = selectedPaths.map((s) => s.item.path);
-    const folderPaths = selectedPaths.filter((s) => s.item?.type == "space" && s.item.path != "/").map((s) => s.item.path);
-    const hasLinkedFile = selectedPaths.some((s) => isLinkedFileMenuItem(s.item, s.space));
+
+    const allUnderTagSpace = selectedPaths.every((s) => isTagSpacePath(s.space));
+    if (allUnderTagSpace) {
+        triggerMultiPathMenuForTagSpace(superstate, selectedPaths, e);
+        return;
+    }
+
     const menuOptions: SelectOption[] = [];
 
     // Open in a New Pane
@@ -40,6 +50,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
+    const hasLinkedFile = selectedPaths.some((s) => isLinkedFileMenuItem(s.item, s.space));
     if (!hasLinkedFile) {
         // change color
         menuOptions.push({
@@ -54,6 +65,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     }
 
     // change sticker
+    const folderPaths = selectedPaths.filter((s) => s.item?.type == "space" && s.item.path != "/").map((s) => s.item.path);
     if (folderPaths.length > 0) {
         menuOptions.push({
             name: i18n.buttons.changeIcon,
@@ -144,6 +156,98 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     return false;
 };
 
+export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
+    const paths = selectedPaths.map((s) => s.item.path);
+
+    const menuOptions: SelectOption[] = [];
+
+    // Open in a New Pane
+    menuOptions.push({
+        name: i18n.menu.openFilePane,
+        icon: "ui//go-to-file",
+        onClick: async () => {
+            for (const path of paths) {
+                await superstate.ui.openPath(path, "tab");
+            }
+        },
+    });
+
+    menuOptions.push(menuSeparator);
+
+    // change color
+    menuOptions.push({
+        name: i18n.menu.changeColor,
+        icon: "ui//palette",
+        type: SelectOptionType.Submenu,
+        closeParentOnOpen: true,
+        onSubmenu: (offset) => {
+            return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, paths, value), false, true);
+        },
+    });
+
+    menuOptions.push(menuSeparator);
+
+    // link to...
+    menuOptions.push({
+        name: i18n.buttons.addToSpace,
+        icon: "ui//link",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showFoldersMenu(
+                offset,
+                windowFromDocument(e.view.document),
+                superstate,
+                (link) => {
+                    dropPathsInSpaceAtIndex(
+                        superstate,
+                        selectedPaths.map((f) => f.path),
+                        link,
+                        -1,
+                        "link",
+                    );
+                },
+            );
+        },
+    });
+
+    menuOptions.push(menuSeparator);
+
+    // hide item
+    menuOptions.push({
+        name: i18n.menu.hide,
+        icon: "ui//eye-off",
+        onClick: () => {
+            hidePaths(superstate, paths);
+        },
+    });
+
+    // Delete Item
+    menuOptions.push({
+        name: i18n.menu.delete,
+        icon: "ui//trash",
+        onClick: (e) => {
+            superstate.ui.openModal(
+                i18n.labels.deleteFiles,
+                <ConfirmationModal
+                    confirmAction={() => {
+                        paths.forEach((f) => {
+                            deletePath(superstate, f);
+                        });
+                    }}
+                    confirmLabel={i18n.buttons.delete}
+                    message={i18n.descriptions.deleteFiles.replace("${1}", paths.length.toString())}
+                ></ConfirmationModal>,
+                windowFromDocument(e.view.document),
+            );
+        },
+    });
+
+    superstate.ui.openMenu((e.target as HTMLElement).getBoundingClientRect(), defaultMenu(superstate.ui, menuOptions), windowFromDocument(e.view.document));
+
+    return false;
+};
+
 export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void) => {
     const cache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
 
@@ -154,9 +258,8 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     }
 
     const menuOptions: SelectOption[] = [];
-    const isLinkedFile = isLinkedFileMenuItem(cache, space);
 
-    if (!isLinkedFile) {
+    if (isTagSpacePath(space) || !isLinkedFileMenuItem(cache, space)) {
         // change color
         menuOptions.push({
             name: i18n.menu.changeColor,
@@ -192,17 +295,18 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     });
 
     // move to
-    menuOptions.push({
-        name: i18n.menu.moveFile,
-        icon: "ui//paper-plane",
-        closeParentImmediately: true,
-        onClick: (e) => {
-            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                superstate.spaceManager.renamePath(path, movePath(path, link));
-            });
-        },
-    });
+    if (!isTagSpacePath(space))
+        menuOptions.push({
+            name: i18n.menu.moveFile,
+            icon: "ui//paper-plane",
+            closeParentImmediately: true,
+            onClick: (e) => {
+                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+                showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                    superstate.spaceManager.renamePath(path, movePath(path, link));
+                });
+            },
+        });
 
     // link to
     menuOptions.push({
@@ -257,7 +361,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     }
 
     // unlink item
-    if (space && space != cache.parent) {
+    if (space && space != cache.parent && !isTagSpacePath(space)) {
         const spaceCache = superstate.spacesIndex.get(space);
         if (spaceCache) {
             menuOptions.push({
@@ -283,8 +387,18 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push({
         name: i18n.menu.delete,
         icon: "ui//trash",
-        onClick: () => {
-            deletePath(superstate, path);
+        onClick: (e) => {
+            superstate.ui.openModal(
+                i18n.labels.deleteFile,
+                <ConfirmationModal
+                    confirmAction={() => {
+                        deletePath(superstate, path);
+                    }}
+                    confirmLabel={i18n.buttons.delete}
+                    message={i18n.descriptions.deleteFile}
+                ></ConfirmationModal>,
+                windowFromDocument(e.view.document),
+            );
         },
     });
 

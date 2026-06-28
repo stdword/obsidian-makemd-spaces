@@ -8,16 +8,12 @@ import { windowFromDocument } from "../utils/dom";
 export const openStickerPalette = (superstate: Superstate, win: Window, selectedSticker: (emoji: string) => void) =>
     superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={selectedSticker} />, win, "mk-no-transition");
 
-export const isTagPathState = (pathState: PathState) => pathState?.subtype == "tag" || pathState?.path?.startsWith("spaces://#");
-
-export const defaultStickerForPathState = (pathState: PathState) => (isTagPathState(pathState) ? "lucide//hash" : "");
-
-export const canEditPathSticker = (pathState: PathState, editable?: boolean) => Boolean(editable && pathState?.type == "space" && !isTagPathState(pathState));
+export const canEditPathSticker = (pathState: PathState, editable?: boolean) => Boolean(editable && pathState?.type == "space");
 
 export const PathStickerView = (props: { superstate: Superstate; pathState: PathState; editable?: boolean; color?: string; ariaLabel?: string; onIconClick?: (e: React.MouseEvent) => void }) => {
     const { pathState } = props;
     const effectiveLabel = pathState?.effectiveLabel ?? pathState?.label;
-    const sticker = effectiveLabel?.sticker || defaultStickerForPathState(pathState);
+    const sticker = effectiveLabel?.sticker// || defaultStickerForPathState(pathState);
     const color = props.color ?? effectiveLabel?.color;
     const ariaLabel = props.ariaLabel ?? pathState.name;
 
