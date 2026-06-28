@@ -59,7 +59,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
             type: SelectOptionType.Submenu,
             closeParentOnOpen: true,
             onSubmenu: (offset) => {
-                return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, paths, value), false, true);
+                return showColorPickerMenu(superstate, offset, windowFromDocument(e.view.document), "", (value) => saveColorForPaths(superstate, selectedPaths.map((s) => ({ path: s.item.path, space: s.space })), value), false, true);
             },
         });
     }

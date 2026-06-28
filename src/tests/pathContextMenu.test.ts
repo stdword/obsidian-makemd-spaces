@@ -92,6 +92,90 @@ describe("triggerMultiPathMenu", () => {
         const rootOptions = openMenu.mock.calls[0][1].options;
         expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(false);
     });
+
+    it("updates colors for selected files in their current tree space", async () => {
+        const openMenu = jest.fn();
+        const spacesIndex = new Map([
+            [
+                "Projects",
+                {
+                    type: "folder",
+                    name: "Projects",
+                    path: "Projects",
+                    metadata: {
+                        "file-colors": {},
+                    },
+                    space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+                },
+            ],
+        ]);
+        const updateSpaceMetadata = jest.fn((spacePath: string, metadata: any) => {
+            spacesIndex.set(spacePath, {
+                ...spacesIndex.get(spacePath),
+                metadata,
+            });
+            return Promise.resolve(spacesIndex.get(spacePath));
+        });
+        const superstate = {
+            pathsIndex: new Map([
+                [
+                    "Projects/Alpha.md",
+                    {
+                        path: "Projects/Alpha.md",
+                        name: "Alpha",
+                        type: "file",
+                        subtype: "md",
+                        parent: "Projects",
+                        spaces: [],
+                        label: { sticker: "", color: "" },
+                    },
+                ],
+                [
+                    "Projects/Beta.md",
+                    {
+                        path: "Projects/Beta.md",
+                        name: "Beta",
+                        type: "file",
+                        subtype: "md",
+                        parent: "Projects",
+                        spaces: [],
+                        label: { sticker: "", color: "" },
+                    },
+                ],
+            ]),
+            spacesIndex,
+            updateSpaceMetadata,
+            spaceManager: {
+                saveSpace: jest.fn(() => Promise.resolve()),
+            },
+            dispatchEvent: jest.fn(),
+            ui: {
+                openMenu,
+            },
+        };
+        const selectedPaths = [
+            { item: { path: "Projects/Alpha.md", type: "file", parent: "Projects" }, path: "Projects/Alpha.md", space: "Projects" },
+            { item: { path: "Projects/Beta.md", type: "file", parent: "Projects" }, path: "Projects/Beta.md", space: "Projects" },
+        ];
+        const event = {
+            target: {
+                getBoundingClientRect: jest.fn(() => ({ x: 0, y: 0, width: 0, height: 0 })),
+            },
+            view: {
+                document: { defaultView: {} } as Document,
+            },
+        };
+
+        triggerMultiPathMenu(superstate as any, selectedPaths as any, event as any);
+
+        const changeColor = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//palette");
+        await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+
+        expect(spacesIndex.get("Projects").metadata["file-colors"]).toEqual({
+            "Projects/Alpha.md": "#123456",
+            "Projects/Beta.md": "#123456",
+        });
+    });
 });
 
 describe("showPathContextMenu", () => {

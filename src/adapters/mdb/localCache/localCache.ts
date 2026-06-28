@@ -12,6 +12,7 @@ import { ZippedSqliteStorage } from "./sqliteStorage";
 export class LocalStorageCache implements LocalCachePersister {
     public db: Database;
     private initialized: boolean;
+    private dirty = false;
     public indexVersion = Date.now().toString();
     private defaultTables : DBTables;
     public constructor( public storageDBPath: string, private storage: ZippedSqliteStorage, types: string[]) {
@@ -19,6 +20,8 @@ export class LocalStorageCache implements LocalCachePersister {
     }
 
     public async unload() {
+        this.debounceSaveSpaceDatabase.cancel();
+        await this.saveNow();
         this.initialized = false;
         this.db?.close();
     }
@@ -62,6 +65,7 @@ export class LocalStorageCache implements LocalCachePersister {
         await insertIntoDB(this.db, {
             [type]: {...this.defaultTables[type], rows: [{ path, cache, version }]},
         }, true)
+        this.dirty = true;
         this.debounceSaveSpaceDatabase();
         return;
     }
@@ -69,6 +73,7 @@ export class LocalStorageCache implements LocalCachePersister {
         if (!this.initialized) return;
         if (!this.db) return;
         await deleteFromDB(this.db, type, `path='${sanitizeSQLStatement(path)}'`)
+        this.dirty = true;
         this.debounceSaveSpaceDatabase();
         return;
     }
@@ -78,10 +83,16 @@ export class LocalStorageCache implements LocalCachePersister {
         deleteFromDB(this.db, type, `version != '${this.indexVersion}' AND version != ''`)
         return;
     }
+    private saveNow = async () => {
+        if (!this.initialized) return;
+        if (!this.db) return;
+        if (!this.dirty) return;
+        this.dirty = false;
+        await saveZippedDBFile(this.storage, this.storageDBPath, this.db.export().buffer as ArrayBuffer);
+    };
+
     private debounceSaveSpaceDatabase = debounce(
-      () => {
-          saveZippedDBFile(this.storage, this.storageDBPath, this.db.export().buffer as ArrayBuffer)
-      },
+      () => this.saveNow(),
       5000,
       {
           leading: false,

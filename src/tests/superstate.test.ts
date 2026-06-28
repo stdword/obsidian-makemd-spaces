@@ -11,6 +11,7 @@ jest.mock("core/superstate/workers/indexer/indexer", () => ({
 import { Superstate } from "core/superstate/superstate";
 import { savePathColor } from "core/superstate/utils/label";
 import { spaceSortFn } from "core/superstate/utils/spaces";
+import { saveColorForPaths } from "core/utils/emoji";
 import { addTag, syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
 import { tagSpacePathFromTag } from "core/utils/strings";
 
@@ -22,6 +23,7 @@ const createSuperstate = () => {
         pathExists: jest.fn((_path: string) => false),
         loadPath: jest.fn(),
         createSpace: jest.fn(() => Promise.resolve()),
+        saveSpace: jest.fn(() => Promise.resolve()),
         spaceDefForSpace: jest.fn(() => Promise.resolve({})),
         spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.replace("spaces://#", "") })),
         readPathCache: jest.fn((path: string) =>
@@ -147,6 +149,79 @@ describe("Superstate tag initialization", () => {
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
         const stored = JSON.parse(superstate.persister.store.mock.calls[0][1]);
         expect(stored.metadata.color).toBe("var(--mk-color-teal)");
+    });
+
+    it("stores color for every selected file in the same space", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.saveSpace = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 0)));
+        superstate.spacesIndex.set("Projects", {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                "file-colors": {},
+            },
+            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+        } as any);
+        ["Projects/Alpha.md", "Projects/Beta.md"].forEach((path) => {
+            superstate.pathsIndex.set(path, {
+                path,
+                name: path.split("/").pop(),
+                type: "file",
+                subtype: "md",
+                tags: [],
+                spaces: ["Projects"],
+                outlinks: [],
+                hidden: false,
+                label: { sticker: "", color: "" },
+            });
+        });
+
+        await saveColorForPaths(superstate, ["Projects/Alpha.md", "Projects/Beta.md"], "#123456");
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(superstate.spacesIndex.get("Projects").metadata["file-colors"]).toEqual({
+            "Projects/Alpha.md": "#123456",
+            "Projects/Beta.md": "#123456",
+        });
+    });
+
+    it("updates a file color in memory before the space save finishes", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        let resolveSave: () => void;
+        spaceManager.saveSpace = jest.fn(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveSave = resolve;
+                }),
+        );
+        superstate.spacesIndex.set("Projects", {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                "file-colors": {},
+            },
+            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+        } as any);
+        superstate.pathsIndex.set("Projects/Alpha.md", {
+            path: "Projects/Alpha.md",
+            name: "Alpha.md",
+            type: "file",
+            subtype: "md",
+            tags: [],
+            spaces: ["Projects"],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+
+        const colorSave = savePathColor(superstate, "Projects/Alpha.md", "#123456");
+
+        expect(superstate.pathsIndex.get("Projects/Alpha.md").effectiveLabel.color).toBe("#123456");
+
+        resolveSave();
+        await colorSave;
     });
 
     it("hydrates tag spaces from space cache and softly ignores old tag path cache", async () => {

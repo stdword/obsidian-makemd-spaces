@@ -8,7 +8,7 @@ jest.mock("adapters/mdb/db/db", () => ({
     selectDB: jest.fn(),
 }));
 
-import { deleteFromDB, insertIntoDB } from "adapters/mdb/db/db";
+import { deleteFromDB, insertIntoDB, saveZippedDBFile } from "adapters/mdb/db/db";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 describe("LocalStorageCache", () => {
@@ -42,5 +42,21 @@ describe("LocalStorageCache", () => {
         cache.cleanType("space");
 
         expect(deleteFromDB).toHaveBeenCalledWith(db, "space", `version != 'current' AND version != ''`);
+    });
+
+    it("flushes pending debounced saves before unloading without leaving a late timer", async () => {
+        jest.useFakeTimers();
+        const cache = new LocalStorageCache("state", {} as any, ["space"]) as any;
+        cache.initialized = true;
+        cache.db = { close: jest.fn(), export: jest.fn(() => ({ buffer: new ArrayBuffer(0) })) };
+
+        await cache.store("Projects", "{}", "space");
+        await cache.unload();
+
+        expect(saveZippedDBFile).toHaveBeenCalledTimes(1);
+        jest.runOnlyPendingTimers();
+
+        expect(saveZippedDBFile).toHaveBeenCalledTimes(1);
+        jest.useRealTimers();
     });
 });

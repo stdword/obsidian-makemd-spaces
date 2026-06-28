@@ -288,8 +288,8 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         if (refresh) this.superstate.dispatchEvent("settingsChanged", null);
     }
 
-    onunload() {
-        this.superstate.persister.unload();
+    async onunload() {
+        await this.superstate?.persister?.unload();
         this.detachFileTreeLeaves();
     }
 }
