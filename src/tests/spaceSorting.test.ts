@@ -47,7 +47,7 @@ describe("updateSpaceSort", () => {
                 sort,
             },
             space: {
-                defPath: "Projects/.space/def.json",
+                defPath: "Projects/.space/context.json",
             },
         };
         return {

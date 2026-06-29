@@ -7,6 +7,27 @@ import SuperstateWorker from "./indexer.worker";
 /** Callback when a file is resolved. */
 type FileCallback = (p: any) => void;
 
+const mapSummary = (map: Map<string, any>, sampleSize = 5) => ({
+    size: map?.size ?? 0,
+    sampleKeys: map ? [...map.keys()].slice(0, sampleSize) : [],
+});
+
+const valueKeys = (value: any) => (value && typeof value == "object" ? Object.keys(value) : []);
+
+const payloadSummary = (payload: any) => ({
+    settingsKeys: valueKeys(payload?.settings),
+    spacesCache: payload?.spacesCache instanceof Map ? mapSummary(payload.spacesCache) : undefined,
+    pathCache: payload?.pathCache instanceof Map ? mapSummary(payload.pathCache) : undefined,
+    pathsIndex: payload?.pathsIndex instanceof Map ? mapSummary(payload.pathsIndex) : undefined,
+    oldMetadata: payload?.oldMetadata instanceof Map ? mapSummary(payload.oldMetadata) : valueKeys(payload?.oldMetadata),
+    pathMetadataKeys: valueKeys(payload?.pathMetadata),
+    pathMetadataFileKeys: valueKeys(payload?.pathMetadata?.file),
+    name: payload?.name,
+    parent: payload?.parent,
+    type: payload?.type,
+    subtype: payload?.subtype,
+});
+
 /** Multi-threaded file parser which debounces rapid file requests automatically. */
 export class Indexer {
     /* Background workers which do the actual file parsing. */
@@ -19,6 +40,7 @@ export class Indexer {
     reloadSet: Set<string>;
     /** Paths -> promises for file reloads which have not yet been queued. */
     callbacks: Map<string, [FileCallback, FileCallback][]>;
+    private jobStarts: Map<string, number>;
 
     public constructor(
         public numWorkers: number,
@@ -30,6 +52,7 @@ export class Indexer {
         this.reloadQueue = [];
         this.reloadSet = new Set();
         this.callbacks = new Map();
+        this.jobStarts = new Map();
 
         for (let index = 0; index < numWorkers; index++) {
             const worker = new SuperstateWorker({ name: "Superstate Indexer " + (index + 1) });
@@ -52,13 +75,15 @@ export class Indexer {
             else this.callbacks.set(jobKey, [[resolve, reject]]);
         });
         // De-bounce repeated requests for the same file.
-        if (this.reloadSet.has(jobKey)) return promise;
+        if (this.reloadSet.has(jobKey)) {
+            return promise;
+        }
         this.reloadSet.add(jobKey);
 
         // Immediately run this task if there are available workers; otherwise, add it to the queue.
         const workerId = this.nextAvailableWorker();
         if (workerId !== undefined) {
-            this.send(jerb, workerId);
+            this.start(jerb, workerId);
         } else {
             this.reloadQueue.push(jerb);
         }
@@ -69,6 +94,8 @@ export class Indexer {
     /** Finish the parsing of a file, potentially queueing a new file. */
     private finish(jerb: WorkerJobType, data: any, index: number) {
         const jobKey = stringifyJob(jerb);
+        const elapsedMs = this.jobStarts.has(jobKey) ? Date.now() - this.jobStarts.get(jobKey) : undefined;
+        this.jobStarts.delete(jobKey);
         // Cache the callbacks before we do book-keeping.
         const calls = ([] as [FileCallback, FileCallback][]).concat(this.callbacks.get(jobKey) ?? []);
         // Book-keeping to clear metadata & allow the file to be re-loaded again.
@@ -80,7 +107,7 @@ export class Indexer {
 
         // Queue a new job onto this worker.
         const job = this.reloadQueue.shift();
-        if (job !== undefined) this.send(job, index);
+        if (job !== undefined) this.start(job, index);
 
         // Resolve promises to let users know this file has finished.
         if ("$error" in data) {
@@ -88,6 +115,15 @@ export class Indexer {
         } else {
             for (const [callback, _] of calls) callback(data);
         }
+    }
+
+    private start(job: WorkerJobType, workerId: number) {
+        const jobKey = stringifyJob(job);
+        this.busy[workerId] = true;
+        this.jobStarts.set(jobKey, Date.now());
+        this.send(job, workerId).catch((error) => {
+            this.finish(job, { $error: error }, workerId);
+        });
     }
 
     /** Send a new task to the given worker ID. */
@@ -104,7 +140,6 @@ export class Indexer {
                 job,
                 payload: payload,
             });
-            this.busy[workerId] = true;
             return;
         }
         if (job.type == "path") {
@@ -135,7 +170,6 @@ export class Indexer {
                 job,
                 payload: payload,
             });
-            this.busy[workerId] = true;
             return;
         }
         if (job.type == "index") {
@@ -146,7 +180,6 @@ export class Indexer {
                     pathsIndex,
                 },
             });
-            this.busy[workerId] = true;
             return;
         }
     }
@@ -164,6 +197,7 @@ export class Indexer {
         this.callbacks.clear();
         this.reloadQueue = [];
         this.reloadSet.clear();
+        this.jobStarts.clear();
         this.busy = this.busy.map(() => false);
         this.workers.forEach((worker) => worker.terminate());
     }

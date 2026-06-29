@@ -533,7 +533,7 @@ describe("Superstate tag initialization", () => {
         expect([...items].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((item: any) => item.name)).toEqual(["0 Notes", "1 Collections", "2 Resources"]);
     });
 
-    it("refreshes folder display metadata after def.json is removed", async () => {
+    it("refreshes folder display metadata after context.json is removed", async () => {
         const { superstate, spaceManager } = createSuperstate();
         const events: any[] = [];
         superstate.dispatchEvent = jest.fn((event: string, payload: any) => {
@@ -612,7 +612,7 @@ describe("Superstate tag initialization", () => {
                 links: [],
             },
             sortable: true,
-            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/def.json", notePath: "", folderPath: "Projects" },
+            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/context.json", notePath: "", folderPath: "Projects" },
         } as any);
         superstate.pathsIndex.set("Projects", {
             path: "Projects",

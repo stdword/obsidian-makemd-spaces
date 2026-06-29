@@ -5,7 +5,7 @@ import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "../../shared/types/settings";
 import { DEFAULT_SYSTEM_NAME } from "shared/constants";
 
-export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeySticker, settings.fmKeyColor, spaceLinksKey, spaceSortKey];
+export const FMMetadataKeys = (settings: MakeMDSettings) => [settings.fmKeySticker, settings.fmKeyColor];
 export const createVaultSpace = (manager: SpaceManager): SpaceState => ({
     name: DEFAULT_SYSTEM_NAME,
     path: "/",
@@ -36,7 +36,3 @@ export const builtinSpaces: Record<string, BuiltinSpace> = {
         hidden: false,
     },
 };
-
-export const spaceLinksKey = "_links";
-export const spaceSortKey = "_sort";
-export const spaceRecursiveKey = "_subfolders";

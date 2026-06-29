@@ -3,12 +3,17 @@ jest.mock("core/utils/superstate/serializer", () => ({
 }));
 
 const terminate = jest.fn();
+const workers: any[] = [];
 
 jest.mock("core/superstate/workers/indexer/indexer.worker", () =>
-    jest.fn().mockImplementation(() => ({
-        postMessage: jest.fn(),
-        terminate,
-    })),
+    jest.fn().mockImplementation(() => {
+        const worker = {
+            postMessage: jest.fn(),
+            terminate,
+        };
+        workers.push(worker);
+        return worker;
+    }),
 );
 
 import { Indexer } from "core/superstate/workers/indexer/indexer";
@@ -16,6 +21,7 @@ import { Indexer } from "core/superstate/workers/indexer/indexer";
 describe("Indexer lifecycle", () => {
     beforeEach(() => {
         terminate.mockClear();
+        workers.length = 0;
     });
 
     it("terminates every worker and clears queued work", async () => {
@@ -39,4 +45,30 @@ describe("Indexer lifecycle", () => {
         expect(indexer.reloadSet.size).toBe(0);
         expect(indexer.callbacks.size).toBe(0);
     });
+
+    it("reserves workers while preparing async payloads", () => {
+        const pendingRead = new Promise(() => null);
+        const cache = {
+            settings: {},
+            spacesIndex: new Map(),
+            pathsIndex: new Map(),
+            spaceManager: {
+                parentPathForPath: jest.fn(() => ""),
+                readPathCache: jest.fn(() => pendingRead),
+            },
+        };
+        const indexer = new Indexer(2, cache as any);
+
+        indexer.reload({ type: "path", path: "A.md" } as any);
+        indexer.reload({ type: "path", path: "B.md" } as any);
+        indexer.reload({ type: "path", path: "C.md" } as any);
+
+        expect(indexer.busy).toEqual([true, true]);
+        expect(indexer.reloadQueue.map((job) => job.path)).toEqual(["C.md"]);
+        expect(indexer.reloadSet.size).toBe(3);
+        expect(indexer.callbacks.size).toBe(3);
+        expect(workers[0].postMessage).not.toHaveBeenCalled();
+        expect(workers[1].postMessage).not.toHaveBeenCalled();
+    });
+
 });

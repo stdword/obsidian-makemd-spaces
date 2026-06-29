@@ -66,6 +66,7 @@ describe("linked item icon", () => {
         expect(
             shouldShowLinkedItemIcon({
                 type: "file",
+                depth: 1,
                 space: "LinkedSpace",
                 item: { path: "Folder/Note.md", parent: "Folder" },
             } as any),
@@ -74,6 +75,7 @@ describe("linked item icon", () => {
         expect(
             shouldShowLinkedItemIcon({
                 type: "space",
+                depth: 1,
                 space: "LinkedSpace",
                 item: { path: "Folder/Subfolder", parent: "Folder" },
             } as any),
@@ -82,6 +84,7 @@ describe("linked item icon", () => {
         expect(
             shouldShowLinkedItemIcon({
                 type: "space",
+                depth: 1,
                 space: "LinkedSpace",
                 item: { path: "spaces://#tag", parent: "spaces://#" },
             } as any),
@@ -92,6 +95,7 @@ describe("linked item icon", () => {
         expect(
             shouldShowLinkedItemIcon({
                 type: "file",
+                depth: 1,
                 space: "Folder",
                 item: { path: "Folder/Note.md", parent: "Folder" },
             } as any),
@@ -100,6 +104,7 @@ describe("linked item icon", () => {
         expect(
             shouldShowLinkedItemIcon({
                 type: "space",
+                depth: 1,
                 space: "Folder",
                 item: { path: "Folder/Subfolder", parent: "Folder" },
             } as any),
@@ -108,6 +113,7 @@ describe("linked item icon", () => {
         expect(
             shouldShowLinkedItemIcon({
                 type: "group",
+                depth: 1,
                 space: "Folder",
                 item: { path: "Folder", parent: "" },
             } as any),
@@ -119,7 +125,7 @@ describe("linked item icon", () => {
             path: "",
             name: "linked",
             type: "file",
-            label: { sticker: "lucide//link", color: "" },
+            label: { sticker: "lucide//link-2", color: "" },
         });
     });
 });
@@ -129,7 +135,7 @@ describe("navigator file label color CSS", () => {
 
     it("applies custom file colors through text and icon variables", () => {
         expect(navigatorCss).toMatch(/\.mk-tree-text\.nav-file-title-content\s*{[^}]*color:\s*var\(--label-color\)/);
-        expect(navigatorCss).toMatch(/\.nav-file-title\s*>\s*\.mk-path-icon-stack\s*>\s*\.mk-path-icon\s*>\s*button\s*>\s*svg\s*{[^}]*color:\s*var\(--icon-color\)/);
+        expect(navigatorCss).toMatch(/\.nav-file-title\s*>\s*\.mk-path-icon\s*>\s*button\s*>\s*svg\s*{[^}]*color:\s*var\(--icon-color\)/);
     });
 
     it("aligns tag group rows with folder section rows", () => {
@@ -138,9 +144,8 @@ describe("navigator file label color CSS", () => {
     });
 
     it("positions the linked item icon relative to the primary path icon", () => {
-        expect(navigatorCss).toMatch(/\.mk-path-icon-stack\s*{[^}]*position:\s*relative/);
-        expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*position:\s*absolute/);
-        expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*left:\s*calc\(\s*var\(--icon-size\)\s*\*\s*-1\s*\)/);
+        expect(navigatorCss).toMatch(/\.mk-tree-item\s*{[^}]*position:\s*relative/);
+        expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*pointer-events:\s*none/);
     });
 });
 

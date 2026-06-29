@@ -49,7 +49,7 @@ describe("FilesystemSpaceAdapter", () => {
             name: path.split("/").pop() || "Home",
             path,
             folderPath: path,
-            defPath: path == "/" ? ".space/def.json" : `${path}/.space/def.json`,
+            defPath: path == "/" ? ".space/context.json" : `${path}/.space/context.json`,
             notePath: "",
         }));
         adapter.spaceManager = {
@@ -99,11 +99,11 @@ describe("FilesystemSpaceAdapter", () => {
 
         const space = fileSystemSpaceInfoFromFolder(manager as any, "Projects/Alpha");
 
-        expect(space.defPath).toBe("Projects/Alpha/.space/def.json");
+        expect(space.defPath).toBe("Projects/Alpha/.space/context.json");
         expect(space.notePath).toBe("Projects/Alpha/Alpha.md");
     });
 
-    it("creates def.json default content without sort until sort is explicitly changed", () => {
+    it("creates context.json default content without sort until sort is explicitly changed", () => {
         expect(JSON.parse(SPACE_DEF_DEFAULT_CONTENT())).toEqual({
             color: "",
             sticker: "",
@@ -116,12 +116,12 @@ describe("FilesystemSpaceAdapter", () => {
         });
     });
 
-    it("does not write default sort when creating def.json for a sticker change", async () => {
+    it("does not write default sort when creating context.json for a sticker change", async () => {
         const { adapter, text } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "ui//folder" }));
 
-        expect(JSON.parse(text.get("Projects/.space/def.json"))).toEqual({
+        expect(JSON.parse(text.get("Projects/.space/context.json"))).toEqual({
             color: "",
             sticker: "ui//folder",
             defaultColor: "",
@@ -133,35 +133,35 @@ describe("FilesystemSpaceAdapter", () => {
         });
     });
 
-    it("does not create def.json while reading missing metadata", async () => {
+    it("does not create context.json while reading missing metadata", async () => {
         const { adapter, text } = createAdapter();
 
         const metadata = await adapter.spaceDefForSpace("Projects");
 
         expect(metadata.sort).toBeUndefined();
-        expect(text.has("Projects/.space/def.json")).toBe(false);
+        expect(text.has("Projects/.space/context.json")).toBe(false);
     });
 
-    it("writes only the changed sort fragment when creating def.json for a sort change", async () => {
+    it("writes only the changed sort fragment when creating context.json for a sort change", async () => {
         const { adapter, text } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: { group: true } }));
 
-        expect(JSON.parse(text.get("Projects/.space/def.json")).sort).toEqual({ group: true });
+        expect(JSON.parse(text.get("Projects/.space/context.json")).sort).toEqual({ group: true });
     });
 
-    it("deletes def.json and empty .space folder after clearing the last folder sticker", async () => {
+    it("deletes context.json and empty .space folder after clearing the last folder sticker", async () => {
         const { adapter, text, files, folders } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "ui//folder" }));
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "" }));
 
-        expect(text.has("Projects/.space/def.json")).toBe(false);
-        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(text.has("Projects/.space/context.json")).toBe(false);
+        expect(files.has("Projects/.space/context.json")).toBe(false);
         expect(folders.has("Projects/.space")).toBe(false);
     });
 
-    it("deletes only def.json when clearing the last setting but .space has other files", async () => {
+    it("deletes only context.json when clearing the last setting but .space has other files", async () => {
         const { adapter, text, files, folders } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, color: "#ffaa00" }));
@@ -169,8 +169,8 @@ describe("FilesystemSpaceAdapter", () => {
         text.set("Projects/.space/notes.md", "keep");
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, color: "" }));
 
-        expect(text.has("Projects/.space/def.json")).toBe(false);
-        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(text.has("Projects/.space/context.json")).toBe(false);
+        expect(files.has("Projects/.space/context.json")).toBe(false);
         expect(folders.has("Projects/.space")).toBe(true);
         expect(files.has("Projects/.space/notes.md")).toBe(true);
     });
@@ -179,18 +179,18 @@ describe("FilesystemSpaceAdapter", () => {
         ["defaultColor", "#112233"],
         ["defaultSticker", "ui//folder"],
         ["sort", { group: true }],
-    ])("deletes def.json after clearing the last %s setting", async (key, value) => {
+    ])("deletes context.json after clearing the last %s setting", async (key, value) => {
         const { adapter, text, files, folders } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, [key]: value }));
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, [key]: undefined }));
 
-        expect(text.has("Projects/.space/def.json")).toBe(false);
-        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(text.has("Projects/.space/context.json")).toBe(false);
+        expect(files.has("Projects/.space/context.json")).toBe(false);
         expect(folders.has("Projects/.space")).toBe(false);
     });
 
-    it("keeps def.json when rank-order still carries a custom order", async () => {
+    it("keeps context.json when rank-order still carries a custom order", async () => {
         const { adapter, text, files } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({
@@ -200,11 +200,11 @@ describe("FilesystemSpaceAdapter", () => {
         }));
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: undefined }));
 
-        expect(files.has("Projects/.space/def.json")).toBe(true);
-        expect(JSON.parse(text.get("Projects/.space/def.json"))["rank-order"]).toEqual(["Projects/Beta.md", "Projects/Alpha.md"]);
+        expect(files.has("Projects/.space/context.json")).toBe(true);
+        expect(JSON.parse(text.get("Projects/.space/context.json"))["rank-order"]).toEqual(["Projects/Beta.md", "Projects/Alpha.md"]);
     });
 
-    it("deletes def.json after clearing manual sort when rank-order is alphabetical", async () => {
+    it("deletes context.json after clearing manual sort when rank-order is alphabetical", async () => {
         const { adapter, text, files, folders } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({
@@ -214,12 +214,12 @@ describe("FilesystemSpaceAdapter", () => {
         }));
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: undefined }));
 
-        expect(text.has("Projects/.space/def.json")).toBe(false);
-        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(text.has("Projects/.space/context.json")).toBe(false);
+        expect(files.has("Projects/.space/context.json")).toBe(false);
         expect(folders.has("Projects/.space")).toBe(false);
     });
 
-    it("deletes def.json when file-colors only contains cleared colors", async () => {
+    it("deletes context.json when file-colors only contains cleared colors", async () => {
         const { adapter, text, files, folders } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({
@@ -229,25 +229,25 @@ describe("FilesystemSpaceAdapter", () => {
             },
         }));
 
-        expect(text.has("Projects/.space/def.json")).toBe(false);
-        expect(files.has("Projects/.space/def.json")).toBe(false);
+        expect(text.has("Projects/.space/context.json")).toBe(false);
+        expect(files.has("Projects/.space/context.json")).toBe(false);
         expect(folders.has("Projects/.space")).toBe(false);
     });
 
-    it("treats deleting def.json as a folder space metadata change", () => {
+    it("treats deleting context.json as a folder space metadata change", () => {
         const { adapter } = createAdapter();
 
-        adapter.onDelete({ file: { path: "Projects/.space/def.json", extension: "json", isFolder: false } });
+        adapter.onDelete({ file: { path: "Projects/.space/context.json", extension: "json", isFolder: false } });
 
         expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
         expect(adapter.spaceManager.onPathDeleted).not.toHaveBeenCalled();
         expect(adapter.spaceManager.onSpaceDeleted).not.toHaveBeenCalled();
     });
 
-    it("treats raw def.json updates as a folder space metadata change", () => {
+    it("treats raw context.json updates as a folder space metadata change", () => {
         const { adapter } = createAdapter();
 
-        adapter.onSpaceUpdated({ path: "Projects", type: "def.json" });
+        adapter.onSpaceUpdated({ path: "Projects", type: "context.json" });
 
         expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
     });

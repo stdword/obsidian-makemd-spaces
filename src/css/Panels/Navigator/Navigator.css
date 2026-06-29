@@ -218,7 +218,12 @@ body .mk-tree-new {
     width: var(--icon-size);
     height: var(--icon-size);
     pointer-events: none;
+    color: var(--mk-ui-text-secondary);
 }
+.mk-linked-item-icon > .mk-path-icon > div > svg {
+    color: var(--mk-ui-text-secondary) !important;
+}
+
 .nav-file-title > .mk-path-icon {
     flex: 0 0 var(--icon-size);
 }

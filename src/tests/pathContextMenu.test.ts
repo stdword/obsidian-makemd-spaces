@@ -212,7 +212,7 @@ describe("showPathContextMenu", () => {
         expect(openMenu).toHaveBeenCalled();
     });
 
-    it("hides the color action for linked files", () => {
+    it("shows the color action for linked files", () => {
         const openMenu = jest.fn();
         const pathState = {
             path: "Folder/Note.md",
@@ -238,7 +238,7 @@ describe("showPathContextMenu", () => {
         showPathContextMenu(superstate as any, "Folder/Note.md", "LinkedSpace", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
 
         const rootOptions = openMenu.mock.calls[0][1].options;
-        expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(false);
+        expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(true);
     });
 });
 
@@ -473,7 +473,7 @@ describe("showSpaceContextMenu", () => {
         expect(updateSpaceMetadata).not.toHaveBeenCalled();
     });
 
-    it("does not create def.json when clearing sort from superstate without an existing def.json", async () => {
+    it("does not create context.json when clearing sort from superstate without an existing context.json", async () => {
         const openMenu = jest.fn();
         const saveSpace = jest.fn();
         const updateSpaceMetadata = jest.fn(() => Promise.resolve());
@@ -510,7 +510,7 @@ describe("showSpaceContextMenu", () => {
                         space: {
                             path: "Projects",
                             folderPath: "Projects",
-                            defPath: "Projects/.space/def.json",
+                            defPath: "Projects/.space/context.json",
                         },
                     },
                 ],
@@ -535,7 +535,7 @@ describe("showSpaceContextMenu", () => {
 
         await clearSort.onClick();
 
-        expect(pathExists).toHaveBeenCalledWith("Projects/.space/def.json");
+        expect(pathExists).toHaveBeenCalledWith("Projects/.space/context.json");
         expect(saveSpace).not.toHaveBeenCalled();
         expect(updateSpaceMetadata).toHaveBeenCalledWith("Projects", {
             sort: undefined,

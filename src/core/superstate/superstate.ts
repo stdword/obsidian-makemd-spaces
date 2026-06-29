@@ -35,6 +35,15 @@ export type SuperProperty = {
     name: string;
 };
 
+const spaceDisplayMetadata = (metadata: SpaceDefinition = {}) => {
+    return {
+        color: metadata.color,
+        sticker: metadata.sticker,
+        defaultColor: metadata.defaultColor,
+        defaultSticker: metadata.defaultSticker,
+        fileColors: metadata["file-colors"],
+    }
+}
 
 const tagSpaceInfoForCache = (space: SpaceInfo): SpaceInfo =>
     ({
@@ -187,6 +196,7 @@ export class Superstate implements ISuperstate {
     public tagsMap: IndexMap; //file to tag mapping
     public liveSpaceLinkMap: IndexMap;
     private indexer: Indexer;
+    private metadataChanges: Map<string, Promise<void>>;
 
     public focuses: Focus[];
 
@@ -223,6 +233,7 @@ export class Superstate implements ISuperstate {
 
         //Intiate Workers
         this.indexer = new Indexer(2, this);
+        this.metadataChanges = new Map();
 
         // window['make'] = this;
     }
@@ -380,14 +391,30 @@ export class Superstate implements ISuperstate {
     }
 
     public async onSpaceDefinitionChanged(space: SpaceState, oldDef?: SpaceDefinition) {
-        const currentPaths = this.spacesMap.getInverse(space.path);
-        const newPaths: string[] = [];
-        if (space.metadata?.links && !_.isEqual(space.metadata.links, oldDef?.links)) {
-            newPaths.push(...space.metadata.links);
+        if (!space) return;
+        const currentPaths = [...this.spacesMap.getInverse(space.path)];
+        const oldLinks = ensureArray(oldDef?.links);
+        const newLinks = ensureArray(space.metadata?.links);
+        const linksChanged = !_.isEqual(newLinks, oldLinks);
+        const diff = linksChanged ? [..._.difference(newLinks, oldLinks), ..._.difference(oldLinks, newLinks)] : [];
+        const displayMetadataChanged = !_.isEqual(spaceDisplayMetadata(space.metadata), spaceDisplayMetadata(oldDef));
+
+        if (displayMetadataChanged) {
+            await Promise.all(currentPaths.map((path) => this.refreshPathEffectiveLabel(path, space.path)));
         }
-        const diff = [..._.difference(newPaths, [...currentPaths]), ..._.difference([...currentPaths], newPaths)];
+
         const cachedPromises = diff.map((f) => this.reloadPath(f, true).then(() => this.dispatchEvent("pathStateUpdated", { path: f })));
         await Promise.all(cachedPromises);
+    }
+
+    private async refreshPathEffectiveLabel(path: string, parentSpacePath?: string) {
+        const pathState = this.pathsIndex.get(path);
+        if (!pathState) return;
+        const nextPathState = pathStateWithEffectiveLabel(pathState, this.spacesIndex, parentSpacePath);
+        if (_.isEqual(pathState.effectiveLabel, nextPathState.effectiveLabel)) return;
+        this.pathsIndex.set(path, nextPathState);
+        await this.onPathReloaded(path);
+        this.dispatchEvent("pathStateUpdated", { path });
     }
 
     public async initializeFocuses() {
@@ -485,6 +512,18 @@ export class Superstate implements ISuperstate {
     }
 
     public async onMetadataChange(path: string) {
+        const inFlight = this.metadataChanges.get(path);
+        if (inFlight) {
+            return inFlight;
+        }
+        const change = this.runMetadataChange(path).finally(() => {
+            this.metadataChanges.delete(path);
+        });
+        this.metadataChanges.set(path, change);
+        return change;
+    }
+
+    private async runMetadataChange(path: string) {
         if (!this.pathsIndex.has(path)) {
             return;
         }

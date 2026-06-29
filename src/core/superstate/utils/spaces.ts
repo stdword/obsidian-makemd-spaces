@@ -1,4 +1,3 @@
-import { spaceLinksKey, spaceSortKey } from "core/types/space";
 import { ensureArray, ensureBoolean, ensureString } from "core/utils/strings";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep } from "core/utils/tree";
 import { Superstate } from "makemd-core";
@@ -56,16 +55,14 @@ const mergedStoredSpaceSort = (current: Partial<SpaceSort>, update: Partial<Spac
 };
 
 export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: MakeMDSettings): SpaceDefinition => {
-    const sort = metadata.sort ?? metadata[spaceSortKey];
-    const legacyLabel = metadata.label ?? {};
     return {
-        color: ensureString(metadata.color ?? legacyLabel.color),
-        sticker: ensureString(metadata.sticker ?? legacyLabel.sticker),
+        color: ensureString(metadata.color),
+        sticker: ensureString(metadata.sticker),
         defaultColor: ensureString(metadata.defaultColor),
         defaultSticker: ensureString(metadata.defaultSticker),
-        sort: storedSpaceSort(sort),
+        sort: storedSpaceSort(metadata.sort),
         "rank-order": ensureArray(metadata["rank-order"]),
-        links: ensureArray(metadata.links ?? metadata[spaceLinksKey]),
+        links: ensureArray(metadata.links),
         pinned: ensureArray(metadata.pinned),
         "file-colors": metadata["file-colors"] ?? {},
     };
