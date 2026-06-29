@@ -1,4 +1,5 @@
 import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
+import { linkedItemIconPathState, shouldShowLinkedItemIcon } from "core/react/components/Navigator/SpaceTree/linkedItemIcon";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
@@ -60,17 +61,86 @@ describe("calculateFolderLineHeight", () => {
     });
 });
 
+describe("linked item icon", () => {
+    it("shows for items linked into a different tree space", () => {
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "file",
+                space: "LinkedSpace",
+                item: { path: "Folder/Note.md", parent: "Folder" },
+            } as any),
+        ).toBe(true);
+
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "space",
+                space: "LinkedSpace",
+                item: { path: "Folder/Subfolder", parent: "Folder" },
+            } as any),
+        ).toBe(true);
+
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "space",
+                space: "LinkedSpace",
+                item: { path: "spaces://#tag", parent: "spaces://#" },
+            } as any),
+        ).toBe(true);
+    });
+
+    it("hides for items shown in their own parent space", () => {
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "file",
+                space: "Folder",
+                item: { path: "Folder/Note.md", parent: "Folder" },
+            } as any),
+        ).toBe(false);
+
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "space",
+                space: "Folder",
+                item: { path: "Folder/Subfolder", parent: "Folder" },
+            } as any),
+        ).toBe(false);
+
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "group",
+                space: "Folder",
+                item: { path: "Folder", parent: "" },
+            } as any),
+        ).toBe(false);
+    });
+
+    it("uses a non-space lucide link sticker with a linked label", () => {
+        expect(linkedItemIconPathState).toEqual({
+            path: "",
+            name: "linked",
+            type: "file",
+            label: { sticker: "lucide//link", color: "" },
+        });
+    });
+});
+
 describe("navigator file label color CSS", () => {
     const navigatorCss = fs.readFileSync(path.join(__dirname, "../css/Panels/Navigator/Navigator.css"), "utf8");
 
     it("applies custom file colors through text and icon variables", () => {
         expect(navigatorCss).toMatch(/\.mk-tree-text\.nav-file-title-content\s*{[^}]*color:\s*var\(--label-color\)/);
-        expect(navigatorCss).toMatch(/\.nav-file-title\s*>\s*\.mk-path-icon\s*>\s*button\s*>\s*svg\s*{[^}]*color:\s*var\(--icon-color\)/);
+        expect(navigatorCss).toMatch(/\.nav-file-title\s*>\s*\.mk-path-icon-stack\s*>\s*\.mk-path-icon\s*>\s*button\s*>\s*svg\s*{[^}]*color:\s*var\(--icon-color\)/);
     });
 
     it("aligns tag group rows with folder section rows", () => {
         expect(navigatorCss).toMatch(/\.mk-tree-tag\s+\.mk-tree-item\s*{[^}]*padding-left:\s*4px/);
         expect(navigatorCss).toMatch(/\.mk-tree-tag\s+\.mk-tree-text\s*{[^}]*font-size:\s*14px/);
+    });
+
+    it("positions the linked item icon relative to the primary path icon", () => {
+        expect(navigatorCss).toMatch(/\.mk-path-icon-stack\s*{[^}]*position:\s*relative/);
+        expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*position:\s*absolute/);
+        expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*left:\s*calc\(\s*var\(--icon-size\)\s*\*\s*-1\s*\)/);
     });
 });
 

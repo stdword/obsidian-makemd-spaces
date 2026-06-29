@@ -16,6 +16,7 @@ import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
+import { linkedItemIconPathState, pinnedItemIconPathState, shouldShowLinkedItemIcon } from "./linkedItemIcon";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
@@ -199,6 +200,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const showFileTag = shouldShowFileTag(isSpace, extension);
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
     const displayName = treeItemDisplayName(pathState, data, superstate.spacesIndex);
+    const showLinkedItemIcon = shouldShowLinkedItemIcon(data);
     const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
     const openTagColorPicker = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -258,7 +260,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 }}
                             ></CollapseToggle>
                         )}
-                        {pathState &&
+                        {pathState && (
                             <PathStickerView
                                 superstate={superstate}
                                 pathState={pathState}
@@ -267,7 +269,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 ariaLabel={stickerLabel}
                                 onIconClick={(isTagSpace || pathState?.path == "/") ? openTagColorPicker : undefined}
                             />
-                        }
+                        )}
                         <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{displayName}</div>
 
                         {data.type == "group" && data.childrenCount > 0 && (
@@ -284,6 +286,15 @@ export const TreeItem = (props: TreeItemProps) => {
 
                         <div className="mk-tree-span"></div>
                         {showFileTag && <span className="nav-file-tag">{extension}</span>}
+                        {showLinkedItemIcon && (
+                            <div className="mk-linked-item-icon">
+                                <PathStickerView
+                                    superstate={superstate}
+                                    pathState={linkedItemIconPathState}
+                                    ariaLabel="linked"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
