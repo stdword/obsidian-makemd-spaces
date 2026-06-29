@@ -1,6 +1,6 @@
 import { savePathColor } from "core/superstate/utils/label";
 import { hidePath, renamePathByName } from "core/superstate/utils/path";
-import { addPathToSpaceAtIndex, effectiveSpaceSort, removePathsFromSpace, removeSpace, updateSpaceSort } from "core/superstate/utils/spaces";
+import { addPathToSpaceAtIndex, effectiveSpaceSort, isPathPinnedInSpace, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
 import { openStickerPalette } from "shared/components/PathSticker";
@@ -21,7 +21,7 @@ import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
 import { isTagSpacePath } from "shared/schemas/builtin";
 
-export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void) => {
+export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
     const space = superstate.spacesIndex.get(path.path);
     if (!space) return;
     const isTagSpace = space.type == "tag" || isTagSpacePath(path.path);
@@ -136,6 +136,18 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     if (space.type != "vault" && !isTagSpace) {
         menuOptions.push(menuSeparator);
+
+        const displaySpace = superstate.spacesIndex.get(parentSpace);
+        if (displaySpace && depth > 0) {
+            const pinned = isPathPinnedInSpace(displaySpace, space.path);
+            menuOptions.push({
+                name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
+                icon: pinned ? "ui//pin-off" : "ui//pin",
+                onClick: () => {
+                    setPathPinnedInSpace(superstate, displaySpace.path, space.path, !pinned);
+                },
+            });
+        }
 
         // duplicate
         menuOptions.push({

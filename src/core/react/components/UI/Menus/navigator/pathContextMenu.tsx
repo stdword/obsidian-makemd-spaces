@@ -1,7 +1,7 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { savePathColor } from "core/superstate/utils/label";
 import { hidePath, hidePaths, renamePathByName } from "core/superstate/utils/path";
-import { TreeNode, removePathsFromSpace } from "core/superstate/utils/spaces";
+import { TreeNode, isPathPinnedInSpace, removePathsFromSpace, setPathPinnedInSpace } from "core/superstate/utils/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import React from "react";
@@ -248,12 +248,12 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
     return false;
 };
 
-export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void) => {
+export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void, depth = 0) => {
     const cache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
 
     if (!cache) return;
     if (cache.type == "space") {
-        showSpaceContextMenu(superstate, cache, rect, win, space, onClose);
+        showSpaceContextMenu(superstate, cache, rect, win, space, onClose, depth);
         return;
     }
 
@@ -271,6 +271,18 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     });
 
     menuOptions.push(menuSeparator);
+
+    const displaySpace = superstate.spacesIndex.get(space);
+    if (displaySpace && depth > 0) {
+        const pinned = isPathPinnedInSpace(displaySpace, path);
+        menuOptions.push({
+            name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
+            icon: pinned ? "ui//pin-off" : "ui//pin",
+            onClick: () => {
+                setPathPinnedInSpace(superstate, displaySpace.path, path, !pinned);
+            },
+        });
+    }
 
     // duplicate
     menuOptions.push({

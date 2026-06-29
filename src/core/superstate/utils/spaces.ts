@@ -83,8 +83,9 @@ export interface TreeNode {
     collapsed: boolean;
     rank: number;
     sort?: SpaceSort;
+    pinned?: boolean;
 }
-export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sortable: boolean, depth: number, parentId: string, parentPath: string, childrenCount: number, sort?: SpaceSort): TreeNode => {
+export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sortable: boolean, depth: number, parentId: string, parentPath: string, childrenCount: number, sort?: SpaceSort, pinned?: boolean): TreeNode => {
     return {
         id: parentId ? parentId + "/" + path.path : path.path,
         parentId,
@@ -99,9 +100,10 @@ export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sor
         childrenCount: childrenCount,
         type: "space",
         sort,
+        pinned,
     };
 };
-export const pathStateToTreeNode = (_superstate: Superstate, item: PathStateWithRank, space: string, path: string, depth: number, i: number, collapsed: boolean, sortable: boolean, childrenCount: number, parentId: string): TreeNode => ({
+export const pathStateToTreeNode = (_superstate: Superstate, item: PathStateWithRank, space: string, path: string, depth: number, i: number, collapsed: boolean, sortable: boolean, childrenCount: number, parentId: string, pinned?: boolean): TreeNode => ({
     item: item,
     space,
     id: parentId + "/" + item.path,
@@ -114,7 +116,42 @@ export const pathStateToTreeNode = (_superstate: Superstate, item: PathStateWith
     childrenCount,
     rank: item.rank,
     type: "file",
+    pinned,
 });
+
+export const isPathPinnedInSpace = (space: SpaceState, path: string) => ensureArray(space?.metadata?.pinned).includes(path);
+
+export const setPathPinnedInSpace = async (superstate: Superstate, spacePath: string, path: string, pinned: boolean) => {
+    const space = superstate.spacesIndex.get(spacePath);
+    if (!space || !path) return;
+
+    const currentPinned = ensureArray(space.metadata?.pinned);
+    const nextPinned = pinned
+        ? [...currentPinned.filter((itemPath) => itemPath != path), path]
+        : currentPinned.filter((itemPath) => itemPath != path);
+
+    if (JSON.stringify(currentPinned) == JSON.stringify(nextPinned)) return;
+    await saveSpaceMetadataValue(superstate, space.path, "pinned", nextPinned);
+};
+
+export const pinnedItemsFirst = <T extends CacheState & { path: string }>(items: T[], space: SpaceState, sort: SpaceSort): T[] => {
+    const pinned = ensureArray(space?.metadata?.pinned);
+    if (pinned.length == 0) return [...items].sort(spaceSortFn(sort));
+
+    const pinnedIndex = new Map(pinned.map((path, index) => [path, index]));
+    const rankIndex = new Map(ensureArray(space?.metadata?.["rank-order"]).map((path, index) => [path, index]));
+    const pinnedItems = items
+        .filter((item) => pinnedIndex.has(item.path))
+        .sort((a, b) => {
+            const aRank = rankIndex.has(a.path) ? rankIndex.get(a.path) : Number.MAX_SAFE_INTEGER;
+            const bRank = rankIndex.has(b.path) ? rankIndex.get(b.path) : Number.MAX_SAFE_INTEGER;
+            if (aRank != bRank) return aRank - bRank;
+            return pinnedIndex.get(a.path) - pinnedIndex.get(b.path);
+        });
+    const otherItems = items.filter((item) => !pinnedIndex.has(item.path)).sort(spaceSortFn(sort));
+
+    return [...pinnedItems, ...otherItems];
+};
 
 export const spaceRowHeight = (_superstate: Superstate, preset: number, section: boolean) => {
     const spaceHeight = preset ?? 29;

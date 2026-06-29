@@ -563,6 +563,7 @@ export class Superstate implements ISuperstate {
                     ...space.metadata,
                     links: ensureArray(space.metadata?.links).map((f) => (f == oldPath ? newPath : f)),
                     "rank-order": ensureArray(space.metadata?.["rank-order"]).map((f) => (f == oldPath ? newPath : f)),
+                    pinned: ensureArray(space.metadata?.pinned).map((f) => (f == oldPath ? newPath : f)),
                     "file-colors": nextFileColors,
                 });
             }
@@ -618,6 +619,7 @@ export class Superstate implements ISuperstate {
                     ...space.metadata,
                     links: ensureArray(space.metadata?.links).filter((f) => f != path),
                     "rank-order": ensureArray(space.metadata?.["rank-order"]).filter((f) => f != path),
+                    pinned: ensureArray(space.metadata?.pinned).filter((f) => f != path),
                     "file-colors": fileColors,
                 });
             });

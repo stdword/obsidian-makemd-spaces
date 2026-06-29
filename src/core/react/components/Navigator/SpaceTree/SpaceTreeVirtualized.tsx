@@ -150,6 +150,29 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
             }];
         });
     }, [flattenedTree, indentationWidth, rowHeights, rowOffsets]);
+    const pinnedSeparators = React.useMemo(() => {
+        return flattenedTree.flatMap((node, index) => {
+            if (!node?.pinned) return [];
+
+            let lastVisibleIndex = index;
+            for (let i = index + 1; i < flattenedTree.length; i++) {
+                const descendant = flattenedTree[i];
+                if (descendant.depth <= node.depth) break;
+                lastVisibleIndex = i;
+            }
+
+            const nextSibling = flattenedTree[lastVisibleIndex + 1];
+            if (nextSibling?.parentId == node.parentId && nextSibling?.pinned) return [];
+
+            const left = 6 + indentationWidth * (node.depth - 1);
+            const top = (rowOffsets[lastVisibleIndex] ?? 0) + (rowHeights[lastVisibleIndex] ?? 0) - 1;
+            return [{
+                id: `${node.id}-pinned-separator`,
+                left,
+                top,
+            }];
+        });
+    }, [flattenedTree, rowHeights, rowOffsets]);
     const calcYOffset = (index: number) => {
         if (!projected) return 0;
         if (projected.insert) {
@@ -213,6 +236,18 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                     "--vline-top": `${line.top}px`,
                                     "--vline-left": `${line.left}px`,
                                     "--vline-height": `${line.height}px`,
+                                } as CSSProperties
+                            }
+                        ></div>
+                    ))}
+                    {pinnedSeparators.map((separator) => (
+                        <div
+                            key={separator.id}
+                            className="mk-tree-pinned-separator"
+                            style={
+                                {
+                                    "--pinned-line-top": `${separator.top}px`,
+                                    "--pinned-line-left": `${separator.left}px`,
                                 } as CSSProperties
                             }
                         ></div>

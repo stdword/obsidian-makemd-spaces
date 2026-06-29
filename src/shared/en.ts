@@ -33,6 +33,8 @@ export const en = {
         applyItems: "Apply to Items in Folder",
         rename: "Rename",
         moveFile: "Move to...",
+        pinToTop: "Pin to Top",
+        unpin: "Unpin",
         duplicate: "Duplicate",
 
         delete: "Delete",
