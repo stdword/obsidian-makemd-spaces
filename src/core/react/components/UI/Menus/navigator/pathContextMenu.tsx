@@ -259,18 +259,16 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
 
     const menuOptions: SelectOption[] = [];
 
-    if (isTagSpacePath(space) || !isLinkedFileMenuItem(cache, space)) {
-        // change color
-        menuOptions.push({
-            name: i18n.menu.changeColor,
-            icon: "ui//palette",
-            type: SelectOptionType.Submenu,
-            closeParentOnOpen: true,
-            onSubmenu: (offset) => {
-                return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
-            },
-        });
-    }
+    // change color
+    menuOptions.push({
+        name: i18n.menu.changeColor,
+        icon: "ui//palette",
+        type: SelectOptionType.Submenu,
+        closeParentOnOpen: true,
+        onSubmenu: (offset) => {
+            return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
+        },
+    });
 
     menuOptions.push(menuSeparator);
 

@@ -16,7 +16,7 @@ import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
-import { linkedItemIconPathState, pinnedItemIconPathState, shouldShowLinkedItemIcon } from "./linkedItemIcon";
+import { linkedItemIconPathState, shouldShowLinkedItemIcon } from "./linkedItemIcon";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;

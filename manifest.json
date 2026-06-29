@@ -1,9 +1,9 @@
 {
   "id": "make-md-spaces",
-  "name": "make.md :: spaces",
-  "version": "1.0.0",
+  "name": "Spaces (from make.md)",
+  "version": "1.0.1",
   "minAppVersion": "0.16.0",
-  "description": "Navigator to organize spaces, extracted from original make.md plugin.",
+  "description": "File explorer with spaces, icons and colors. (forked from make.md plugin)",
   "author": "make.md, stdword",
   "authorUrl": "https://github.com/stdword/obsidian-makemd-spaces",
   "isDesktopOnly": true

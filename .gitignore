@@ -1,8 +1,6 @@
+dist
 node_modules
+
 .env
 .DS_Store
-undefined
 .vscode
-
-data.json
-dev/
