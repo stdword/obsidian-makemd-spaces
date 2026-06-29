@@ -33,6 +33,7 @@ export abstract class ISuperstate {
     persister: LocalCachePersister;
 
     initializeIndex: () => Promise<void>;
+    unload: () => void;
     initialize: () => Promise<void>;
     initializePaths: () => Promise<void>;
     initializeSpaces: () => Promise<void>;

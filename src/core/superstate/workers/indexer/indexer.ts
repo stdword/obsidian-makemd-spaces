@@ -154,6 +154,19 @@ export class Indexer {
     private message(workerId: number, message: { job: WorkerJobType; payload: any }) {
         this.workers[workerId].postMessage(message);
     }
+    public terminate() {
+        const error = new Error("Indexer terminated");
+        for (const calls of this.callbacks.values()) {
+            for (const [_, reject] of calls) {
+                reject(error);
+            }
+        }
+        this.callbacks.clear();
+        this.reloadQueue = [];
+        this.reloadSet.clear();
+        this.busy = this.busy.map(() => false);
+        this.workers.forEach((worker) => worker.terminate());
+    }
     /** Find the next available, non-busy worker; return undefined if all workers are busy. */
     private nextAvailableWorker(): number | undefined {
         const index = this.busy.indexOf(false);

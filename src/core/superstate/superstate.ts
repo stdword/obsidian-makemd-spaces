@@ -230,6 +230,9 @@ export class Superstate implements ISuperstate {
     public async initializeIndex() {
         await this.loadFromCache();
     }
+    public unload() {
+        this.indexer.terminate();
+    }
 
     public persister: LocalCachePersister;
     public async initialize() {

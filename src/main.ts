@@ -289,6 +289,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     }
 
     async onunload() {
+        this.superstate?.unload();
         await this.superstate?.persister?.unload();
         this.detachFileTreeLeaves();
     }
