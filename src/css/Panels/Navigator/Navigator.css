@@ -74,14 +74,24 @@
 }
 
 .mk-folder-lines .mk-tree-item::before {
+    display: none;
+}
+
+.mk-tree-lines-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.mk-folder-lines .mk-tree-line {
     display: block;
     content: " ";
     width: 1px;
-    height: var(--childrenCount);
+    height: var(--vline-height);
     border-left: 1px solid var(--nav-indentation-guide-color);
     position: absolute;
-    top: 34px;
-    left: 10px;
+    top: var(--vline-top);
+    left: var(--vline-left);
 }
 
 .mk-tree-wrapper .mk-indicator-row {

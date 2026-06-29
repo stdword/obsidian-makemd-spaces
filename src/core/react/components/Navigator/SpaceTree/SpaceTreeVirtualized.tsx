@@ -15,7 +15,6 @@ import { windowFromDocument } from "shared/utils/dom";
 import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
-import { calculateFolderLineHeight } from "./treeLineHeight";
 import { isTagSpacePath } from "shared/schemas/builtin";
 
 
@@ -103,6 +102,54 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         if (start > end) return rowHeights.slice(end, start).reduce((p, c) => p + c, 0);
         return -rowHeights.slice(start, end).reduce((p, c) => p + c, 0);
     };
+    const rowSpacing = (node: TreeNode) => node.type == "group" ? 0 : indentationWidth * (node.depth - 1) + (node.type == "space" ? 0 : 20);
+    const rowOffsets = React.useMemo(() => {
+        let offset = 0;
+        return rowHeights.map((height) => {
+            const start = offset;
+            offset += height;
+            return start;
+        });
+    }, [rowHeights]);
+    const treeLines = React.useMemo(() => {
+        return flattenedTree.flatMap((node, index) => {
+            if (!node || node.depth == 0 || !["group", "space"].includes(node.type) || node.collapsed) return [];
+
+            let firstDirectChildIndex = -1;
+            let lastDirectChildIndex = -1;
+            for (let i = index + 1; i < flattenedTree.length; i++) {
+                const descendant = flattenedTree[i];
+                if (descendant.depth <= node.depth) break;
+                if (descendant.depth == node.depth + 1) {
+                    if (firstDirectChildIndex == -1) {
+                        firstDirectChildIndex = i;
+                    }
+                    lastDirectChildIndex = i;
+                }
+            }
+
+            if (firstDirectChildIndex == -1 || lastDirectChildIndex == -1) return [];
+
+            let lastVisibleBranchIndex = lastDirectChildIndex;
+            for (let i = lastDirectChildIndex + 1; i < flattenedTree.length; i++) {
+                const descendant = flattenedTree[i];
+                if (descendant.depth <= node.depth) break;
+                lastVisibleBranchIndex = i;
+            }
+
+            const top = (rowOffsets[index] ?? 0) + (rowHeights[index] ?? 0);
+            const bottom = (rowOffsets[lastVisibleBranchIndex] ?? 0) + (rowHeights[lastVisibleBranchIndex] ?? 0);
+            const height = bottom - top - 4;
+            if (height <= 0) return [];
+
+            return [{
+                id: node.id,
+                left: 6 + rowSpacing(node) + 10 - 1,
+                top,
+                height,
+            }];
+        });
+    }, [flattenedTree, indentationWidth, rowHeights, rowOffsets]);
     const calcYOffset = (index: number) => {
         if (!projected) return 0;
         if (projected.insert) {
@@ -156,6 +203,21 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                     position: "relative",
                 }}
             >
+                <div className="mk-tree-lines-layer">
+                    {treeLines.map((line) => (
+                        <div
+                            key={line.id}
+                            className="mk-tree-line"
+                            style={
+                                {
+                                    "--vline-top": `${line.top}px`,
+                                    "--vline-left": `${line.left}px`,
+                                    "--vline-height": `${line.height}px`,
+                                } as CSSProperties
+                            }
+                        ></div>
+                    ))}
+                </div>
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => (
                     <div
                         key={flattenedTree[virtualRow.index].id}
@@ -193,7 +255,6 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                 data={flattenedTree[virtualRow.index]}
                                 disabled={false}
                                 depth={flattenedTree[virtualRow.index].depth}
-                                childLineHeight={calculateFolderLineHeight(flattenedTree, rowHeights, virtualRow.index, flattenedTree[virtualRow.index].collapsed)}
                                 indentationWidth={indentationWidth}
                                 dragStarted={props.dragStarted}
                                 dragOver={props.dragOver}

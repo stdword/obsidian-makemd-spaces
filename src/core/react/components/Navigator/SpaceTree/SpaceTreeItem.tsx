@@ -24,7 +24,6 @@ export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) =>
 export interface TreeItemProps {
     id: string;
     disabled: boolean;
-    childLineHeight?: number;
     clone?: boolean;
     collapsed?: boolean;
     depth: number;
@@ -46,7 +45,7 @@ export interface TreeItemProps {
 }
 
 export const TreeItem = (props: TreeItemProps) => {
-    const { id: _id, childLineHeight = 0, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled: _disabled, dragStarted, dragOver, dragEnded } = props;
+    const { id: _id, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled: _disabled, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
     const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
 
@@ -243,7 +242,6 @@ export const TreeItem = (props: TreeItemProps) => {
                         style={
                             {
                                 "--spacing": `${spacing}px`,
-                                "--childrenCount": `${childLineHeight}px`,
                                 ...treeItemActiveColorVariables(color, isFolder),
                             } as TreeItemStyle
                         }
