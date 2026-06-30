@@ -84,12 +84,14 @@
 }
 
 .mk-tree-pinned-separator {
+    /*
     corner-shape: square;
     border-bottom: 1px dashed var(--nav-indentation-guide-color);
     position: absolute;
     top: var(--pinned-line-top);
     left: var(--pinned-line-left);
     width: calc(100% - var(--pinned-line-left) - 4px);
+    */
 }
 
 .mk-folder-lines .mk-tree-line {
@@ -227,15 +229,19 @@ body .mk-tree-new {
     width: var(--icon-size);
     height: var(--icon-size);
     pointer-events: none;
-    color: var(--mk-ui-text-secondary);
 }
 .mk-linked-item-icon > .mk-path-icon > div > svg {
     color: var(--mk-ui-text-secondary) !important;
 }
 
-.mk-tree-item.is-pinned {
-    corner-shape: square;
-    border-bottom: 1px dashed var(--nav-indentation-guide-color);
+.mk-pinned-item-icon {
+    margin-top: 6px;
+    width: var(--icon-size);
+    height: var(--icon-size);
+    pointer-events: none;
+}
+.mk-pinned-item-icon > .mk-path-icon > div > svg {
+    color: var(--mk-ui-text-secondary) !important;
 }
 
 .nav-file-title > .mk-path-icon {

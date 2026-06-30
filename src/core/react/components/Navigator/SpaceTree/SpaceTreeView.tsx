@@ -343,7 +343,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         setModifier(modifier);
         e.dataTransfer.dropEffect = modifier;
         if (projected) {
-            superstate.ui.setDragLabel(`${projected.reorder && !projected.insert ? i18n.labels.reorderIn : modifier == "move" || !modifier ? i18n.labels.moveTo : modifier == "link" ? i18n.labels.addTo : i18n.labels.copyTo} ${projected.insert ? overName : (parentName ?? "Spaces")}`);
+            superstate.ui.setDragLabel(`${projected.reorder && !projected.insert ? i18n.labels.reorderIn : modifier == "move" || !modifier ? i18n.labels.moveTo : modifier == "link" ? i18n.labels.linkTo : i18n.labels.copyTo} ${projected.insert ? overName : (parentName ?? "Spaces")}`);
         }
         if (dragPaths.length > 1) {
             if (_overId && _overId != overId) setOverId(_overId);

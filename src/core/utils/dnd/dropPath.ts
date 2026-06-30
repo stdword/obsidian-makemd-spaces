@@ -1,6 +1,6 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { TreeNode } from "core/superstate/utils/spaces";
+import { TreeNode, isPathPinnedInSpace } from "core/superstate/utils/spaces";
 import { nodeIsAncestorOfTarget } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
@@ -10,6 +10,17 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, removePathsFromSpace, updatePathRankInSpace } from "core/superstate/utils/spaces";
 import { addTagToPath } from "core/superstate/utils/tags";
 import { DragProjection } from "./dragPath";
+
+const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath: string, parentId: UniqueIdentifier, overIndex: number, rank: number, flattenedTree: TreeNode[]) => {
+    const space = superstate.spacesIndex.get(newSpacePath);
+    if (!space || isPathPinnedInSpace(space, path)) return rank;
+
+    const firstNonPinnedSiblingIndex = flattenedTree.findIndex((node) => node.parentId == parentId && !node.pinned && node.type != "new");
+    if (firstNonPinnedSiblingIndex == -1) return 0;
+    if (overIndex >= firstNonPinnedSiblingIndex) return rank;
+
+    return flattenedTree[firstNonPinnedSiblingIndex].rank ?? 0;
+};
 
 export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (paths.length == 1) {
@@ -25,9 +36,12 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
 
         const parentId = projected.insert ? over : projected.parentId;
         const newSpace = flattenedTree.find(({ id }) => id === parentId)?.item.path;
-        const newRank = parentId == overItem.id ? -1 : (overItem.rank ?? -1);
+        let newRank = parentId == overItem.id ? -1 : (overItem.rank ?? -1);
 
         if (!newSpace) return;
+        if (projected.sortable) {
+            newRank = Math.min(...droppable.map((path) => rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, flattenedTree)));
+        }
         await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
     }
 };
@@ -43,6 +57,9 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
         const newSpace = projected.depth == 0 && !projected.insert ? null : clonedItems.find(({ id }) => id === parentId)?.item.path;
 
         let newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == overItem.id) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
+        if (projected.sortable && newSpace) {
+            newRank = rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, clonedItems);
+        }
         if (!active) {
             await dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);
             return;

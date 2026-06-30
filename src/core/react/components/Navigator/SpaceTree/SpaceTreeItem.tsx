@@ -16,7 +16,7 @@ import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
-import { linkedItemIconPathState, shouldShowLinkedItemIcon } from "./linkedItemIcon";
+import { linkedItemIconPathState, pinnedItemIconPathState, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "./linkedItemIcon";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
@@ -201,6 +201,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
     const displayName = treeItemDisplayName(pathState, data, superstate.spacesIndex);
     const showLinkedItemIcon = shouldShowLinkedItemIcon(data);
+    const showPinnedItemIcon = shouldShowPinnedItemIcon(data);
     const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
     const openTagColorPicker = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -292,6 +293,15 @@ export const TreeItem = (props: TreeItemProps) => {
                                     superstate={superstate}
                                     pathState={linkedItemIconPathState}
                                     ariaLabel="linked"
+                                />
+                            </div>
+                        )}
+                        {showPinnedItemIcon && (
+                            <div className="mk-pinned-item-icon">
+                                <PathStickerView
+                                    superstate={superstate}
+                                    pathState={pinnedItemIconPathState}
+                                    ariaLabel="pinned"
                                 />
                             </div>
                         )}

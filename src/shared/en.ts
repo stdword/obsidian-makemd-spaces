@@ -1,6 +1,6 @@
 export const en = {
     hintText: {
-        dragDropModifierKeys: "Hold Alt to copy",
+        dragDropModifierKeys: "Hold Alt/Opt to copy",
     },
 
     defaults: {
@@ -11,7 +11,7 @@ export const en = {
     commandPalette: {
         openSpaces: "Open Spaces",
         revealFile: "Reveal File in Spaces",
-        pinActiveFileToSpace: "Link Active File to Space",
+        linkActiveFileToSpace: "Link Active File to Space",
     },
 
     menu: {
@@ -117,7 +117,6 @@ export const en = {
 
         openItemInputPlaceholder: "Enter search text here…",
         linkItemInputPlaceholder: "Enter search text here…",
-        pinItemInputPlaceholder: "Enter search text here…",
         optionItemSelectPlaceholder: "Select Option",
 
         saveView: "Save View",
@@ -129,7 +128,7 @@ export const en = {
         deleteFiles: "Delete Files",
         deleteFile: "Delete File/Folder",
         moveTo: "Move to",
-        addTo: "Pin to",
+        linkTo: "Link to",
         copyTo: "Copy to",
 
         openASpace: "Open a Space",

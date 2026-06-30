@@ -30,7 +30,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
 
     plugin.addCommand({
         id: "mk-pin-active",
-        name: i18n.commandPalette.pinActiveFileToSpace,
+        name: i18n.commandPalette.linkActiveFileToSpace,
         callback: () => {
             const file = plugin.superstate.ui.activePath;
             if (!file) return;
