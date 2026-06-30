@@ -266,7 +266,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         type: SelectOptionType.Submenu,
         closeParentOnOpen: true,
         onSubmenu: (offset) => {
-            return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value), false, true);
+            return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, path, value, space), false, true);
         },
     });
 

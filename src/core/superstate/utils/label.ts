@@ -1,4 +1,3 @@
-import { saveSpaceCache } from "./spaces";
 import { ISuperstate } from "shared/types/superstate";
 
 const isFolderPathState = (pathState: any) => pathState?.type == "space" || pathState?.subtype == "folder" || pathState?.metadata?.file?.isFolder;
@@ -19,7 +18,29 @@ const updatePathColor = (superstate: ISuperstate, path: string, color: string) =
 
 export type PathColorTarget = string | { path: string; space?: string };
 
-export const savePathColor = async (superstate: ISuperstate, path: string, color: string) => {
+const saveFileColorsInSpace = async (superstate: ISuperstate, spaceState: any, nextFileColors: Record<string, string>) => {
+    const nextMetadata = {
+        ...spaceState.metadata,
+        "file-colors": nextFileColors,
+    };
+
+    await superstate.updateSpaceMetadata(spaceState.path, nextMetadata);
+    if (spaceState.type != "tag") {
+        await superstate.spaceManager.saveSpace(spaceState.path, (oldMetadata) => ({
+            ...oldMetadata,
+            "file-colors": nextFileColors,
+        }));
+    }
+};
+
+const saveFileColorInSpace = async (superstate: ISuperstate, spaceState: any, path: string, color: string) => {
+    const { [path]: _oldColor, ...fileColors } = spaceState.metadata?.["file-colors"] ?? {};
+    const nextFileColors = color ? { ...fileColors, [path]: color } : fileColors;
+
+    await saveFileColorsInSpace(superstate, spaceState, nextFileColors);
+};
+
+export const savePathColor = async (superstate: ISuperstate, path: string, color: string, treeSpace?: string) => {
     const pathState = superstate.pathsIndex.get(path);
     const spaceState = superstate.spacesIndex.get(path);
     if (!pathState && spaceState?.type == "tag") {
@@ -52,17 +73,12 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
         return;
     }
 
-    const spaces = (pathState.spaces ?? []).map((spacePath) => superstate.spacesIndex.get(spacePath)).filter((space) => space?.space);
+    const spaces = [...new Set([...(pathState.spaces ?? []), treeSpace].filter((spacePath) => spacePath))]
+        .map((spacePath) => superstate.spacesIndex.get(spacePath))
+        .filter((space) => space?.space);
+    const spaceSaves = spaces.map((spaceState) => saveFileColorInSpace(superstate, spaceState, path, color));
     updatePathColor(superstate, path, color);
-    await Promise.all(
-        spaces.map(async (spaceState) => {
-            const { [path]: _oldColor, ...fileColors } = spaceState.metadata?.["file-colors"] ?? {};
-            await saveSpaceCache(superstate as any, spaceState.space, {
-                ...spaceState.metadata,
-                "file-colors": color ? { ...fileColors, [path]: color } : fileColors,
-            });
-        }),
-    );
+    await Promise.all(spaceSaves);
 };
 
 export const savePathColors = async (superstate: ISuperstate, targets: PathColorTarget[], color: string) => {
@@ -103,10 +119,7 @@ export const savePathColors = async (superstate: ISuperstate, targets: PathColor
                 delete fileColors[path];
             }
         });
-        return saveSpaceCache(superstate as any, spaceState.space, {
-            ...spaceState.metadata,
-            "file-colors": fileColors,
-        });
+        return saveFileColorsInSpace(superstate, spaceState, fileColors);
     });
 
     await Promise.all([...pathSaves, ...spaceSaves]);

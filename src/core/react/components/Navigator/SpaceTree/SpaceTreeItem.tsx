@@ -205,7 +205,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
     const openTagColorPicker = (e: React.MouseEvent) => {
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        showColorPickerMenu(superstate, rect, windowFromDocument(e.view.document), color ?? "", (value) => savePathColor(superstate, pathState.path, value), false, false, false, "right");
+        showColorPickerMenu(superstate, rect, windowFromDocument(e.view.document), color ?? "", (value) => savePathColor(superstate, pathState.path, value, data.space), false, false, false, "right");
     };
     const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
     return (
