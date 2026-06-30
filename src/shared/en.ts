@@ -163,35 +163,39 @@ export const en = {
 
         spaceRowHeight: {
             name: "Row Height",
-            desc: "The height for each row in navigator (in pixels), default is 29",
+            desc: "The height for each row (in pixels), default is 29",
         },
         searchMenuTagsLimit: {
             name: "Search Menu Tag Limit",
-            desc: "Maximum tag suggestions in search menus. Leave empty to show all tags.",
+            desc: "Maximum tag suggestions in search menus. Leave empty to show all tags",
         },
         searchMenuFoldersLimit: {
             name: "Search Menu Folder Limit",
-            desc: "Maximum folder suggestions in search menus. Leave empty to show all folders.",
+            desc: "Maximum folder suggestions in search menus. Leave empty to show all folders",
         },
         searchMenuFilesLimit: {
             name: "Search Menu File Limit",
-            desc: "Maximum file suggestions in search menus. Leave empty to show all files.",
+            desc: "Maximum file suggestions in search menus. Leave empty to show all files",
         },
         searchMenuRefsLimit: {
             name: "Search Menu Ref Limit",
-            desc: "Maximum ref suggestions in search menus. Leave empty to show all refs.",
+            desc: "Maximum ref suggestions in search menus. Leave empty to show all refs",
         },
         folderIndentationLines: {
             name: "Show Folder Indentation Lines",
             desc: "Turn on to show a line on the left of folders to indicate indentation",
         },
-        defaultFoldersAtTop: {
-            name: "Folders at the Top",
-            desc: "Place folders before files when a space does not define its own folder grouping.",
+        pinnedSeparatorLine: {
+            name: "Show Pin Separator Line",
+            desc: "Turn on to show a dashed line after pinned items",
         },
         defaultSpaceSort: {
-            name: "Default Sort",
-            desc: "Sort order used when a space does not define its own sort.",
+            name: "Sort Order (by default)",
+            desc: "Sort order used when a space does not define its own sort",
+        },
+        defaultFoldersAtTop: {
+            name: "Show Folders at the Top (by default)",
+            desc: "Place folders before files when a space does not define its own setting",
         },
         openSpacesOnLaunch: {
             name: "Open Spaces as Default Tab",
@@ -199,7 +203,7 @@ export const en = {
         },
         overrideNativeMenu: {
             name: "Use Obsidian Context Menu",
-            desc: "Show the Obsidian context menu instead of Make.md",
+            desc: "Show the Obsidian context menu instead of Spaces",
         },
         expandFolderOnClick: {
             name: "Auto Expand Folder",

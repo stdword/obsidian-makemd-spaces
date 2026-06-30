@@ -84,14 +84,12 @@
 }
 
 .mk-tree-pinned-separator {
-    /*
     corner-shape: square;
     border-bottom: 1px dashed var(--nav-indentation-guide-color);
     position: absolute;
     top: var(--pinned-line-top);
     left: var(--pinned-line-left);
     width: calc(100% - var(--pinned-line-left) - 4px);
-    */
 }
 
 .mk-folder-lines .mk-tree-line {

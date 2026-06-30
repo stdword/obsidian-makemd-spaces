@@ -22,6 +22,7 @@ export interface MakeMDSettings {
     deleteFileOption: DeleteFileOption;
     expandFolderOnClick: boolean;
     folderIndentationLines: boolean;
+    pinnedSeparatorLine: boolean;
     defaultFoldersAtTop: boolean;
     defaultSpaceSort: SpaceSort;
     openSpacesOnLaunch: boolean;

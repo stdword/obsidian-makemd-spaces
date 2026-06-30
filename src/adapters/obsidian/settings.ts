@@ -122,6 +122,11 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                         document.body.classList.toggle("mk-folder-lines", value);
                     },
                 },
+                {
+                    name: "pinnedSeparatorLine",
+                    category: "appearance",
+                    type: "boolean",
+                },
 
 
                 {

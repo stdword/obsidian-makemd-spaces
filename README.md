@@ -9,4 +9,4 @@ This is with everything you need to stay focused on what you're working on or in
 
 ## Credits
 
-This is the cutted Navigator functionality from the original make.md plugin (98% of the code).
+This is the cutted Navigator functionality from the original make.md plugin (90% of the code was changed).

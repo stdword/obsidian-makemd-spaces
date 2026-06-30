@@ -240,7 +240,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                             }
                         ></div>
                     ))}
-                    {pinnedSeparators.map((separator) => (
+                    {superstate.settings.pinnedSeparatorLine && pinnedSeparators.map((separator) => (
                         <div
                             key={separator.id}
                             className="mk-tree-pinned-separator"

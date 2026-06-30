@@ -1,6 +1,6 @@
 # Project Context
 
-Obsidian plugin — очистка репозитория с make.md плагином до Navigator-плагина.
+Obsidian plugin — очистка репозитория с make.md плагином до Spaces Navigator-плагина.
 
 
 ## Purpose
