@@ -1,4 +1,4 @@
-import { SpaceDefinition } from "./types/spaceDef";
+import { SpaceDefinition } from "../shared/types/spaceDef";
 
 export const SPACE_SUB_FOLDER = ".space";
 export const FOCUSES_FILE = "focuses.json";

@@ -15,7 +15,7 @@ import { windowFromDocument } from "shared/utils/dom";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
 import { shouldShowFileTag } from "./fileTags";
-import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
+import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
 import { linkedItemIconPathState, pinnedItemIconPathState, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "./linkedItemIcon";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
 export type DropModifiers = "copy" | "link" | "move";

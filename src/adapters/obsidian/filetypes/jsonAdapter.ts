@@ -2,7 +2,7 @@ import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
 
 import { omit } from "lodash";
 import MakeMDPlugin from "main";
-import { SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
+import { SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "schemas/constants";
 import { safelyParseJSON } from "shared/utils/json";
 import { parseProperty } from "utils/parsers";
 

@@ -1,7 +1,7 @@
 import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
 import { linkedItemIconPathState, shouldShowLinkedItemIcon } from "core/react/components/Navigator/SpaceTree/linkedItemIcon";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
-import { canOpenTreeItemPath, isTagTreeItemPath } from "shared/schemas/builtin";
+import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
 import { canEditPathSticker } from "shared/components/PathSticker";
 import fs from "fs";

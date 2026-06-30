@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from "core/schemas/settings";
+import { DEFAULT_SETTINGS } from "schemas/settings";
 import { App, MarkdownView, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "obsidian";
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
@@ -8,7 +8,7 @@ import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager }
 
 import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
 import { safelyParseJSON } from "shared/utils/json";
-import { SPACE_SUB_FOLDER } from "shared/constants";
+import { SPACE_SUB_FOLDER } from "schemas/constants";
 
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 

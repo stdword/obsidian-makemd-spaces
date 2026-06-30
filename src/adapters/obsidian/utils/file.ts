@@ -3,7 +3,7 @@ import { AFile } from "makemd-core";
 import { App, TAbstractFile, TFile, TFolder, WorkspaceLeaf, normalizePath } from "obsidian";
 
 import { TargetLocation } from "shared/types/path";
-import { DEFAULT_NEW_NOTE_NAME } from "shared/constants";
+import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
 import { selectElementContents } from "shared/utils/dom";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";

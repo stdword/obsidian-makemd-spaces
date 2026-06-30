@@ -1,4 +1,4 @@
-import { parseFlexValue } from "core/schemas/parseFieldValue";
+import { parseFlexValue } from "utils/parseFieldValue";
 import { parseMultiString } from "utils/parsers";
 import { uniq } from "../shared/utils/array";
 

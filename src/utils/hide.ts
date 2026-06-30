@@ -1,4 +1,4 @@
-import { SPACE_SUB_FOLDER } from "shared/constants";
+import { SPACE_SUB_FOLDER } from "schemas/constants";
 import { MakeMDSettings } from "shared/types/settings";
 
 export const excludePathPredicate = (settings: MakeMDSettings, path: string) =>

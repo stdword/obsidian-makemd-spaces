@@ -1,6 +1,6 @@
 import { fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { FilesystemSpaceAdapter } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
-import { SPACE_DEF_DEFAULT_CONTENT } from "shared/constants";
+import { SPACE_DEF_DEFAULT_CONTENT } from "schemas/constants";
 
 describe("FilesystemSpaceAdapter", () => {
     const createAdapter = () => {

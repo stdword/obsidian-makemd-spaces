@@ -1,5 +1,5 @@
 import { TreeNode } from "core/superstate/utils/spaces";
-import { isTagSpacePath } from "shared/schemas/builtin";
+import { isTagSpacePath } from "schemas/builtin";
 import { PathState } from "shared/types/PathState";
 
 export const linkedItemIconPathState: PathState = {

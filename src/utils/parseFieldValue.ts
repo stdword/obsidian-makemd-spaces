@@ -1,6 +1,6 @@
 import { safelyParseJSON } from "shared/utils/json";
 import { parseMultiString } from "utils/parsers";
-import { fieldTypeForType } from "../../schemas/mdb";
+import { fieldTypeForType } from "../schemas/mdb";
 
 type FilePropValue = {
     value: string;

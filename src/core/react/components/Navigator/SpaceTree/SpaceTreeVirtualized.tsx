@@ -15,7 +15,7 @@ import { windowFromDocument } from "shared/utils/dom";
 import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
-import { isTagSpacePath } from "shared/schemas/builtin";
+import { isTagSpacePath } from "schemas/builtin";
 
 
 const ensureTagSpaceLoaded = (superstate: Superstate, tagPath: string) => {

@@ -1,5 +1,5 @@
 import { resolvePath } from "core/superstate/utils/path";
-import { builtinSpacePathPrefix } from "shared/schemas/builtin";
+import { builtinSpacePathPrefix } from "schemas/builtin";
 import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty } from "shared/types/mdb";

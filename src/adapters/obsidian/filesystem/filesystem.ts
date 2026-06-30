@@ -4,7 +4,7 @@ import MakeMDPlugin from "main";
 import { AFile, FileCache, FileSystemAdapter, FileTypeCache, FilesystemMiddleware, PathLabel } from "makemd-core";
 import { FileSystemAdapter as ObsidianFileSystemAdapter, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
-import { DEFAULT_SETTINGS } from "core/schemas/settings";
+import { DEFAULT_SETTINGS } from "schemas/settings";
 import { DBRows } from "shared/types/mdb";
 import { uniqueNameFromString } from "shared/utils/array";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
@@ -14,7 +14,7 @@ import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { serializeMultiDisplayString } from "utils/serializers";
 import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
-import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE } from "shared/constants";
+import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE } from "schemas/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
     static stateFileName = "superstate.mdc";

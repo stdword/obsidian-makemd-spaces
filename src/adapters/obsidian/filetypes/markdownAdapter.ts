@@ -4,7 +4,7 @@ import { App, CachedMetadata, TFile, TFolder } from "obsidian";
 import { uniq } from "shared/utils/array";
 import { parseMultiDisplayString } from "utils/parsers";
 import { ensureTag } from "utils/tags";
-import { DEFAULT_NEW_NOTE_NAME } from "shared/constants";
+import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 
 type MarkdownCache = {

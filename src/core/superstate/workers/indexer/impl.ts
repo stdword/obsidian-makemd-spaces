@@ -1,6 +1,6 @@
 
 
-import { parseAllMetadata, parseMetadata } from "core/superstate/cacheParsers";
+import { parseAllMetadata, parseMetadata } from "core/superstate/metadataParsing";
 import Fuse from "fuse.js";
 import { PathCache } from "shared/types/caches";
 import { PathState, SpaceState } from "shared/types/PathState";
@@ -18,7 +18,7 @@ export function parsePath (payload: PathWorkerPayload) {
 
 export function indexAllPaths (payload: SearchIndexPayload) {
     const options = {
-        
+
         keys: [{ name: 'name', weight: 2 }, "path", { name: 'spaceNames', weight: 0.5 }],
       };
     const items = [...payload.pathsIndex.values()].filter(f => f.hidden == false)

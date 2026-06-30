@@ -1,7 +1,5 @@
 import { SpaceSort } from "./spaceDef";
 
-export type DeleteFileOption = "trash" | "permanent" | "system-trash";
-
 export interface MakeMDSettings {
     // constants, not settings
     fmKeyColor: string;
@@ -19,7 +17,7 @@ export interface MakeMDSettings {
     newFileLocation: string;
 
     // settings
-    deleteFileOption: DeleteFileOption;
+    deleteFileOption: "trash" | "permanent" | "system-trash";
     expandFolderOnClick: boolean;
     folderIndentationLines: boolean;
     pinnedSeparatorLine: boolean;

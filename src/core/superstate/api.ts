@@ -1,5 +1,5 @@
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
-import { parseFieldValue } from "core/schemas/parseFieldValue";
+import { parseFieldValue } from "utils/parseFieldValue";
 import { SelectOption, SpaceManager } from "makemd-core";
 import { SpaceManagerInterface } from "shared/types/spaceManager";
 import { PathState } from "shared/types/superstate";
@@ -21,6 +21,7 @@ export interface APISpaceManager {
 export class API implements IAPI {
     private superstate: ISuperstate;
     private spaceManager: SpaceManager | SpaceManagerInterface | APISpaceManager; // Can be SpaceManager, SpaceManagerInterface or SpaceManagerContext
+
     public constructor(superstate: ISuperstate, spaceManager?: SpaceManager | SpaceManagerInterface | APISpaceManager) {
         this.superstate = superstate;
         this.spaceManager = spaceManager || superstate.spaceManager;

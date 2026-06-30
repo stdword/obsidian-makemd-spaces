@@ -1,7 +1,7 @@
 // Adapted from React Tags https://github.com/react-tags/react-tags
 
 import { UIManager } from "core/middleware/ui";
-import { PointerModifiers } from "core/types/ui";
+import { PointerModifiers } from "schemas/ui";
 import Fuse from "fuse.js";
 import { SelectOption, SelectSection } from "makemd-core";
 import React, { useEffect, useMemo, useRef, useState } from "react";

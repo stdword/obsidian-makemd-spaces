@@ -18,7 +18,7 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
-import { isTagSpacePath } from "shared/schemas/builtin";
+import { isTagSpacePath } from "schemas/builtin";
 
 function isLinkedFileMenuItem(item: any, space?: string) {
     return (

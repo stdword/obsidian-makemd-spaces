@@ -3,9 +3,9 @@ import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
 import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { builtinSpaces } from "core/types/space";
-import { DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE, SPACE_DEF_PATH } from "shared/constants";
-import { builtinSpacePathPrefix } from "shared/schemas/builtin";
+import { builtinSpaces } from "schemas/space";
+import { DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE, SPACE_DEF_PATH } from "schemas/constants";
+import { builtinSpacePathPrefix } from "schemas/builtin";
 import { removeTrailingSlashFromFolder } from "shared/utils/paths";
 import { folderPathToString } from "utils/path";
 import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";

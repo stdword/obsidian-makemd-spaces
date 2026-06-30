@@ -4,9 +4,9 @@ import { PathLabel } from "shared/types/caches";
 
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { parseSpaceMetadata } from "core/superstate/utils/spaces";
-import { builtinSpaces } from "core/types/space";
+import { builtinSpaces } from "schemas/space";
 import { ensureArray, tagSpacePathFromTag } from "core/utils/strings";
-import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT, SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_DEF_DEFAULT_CONTENT, SPACE_DEF_FILE, SPACE_SUB_FOLDER } from "schemas/constants";
 import { Focus } from "shared/types/focus";
 import { SpaceProperty } from "shared/types/mdb";
 import { SpaceDefinition } from "shared/types/spaceDef";

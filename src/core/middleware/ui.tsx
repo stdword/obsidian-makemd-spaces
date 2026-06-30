@@ -1,4 +1,4 @@
-import { uiPlaceholders } from "core/assets/placeholders";
+import { uiPlaceholders } from "shared/assets/placeholders";
 import { showMenu } from "core/react/components/UI/Menus/menu";
 
 import { showSelectMenu } from "core/react/components/UI/Menus/selectMenu";
@@ -10,7 +10,7 @@ import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React from "react";
 import { RootOptions } from "react-dom/client";
-import { tagsSpacePath } from "shared/schemas/builtin";
+import { tagsSpacePath } from "schemas/builtin";
 import { MenuObject, SelectMenuProps } from "shared/types/menu";
 import { TargetLocation } from "shared/types/path";
 import { SpaceState } from "shared/types/PathState";

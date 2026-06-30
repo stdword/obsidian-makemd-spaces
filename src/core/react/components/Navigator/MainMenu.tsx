@@ -2,7 +2,7 @@ import classNames from "classnames";
 
 import { Superstate } from "makemd-core";
 import React, { useRef } from "react";
-import { DEFAULT_SYSTEM_NAME } from "shared/constants";
+import { DEFAULT_SYSTEM_NAME } from "schemas/constants";
 
 interface MainMenuComponentProps {
     superstate: Superstate;

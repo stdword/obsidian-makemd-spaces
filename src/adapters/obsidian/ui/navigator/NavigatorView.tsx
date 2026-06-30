@@ -5,7 +5,7 @@ export const VIEW_DISPLAY_TEXT = "Spaces";
 export const ICON = "layout-grid";
 
 import { SpaceManagerProvider } from "core/react/context/SpaceManagerContext";
-import { eventTypes } from "core/types/types";
+import { eventTypes } from "schemas/event";
 import { Navigator, Superstate } from "makemd-core";
 import { Root } from "react-dom/client";
 import { ObsidianUI } from "../ui";

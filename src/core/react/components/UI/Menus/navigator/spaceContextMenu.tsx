@@ -19,7 +19,7 @@ import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
-import { isTagSpacePath } from "shared/schemas/builtin";
+import { isTagSpacePath } from "schemas/builtin";
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
     const space = superstate.spacesIndex.get(path.path);

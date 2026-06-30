@@ -3,7 +3,7 @@ import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/superstate/utils/spaces";
-import { CustomVaultChangeEvent, eventTypes } from "core/types/types";
+import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragProjection, getDragDepth, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { hideFolderNoteFileFromItems } from "integrations/folderNotesPluginIntegration";
@@ -17,7 +17,7 @@ import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
 import { eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
-import { isTagTreeItemPath } from "shared/schemas/builtin";
+import { isTagTreeItemPath } from "schemas/builtin";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;

@@ -4,9 +4,9 @@ import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "shared/utils/array";
 
-import { builtinSpaces } from "core/types/space";
+import { builtinSpaces } from "schemas/space";
 import { initiateString, tagSpacePathFromTag } from "core/utils/strings";
-import { builtinSpacePathPrefix, isTagSpacePath, tagsSpacePath } from "shared/schemas/builtin";
+import { builtinSpacePathPrefix, isTagSpacePath, tagsSpacePath } from "schemas/builtin";
 import { excludePathPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";

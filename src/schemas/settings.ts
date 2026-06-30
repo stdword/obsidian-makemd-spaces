@@ -1,4 +1,4 @@
-import { MakeMDSettings } from "../../shared/types/settings";
+import { MakeMDSettings } from "../shared/types/settings";
 
 export const DEFAULT_SETTINGS: MakeMDSettings = {
     // constants, not settings

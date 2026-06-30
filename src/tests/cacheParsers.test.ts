@@ -1,4 +1,4 @@
-import { parseMetadata } from "core/superstate/cacheParsers";
+import { parseMetadata } from "core/superstate/metadataParsing";
 import { SpaceState } from "shared/types/PathState";
 
 describe("parseMetadata", () => {
