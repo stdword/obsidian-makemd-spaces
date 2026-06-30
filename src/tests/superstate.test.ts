@@ -493,6 +493,38 @@ describe("Superstate tag initialization", () => {
         ]);
     });
 
+    it("returns linked tag spaces as folder children without requiring tag path cache", () => {
+        const { superstate } = createSuperstate();
+        const tagPath = tagSpacePathFromTag("#📖/brain");
+        superstate.spacesIndex.set("Projects", {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                links: [tagPath],
+                "rank-order": [],
+                pinned: [],
+            },
+            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+        } as any);
+        superstate.spacesIndex.set(tagPath, {
+            type: "tag",
+            name: "📖/brain",
+            path: tagPath,
+            metadata: {
+                "rank-order": [],
+                pinned: [],
+            },
+            space: { path: tagPath, name: "📖/brain", defPath: "", notePath: "", folderPath: "" },
+        } as any);
+        superstate.spacesMap.set(tagPath, new Set(["Projects"]));
+
+        const items = superstate.getSpaceItems("Projects");
+
+        expect(items.map((item: any) => [item.path, item.subtype])).toEqual([[tagPath, "tag"]]);
+        expect(superstate.pathsIndex.has(tagPath)).toBe(false);
+    });
+
     it("leaves empty folder rank-order unset so manual sort falls back to name ascending", () => {
         const { superstate } = createSuperstate();
         superstate.spacesIndex.set("Projects", {
@@ -689,6 +721,61 @@ describe("Superstate tag initialization", () => {
                 }),
             ]),
         );
+    });
+
+    it("unpins a file from its old folder space when moving it out", async () => {
+        const { superstate } = createSuperstate();
+        const oldPath = "Atlas/AI/0 Notes/работа с агентами при программировании.md";
+        const newPath = "Atlas/AI/работа с агентами при программировании.md";
+
+        superstate.spacesIndex.set("Atlas/AI/0 Notes", {
+            type: "folder",
+            name: "0 Notes",
+            path: "Atlas/AI/0 Notes",
+            metadata: {
+                links: [],
+                "rank-order": [],
+                pinned: [oldPath],
+                "file-colors": {},
+            },
+            space: { path: "Atlas/AI/0 Notes", name: "0 Notes", defPath: "Atlas/AI/0 Notes/.space/context.json", notePath: "", folderPath: "Atlas/AI/0 Notes" },
+        } as any);
+        superstate.pathsIndex.set(oldPath, {
+            path: oldPath,
+            name: "работа с агентами при программировании.md",
+            type: "file",
+            subtype: "md",
+            tags: [],
+            spaces: ["Atlas/AI/0 Notes"],
+            outlinks: [],
+            hidden: false,
+            parent: "Atlas/AI/0 Notes",
+            label: { sticker: "", color: "" },
+        });
+        superstate.spacesMap.set(oldPath, new Set(["Atlas/AI/0 Notes"]));
+        superstate.reloadPath = jest.fn(async (path: string) => {
+            if (path == newPath) {
+                superstate.pathsIndex.set(newPath, {
+                    path: newPath,
+                    name: "работа с агентами при программировании.md",
+                    type: "file",
+                    subtype: "md",
+                    tags: [],
+                    spaces: ["Atlas/AI"],
+                    outlinks: [],
+                    hidden: false,
+                    parent: "Atlas/AI",
+                    label: { sticker: "", color: "" },
+                });
+                superstate.spacesMap.set(newPath, new Set(["Atlas/AI"]));
+            }
+            return true;
+        });
+
+        await superstate.onPathRename(oldPath, newPath);
+
+        expect(superstate.spacesIndex.get("Atlas/AI/0 Notes").metadata.pinned).toEqual([]);
+        expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("Atlas/AI/0 Notes", expect.any(Function));
     });
 });
 

@@ -88,7 +88,7 @@ export const reorderOpenSpace = (superstate: Superstate, path: string, index: nu
     superstate.spaceManager.saveFocuses(newFocuses);
 };
 export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: string, oldSpacePath: string | null, newSpacePath: string, index: number, modifier?: DropModifiers) => {
-    const cache: PathState = superstate.pathsIndex.get(path);
+    const cache: PathState = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
     if (!cache) return false;
     if (!newSpacePath) {
         reorderOpenSpace(superstate, path, index);

@@ -1,5 +1,5 @@
 import { TreeNode } from "core/superstate/utils/spaces";
-import { isTagSpacePath } from "schemas/builtin";
+import { isTagSpacePath, tagsSpacePath } from "schemas/builtin";
 import { PathState } from "shared/types/PathState";
 
 export const linkedItemIconPathState: PathState = {
@@ -17,7 +17,9 @@ export const pinnedItemIconPathState: PathState = {
 };
 
 export const shouldShowLinkedItemIcon = (data: Pick<TreeNode, "space" | "item" | "depth">) => {
-    return data.depth > 0 && data.item?.parent != null && data.item.parent != "" && data.item.parent != data.space && !isTagSpacePath(data.space);
+    if (data.depth <= 0 || isTagSpacePath(data.space)) return false;
+    if (data.item?.parent != null && data.item.parent != "" && data.item.parent != data.space) return true;
+    return isTagSpacePath(data.item?.path) && data.space != data.item?.path && data.space != tagsSpacePath;
 }
 
 export const shouldShowPinnedItemIcon = (data: Pick<TreeNode, "pinned">) => {

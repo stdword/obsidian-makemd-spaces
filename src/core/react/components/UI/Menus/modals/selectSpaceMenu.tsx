@@ -10,7 +10,7 @@ export const showOpenMenu = (
     superstate: Superstate,
     saveLink: (link: string, isNew?: boolean, type?: string) => void,
 ) => {
-    const tabs: SearchMenuTab[] = [ 'folders', 'tags', 'refs' ];
+    const tabs: SearchMenuTab[] = [ 'folders', 'tags', 'files' ];
 
     return showSearchMenu({
         offset,

@@ -155,7 +155,7 @@ export const pinnedItemsFirst = <T extends CacheState & { path: string }>(items:
 
 export const spaceRowHeight = (_superstate: Superstate, preset: number, section: boolean) => {
     const spaceHeight = preset ?? 29;
-    return spaceHeight + (section ? 10 : 0);
+    return spaceHeight;
 };
 
 export const defaultSpaceSort = {
@@ -223,10 +223,10 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
 
     if (spaceState.type == "tag" || spaceState.type == "folder" || spaceState.type == "vault") {
         if (effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings).field != "rank") return;
-        const currentOrder = spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path);
+        const currentOrder = ensureArray(spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path));
         const nextOrder = currentOrder.filter((itemPath) => itemPath != path);
         nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
-        await saveSpaceMetadataValue(superstate, space, "rank-order", nextOrder);
+        await saveSpaceMetadataValue(superstate, space, "rank-order", [...new Set(nextOrder)]);
         return;
     }
 };
@@ -236,7 +236,7 @@ export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: Pa
     //pre-save before vault change happens so we can save the rank
     const currentPathState = superstate.pathsIndex.get(item.path);
     if (!currentPathState) return;
-    const newPath = newParent == "/" ? currentPathState.name : newParent + "/" + currentPathState.name;
+    const newPath = movePath(item.path, newParent);
 
     if (await superstate.spaceManager.pathExists(newPath)) {
         superstate.ui.notify(i18n.notice.fileExists);
@@ -246,9 +246,18 @@ export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: Pa
     if (copy) {
         await superstate.spaceManager.copyPath(item.path, newParent);
     } else {
-        await superstate.spaceManager.renamePath(item.path, movePath(item.path, newParent));
+        await superstate.spaceManager.renamePath(item.path, newPath);
     }
-    updatePathRankInSpace(superstate, newPath, index, newParent);
+    const targetSpace = superstate.spacesIndex.get(newParent);
+    if (targetSpace) {
+        await saveSpaceMetadataValue(
+            superstate,
+            newParent,
+            "rank-order",
+            ensureArray(targetSpace.metadata?.["rank-order"]).filter((itemPath) => itemPath != item.path && itemPath != newPath),
+        );
+    }
+    await updatePathRankInSpace(superstate, newPath, index, newParent);
 };
 
 export const createSpace = async (superstate: Superstate, path: string, newSpace?: SpaceDefinition) => {
@@ -347,8 +356,16 @@ export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: Spac
 
     await saveSpaceCache(superstate, space.space, { ...space.metadata, links: spaceExists });
 
-    await superstate.reloadPath(path, true).then(() => superstate.dispatchEvent("pathStateUpdated", { path: path }));
-    updatePathRankInSpace(superstate, path, rank, space.path);
+    const currentSpaces = superstate.spacesMap.get(path);
+    superstate.spacesMap.set(path, new Set([...currentSpaces, space.path]));
+
+    if (superstate.pathsIndex.has(path)) {
+        await superstate.reloadPath(path, true).then(() => superstate.dispatchEvent("pathStateUpdated", { path: path }));
+    } else {
+        superstate.dispatchEvent("pathStateUpdated", { path: path });
+        superstate.dispatchEvent("spaceStateUpdated", { path: space.path });
+    }
+    await updatePathRankInSpace(superstate, path, rank, space.path);
 };
 
 export const removeSpace = async (superstate: Superstate, space: string) => {
@@ -420,12 +437,18 @@ export const removePathsFromSpace = async (superstate: Superstate, spacePath: st
     if (space.type == "tag") {
         await Promise.all(paths.map((path) => deleteTagFromPath(superstate, path, space.name)));
     } else if (space.type == "folder" || space.type == "vault") {
+        paths.forEach((path) => {
+            const nextSpaces = new Set([...superstate.spacesMap.get(path)].filter((itemSpace) => itemSpace != space.path));
+            superstate.spacesMap.set(path, nextSpaces);
+        });
         await saveSpaceMetadataValue(
             superstate,
             space.path,
             "links",
-            space.metadata.links.filter((f) => !paths.some((g) => g == f)),
+            ensureArray(space.metadata?.links).filter((f) => !paths.some((g) => g == f)),
         );
+        paths.forEach((path) => superstate.dispatchEvent("pathStateUpdated", { path }));
+        superstate.dispatchEvent("spaceStateUpdated", { path: space.path });
     }
 };
 
