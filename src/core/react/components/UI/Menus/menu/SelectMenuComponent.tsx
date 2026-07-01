@@ -13,7 +13,7 @@ import SelectMenuPillComponent from "./SelectMenuPill";
 import SelectMenuSuggestions from "./SelectMenuSuggestions";
 import { focusNextElement } from "./concerns/focusNextElement";
 import { matchAny, matchExact } from "./concerns/matchers";
-import { applySectionLimits, escapeActionForQuery } from "./selectMenuLimits";
+import { applySectionLimits, escapeActionForQuery, prioritizeSearchMatches } from "./selectMenuLimits";
 const KEYS = {
     ENTER: "Enter",
     TAB: "Tab",
@@ -185,11 +185,12 @@ function getOptions(props: SelectMenuComponentProps, query: string, section: str
         ignoreLocation: true,
         // ignoreFieldNorm: false,
         // fieldNormWeight: 1,
-        keys: ["name", "value"],
+        keys: ["name", "description", "value"],
     };
     const fuse = new Fuse(suggestions, fuseOptions);
     options = query.length == 0 ? suggestions : fuse.search(query).map((result) => result.item);
     options = sortSearchOptions(options);
+    options = prioritizeSearchMatches(options, query);
     // if (props.suggestionsTransform) {
     //   options = props.suggestionsTransform(query, props.suggestions);
     // } else {

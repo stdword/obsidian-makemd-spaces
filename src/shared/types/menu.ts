@@ -8,6 +8,7 @@ export type SelectMenuProps = {
     editable: boolean;
     allowNewBySection?: Record<string, boolean | undefined>;
     options: SelectOption[];
+    getOptionsForModifiers?: (modifiers: { shiftKey: boolean }) => SelectOption[];
     addKeyword?: string;
     defaultOptions?: SelectOption[];
     saveOptions?: (options: string[], value: string[], isNew?: boolean, section?: string) => void;

@@ -170,5 +170,81 @@ describe("showOpenMenu", () => {
                 expect.objectContaining({ value: "Hidden.md" }),
             ]),
         );
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ value: "Hidden" }),
+                expect.objectContaining({ value: "Hidden.md" }),
+            ]),
+        );
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ value: "Hidden" }),
+                expect.objectContaining({ value: "Hidden.md" }),
+            ]),
+        );
+    });
+
+    it("keeps hidden items out of the initial list but exposes them while Shift is held", async () => {
+        const openMenu = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn((_ordered: boolean, hidden?: boolean) =>
+                [
+                    { name: "Visible", path: "Visible", type: "folder", hidden: false },
+                    { name: "Hidden", path: "Hidden", type: "folder", hidden: true },
+                ].filter((space) => hidden || !space.hidden),
+            ),
+            spaceManager: {
+                readTags: jest.fn((): string[] => []),
+            },
+            spacesIndex: new Map(),
+            pathsIndex: new Map([
+                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false, label: {} }],
+                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true, label: {} }],
+            ]),
+            settings: {},
+            ui: {
+                openMenu,
+            },
+        } as any;
+
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn(), false);
+
+        const menuConfig = openMenu.mock.calls[0][1];
+        expect(menuConfig.options).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Hidden.md" })]));
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(expect.arrayContaining([expect.objectContaining({ value: "Hidden.md" })]));
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Hidden.md" })]));
+    });
+
+    it("hides descendants of hidden folders until Shift is held even if their cached hidden flag is stale", async () => {
+        const openMenu = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn((_ordered: boolean, hidden?: boolean) =>
+                [
+                    { name: "Obsidian", path: "Atlas/Obsidian", type: "folder" },
+                    { name: "Notes", path: "Atlas/Obsidian/Notes", type: "folder" },
+                ].filter((space) => hidden || !space.path.startsWith("Atlas/Obsidian")),
+            ),
+            spaceManager: {
+                readTags: jest.fn((): string[] => []),
+            },
+            spacesIndex: new Map(),
+            pathsIndex: new Map([
+                ["Atlas/Obsidian/Notes.md", { name: "Notes", path: "Atlas/Obsidian/Notes.md", type: "file", hidden: false, label: {} }],
+            ]),
+            settings: {
+                hiddenExtensions: [],
+                hiddenFiles: ["Atlas/Obsidian"],
+            },
+            ui: {
+                openMenu,
+            },
+        } as any;
+
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn(), false);
+
+        const menuConfig = openMenu.mock.calls[0][1];
+        expect(menuConfig.options).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Atlas/Obsidian/Notes.md" })]));
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(expect.arrayContaining([expect.objectContaining({ value: "Atlas/Obsidian/Notes.md" })]));
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Atlas/Obsidian/Notes.md" })]));
     });
 });

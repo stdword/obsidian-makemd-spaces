@@ -9,14 +9,14 @@ export const isSpaceInternalPath = (path: string) =>
     path.startsWith(SPACE_SUB_FOLDER + "/");
 
 export const excludePathPredicate = (settings: MakeMDSettings, path: string) =>
-    settings.hiddenExtensions.some((e) => path.endsWith(e)) ||
+    (settings?.hiddenExtensions ?? []).some((e) => path.endsWith(e)) ||
         isSpaceInternalPath(path) ||
         path.startsWith("/#") ||
-        settings.hiddenFiles.some((e) => path.startsWith(e));
+        (settings?.hiddenFiles ?? []).some((e) => path.startsWith(e));
 
 export const excludeSpacesPredicate = (settings: MakeMDSettings, path: string) =>
-    settings.skipFolderNames.some((e) => path.endsWith(e)) ||
+    (settings?.skipFolderNames ?? []).some((e) => path.endsWith(e)) ||
         isSpaceInternalPath(path) ||
         path.startsWith("/#") ||
         path.startsWith("/$") ||
-        settings.hiddenFiles.some((e) => path.startsWith(e));
+        (settings?.hiddenFiles ?? []).some((e) => path.startsWith(e));

@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { MenuObject } from "shared/types/menu";
 import { Rect } from "shared/types/Pos";
 import { matchAny } from "./concerns/matchers";
+import { verticalDeltaForShiftWheel } from "./selectMenuLimits";
 function markIt(name: string, query: string) {
     const regexp = matchAny(query);
     return name?.replace(regexp, "<mark>$&</mark>");
@@ -144,6 +145,11 @@ const SelectMenuSuggestions = (props: {
     openSubmenu?: (menu: MenuObject) => void;
 }) => {
     const canFocusOption = (item: SelectOption) => !item.disabled && item.type != SelectOptionType.Separator && item.type != SelectOptionType.Section && item.type != SelectOptionType.Input && item.type != SelectOptionType.Custom;
+    const scrollShiftWheelVertically = (e: React.WheelEvent<HTMLDivElement>) => {
+        if (!e.shiftKey) return;
+        e.preventDefault();
+        e.currentTarget.scrollTop += verticalDeltaForShiftWheel(e.deltaY, e.deltaX);
+    };
 
     const options = props.options.map((item, index) => {
         const key = `${props.id}-${index}`;
@@ -241,7 +247,7 @@ const SelectMenuSuggestions = (props: {
     });
 
     return (
-        <div className="mk-menu-suggestions">
+        <div className="mk-menu-suggestions" onWheel={scrollShiftWheelVertically}>
             {options}
 
             {props.query && props.allowNew && (

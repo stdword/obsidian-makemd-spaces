@@ -5,6 +5,7 @@ import { Superstate } from "makemd-core";
 import { Rect } from "shared/types/Pos";
 import { syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
 import { SpaceInfo } from "shared/types/spaceInfo";
+import { excludePathPredicate } from "utils/hide";
 
 export type SearchMenuTab = "folders" | "files" | "tags" | "refs";
 export function getSearchMenuTabs(settings: MakeMDSettings, tabs: SearchMenuTab[]) {
@@ -88,37 +89,18 @@ const spacesForSearch = (superstate: Superstate, ordered: boolean, hidden?: bool
     return [...spaces, ...missingFolderSpaces];
 };
 
-export const showSearchMenu = async ({
-    offset,
-    win,
-    superstate,
-    tabs,
-    placeholder,
-    saveOptions,
-    selectProps,
-    hidden,
-    includeUnindexedFolders,
-}: {
-    offset: Rect;
-    win: Window;
-    superstate: Superstate;
-    tabs: SearchMenuTab[];
-    placeholder?: string;
-    saveOptions: SelectMenuProps["saveOptions"];
-    selectProps?: Partial<SelectMenuProps>;
-    hidden?: boolean;
-    includeUnindexedFolders?: boolean;
-}) => {
-    offset; // offset var is not used
+const isHiddenForSearch = (superstate: Superstate, path: string) => {
+    const pathState = (superstate as any).pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
+    return pathState?.hidden == true || excludePathPredicate(superstate.settings, path);
+};
 
-    const visibleTagPaths = tabs.includes('tags') ? await syncTagSpacesFromObsidian(superstate) : null;
-    const tabsDesc = getSearchMenuTabs(superstate.settings, tabs)
-    const suggestions: SelectOption[] = []
+const searchMenuOptions = (superstate: Superstate, tabs: SearchMenuTab[], visibleTagPaths: Set<string>, hidden?: boolean, includeUnindexedFolders?: boolean): SelectOption[] => {
+    const suggestions: SelectOption[] = [];
 
     if (tabs.includes('files'))
         suggestions.push(...
             [...superstate.pathsIndex.values()]
-            .filter((f) => f.type == "file" && (hidden ? true : !f.hidden))
+            .filter((f) => f.type == "file" && (hidden || !isHiddenForSearch(superstate, f.path)))
             .map<SelectOption>((f) => ({
                 section: 'files',
                 icon: f.effectiveLabel?.sticker ?? f.label?.sticker,
@@ -130,7 +112,7 @@ export const showSearchMenu = async ({
 
     if (tabs.includes('folders') || tabs.includes('tags')) {
         const spaces = spacesForSearch(superstate, true, hidden, includeUnindexedFolders)
-            .filter((s) => hidden || !((superstate as any).pathStateForPath?.(s.path) ?? superstate.pathsIndex.get(s.path))?.hidden);
+            .filter((s) => hidden || !isHiddenForSearch(superstate, s.path));
 
         if (tabs.includes('folders'))
             suggestions.push(...spaces
@@ -167,13 +149,45 @@ export const showSearchMenu = async ({
             )
     }
 
+    return suggestions.slice().sort(searchMenuOptionSort);
+};
+
+export const showSearchMenu = async ({
+    offset,
+    win,
+    superstate,
+    tabs,
+    placeholder,
+    saveOptions,
+    selectProps,
+    hidden,
+    includeUnindexedFolders,
+}: {
+    offset: Rect;
+    win: Window;
+    superstate: Superstate;
+    tabs: SearchMenuTab[];
+    placeholder?: string;
+    saveOptions: SelectMenuProps["saveOptions"];
+    selectProps?: Partial<SelectMenuProps>;
+    hidden?: boolean;
+    includeUnindexedFolders?: boolean;
+}) => {
+    offset; // offset var is not used
+
+    const visibleTagPaths = tabs.includes('tags') ? await syncTagSpacesFromObsidian(superstate) : null;
+    const tabsDesc = getSearchMenuTabs(superstate.settings, tabs)
+    const tagPaths = visibleTagPaths ?? new Set<string>();
+    const optionsForHiddenState = (showHidden?: boolean) => searchMenuOptions(superstate, tabs, tagPaths, showHidden, includeUnindexedFolders);
+
     superstate.ui.openMenu(
         null, // modal opens in the center of the screen
         {
             ui: superstate.ui,
             multi: false,
             value: [],
-            options: suggestions.slice().sort(searchMenuOptionSort),
+            options: optionsForHiddenState(hidden),
+            getOptionsForModifiers: ({ shiftKey }) => optionsForHiddenState(shiftKey),
             saveOptions,
             placeholder,
             wrapperClass: "mk-search-menu",

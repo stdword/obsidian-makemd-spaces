@@ -4,6 +4,23 @@ export const maxSuggestionsLengthForMenu = (showAll: boolean, optionsLength: num
 
 export const escapeActionForQuery = (query: string) => (query.length > 0 ? "clear" : "close");
 
+const normalizedIncludes = (value: unknown, query: string) => String(value ?? "").toLocaleLowerCase().includes(query.toLocaleLowerCase());
+
+export const searchMatchPriority = (option: SelectOption, query: string) => {
+    if (!query) return 0;
+    if (normalizedIncludes(option.name, query)) return 0;
+    if (normalizedIncludes(option.description, query) || normalizedIncludes(option.value, query)) return 1;
+    return 2;
+};
+
+export const prioritizeSearchMatches = (options: SelectOption[], query: string) =>
+    options
+        .map((option, index) => ({ option, index, priority: searchMatchPriority(option, query) }))
+        .sort((a, b) => a.priority - b.priority || a.index - b.index)
+        .map(({ option }) => option);
+
+export const verticalDeltaForShiftWheel = (deltaY: number, deltaX: number) => deltaY || deltaX;
+
 const limitForSection = (section: string, limits?: Record<string, number | undefined>) => {
     const limit = limits?.[section];
     return Number.isFinite(limit) && limit > -1 ? limit : undefined;

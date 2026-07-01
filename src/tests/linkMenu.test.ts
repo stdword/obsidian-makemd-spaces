@@ -93,5 +93,17 @@ describe("showLinkMenu", () => {
                 expect.objectContaining({ value: "Hidden.md" }),
             ]),
         );
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ value: "Hidden" }),
+                expect.objectContaining({ value: "Hidden.md" }),
+            ]),
+        );
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ value: "Hidden" }),
+                expect.objectContaining({ value: "Hidden.md" }),
+            ]),
+        );
     });
 });

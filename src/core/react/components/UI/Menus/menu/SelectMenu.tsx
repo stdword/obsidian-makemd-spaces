@@ -6,6 +6,16 @@ import { maxSuggestionsLengthForMenu } from "./selectMenuLimits";
 
 const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress?: boolean, immediate?: boolean) => void }, ref: any) => {
     const [selectedSection, setSelectedSection] = useState<string | null>(null);
+    const optionsWithIds = useCallback(
+        (options: SelectOption[]) =>
+            options.map((o, i) => {
+                return {
+                    ...o,
+                    id: i + 1,
+                };
+            }),
+        [],
+    );
     const onSelectSection = useCallback(
         (section: string) => {
             setSelectedSection(section);
@@ -13,22 +23,10 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress
         },
         [props],
     );
-    const initialOptions: SelectOption[] = props.options.map((o, i) => {
-        return {
-            ...o,
-            id: i + 1,
-        };
-    });
+    const initialOptions: SelectOption[] = optionsWithIds(props.options);
     useEffect(() => {
-        setSuggestions(
-            props.options.map((o, i) => {
-                return {
-                    ...o,
-                    id: i + 1,
-                };
-            }),
-        );
-    }, [props.options]);
+        setSuggestions(optionsWithIds(props.options));
+    }, [props.options, optionsWithIds]);
     const [suggestions, setSuggestions] = useState(initialOptions);
     const [tags, setTags] = useState(
         props.value.map(
@@ -121,6 +119,25 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress
         },
         [suggestions],
     );
+    useEffect(() => {
+        if (!props.getOptionsForModifiers) return;
+        const updateSuggestionsForShift = (shiftKey: boolean) => {
+            setSuggestions(optionsWithIds(props.getOptionsForModifiers({ shiftKey })));
+        };
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key == "Shift") updateSuggestionsForShift(true);
+        };
+        const onKeyUp = (e: KeyboardEvent) => {
+            if (e.key == "Shift") updateSuggestionsForShift(false);
+        };
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        return () => {
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+        };
+    }, [optionsWithIds, props.getOptionsForModifiers]);
+
     return (
         <SelectMenuComponent
             tags={props.multi ? tags : []}
@@ -143,7 +160,7 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress
             sections={props.sections}
             optionLimitsBySection={props.optionLimitsBySection}
             allowNewBySection={props.allowNewBySection}
-            maxSuggestionsLength={maxSuggestionsLengthForMenu(Boolean(props.showAll), props.options.length)}
+            maxSuggestionsLength={maxSuggestionsLengthForMenu(Boolean(props.showAll), suggestions.length)}
             suggestionsOnly={!props.searchable && !props.editable}
             allowNew={props.editable}
             previewComponent={props.previewComponent}

@@ -1,4 +1,4 @@
-import { applySectionLimits, escapeActionForQuery, maxSuggestionsLengthForMenu } from "core/react/components/UI/Menus/menu/selectMenuLimits";
+import { applySectionLimits, escapeActionForQuery, maxSuggestionsLengthForMenu, prioritizeSearchMatches, verticalDeltaForShiftWheel } from "core/react/components/UI/Menus/menu/selectMenuLimits";
 
 describe("SelectMenu", () => {
     it("does not cap suggestions when showAll is enabled", () => {
@@ -34,5 +34,20 @@ describe("SelectMenu", () => {
     it("clears query on Escape before allowing the menu to close", () => {
         expect(escapeActionForQuery("obsidian")).toBe("clear");
         expect(escapeActionForQuery("")).toBe("close");
+    });
+
+    it("prioritizes search matches in names before matches in descriptions or paths", () => {
+        const options = [
+            { name: "Notes", value: "Atlas/Obsidian/Notes", description: "Atlas/Obsidian/", section: "folders" },
+            { name: "Plugins", value: "Atlas/Obsidian/Plugins", description: "Atlas/Obsidian/", section: "folders" },
+            { name: "Obsidian", value: "Assets/Content/Obsidian", description: "Assets/Content/", section: "folders" },
+        ];
+
+        expect(prioritizeSearchMatches(options, "obsid").map((option) => option.name)).toEqual(["Obsidian", "Notes", "Plugins"]);
+    });
+
+    it("uses wheel delta as vertical scroll delta while Shift is held", () => {
+        expect(verticalDeltaForShiftWheel(48, 0)).toBe(48);
+        expect(verticalDeltaForShiftWheel(0, 48)).toBe(48);
     });
 });
