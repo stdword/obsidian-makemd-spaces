@@ -18,6 +18,7 @@ export const pinnedItemIconPathState: PathState = {
 
 export const shouldShowLinkedItemIcon = (data: Pick<TreeNode, "space" | "item" | "depth">) => {
     if (data.depth <= 0 || isTagSpacePath(data.space)) return false;
+    if (data.item?.linkedSpaces?.includes(data.space)) return true;
     if (data.item?.parent != null && data.item.parent != "" && data.item.parent != data.space) return true;
     return isTagSpacePath(data.item?.path) && data.space != data.item?.path && data.space != tagsSpacePath;
 }

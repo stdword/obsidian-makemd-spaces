@@ -107,7 +107,7 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
                 showLinkMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
                     if (isString(link))
                         linkPathToSpaceAtIndex(superstate, space, link);
-                });
+                }, e.shiftKey);
                 e.stopPropagation();
             },
         });

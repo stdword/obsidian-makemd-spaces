@@ -59,7 +59,7 @@ export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveF
                 <button
                     onClick={(e) => {
                         const rect = (e.target as HTMLElement).getBoundingClientRect();
-                        showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace);
+                        showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace, e.shiftKey);
                     }}
                 >
                     {i18n.labels.openASpace}

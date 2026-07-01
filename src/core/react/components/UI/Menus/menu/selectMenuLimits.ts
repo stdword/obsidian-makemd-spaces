@@ -2,6 +2,8 @@ import type { SelectOption } from "makemd-core";
 
 export const maxSuggestionsLengthForMenu = (showAll: boolean, optionsLength: number) => (showAll ? optionsLength : 25);
 
+export const escapeActionForQuery = (query: string) => (query.length > 0 ? "clear" : "close");
+
 const limitForSection = (section: string, limits?: Record<string, number | undefined>) => {
     const limit = limits?.[section];
     return Number.isFinite(limit) && limit > -1 ? limit : undefined;

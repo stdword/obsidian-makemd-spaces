@@ -91,6 +91,22 @@ describe("linked item icon", () => {
         ).toBe(true);
     });
 
+    it("shows immediately when item state records the current tree space as linked", () => {
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "space",
+                depth: 1,
+                space: "Projects",
+                item: {
+                    path: "Atlas/Obsidian",
+                    parent: "Projects",
+                    linkedSpaces: ["Projects"],
+                    hidden: true,
+                },
+            } as any),
+        ).toBe(true);
+    });
+
     it("hides for items shown in their own parent space", () => {
         expect(
             shouldShowLinkedItemIcon({

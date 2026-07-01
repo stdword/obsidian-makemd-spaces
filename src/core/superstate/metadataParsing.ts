@@ -17,8 +17,9 @@ const stripExtension = (fileName: string) => {
     return fileName.slice(0, dotIndex);
 };
 
-const displayNameForPath = (path: string, pathCache: PathCache, fallbackName?: string) => {
+const displayNameForPath = (path: string, pathCache: PathCache, fallbackName?: string, type?: string) => {
     const file = pathCache?.file;
+    if ((type == "space" || type == "folder" || pathCache?.type == "space" || pathCache?.type == "folder" || file?.isFolder) && fallbackName) return fallbackName;
     if (file?.name) return file.name;
 
     const filePath = file?.path ?? path;
@@ -38,7 +39,7 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
         const parent = _pathCache?.parent ?? "";
         const type = _pathCache?.type ?? "";
         const subtype = _pathCache?.subtype ?? "";
-        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : displayNameForPath(path, pathCache);
+        const name = spacesCache.has(path) ? spacesCache.get(path).space.name : displayNameForPath(path, pathCache, undefined, type);
         const oldMetadata = oldCache?.get(path);
         const { changed, cache: metadata } = parseMetadata(path, settings, spacesCache, pathCache, name, type, subtype, parent, oldMetadata);
         cache[path] = { changed, cache: metadata };
@@ -48,7 +49,7 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
 
 export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathCache: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState): { changed: boolean; cache: PathState } => {
     if (!pathCache) return { changed: false, cache: null };
-    const displayName = displayNameForPath(path, pathCache, name);
+    const displayName = displayNameForPath(path, pathCache, name, type);
     const defaultSticker = (sticker: string, type: string, subtype: string, path: string, extension?: string, savedSticker?: string): string => {
         if (type == "space") {
             if (path == "/") return "ui//home";
@@ -194,8 +195,20 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     spaceNames.push(...newTags);
 
     pathState.tags.push(...newTags);
+    const explicitVisibleSpaces = [...spacesCache.entries()]
+        .filter(([, space]) => (space.metadata?.links ?? []).includes(pathState.path) || (space.metadata?.pinned ?? []).includes(pathState.path))
+        .map(([spacePath]) => spacePath);
+    const visibleHiddenSpaces = uniq([...spaces, ...explicitVisibleSpaces]).filter((spacePath) => explicitVisibleSpaces.includes(spacePath) && spacePath != path);
     const metadata: PathState = hidden
-        ? { ...pathState, spaces: [], hidden }
+        ? {
+              ...pathState,
+              tags: uniq(tags),
+              spaces: visibleHiddenSpaces,
+              linkedSpaces,
+              liveSpaces,
+              spaceNames: visibleHiddenSpaces.map((spacePath) => spacesCache.get(spacePath)?.name ?? spacePath),
+              hidden,
+          }
         : {
               ...pathState,
               tags: uniq(tags),

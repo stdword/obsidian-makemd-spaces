@@ -9,8 +9,9 @@ export const showOpenMenu = (
     win: Window,
     superstate: Superstate,
     saveLink: (link: string, isNew?: boolean, type?: string) => void,
+    hidden?: boolean,
 ) => {
-    const tabs: SearchMenuTab[] = [ 'folders', 'tags', 'files' ];
+    const tabs: SearchMenuTab[] = [ 'tags', 'folders', 'files' ];
 
     return showSearchMenu({
         offset,
@@ -25,6 +26,7 @@ export const showOpenMenu = (
             addKeyword: "Create",
             editable: true,
         },
+        hidden,
     });
 };
 
@@ -34,6 +36,7 @@ export const showFoldersMenu = (
     win: Window,
     superstate: Superstate,
     saveLink: (link: string, isNew?: boolean, type?: string) => void,
+    hidden?: boolean,
 ) => {
     const tabs: SearchMenuTab[] = [ 'folders' ];
 
@@ -49,5 +52,7 @@ export const showFoldersMenu = (
         selectProps: {
             showSections: false,
         },
+        hidden,
+        includeUnindexedFolders: true,
     });
 };

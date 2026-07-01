@@ -15,6 +15,14 @@ describe("FilesystemSpaceAdapter", () => {
             eventDispatch: {
                 addListener: jest.fn(),
             },
+            allFiles: jest.fn(() => [
+                { path: "Projects", isFolder: true, extension: "" },
+                { path: "Projects/Visible.md", isFolder: false, extension: "md" },
+                { path: "Projects/Hidden.md", isFolder: false, extension: "md" },
+                { path: "Projects/.space", isFolder: true, extension: "" },
+                { path: "Projects/.space/context.json", isFolder: false, extension: "json" },
+            ]),
+            getFileCache: jest.fn((): any => null),
             getFile: jest.fn(async (path: string) => files.get(path) ?? null),
             readTextFromFile: jest.fn(async (path: string) => text.get(path) ?? null),
             fileExists: jest.fn(async (path: string) => files.has(path) || folders.has(path)),
@@ -53,6 +61,8 @@ describe("FilesystemSpaceAdapter", () => {
             notePath: "",
         }));
         adapter.spaceManager = {
+            uriByString: jest.fn((path: string) => ({ path })),
+            parentPathForPath: jest.fn((path: string) => parentForPath(path)),
             onPathPropertyChanged: jest.fn(),
             onPathDeleted: jest.fn(),
             onSpaceDeleted: jest.fn(),
@@ -63,6 +73,8 @@ describe("FilesystemSpaceAdapter", () => {
                         field: "name",
                         asc: true,
                     },
+                    hiddenFiles: ["Projects/Hidden.md"],
+                    skipFolderNames: [],
                 },
                 getSpaceItems: jest.fn(() => [
                     { path: "Projects/Alpha.md", name: "Alpha" },
@@ -260,5 +272,33 @@ describe("FilesystemSpaceAdapter", () => {
         expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
         expect(adapter.spaceManager.onPathDeleted).not.toHaveBeenCalled();
         expect(adapter.spaceManager.onSpaceDeleted).not.toHaveBeenCalled();
+    });
+
+    it("returns hidden paths when requested so the index can restore them after unhide", () => {
+        const { adapter } = createAdapter();
+
+        expect(adapter.allPaths(undefined, false)).toEqual(["Projects", "Projects/Visible.md"]);
+        expect(adapter.allPaths(undefined, true)).toEqual(["Projects", "Projects/Visible.md", "Projects/Hidden.md"]);
+    });
+
+    it("builds a basic path cache for folders missing from the metadata cache", async () => {
+        const { adapter, files } = createAdapter();
+        files.set("Projects/HiddenFolder", {
+            path: "Projects/HiddenFolder",
+            name: "HiddenFolder",
+            filename: "HiddenFolder",
+            isFolder: true,
+            ctime: 10,
+            mtime: 20,
+        });
+
+        await expect(adapter.readPathCache("Projects/HiddenFolder")).resolves.toEqual(
+            expect.objectContaining({
+                file: expect.objectContaining({ path: "Projects/HiddenFolder", isFolder: true }),
+                type: "space",
+                subtype: "folder",
+                parent: "Projects",
+            }),
+        );
     });
 });

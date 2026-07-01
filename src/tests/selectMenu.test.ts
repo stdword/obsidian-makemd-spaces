@@ -1,4 +1,4 @@
-import { applySectionLimits, maxSuggestionsLengthForMenu } from "core/react/components/UI/Menus/menu/selectMenuLimits";
+import { applySectionLimits, escapeActionForQuery, maxSuggestionsLengthForMenu } from "core/react/components/UI/Menus/menu/selectMenuLimits";
 
 describe("SelectMenu", () => {
     it("does not cap suggestions when showAll is enabled", () => {
@@ -29,5 +29,10 @@ describe("SelectMenu", () => {
         ];
 
         expect(applySectionLimits(options, "folder", { folder: 1 }).map((option) => option.value)).toEqual(["folder-1"]);
+    });
+
+    it("clears query on Escape before allowing the menu to close", () => {
+        expect(escapeActionForQuery("obsidian")).toBe("clear");
+        expect(escapeActionForQuery("")).toBe("close");
     });
 });

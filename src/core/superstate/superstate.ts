@@ -21,6 +21,7 @@ import { SpaceInfo } from "shared/types/spaceInfo";
 import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
 import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
 import { safelyParseJSON } from "shared/utils/json";
+import { excludePathPredicate, isSpaceInternalPath } from "utils/hide";
 import { API } from "./api";
 
 import { Indexer } from "./workers/indexer/indexer";
@@ -289,7 +290,7 @@ export class Superstate implements ISuperstate {
     }
 
     public async initializeSpaces() {
-        const allSpaces = [...this.spaceManager.allSpaces().values()];
+        const allSpaces = [...this.spaceManager.allSpaces(true).values()];
 
         const promises = allSpaces.map((f) => this.reloadSpace(f, null, true));
         [...this.spacesIndex.keys()].filter((f) => this.spacesIndex.get(f)?.type != "tag" && !allSpaces.some((g) => g.path == f)).forEach((f) => this.onSpaceDeleted(f));
@@ -329,9 +330,28 @@ export class Superstate implements ISuperstate {
         return nextOrder;
     }
 
+    private isPathExplicitlyShownInSpace(path: string, spacePath: string): boolean {
+        const metadata = this.spacesIndex.get(spacePath)?.metadata;
+        return ensureArray(metadata?.links).includes(path) || ensureArray(metadata?.pinned).includes(path);
+    }
+
+    private isHiddenSpaceRoot(spacePath: string): boolean {
+        return this.pathsIndex.get(spacePath)?.hidden == true;
+    }
+
+    private indexedDirectChildrenForSpace(spacePath: string): string[] {
+        return [...this.pathsIndex.values()]
+            .filter((pathState) => pathState?.parent == spacePath && pathState.path != spacePath)
+            .map((pathState) => pathState.path);
+    }
+
     public getSpaceItems(spacePath: string): PathStateWithRank[] {
         const isTagSpace = isTagSpacePath(spacePath);
-        const items = isTagSpace ? this.pathsForTagSpace(spacePath) : [...this.spacesMap.getInverse(spacePath)];
+        const hiddenSpaceRoot = this.isHiddenSpaceRoot(spacePath);
+        let items = isTagSpace ? this.pathsForTagSpace(spacePath) : [...this.spacesMap.getInverse(spacePath)];
+        if (!isTagSpace && hiddenSpaceRoot) {
+            items = uniq([...this.indexedDirectChildrenForSpace(spacePath), ...items]);
+        }
         const ranks = this.syncSpaceRankOrder(spacePath, items);
 
         return items
@@ -345,7 +365,7 @@ export class Superstate implements ISuperstate {
                     rank: ranks.indexOf(f),
                 } as PathStateWithRank;
             })
-            .filter((f) => f && f.hidden != true && f.path != spacePath);
+            .filter((f) => f && (f.hidden != true || this.isPathExplicitlyShownInSpace(f.path, spacePath) || hiddenSpaceRoot) && f.path != spacePath);
     }
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null);
@@ -466,7 +486,7 @@ export class Superstate implements ISuperstate {
 
     public async initializePaths() {
         this.dispatchEvent("superstateReindex", null);
-        const allFiles = this.spaceManager.allPaths();
+        const allFiles = this.spaceManager.allPaths(undefined, true);
 
         const start = Date.now();
         await this.indexer.reload<{ [key: string]: { cache: PathState; changed: boolean } }>({ type: "paths", path: "" }).then(async (r) => {
@@ -478,7 +498,7 @@ export class Superstate implements ISuperstate {
         this.ui.notify(`Make.md - ${allFiles.length} Paths Cached in ${(Date.now() - start) / 1000} seconds`, "console");
 
         const allPaths = uniq([...this.spacesIndex.keys(), ...allFiles]);
-        [...this.pathsIndex.keys()].filter((f) => !allPaths.some((g) => g == f)).forEach((f) => this.onPathDeleted(f));
+        await Promise.all([...this.pathsIndex.keys()].filter((f) => !allPaths.some((g) => g == f)).map((f) => this.onPathDeleted(f)));
 
         this.dispatchEvent("superstateUpdated", null);
     }
@@ -634,7 +654,19 @@ export class Superstate implements ISuperstate {
         this.dispatchEvent("pathCreated", { path });
     }
 
-    public onPathDeleted(path: string) {
+    private async keepHiddenPathOnDelete(path: string): Promise<boolean> {
+        if (isSpaceInternalPath(path)) return false;
+        if (!excludePathPredicate(this.settings, path)) return false;
+        if (!(await this.spaceManager.pathExists(path))) return false;
+
+        await this.reloadPath(path, true);
+        this.dispatchEvent("pathStateUpdated", { path });
+        return true;
+    }
+
+    public async onPathDeleted(path: string) {
+        if (await this.keepHiddenPathOnDelete(path)) return;
+
         this.spacesMap.delete(path);
         this.linksMap.delete(path);
         this.linksMap.deleteInverse(path);

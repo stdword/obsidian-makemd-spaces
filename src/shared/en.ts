@@ -45,6 +45,7 @@ export const en = {
         sortBy: "Sort",
 
         hide: "Hide",
+        unhide: "Unhide",
 
         removeFromSpace: 'Unlink from "${1}"',
 

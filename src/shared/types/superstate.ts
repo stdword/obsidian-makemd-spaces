@@ -50,7 +50,7 @@ export abstract class ISuperstate {
     reloadSpaceByPath: (path: string, metadata?: SpaceDefinition) => Promise<SpaceState>;
     onPathRename: (oldPath: string, newPath: string) => Promise<void>;
     onPathCreated: (path: string) => Promise<void>;
-    onPathDeleted: (path: string) => void;
+    onPathDeleted: (path: string) => Promise<void>;
     onSpaceRenamed: (oldPath: string, newSpaceInfo: SpaceInfo) => Promise<void>;
     onSpaceDeleted: (space: string) => void;
     allSpaces: (ordered?: boolean, hidden?: boolean) => SpaceState[];

@@ -39,7 +39,7 @@ export class SpaceManager implements SpaceManagerInterface {
     };
 
     public onPathDeleted = async (path: string) => {
-        this.superstate.onPathDeleted(path);
+        await this.superstate.onPathDeleted(path);
     };
 
     public onPathChanged = async (path: string, oldPath: string) => {
@@ -59,7 +59,7 @@ export class SpaceManager implements SpaceManagerInterface {
 
     public onSpaceDeleted = async (path: string) => {
         this.superstate.onSpaceDeleted(path);
-        this.superstate.onPathDeleted(path);
+        await this.superstate.onPathDeleted(path);
     };
 
     public onPathPropertyChanged = async (path: string) => {
@@ -101,10 +101,10 @@ export class SpaceManager implements SpaceManagerInterface {
 
     public async allCaches() {
         const caches = new Map<string, PathCache>();
-        const keys = this.primarySpaceAdapter.allCaches().keys();
+        const keys = new Set([...this.primarySpaceAdapter.allCaches().keys(), ...this.allPaths(undefined, true)]);
         for (const key of keys) {
             const cache = await this.readPathCache(key);
-            caches.set(key, cache);
+            if (cache) caches.set(key, cache);
         }
         return caches;
     }
@@ -149,8 +149,8 @@ export class SpaceManager implements SpaceManagerInterface {
         return this.adapterForPath(path).spaceInitiated(path);
     }
     //basic item operations
-    public allPaths(type?: string[]) {
-        return this.spaceAdapters.flatMap((f) => f.allPaths(type));
+    public allPaths(type?: string[], hidden?: boolean) {
+        return this.spaceAdapters.flatMap((f) => f.allPaths(type, hidden));
     }
     public createItemAtPath(parent: string, type: string, name: string, content?: any): Promise<string> {
         return this.adapterForPath(parent).createItemAtPath(parent, type, name, content);

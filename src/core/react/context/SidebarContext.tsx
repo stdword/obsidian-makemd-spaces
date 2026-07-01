@@ -5,7 +5,7 @@ import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { createContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
-import { PathState } from "shared/types/PathState";
+import { PathState, SpaceState } from "shared/types/PathState";
 
 type NavigatorContextProps = {
     dragPaths: string[];
@@ -57,7 +57,44 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
 
     const [activeFocus, setActiveFocus] = useState<number>(props.superstate.settings.currentWaypoint);
 
-    const pathStateForFocusPath = (path: string) => props.superstate.pathStateForPath(path);
+    const pathStateForFocusPath = (path: string) => {
+        const pathState = props.superstate.pathStateForPath(path);
+        if (pathState) return pathState;
+
+        const uri = props.superstate.spaceManager.uriByString(path);
+        const subtype = props.superstate.spaceManager.spaceTypeByString(uri);
+        if (!["folder", "tag", "vault"].includes(subtype)) return null;
+
+        const spaceInfo = props.superstate.spaceManager.spaceInfoForPath(path);
+        if (!spaceInfo) return null;
+
+        const fallbackPath: PathState = {
+            path: spaceInfo.path,
+            name: spaceInfo.name,
+            parent: "",
+            type: "space",
+            subtype,
+            label: { sticker: "", color: "" },
+            effectiveLabel: { sticker: subtype == "tag" ? "lucide//hash" : subtype == "vault" ? "ui//home" : "ui//folder", color: "" },
+            metadata: {},
+            tags: [],
+            spaces: [],
+            outlinks: [],
+            hidden: true,
+        };
+        const fallbackSpace: SpaceState = {
+            path: spaceInfo.path,
+            name: spaceInfo.name,
+            type: subtype as any,
+            metadata: {},
+            space: spaceInfo,
+            sortable: true,
+        };
+        props.superstate.pathsIndex.set(spaceInfo.path, fallbackPath);
+        props.superstate.spacesIndex.set(spaceInfo.path, fallbackSpace);
+
+        return fallbackPath;
+    };
 
     const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>((props.superstate.focuses[activeFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
 

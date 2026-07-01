@@ -18,6 +18,7 @@ import { tagSpacePathFromTag } from "core/utils/strings";
 const createSuperstate = () => {
     const spaceManager = {
         allPaths: jest.fn(() => ["icons/logo.svg"]),
+        allSpaces: jest.fn((): any[] => []),
         readTags: jest.fn((): string[] => []),
         pathsForTag: jest.fn((): string[] => []),
         pathExists: jest.fn((_path: string) => false),
@@ -68,6 +69,19 @@ describe("Superstate tag initialization", () => {
 
         expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
+    });
+
+    it("initializes spaces and paths with hidden items included in the index", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        (superstate as any).indexer.reload = jest.fn(() => Promise.resolve({}));
+        spaceManager.allSpaces = jest.fn((): any[] => []);
+        spaceManager.allPaths = jest.fn((): string[] => []);
+
+        await superstate.initializeSpaces();
+        await superstate.initializePaths();
+
+        expect(spaceManager.allSpaces).toHaveBeenCalledWith(true);
+        expect(spaceManager.allPaths).toHaveBeenCalledWith(undefined, true);
     });
 
     it("adds new tag spaces to the live space index", async () => {
@@ -220,6 +234,7 @@ describe("Superstate tag initialization", () => {
 
         expect(superstate.pathsIndex.get("Projects/Alpha.md").effectiveLabel.color).toBe("#123456");
 
+        await Promise.resolve();
         resolveSave();
         await colorSave;
     });
@@ -563,6 +578,98 @@ describe("Superstate tag initialization", () => {
         expect(superstate.spacesIndex.get("Projects").metadata["rank-order"]).toEqual([]);
         expect(superstate.persister.store).not.toHaveBeenCalled();
         expect([...items].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((item: any) => item.name)).toEqual(["0 Notes", "1 Collections", "2 Resources"]);
+    });
+
+    it("shows indexed hidden children inside a hidden folder section without creating fallback cache entries", () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.spacesIndex.set("Atlas/Obsidian", {
+            type: "folder",
+            name: "Obsidian",
+            path: "Atlas/Obsidian",
+            metadata: {
+                links: [],
+                pinned: [],
+            },
+            space: { path: "Atlas/Obsidian", name: "Obsidian", defPath: "Atlas/Obsidian/.space/context.json", notePath: "", folderPath: "Atlas/Obsidian" },
+        } as any);
+        superstate.pathsIndex.set("Atlas/Obsidian", {
+            path: "Atlas/Obsidian",
+            name: "Obsidian",
+            type: "space",
+            subtype: "folder",
+            tags: [],
+            spaces: [],
+            outlinks: [],
+            hidden: true,
+            parent: "Atlas",
+            label: { sticker: "lucide//folder", color: "" },
+            effectiveLabel: { sticker: "lucide//folder", color: "#123456" },
+            metadata: {},
+        } as any);
+        superstate.pathsIndex.set("Atlas/Obsidian/Notes", {
+            path: "Atlas/Obsidian/Notes",
+            name: "Notes",
+            type: "space",
+            subtype: "folder",
+            tags: [],
+            spaces: [],
+            outlinks: [],
+            hidden: true,
+            parent: "Atlas/Obsidian",
+            label: { sticker: "lucide//notebook", color: "" },
+            effectiveLabel: { sticker: "lucide//notebook", color: "#123456" },
+            metadata: {},
+        } as any);
+        superstate.spacesIndex.set("Atlas/Obsidian/Notes", {
+            type: "folder",
+            name: "Notes",
+            path: "Atlas/Obsidian/Notes",
+            metadata: {},
+            space: { path: "Atlas/Obsidian/Notes", name: "Notes", defPath: "Atlas/Obsidian/Notes/.space/context.json", notePath: "", folderPath: "Atlas/Obsidian/Notes" },
+        } as any);
+
+        const items = superstate.getSpaceItems("Atlas/Obsidian");
+
+        expect(items.map((item: any) => [item.path, item.name])).toEqual([["Atlas/Obsidian/Notes", "Notes"]]);
+        expect(spaceManager.spaceInfoForPath).not.toHaveBeenCalledWith("Atlas/Obsidian/Notes");
+    });
+
+    it("filters hidden children from normal folder spaces unless they are explicitly linked", () => {
+        const { superstate } = createSuperstate();
+        superstate.spacesIndex.set("Projects", {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                links: ["Archive/Linked.md"],
+                pinned: [],
+            },
+            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/context.json", notePath: "", folderPath: "Projects" },
+        } as any);
+        [
+            ["Projects/Visible.md", false, ["Projects"], []],
+            ["Projects/Hidden.md", true, ["Projects"], []],
+            ["Archive/Linked.md", true, ["Projects"], ["Projects"]],
+        ].forEach(([path, hidden, spaces, linkedSpaces]: any[]) => {
+            superstate.pathsIndex.set(path, {
+                path,
+                name: path.split("/").pop()?.replace(".md", ""),
+                type: "file",
+                subtype: "md",
+                tags: [],
+                spaces,
+                linkedSpaces,
+                outlinks: [],
+                hidden,
+                parent: path.startsWith("Projects/") ? "Projects" : "Archive",
+                label: { sticker: "", color: "" },
+                effectiveLabel: { sticker: "ui//file-text", color: "" },
+                metadata: {},
+            } as any);
+            spaces.forEach((space: string) => superstate.spacesMap.set(path, new Set([space])));
+        });
+
+        expect(superstate.getSpaceItems("Projects").map((item: any) => item.path)).toEqual(["Projects/Visible.md", "Archive/Linked.md"]);
     });
 
     it("refreshes folder display metadata after context.json is removed", async () => {

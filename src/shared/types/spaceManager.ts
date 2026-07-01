@@ -40,7 +40,7 @@ export interface SpaceManagerInterface {
     deleteSpace(path: string): void;
     childrenForSpace(path: string): string[];
     spaceInitiated(path: string): Promise<boolean>;
-    allPaths(type?: string[]): string[];
+    allPaths(type?: string[], hidden?: boolean): string[];
     createItemAtPath(parent: string, type: string, name: string, content?: any): Promise<string>;
     renamePath(oldPath: string, newPath: string): Promise<string>;
     copyPath(source: string, destination: string, newName?: string): Promise<string>;
@@ -86,7 +86,7 @@ export abstract class SpaceAdapter {
     public renameSpace: (path: string, newPath: string) => Promise<string>;
     public deleteSpace: (path: string) => void;
     public childrenForSpace: (path: string) => string[];
-    public allPaths: (type?: string[]) => string[];
+    public allPaths: (type?: string[], hidden?: boolean) => string[];
     public keysForCacheType: (type: string) => string[];
     public spaceInitiated: (path: string) => Promise<boolean>;
 

@@ -9,6 +9,7 @@ export const showLinkMenu = (
     win: Window,
     superstate: Superstate,
     saveLink: (link: string) => void,
+    hidden?: boolean,
 ) => {
     const tabs: SearchMenuTab[] = [ 'tags', 'folders', 'files' ];
 
@@ -21,5 +22,6 @@ export const showLinkMenu = (
         saveOptions: (_: string[], value: string[]) => {
             saveLink(value[0]);
         },
+        hidden,
     });
 };

@@ -92,11 +92,11 @@ describe("showOpenMenu", () => {
 
         const menuConfig = openMenu.mock.calls[0][1];
         expect(menuConfig.options[0].value).toBe("/");
-        expect(menuConfig.sections.map((section: any) => section.value)).toEqual(["folders", "tags", "refs"]);
-        expect(menuConfig.allowNewBySection).toEqual({ tags: true, refs: true });
+        expect(menuConfig.sections.map((section: any) => section.value)).toEqual(["tags", "folders", "files"]);
+        expect(menuConfig.allowNewBySection).toEqual({ tags: true });
         expect(menuConfig.editable).toBe(true);
         expect(menuConfig.centered).toBe(true);
-        expect(menuConfig.optionLimitsBySection).toEqual({ tags: undefined, folders: 75, refs: 75 });
+        expect(menuConfig.optionLimitsBySection).toEqual({ tags: undefined, folders: 75, files: undefined });
         expect(menuConfig.options.filter((option: any) => option.section == "tags").map((option: any) => option.name)).toEqual(["c", "cpp", "python"]);
         expect(menuConfig.options.filter((option: any) => option.section == "folders").map((option: any) => option.value)).toEqual([
             "Alpha",
@@ -135,5 +135,40 @@ describe("showOpenMenu", () => {
         menuConfig.saveOptions([], ["project"], true, "tags");
 
         expect(saveLink).toHaveBeenCalledWith("project", true, "tags");
+    });
+
+    it("includes hidden items when opened in hidden mode", async () => {
+        const openMenu = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn((_ordered: boolean, hidden?: boolean) =>
+                [
+                    { name: "Visible", path: "Visible", type: "folder", hidden: false },
+                    { name: "Hidden", path: "Hidden", type: "folder", hidden: true },
+                ].filter((space) => hidden || !space.hidden),
+            ),
+            spaceManager: {
+                readTags: jest.fn((): string[] => []),
+            },
+            spacesIndex: new Map(),
+            pathsIndex: new Map([
+                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false, label: {} }],
+                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true, label: {} }],
+            ]),
+            settings: {},
+            ui: {
+                openMenu,
+            },
+        } as any;
+
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn(), true);
+
+        const menuConfig = openMenu.mock.calls[0][1];
+        expect(superstate.allSpaces).toHaveBeenCalledWith(true, true);
+        expect(menuConfig.options).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ value: "Hidden" }),
+                expect.objectContaining({ value: "Hidden.md" }),
+            ]),
+        );
     });
 });

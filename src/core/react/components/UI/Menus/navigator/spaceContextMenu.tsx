@@ -1,5 +1,5 @@
 import { savePathColor } from "core/superstate/utils/label";
-import { hidePath, renamePathByName } from "core/superstate/utils/path";
+import { hidePath, isPathDirectlyHidden, renamePathByName, unhidePath } from "core/superstate/utils/path";
 import { addPathToSpaceAtIndex, effectiveSpaceSort, isPathPinnedInSpace, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/superstate/utils/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
@@ -180,13 +180,13 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
                 showFoldersMenu(offset, win, superstate, (link) => {
                     superstate.spaceManager.renameSpace(space.path, movePath(space.path, link));
-                });
+                }, e.shiftKey);
             },
         });
     }
 
     // link to
-    if (space.type == "folder") {
+    if (space.type == "folder" || isTagSpace) {
         menuOptions.push({
             name: i18n.buttons.addToSpace,
             icon: "ui//link",
@@ -202,6 +202,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                         if (spaceCache)
                             addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
                     },
+                    e.shiftKey,
                 );
             },
         });
@@ -261,11 +262,16 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     // hide item
     if (space.type == "folder") {
+        const directlyHidden = isPathDirectlyHidden(superstate, space.path);
         menuOptions.push({
-            name: i18n.menu.hide,
-            icon: "ui//eye-off",
+            name: directlyHidden ? i18n.menu.unhide : i18n.menu.hide,
+            icon: directlyHidden ? "ui//eye" : "ui//eye-off",
             onClick: () => {
-                hidePath(superstate, space.path);
+                if (directlyHidden) {
+                    unhidePath(superstate, space.path);
+                } else {
+                    hidePath(superstate, space.path);
+                }
             },
         });
     }

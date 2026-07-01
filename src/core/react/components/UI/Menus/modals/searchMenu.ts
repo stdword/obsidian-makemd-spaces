@@ -4,6 +4,7 @@ import i18n from "shared/i18n";
 import { Superstate } from "makemd-core";
 import { Rect } from "shared/types/Pos";
 import { syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
+import { SpaceInfo } from "shared/types/spaceInfo";
 
 export type SearchMenuTab = "folders" | "files" | "tags" | "refs";
 export function getSearchMenuTabs(settings: MakeMDSettings, tabs: SearchMenuTab[]) {
@@ -68,6 +69,25 @@ const pathStickerForSearch = (superstate: Superstate, path: string) => {
     return pathState?.effectiveLabel?.sticker ?? pathState?.label?.sticker;
 };
 
+const spacesForSearch = (superstate: Superstate, ordered: boolean, hidden?: boolean, includeUnindexedFolders?: boolean) => {
+    const spaces = [...superstate.allSpaces(ordered, hidden)];
+    if (!hidden || !includeUnindexedFolders) return spaces;
+
+    const indexedPaths = new Set(spaces.map((space) => space.path));
+    const adapterSpaces: SpaceInfo[] = (superstate.spaceManager as any)?.allSpaces?.(true) ?? [];
+    const missingFolderSpaces = adapterSpaces
+        .filter((space) => !indexedPaths.has(space.path))
+        .map((space) => ({
+            name: space.name,
+            path: space.path,
+            type: space.path == "/" ? "vault" : "folder",
+            metadata: {},
+            space,
+        }));
+
+    return [...spaces, ...missingFolderSpaces];
+};
+
 export const showSearchMenu = async ({
     offset,
     win,
@@ -77,6 +97,7 @@ export const showSearchMenu = async ({
     saveOptions,
     selectProps,
     hidden,
+    includeUnindexedFolders,
 }: {
     offset: Rect;
     win: Window;
@@ -86,6 +107,7 @@ export const showSearchMenu = async ({
     saveOptions: SelectMenuProps["saveOptions"];
     selectProps?: Partial<SelectMenuProps>;
     hidden?: boolean;
+    includeUnindexedFolders?: boolean;
 }) => {
     offset; // offset var is not used
 
@@ -107,7 +129,8 @@ export const showSearchMenu = async ({
         )
 
     if (tabs.includes('folders') || tabs.includes('tags')) {
-        const spaces = [...superstate.allSpaces(true, hidden)]
+        const spaces = spacesForSearch(superstate, true, hidden, includeUnindexedFolders)
+            .filter((s) => hidden || !((superstate as any).pathStateForPath?.(s.path) ?? superstate.pathsIndex.get(s.path))?.hidden);
 
         if (tabs.includes('folders'))
             suggestions.push(...spaces

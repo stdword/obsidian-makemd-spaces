@@ -47,6 +47,40 @@ export const hidePath = async (superstate: Superstate, path: string) => {
     superstate.reloadPath(path, true).then(() => superstate.dispatchEvent("superstateUpdated", null));
 };
 
+export const isPathDirectlyHidden = (superstate: Superstate, path: string) => superstate.settings?.hiddenFiles?.some((hiddenPath) => hiddenPath == path) ?? false;
+
+const descendantsForPath = (superstate: Superstate, path: string): string[] => {
+    const prefix = path == "/" ? "" : `${path}/`;
+    const indexedPaths = [...superstate.pathsIndex.keys()].filter((filePath) => filePath != path && filePath.startsWith(prefix));
+    const filesystemPaths = ((superstate.spaceManager as any).primarySpaceAdapter?.fileSystem?.allFiles?.(true) ?? [])
+        .map((file: { path: string }) => file.path)
+        .filter((filePath: string) => filePath != path && filePath.startsWith(prefix));
+    return uniq([...indexedPaths, ...filesystemPaths]);
+};
+
+const reloadPathsForHiddenRuleChange = async (superstate: Superstate, paths: string[]) => {
+    const affectedSpaces = new Set<string>();
+    await Promise.all(
+        paths.map(async (path) => {
+            const oldSpaces = superstate.pathsIndex.get(path)?.spaces ?? [];
+            await superstate.reloadPath(path, true);
+            if (superstate.pathsIndex.get(path)?.hidden == true && !isPathDirectlyHidden(superstate, path)) {
+                await superstate.reloadPath(path, true);
+            }
+            (superstate.pathsIndex.get(path)?.spaces ?? oldSpaces).forEach((spacePath) => affectedSpaces.add(spacePath));
+            oldSpaces.forEach((spacePath) => affectedSpaces.add(spacePath));
+        }),
+    );
+    affectedSpaces.forEach((spacePath) => superstate.dispatchEvent("spaceStateUpdated", { path: spacePath }));
+};
+
+export const unhidePath = async (superstate: Superstate, path: string) => {
+    superstate.settings.hiddenFiles = superstate.settings.hiddenFiles.filter((hiddenPath) => hiddenPath != path);
+    superstate.saveSettings();
+    await reloadPathsForHiddenRuleChange(superstate, uniq([path, ...descendantsForPath(superstate, path)]));
+    superstate.dispatchEvent("superstateUpdated", null);
+};
+
 export const hidePaths = async (superstate: Superstate, paths: string[]) => {
     superstate.settings.hiddenFiles = uniq([...superstate.settings.hiddenFiles, ...paths]);
     superstate.saveSettings();
@@ -59,7 +93,7 @@ export const hidePaths = async (superstate: Superstate, paths: string[]) => {
 
 export const deletePath = async (superstate: Superstate, path: string) => {
     superstate.spaceManager.deletePath(path);
-    superstate.onPathDeleted(path);
+    await superstate.onPathDeleted(path);
 };
 
 export const movePathToSpace = async (superstate: Superstate, oldPath: string, newParent: string) => {

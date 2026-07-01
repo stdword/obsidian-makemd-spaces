@@ -91,7 +91,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
                 paths.forEach((f) => {
                     movePathToSpace(superstate, f, link);
                 });
-            });
+            }, e.shiftKey);
         },
     });
 
@@ -115,6 +115,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
                         "link",
                     );
                 },
+                e.shiftKey,
             );
         },
     });
@@ -207,6 +208,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
                         "link",
                     );
                 },
+                e.shiftKey,
             );
         },
     });
@@ -314,7 +316,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
                 showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
                     superstate.spaceManager.renamePath(path, movePath(path, link));
-                });
+                }, e.shiftKey);
             },
         });
 
@@ -332,6 +334,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
                 (link) => {
                     dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
                 },
+                e.shiftKey,
             );
         },
     });

@@ -13,7 +13,7 @@ import { SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceInfo } from "shared/types/spaceInfo";
 import { SpaceAdapter } from "shared/types/spaceManager";
 import { safelyParseJSON } from "shared/utils/json";
-import { excludeSpacesPredicate } from "utils/hide";
+import { excludeSpacesPredicate, isSpaceInternalPath } from "utils/hide";
 import { SpaceManager } from "../spaceManager";
 
 export class FilesystemSpaceAdapter implements SpaceAdapter {
@@ -97,7 +97,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                 .allFiles(hidden)
                 .filter((f) => (type ? type.some((g) => (g == "folder" ? f.isFolder : f.extension == g)) : true))
                 .map((g) => g.path)
-                .filter((f) => !hidden && !excludeSpacesPredicate(this.spaceManager.superstate.settings, f)),
+                .filter((f) => !isSpaceInternalPath(f) && (hidden || !excludeSpacesPredicate(this.spaceManager.superstate.settings, f))),
         ];
     }
     public async pathExists(path: string) {
@@ -232,7 +232,27 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             } as FileCache;
         }
 
-        return this.fileSystem.getFileCache(path);
+        const fileCache = this.fileSystem.getFileCache(path);
+        if (fileCache) return fileCache;
+
+        const file = await this.fileSystem.getFile(uri.path);
+        if (!file) return null;
+        return {
+            file,
+            metadata: {},
+            label: {
+                sticker: "",
+                color: "",
+            },
+            contentTypes: [],
+            ctime: file.ctime,
+            mtime: file.mtime,
+            type: file.isFolder ? "space" : "file",
+            subtype: file.isFolder ? "folder" : file.extension,
+            parent: this.spaceManager.parentPathForPath(path),
+            tags: [],
+            readOnly: false,
+        } as unknown as FileCache;
     }
     public async readPath(path: string) {
         const uri = this.uriByPath(path);
@@ -370,7 +390,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
     public allSpaces(hidden?: boolean) {
         const getAllFolderContextFiles = () => {
-            const folders = this.allPaths(["folder"], hidden).filter((f) => !excludeSpacesPredicate(this.spaceManager.superstate.settings, f) && !hidden);
+            const folders = this.allPaths(["folder"], hidden).filter((f) => hidden || !excludeSpacesPredicate(this.spaceManager.superstate.settings, f));
 
             return folders.map((f) => fileSystemSpaceInfoFromFolder(this.spaceManager, f));
         };

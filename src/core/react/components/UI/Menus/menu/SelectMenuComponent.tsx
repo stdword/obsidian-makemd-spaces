@@ -13,7 +13,7 @@ import SelectMenuPillComponent from "./SelectMenuPill";
 import SelectMenuSuggestions from "./SelectMenuSuggestions";
 import { focusNextElement } from "./concerns/focusNextElement";
 import { matchAny, matchExact } from "./concerns/matchers";
-import { applySectionLimits } from "./selectMenuLimits";
+import { applySectionLimits, escapeActionForQuery } from "./selectMenuLimits";
 const KEYS = {
     ENTER: "Enter",
     TAB: "Tab",
@@ -306,6 +306,12 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
         }
 
         if (e.key == "Escape") {
+            if (escapeActionForQuery(query) == "clear") {
+                e.preventDefault();
+                e.stopPropagation();
+                clearInput();
+                return true;
+            }
             return false;
         }
         // when backspace key is pressed and query is blank, delete the last tag
@@ -511,12 +517,17 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
                     {sections.map((f, i) => (
                         <div
                             key={i}
+                            onMouseDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setSection(f.value);
                                 if (props.onSelectSection) {
                                     props.onSelectSection(f.value);
                                 }
+                                inputRef.current?.focus();
                             }}
                             className={`${section == f.value ? "is-active" : ""} mk-menu-section`}
                         >

@@ -25,7 +25,7 @@ const ensureTagSpaceLoaded = (superstate: Superstate, tagPath: string) => {
     return Promise.resolve(superstate.reloadSpace(superstate.spaceManager.spaceInfoForPath(tagPath), null, true));
 };
 
-export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void) {
+export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate: Superstate, saveActiveSpace: (path: string) => void, showHidden?: boolean) {
     showOpenMenu(
         rect,
         windowFromDocument(document),
@@ -59,6 +59,7 @@ export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate
             }
             saveActiveSpace(link);
         },
+        showHidden,
     );
 }
 
@@ -270,7 +271,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                 className={"mk-tree-wrapper mk-tree-section"}
                                 onClick={(e) => {
                                     const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                    showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace);
+                                    showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace, e.shiftKey);
                                 }}
                             >
                                 <div className="mk-tree-item tree-item-self nav-folder-title mk-tree-new">

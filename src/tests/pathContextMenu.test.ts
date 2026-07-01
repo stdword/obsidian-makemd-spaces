@@ -14,8 +14,18 @@ jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
     showColorPickerMenu: jest.fn((_superstate, _offset, _win, _color, saveValue) => saveValue("#123456")),
 }));
 
+jest.mock("core/react/components/UI/Menus/modals/selectSpaceMenu", () => ({
+    showFoldersMenu: jest.fn(),
+}));
+
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
+import { showFoldersMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
+import i18n from "shared/i18n";
+
+beforeEach(() => {
+    jest.clearAllMocks();
+});
 
 describe("triggerMultiPathMenu", () => {
     it("opens every selected path in a new tab from the multi-path open action", async () => {
@@ -239,6 +249,99 @@ describe("showPathContextMenu", () => {
 
         const rootOptions = openMenu.mock.calls[0][1].options;
         expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(true);
+    });
+
+    it("opens Link to with hidden folders when shift-clicked", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "Folder/Note.md",
+            name: "Note",
+            parent: "Folder",
+            type: "file",
+            subtype: "md",
+            label: {},
+        };
+        const superstate = {
+            pathsIndex: new Map([["Folder/Note.md", pathState]]),
+            spacesIndex: new Map(),
+            spaceManager: {
+                copyPath: jest.fn(),
+                renamePath: jest.fn(),
+            },
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+        const event = {
+            target: {
+                getBoundingClientRect: jest.fn(() => ({ x: 1, y: 2, width: 3, height: 4 })),
+            },
+            view: {
+                document: { defaultView: {} } as Document,
+            },
+            shiftKey: true,
+        };
+
+        showPathContextMenu(superstate as any, "Folder/Note.md", "Folder", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const linkTo = openMenu.mock.calls[0][1].options.find((option: any) => option.name == i18n.buttons.addToSpace);
+        linkTo.onClick(event as any);
+
+        expect(showFoldersMenu).toHaveBeenCalledWith(
+            { x: 1, y: 2, width: 3, height: 4 },
+            {},
+            superstate,
+            expect.any(Function),
+            true,
+        );
+    });
+
+    it("shows Unhide only for a folder space directly listed in hidden files", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "Atlas/Obsidian",
+            parent: "Atlas",
+            type: "space",
+            label: {},
+            spaces: [] as string[],
+        };
+        const space = {
+            path: "Atlas/Obsidian",
+            name: "Obsidian",
+            type: "folder",
+            metadata: {},
+            space: {
+                path: "Atlas/Obsidian",
+                folderPath: "Atlas/Obsidian",
+            },
+        };
+        const superstate = {
+            settings: {
+                hiddenFiles: ["Atlas/Obsidian"],
+            },
+            pathsIndex: new Map([["Atlas/Obsidian", pathState]]),
+            spacesIndex: new Map([["Atlas/Obsidian", space]]),
+            spaceManager: {
+                copyPath: jest.fn(),
+                renameSpace: jest.fn(),
+            },
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        expect(openMenu.mock.calls[0][1].options).toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.unhide })]));
+
+        superstate.settings.hiddenFiles = ["Atlas"];
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        expect(openMenu.mock.calls[1][1].options).toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.hide })]));
     });
 });
 
@@ -666,5 +769,58 @@ describe("showSpaceContextMenu", () => {
         expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(false);
         expect(sortOptions.some((option: any) => option.name === "Apply to Subfolders")).toBe(false);
         expect(sortOptions.some((option: any) => option.name === "File Name (A to Z)")).toBe(true);
+    });
+
+    it("opens Link to with hidden folders when shift-clicked", () => {
+        const openMenu = jest.fn();
+        const pathState = {
+            path: "Projects",
+            parent: "",
+            type: "space",
+            label: {},
+            spaces: ["Projects"],
+        };
+        const space = {
+            path: "Projects",
+            name: "Projects",
+            type: "folder",
+            metadata: {},
+            space: {
+                path: "Projects",
+                folderPath: "Projects",
+            },
+        };
+        const superstate = {
+            pathsIndex: new Map([["Projects", pathState]]),
+            spacesIndex: new Map([["Projects", space]]),
+            spaceManager: {
+                copyPath: jest.fn(),
+                renameSpace: jest.fn(),
+            },
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+        const event = {
+            target: {
+                getBoundingClientRect: jest.fn(() => ({ x: 1, y: 2, width: 3, height: 4 })),
+            },
+            shiftKey: true,
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const linkTo = openMenu.mock.calls[0][1].options.find((option: any) => option.name == i18n.buttons.addToSpace);
+        linkTo.onClick(event as any);
+
+        expect(showFoldersMenu).toHaveBeenCalledWith(
+            { x: 1, y: 2, width: 3, height: 4 },
+            {},
+            superstate,
+            expect.any(Function),
+            true,
+        );
     });
 });
