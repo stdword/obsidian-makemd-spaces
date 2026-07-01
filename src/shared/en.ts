@@ -153,6 +153,7 @@ export const en = {
         noPropertyName: "No Property Name",
 
         somethingWentWrong: "Something Went Wrong",
+        itemJustHidden: "Item is now hidden. You can manage hidden items in the Spaces menu",
     },
 
     settings: {

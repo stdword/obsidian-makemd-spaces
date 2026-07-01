@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import i18n from "shared/i18n";
 import { uniq } from "shared/utils/array";
 import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "shared/utils/uri";
 import { renameTag } from "utils/tags";
@@ -41,7 +42,7 @@ export const renamePathByName = async (superstate: Superstate, oldPath: string, 
 
 export const hidePath = async (superstate: Superstate, path: string) => {
     superstate.settings.hiddenFiles = uniq([...superstate.settings.hiddenFiles, path]);
-    superstate.ui.notify("Item is now hidden in the Navigator, you can manage hidden items in the Navigator menu.");
+    superstate.ui.notify(i18n.notice.itemJustHidden);
     superstate.saveSettings();
     superstate.reloadPath(path, true).then(() => superstate.dispatchEvent("superstateUpdated", null));
 };

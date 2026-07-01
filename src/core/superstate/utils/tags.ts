@@ -20,17 +20,17 @@ export const addTagToPath = (superstate: Superstate, path: string, tag: string) 
     return superstate.spaceManager.addTag(path, tag);
 };
 
-export const addTag = (superstate: Superstate, tag: string) => {
+export const addTag = (superstate: Superstate, tag: string, initialized = true) => {
     const normalizedTag = ensureTag(tag);
     const tagPath = tagSpacePathFromTag(normalizedTag);
     if (superstate.spacesIndex.has(tagPath)) {
         return Promise.resolve(superstate.spacesIndex.get(tagPath));
     }
-    return Promise.resolve(superstate.reloadSpace(fileSystemSpaceInfoFromTag(superstate.spaceManager, normalizedTag), null, true));
+    return Promise.resolve(superstate.reloadSpace(fileSystemSpaceInfoFromTag(superstate.spaceManager, normalizedTag), null, initialized));
 };
 
 export const syncTagSpacesFromObsidian = async (superstate: Superstate) => {
     const tags = superstate.spaceManager.readTags().map((tag) => ensureTag(tag)).filter((tag) => tag);
-    await Promise.all(tags.map((tag) => addTag(superstate, tag)));
+    await Promise.all(tags.map((tag) => addTag(superstate, tag, false)));
     return new Set(tags.map((tag) => tagSpacePathFromTag(tag)));
 };

@@ -126,6 +126,45 @@ function defaultSuggestionsFilter(item: SelectOption, query: string) {
     return regexp.test(item.name);
 }
 
+const folderOptionSortParts = (value: unknown) => {
+    const path = typeof value == "string" ? value : "";
+    const parts = path.split("/").filter((part) => part.length > 0);
+    return {
+        depth: path == "/" ? 0 : parts.length,
+        path,
+    };
+};
+
+const compareFolderOptions = (a: SelectOption, b: SelectOption) => {
+    const aFolder = folderOptionSortParts(a.value);
+    const bFolder = folderOptionSortParts(b.value);
+    if (aFolder.depth != bFolder.depth) {
+        return aFolder.depth - bFolder.depth;
+    }
+    return aFolder.path.localeCompare(bFolder.path, undefined, { numeric: true, sensitivity: "base" });
+};
+
+const compareTagOptions = (a: SelectOption, b: SelectOption) => {
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" });
+};
+
+const sortSearchOptions = (options: SelectOption[]) => {
+    const sortedBySection = new Map<string, SelectOption[]>([
+        ["folders", options.filter((option) => option.section == "folders").sort(compareFolderOptions)],
+        ["tags", options.filter((option) => option.section == "tags").sort(compareTagOptions)],
+    ]);
+    const indexes = new Map<string, number>();
+    return options.map((option) => {
+        const sortedOptions = sortedBySection.get(option.section);
+        if (!sortedOptions) {
+            return option;
+        }
+        const index = indexes.get(option.section) ?? 0;
+        indexes.set(option.section, index + 1);
+        return sortedOptions[index];
+    });
+};
+
 function getOptions(props: SelectMenuComponentProps, query: string, section: string) {
     let options: SelectOption[];
     let suggestions = props.suggestions;
@@ -135,7 +174,7 @@ function getOptions(props: SelectMenuComponentProps, query: string, section: str
     const fuseOptions = {
         // isCaseSensitive: false,
         // includeScore: false,
-        // shouldSort: true,
+        shouldSort: false,
         // includeMatches: false,
         // findAllMatches: false,
         // minMatchCharLength: 1,
@@ -150,6 +189,7 @@ function getOptions(props: SelectMenuComponentProps, query: string, section: str
     };
     const fuse = new Fuse(suggestions, fuseOptions);
     options = query.length == 0 ? suggestions : fuse.search(query).map((result) => result.item);
+    options = sortSearchOptions(options);
     // if (props.suggestionsTransform) {
     //   options = props.suggestionsTransform(query, props.suggestions);
     // } else {
