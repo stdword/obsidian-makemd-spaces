@@ -430,6 +430,43 @@ describe("Superstate tag initialization", () => {
         expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#project");
     });
 
+    it("reads child tag items from parent tag spaces", () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.pathsIndex.set("Tagged.md", {
+            path: "Tagged.md",
+            name: "Tagged",
+            type: "file",
+            subtype: "md",
+            tags: ["#📖/art/painting"],
+            spaces: [],
+            outlinks: [],
+            hidden: false,
+            label: { sticker: "", color: "" },
+        });
+        superstate.tagsMap.set("Tagged.md", new Set(["#📖/art/painting"]));
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#📖/art")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+        expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#📖/art");
+    });
+
+    it("shows hidden tagged files inside tag spaces", () => {
+        const { superstate } = createSuperstate();
+        superstate.pathsIndex.set("Tagged.md", {
+            path: "Tagged.md",
+            name: "Tagged",
+            type: "file",
+            subtype: "md",
+            tags: ["#project"],
+            spaces: [],
+            outlinks: [],
+            hidden: true,
+            label: { sticker: "", color: "" },
+        });
+        superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+    });
+
     it("syncs tag space rank-order from the same item lookup used by the tree", () => {
         const { superstate } = createSuperstate();
         const tagPath = tagSpacePathFromTag("#project");

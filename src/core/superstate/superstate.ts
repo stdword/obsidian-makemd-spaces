@@ -303,8 +303,14 @@ export class Superstate implements ISuperstate {
             return [];
 
         const tag = '#' + tagSpaceNameFromPath(spacePath).toLowerCase();
-        const indexedPaths = [...this.tagsMap.getInverse(tag)];
-        const adapterPaths = this.spaceManager.pathsForTag?.(tag) ?? [];
+        const childTagPrefix = tag + "/";
+        const tags = uniq([
+            tag,
+            ...[...this.tagsMap.invMap.keys()].filter((indexedTag) => indexedTag.startsWith(childTagPrefix)),
+            ...(this.spaceManager.readTags?.() ?? []).map((indexedTag) => indexedTag.toLowerCase()).filter((indexedTag) => indexedTag.startsWith(childTagPrefix)),
+        ]);
+        const indexedPaths = tags.flatMap((indexedTag) => [...this.tagsMap.getInverse(indexedTag)]);
+        const adapterPaths = tags.flatMap((indexedTag) => this.spaceManager.pathsForTag?.(indexedTag) ?? []);
         return uniq([...indexedPaths, ...adapterPaths]);
     }
 
@@ -365,7 +371,7 @@ export class Superstate implements ISuperstate {
                     rank: ranks.indexOf(f),
                 } as PathStateWithRank;
             })
-            .filter((f) => f && (f.hidden != true || this.isPathExplicitlyShownInSpace(f.path, spacePath) || hiddenSpaceRoot) && f.path != spacePath);
+            .filter((f) => f && (f.hidden != true || isTagSpace || this.isPathExplicitlyShownInSpace(f.path, spacePath) || hiddenSpaceRoot) && f.path != spacePath);
     }
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null);
