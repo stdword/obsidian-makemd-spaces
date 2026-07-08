@@ -22,21 +22,36 @@ const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath:
     return flattenedTree[firstNonPinnedSiblingIndex].rank ?? 0;
 };
 
+const rankForDropLinePosition = (rank: number, projected: DragProjection, activeItem?: TreeNode | null, oldSpace?: string | null, newSpace?: string | null) => {
+    if (projected.linePosition != "bottom") return rank;
+    if (activeItem && oldSpace == newSpace && typeof activeItem.rank == "number" && activeItem.rank < rank) return rank;
+    return rank + 1;
+};
+
+const nodeContainsTarget = (nodeId: UniqueIdentifier, targetId: UniqueIdentifier) => {
+    if (!nodeId || !targetId) return false;
+    const node = nodeId.toString();
+    const target = targetId.toString();
+    return target == node || target.startsWith(`${node}/`);
+};
+
 export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (paths.length == 1) {
         await dropPathInTree(superstate, paths[0], active, over, projected, flattenedTree, activeSpaces, modifier);
         return;
     }
     if (projected) {
-        const overIndex = flattenedTree.findIndex(({ id }) => id === over);
+        const targetId = projected.overId ?? over;
+        const overIndex = flattenedTree.findIndex(({ id }) => id === targetId);
         const overItem = flattenedTree[overIndex];
         const dropTarget = overItem.type == "file" ? (overItem.depth == 0 ? null : flattenedTree.find((f) => f.id == overItem.parentId)?.item) : overItem.item;
 
         const droppable = paths.filter((f) => !nodeIsAncestorOfTarget(f, (dropTarget as SpaceState).path));
 
-        const parentId = projected.insert ? over : projected.parentId;
+        const parentId = projected.insert ? targetId : projected.parentId;
         const newSpace = flattenedTree.find(({ id }) => id === parentId)?.item.path;
         let newRank = parentId == overItem.id ? -1 : (overItem.rank ?? -1);
+        newRank = rankForDropLinePosition(newRank, projected);
 
         if (!newSpace) return;
         if (projected.sortable) {
@@ -48,15 +63,23 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
 
 export const dropPathInTree = async (superstate: Superstate, path: string, active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (projected) {
+        const targetId = projected.overId ?? over;
+        if (nodeContainsTarget(active, targetId) || nodeContainsTarget(active, projected.parentId)) {
+            return;
+        }
         const clonedItems: TreeNode[] = flattenedTree;
-        const overIndex = clonedItems.findIndex(({ id }) => id === over);
+        const overIndex = clonedItems.findIndex(({ id }) => id === targetId);
         const overItem = clonedItems[overIndex];
 
-        const parentId = projected.insert ? over : projected.parentId;
+        const parentId = projected.insert ? targetId : projected.parentId;
 
         const newSpace = projected.depth == 0 && !projected.insert ? null : clonedItems.find(({ id }) => id === parentId)?.item.path;
+        const activeIndex = active ? clonedItems.findIndex(({ id }) => id === active) : -1;
+        const activeItem = activeIndex == -1 ? null : clonedItems[activeIndex];
+        const oldSpace = activeItem?.parentId == null ? null : clonedItems.find(({ id }) => id === activeItem.parentId)?.item.path;
 
         let newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == overItem.id) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
+        newRank = rankForDropLinePosition(newRank, projected, activeItem, oldSpace, newSpace);
         if (projected.sortable && newSpace) {
             newRank = rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, clonedItems);
         }
@@ -64,10 +87,6 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
             await dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);
             return;
         }
-        const activeIndex = clonedItems.findIndex(({ id }) => id === active);
-        const activeItem = clonedItems[activeIndex];
-
-        const oldSpace = activeItem.parentId == null ? null : clonedItems.find(({ id }) => id === activeItem.parentId)?.item.path;
         await dropPathInSpaceAtIndex(superstate, activeItem.item.path, oldSpace, newSpace, projected.sortable && newRank, modifier);
     }
 };
@@ -75,7 +94,7 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
 export const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
     const newWaypoint = superstate.focuses[superstate.settings.currentWaypoint] ?? { sticker: "", name: i18n.labels.waypoint, paths: [] as string[] };
     const currentIndex = newWaypoint.paths.findIndex((f) => f == path);
-    const newIndex = currentIndex > index ? Math.max(0, index - 1) : index;
+    const newIndex = currentIndex < index ? Math.max(0, index - 1) : index;
     newWaypoint.paths = arrayMove(
         newWaypoint.paths,
         newWaypoint.paths.findIndex((f) => f == path),
@@ -109,7 +128,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
         }
     }
     if (newSpaceCache.type == "tag") {
-        await addTagToPath(superstate, path, newSpaceCache.name);
+        addTagToPath(superstate, path, newSpaceCache.name);
     }
 
     if (oldSpacePath && oldSpacePath != newSpacePath) {

@@ -1,12 +1,12 @@
 // Adapted from React Tags https://github.com/react-tags/react-tags
 
-import { UIManager } from "core/middleware/ui";
 import { PointerModifiers } from "schemas/ui";
 import Fuse from "fuse.js";
 import { SelectOption, SelectSection } from "makemd-core";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import i18n from "shared/i18n";
 import { MenuObject } from "shared/types/menu";
+import { IUIManager } from "shared/types/uiManager";
 import { uniq } from "shared/utils/array";
 import SelectMenuSearch from "./SelectMenuInput";
 import SelectMenuPillComponent from "./SelectMenuPill";
@@ -64,7 +64,7 @@ const defaultProps: SelectMenuComponentProps = {
 type SelectMenuComponentProps = {
     id?: string;
     tags?: SelectOption[];
-    ui: UIManager;
+    ui: IUIManager;
     onHide?: () => void;
     hide: (suppress?: boolean, immediate?: boolean) => void;
     wrapperClass?: string;

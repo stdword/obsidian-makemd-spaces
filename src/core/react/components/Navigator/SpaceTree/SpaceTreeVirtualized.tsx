@@ -1,12 +1,10 @@
-import { UniqueIdentifier } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { DragActionModel } from "core/utils/dnd/dragPath";
 import { Pos } from "shared/types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { createSpace, TreeNode } from "core/superstate/utils/spaces";
 import { addTag } from "core/superstate/utils/tags";
-import { DragProjection } from "core/utils/dnd/dragPath";
 import { tagSpacePathFromTag } from "core/utils/strings";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
@@ -66,7 +64,7 @@ export function showOpenMenuInRect(rect: DOMRect, document: Document, superstate
 export const VirtualizedList = React.memo(function VirtualizedList(props: {
     flattenedTree: TreeNode[];
     rowHeights: number[];
-    projected: DragProjection;
+    dragAction: DragActionModel | null;
     handleCollapse: any;
     superstate: Superstate;
     selectedPaths: TreeNode[];
@@ -76,11 +74,12 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
     indentationWidth: number;
     overIndex: number;
     activeIndex: number;
-    dragStarted: (activeId: UniqueIdentifier) => void;
-    dragOver: (e: React.DragEvent<HTMLElement>, overId: UniqueIdentifier, position: Pos) => void;
-    dragEnded: (e: React.DragEvent<HTMLElement>, overId: UniqueIdentifier) => void;
+    enableObsidianDragGhost: boolean;
+    dragStarted: (activeId: string) => void;
+    dragOver: (e: React.DragEvent<HTMLElement>, overId: string, position: Pos) => void;
+    dragEnded: (e: React.DragEvent<HTMLElement>, overId: string) => void;
 }) {
-    const { flattenedTree, rowHeights, projected, vRef, selectedPaths: selectedPaths, activePath: activePath, selectRange, handleCollapse, superstate, overIndex, activeIndex, indentationWidth } = props;
+    const { flattenedTree, rowHeights, dragAction, vRef, selectedPaths: selectedPaths, activePath: activePath, selectRange, handleCollapse, superstate, overIndex, activeIndex, indentationWidth } = props;
 
     const parentRef = React.useRef<HTMLDivElement>(null);
     const rowVirtualizer = useVirtualizer({
@@ -92,16 +91,59 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
     });
     vRef.current = rowVirtualizer;
     const { saveActiveSpace } = useContext(NavigatorContext);
-    const dropIndicator = (index: number) => {
-        return overIndex == index && projected && projected.insert;
+    const dropIndicatorVariant = (index: number): "line-top" | "line-bottom" | "box" | null => {
+        if (dragAction?.visual.kind == "box" && flattenedTree[index]?.id == dragAction.visual.containerId) return "box";
+        if (dragAction?.visual.kind == "line" && flattenedTree[index]?.id == dragAction.visual.itemId) return dragAction.visual.position == "after" ? "line-bottom" : "line-top";
+        return null;
     };
-    const highlighted = (index: number) => {
-        if (!projected || !flattenedTree[index] || !projected?.droppable) return false;
-        return (!projected.sortable && !projected.insert && flattenedTree[index].parentId && flattenedTree[index].parentId.startsWith(projected.parentId)) || flattenedTree[index].id == projected.parentId;
+    const draggedSourceSubtreeHighlighted = (index: number) => {
+        if (activeIndex == -1 || index < activeIndex) return false;
+        const activeNode = flattenedTree[activeIndex];
+        const node = flattenedTree[index];
+        if (!activeNode || !node) return false;
+        if (activeNode.type != "space" && activeNode.type != "group") return false;
+        if (activeNode.collapsed) return false;
+        return node.id == activeNode.id || node.id.startsWith(`${activeNode.id}/`);
     };
-    const heightBetweenIndex = (start: number, end: number) => {
-        if (start > end) return rowHeights.slice(end, start).reduce((p, c) => p + c, 0);
-        return -rowHeights.slice(start, end).reduce((p, c) => p + c, 0);
+    const containerSubtreeHighlighted = (containerId: string | null, index: number) => {
+        if (!containerId) return false;
+        const container = flattenedTree.find((node) => node.id == containerId);
+        const node = flattenedTree[index];
+        if (!container || !node) return false;
+        if (container.type == "file" || container.collapsed) return false;
+        return node.id == containerId || node.id.startsWith(`${containerId}/`);
+    };
+    const highlightContainerId = () => {
+        const activeContainerId = flattenedTree[activeIndex]?.parentId;
+        if (!dragAction) {
+            const hoverNode = overIndex == -1 ? null : flattenedTree[overIndex];
+            if (!hoverNode || overIndex == activeIndex) return activeContainerId;
+            if (hoverNode.id == activeContainerId) return activeContainerId;
+            return hoverNode.parentId ?? activeContainerId;
+        }
+        if (dragAction.visual.kind == "box") {
+            const boxContainerId = dragAction.visual.containerId;
+            return flattenedTree.find((node) => node.id == boxContainerId)?.parentId ?? activeContainerId;
+        }
+        return dragAction.action.containerId;
+    };
+    const dragContextContainerHighlighted = (index: number) => {
+        if (activeIndex == -1) return false;
+        const activeNode = flattenedTree[activeIndex];
+        if (!dragAction && overIndex == activeIndex && activeNode && activeNode.type != "file") return false;
+        return containerSubtreeHighlighted(highlightContainerId() ?? null, index);
+    };
+    const isDraggedActiveRow = (index: number) => activeIndex != -1 && index == activeIndex;
+    const isHighlighted = (index: number) => draggedSourceSubtreeHighlighted(index) || dragContextContainerHighlighted(index);
+    const isDimmed = (index: number) => {
+        if (isDraggedActiveRow(index)) return true;
+        if (activeIndex == -1 || index < activeIndex) return false;
+        const activeNode = flattenedTree[activeIndex];
+        const node = flattenedTree[index];
+        if (!activeNode || !node) return false;
+        if (activeNode.type != "space" && activeNode.type != "group") return false;
+        if (activeNode.collapsed) return false;
+        return node.id.startsWith(`${activeNode.id}/`);
     };
     const rowSpacing = (node: TreeNode) => node.type == "group" ? 0 : indentationWidth * (node.depth - 1) + (node.type == "space" ? 0 : 20);
     const rowOffsets = React.useMemo(() => {
@@ -174,41 +216,6 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
             }];
         });
     }, [flattenedTree, rowHeights, rowOffsets]);
-    const calcYOffset = (index: number) => {
-        if (!projected) return 0;
-        if (projected.insert) {
-            if (projected.copy && !projected.reorder) return 0;
-            if (index > activeIndex) {
-                return -rowHeights[index];
-            } else if (index == activeIndex) {
-                return heightBetweenIndex(overIndex, activeIndex);
-            } else {
-                return 0;
-            }
-        } else if (projected.sortable) {
-            const targetIndex = overIndex < activeIndex ? overIndex : overIndex;
-            if (projected.copy && !projected.reorder) {
-                if (index == activeIndex) {
-                    return heightBetweenIndex(targetIndex, activeIndex);
-                } else if (index >= targetIndex) {
-                    return rowHeights[index];
-                } else {
-                    return 0;
-                }
-            }
-
-            if (index == activeIndex) {
-                return heightBetweenIndex(targetIndex, activeIndex);
-            } else if (index > activeIndex && index <= targetIndex) {
-                return -rowHeights[index];
-            } else if (index < activeIndex && index >= targetIndex) {
-                return rowHeights[index];
-            } else {
-                return 0;
-            }
-        }
-    };
-
     return (
         <div
             ref={parentRef}
@@ -254,73 +261,68 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                         ></div>
                     ))}
                 </div>
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => (
-                    <div
-                        key={flattenedTree[virtualRow.index].id}
-                        data-index={virtualRow.index}
-                        className="mk-tree-node"
-                        style={
-                            {
-                                "--row-height": `${rowHeights[virtualRow.index]}px`,
-                                "--node-offset": `${virtualRow.start}px`,
-                            } as CSSProperties
-                        }
-                    >
-                        {flattenedTree[virtualRow.index].type == "new" ? (
-                            <div
-                                className={"mk-tree-wrapper mk-tree-section"}
-                                onClick={(e) => {
-                                    const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                    showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace, e.shiftKey);
-                                }}
-                            >
-                                <div className="mk-tree-item tree-item-self nav-folder-title mk-tree-new">
-                                    <div
-                                        className={`mk-path-icon mk-path-icon-placeholder`}
-                                        dangerouslySetInnerHTML={{
-                                            __html: props.superstate.ui.getSticker("ui//plus"),
-                                        }}
-                                    ></div>
-                                    <div className="mk-tree-text nav-folder-title-content">{i18n.menu.openSpace}</div>
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const node = flattenedTree[virtualRow.index];
+                    const indicatorVariant = dropIndicatorVariant(virtualRow.index);
+                    return (
+                        <div
+                            key={node.id}
+                            data-index={virtualRow.index}
+                            className={`mk-tree-node${indicatorVariant ? " mk-tree-node-indicator" : ""}`}
+                            style={
+                                {
+                                    "--row-height": `${rowHeights[virtualRow.index]}px`,
+                                    "--node-offset": `${virtualRow.start}px`,
+                                } as CSSProperties
+                            }
+                        >
+                            {node.type == "new" ? (
+                                <div
+                                    className={"mk-tree-wrapper mk-tree-section"}
+                                    onClick={(e) => {
+                                        const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                        showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace, e.shiftKey);
+                                    }}
+                                >
+                                    <div className="mk-tree-item tree-item-self nav-folder-title mk-tree-new">
+                                        <div
+                                            className={`mk-path-icon mk-path-icon-placeholder`}
+                                            dangerouslySetInnerHTML={{
+                                                __html: props.superstate.ui.getSticker("ui//plus"),
+                                            }}
+                                        ></div>
+                                        <div className="mk-tree-text nav-folder-title-content">{i18n.menu.openSpace}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <TreeItem
-                                key={flattenedTree[virtualRow.index].id}
-                                id={flattenedTree[virtualRow.index].id}
-                                data={flattenedTree[virtualRow.index]}
-                                disabled={false}
-                                depth={flattenedTree[virtualRow.index].depth}
-                                indentationWidth={indentationWidth}
-                                dragStarted={props.dragStarted}
-                                dragOver={props.dragOver}
-                                dragEnded={props.dragEnded}
-                                dragActive={activeIndex != -1}
-                                indicator={dropIndicator(virtualRow.index)}
-                                superstate={superstate}
-                                ghost={
-                                    overIndex != -1 && activeIndex == virtualRow.index
-                                    // (overIndex == virtualRow.index && !projected?.droppable)
-                                }
-                                style={{
-                                    opacity: projected && projected.insert && !projected.copy && virtualRow.index == activeIndex ? 0 : 1,
-                                    transform: CSS.Translate.toString({
-                                        x: projected && projected.sortable && virtualRow.index == activeIndex && projected ? (projected.depth - flattenedTree[virtualRow.index].depth) * indentationWidth : 0,
-                                        y: calcYOffset(virtualRow.index),
-                                        scaleX: 0,
-                                        scaleY: 0,
-                                    }),
-                                }}
-                                onSelectRange={selectRange}
-                                active={activePath == flattenedTree[virtualRow.index].item?.path}
-                                highlighted={highlighted(virtualRow.index)}
-                                selected={(selectedPaths as TreeNode[]).some((g) => g.id == flattenedTree[virtualRow.index].id)}
-                                collapsed={flattenedTree[virtualRow.index].collapsed}
-                                onCollapse={handleCollapse}
-                            ></TreeItem>
-                        )}
-                    </div>
-                ))}
+                            ) : (
+                                <TreeItem
+                                    key={node.id}
+                                    id={node.id}
+                                    data={node}
+                                    disabled={false}
+                                    depth={node.depth}
+                                    indentationWidth={indentationWidth}
+                                    enableObsidianDragGhost={props.enableObsidianDragGhost}
+                                    dragStarted={props.dragStarted}
+                                    dragOver={props.dragOver}
+                                    dragEnded={props.dragEnded}
+                                    dragActive={activeIndex != -1}
+                                    indicator={indicatorVariant != null}
+                                    indicatorVariant={indicatorVariant ?? "line-top"}
+                                    superstate={superstate}
+                                    style={{}}
+                                    onSelectRange={selectRange}
+                                    active={activePath == node.item?.path}
+                                    highlighted={isHighlighted(virtualRow.index)}
+                                    dimmed={isDimmed(virtualRow.index)}
+                                    selected={(selectedPaths as TreeNode[]).some((g) => g.id == node.id)}
+                                    collapsed={node.collapsed}
+                                    onCollapse={handleCollapse}
+                                ></TreeItem>
+                            )}
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );

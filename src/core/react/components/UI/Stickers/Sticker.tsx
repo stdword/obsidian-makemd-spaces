@@ -1,7 +1,7 @@
-import { UIManager } from "core/middleware/ui";
 import React from "react";
+import { IUIManager } from "shared/types/uiManager";
 
-export const Sticker = (props: { ui: UIManager; sticker: string }) => {
+export const Sticker = (props: { ui: IUIManager; sticker: string }) => {
   return (
     <div
       className="mk-sticker"

@@ -1,6 +1,7 @@
 export const en = {
     hintText: {
-        dragDropModifierKeys: "Hold Alt/Opt to copy",
+        dragDropCopyModifierKey: "Hold Alt/Opt to copy",
+        dragDropLinkModifierKey: "Hold Shift to link",
     },
 
     defaults: {

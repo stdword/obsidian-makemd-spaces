@@ -1,5 +1,6 @@
 export class InputManager {
     private events: { [key: string]: Function[] } = {};
+    private destroyed = false;
     constructor() {
         this.addListeners();
     }
@@ -42,12 +43,20 @@ export class InputManager {
     }
 
     removeListeners() {
-        window.removeEventListener("mousedown", this.handleMouseEvent);
-        window.removeEventListener("click", this.handleMouseEvent);
-        window.removeEventListener("contextmenu", this.handleMouseEvent);
+        window.removeEventListener("mousedown", this.handleMouseEvent, true);
+        window.removeEventListener("click", this.handleMouseEvent, true);
+        window.removeEventListener("contextmenu", this.handleMouseEvent, true);
         window.removeEventListener("keydown", this.handleKeyEvent);
         window.removeEventListener("keyup", this.handleKeyEvent);
     }
+
+    destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
+        this.removeListeners();
+        this.events = {};
+    }
+
     handleMouseEvent = (event: MouseEvent) => {
         this.emit(event.type, event);
     };

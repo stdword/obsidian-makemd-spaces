@@ -12,6 +12,7 @@ import { emojis } from "shared/assets/emoji";
 import { Pos, Rect } from "shared/types/Pos";
 import { EmojiData } from "shared/types/emojis";
 import { TargetLocation } from "shared/types/path";
+import { MenuObject } from "shared/types/menu";
 import { openPathInElement } from "shared/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
@@ -25,14 +26,19 @@ import { lucideIcons } from "./icons";
 import { showModal } from "./modal";
 import { showMainMenu } from "./showMainMenu";
 import { stickerFromString } from "./sticker";
+import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
 
 export class ObsidianUI implements UIAdapter {
     public manager: UIManager;
     public root: Root;
+    private rootEl: HTMLDivElement;
+    private destroyed = false;
+    private floatingMenus = new Set<MenuObject>();
     public constructor(public plugin: MakeMDPlugin) {
         const newDiv = document.createElement("div");
         document.body.appendChild(newDiv);
         newDiv.className = "mk-root";
+        this.rootEl = newDiv;
         this.createRoot = () => null;
         this.getRoot = () => null;
         this.root = createRoot(newDiv);
@@ -40,8 +46,24 @@ export class ObsidianUI implements UIAdapter {
     }
 
     public destroy = () => {
+        if (this.destroyed) return;
+        this.destroyed = true;
+        Array.from(this.floatingMenus).forEach((menu) => menu.hide(false, true));
+        this.floatingMenus.clear();
+        this.manager?.destroy();
         this.root.unmount();
+        this.rootEl.remove();
     };
+
+    private trackMenuObject(menu: MenuObject): MenuObject {
+        this.floatingMenus.add(menu);
+        const hide = menu.hide;
+        menu.hide = (suppress?: boolean, immediate?: boolean) => {
+            this.floatingMenus.delete(menu);
+            hide(suppress, immediate);
+        };
+        return menu;
+    }
 
     public createRoot: typeof createRoot;
     public getRoot: (container: Container) => Root;
@@ -84,24 +106,28 @@ export class ObsidianUI implements UIAdapter {
         new Notice(content);
     };
     public openPalette = (modal: JSX.Element, win: Window, className: string) => {
-        return showModal({
-            ui: this,
-            fc: modal,
-            isPalette: true,
-            className,
-            win,
-        });
+        return this.trackMenuObject(
+            showModal({
+                ui: this,
+                fc: modal,
+                isPalette: true,
+                className,
+                win,
+            }),
+        );
     };
 
     public openModal = (title: string, modal: JSX.Element, win?: Window, className?: string, props?: any) => {
-        return showModal({
-            ui: this,
-            fc: modal,
-            title: title,
-            className,
-            props,
-            win,
-        });
+        return this.trackMenuObject(
+            showModal({
+                ui: this,
+                fc: modal,
+                title: title,
+                className,
+                props,
+                win,
+            }),
+        );
     };
     public openPopover = (_position: Pos, _popover: JSX.Element) => {};
 
@@ -110,13 +136,23 @@ export class ObsidianUI implements UIAdapter {
         if (paths.length == 1) {
             const path = paths[0];
             const file = getAbstractFileAtPath(this.plugin.app, path);
-            if (!file) return;
+            if (!file) {
+                if (isTagSpacePath(path)) {
+                    this.plugin.app.dragManager.onDragStart(e.nativeEvent, {
+                        icon: "lucide-tags",
+                        source: undefined,
+                        title: `#${tagSpaceNameFromPath(path)}`,
+                        type: "file",
+                    });
+                }
+                return;
+            }
             if (file instanceof TFile) {
                 const dragData = this.plugin.app.dragManager.dragFile(e.nativeEvent, file);
                 this.plugin.app.dragManager.onDragStart(e.nativeEvent, dragData);
             } else {
                 this.plugin.app.dragManager.onDragStart(e.nativeEvent, {
-                    icon: "lucide-file",
+                    icon: "lucide-folder",
                     source: undefined,
                     title: file.name,
                     type: "file",

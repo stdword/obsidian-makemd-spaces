@@ -75,8 +75,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         });
     }
     async loadSpaces() {
-        document.body.querySelector(".app-container").setAttribute("vaul-drawer-wrapper", "");
-
         document.body.classList.toggle("mk-folder-lines", this.superstate.settings.folderIndentationLines);
 
         patchFilesPlugin(this);
@@ -292,5 +290,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate?.unload();
         await this.superstate?.persister?.unload();
         this.detachFileTreeLeaves();
+        this.ui?.destroy();
     }
 }

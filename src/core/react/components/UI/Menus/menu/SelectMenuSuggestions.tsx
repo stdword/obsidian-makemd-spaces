@@ -1,4 +1,3 @@
-import { UIManager } from "core/middleware/ui";
 import { Sticker } from "core/react/components/UI/Stickers/Sticker";
 import { PointerModifiers } from "schemas/ui";
 import { SelectOption, SelectOptionType } from "makemd-core";
@@ -6,6 +5,7 @@ import i18n from "shared/i18n";
 import React, { useEffect, useRef, useState } from "react";
 import { MenuObject } from "shared/types/menu";
 import { Rect } from "shared/types/Pos";
+import { IUIManager } from "shared/types/uiManager";
 import { matchAny } from "./concerns/matchers";
 import { verticalDeltaForShiftWheel } from "./selectMenuLimits";
 function markIt(name: string, query: string) {
@@ -13,7 +13,7 @@ function markIt(name: string, query: string) {
     return name?.replace(regexp, "<mark>$&</mark>");
 }
 
-const SelectMenuSuggestionsComponent = (props: { ui: UIManager; item: SelectOption; query: string; active: boolean; onDeleteOption?: (value: string) => void }) => {
+const SelectMenuSuggestionsComponent = (props: { ui: IUIManager; item: SelectOption; query: string; active: boolean; onDeleteOption?: (value: string) => void }) => {
     const ref = useRef(null);
 
     useEffect(() => {
@@ -140,7 +140,7 @@ const SelectMenuSuggestions = (props: {
     index: number;
     setIndex: (index: number) => void;
     allowNew: boolean;
-    ui: UIManager;
+    ui: IUIManager;
     isDisclosureMenu: boolean;
     openSubmenu?: (menu: MenuObject) => void;
 }) => {

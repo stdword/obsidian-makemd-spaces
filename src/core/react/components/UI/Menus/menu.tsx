@@ -2,12 +2,12 @@ import { DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
 import { isPhone } from "core/utils/ui/screen";
-import { UIManager } from "makemd-core";
 import React, { cloneElement, useEffect } from "react";
 import { MenuObject } from "shared/types/menu";
 import { Anchors, Rect } from "shared/types/Pos";
+import { IUIManager } from "shared/types/uiManager";
 
-export const MenuWrapper = (props: { rect: Rect; ui: UIManager; anchor: Anchors; hide: (supress?: boolean) => void; children: any }) => {
+export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors; hide: (supress?: boolean) => void; children: any }) => {
     const sensors = useSensors(
         useSensor(MouseSensor, {
             activationConstraint: {
@@ -83,7 +83,7 @@ export const MenuWrapper = (props: { rect: Rect; ui: UIManager; anchor: Anchors;
 
 export const showMenu = (props: {
     rect: Rect;
-    ui: UIManager;
+    ui: IUIManager;
     anchor: Anchors;
     win: Window;
     fc: JSX.Element;

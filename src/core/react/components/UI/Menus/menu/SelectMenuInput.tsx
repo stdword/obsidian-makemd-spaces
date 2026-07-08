@@ -1,5 +1,6 @@
-import { SelectSection, UIManager } from "makemd-core";
+import { SelectSection } from "makemd-core";
 import React, { CSSProperties, forwardRef, useEffect, useRef, useState } from "react";
+import { IUIManager } from "shared/types/uiManager";
 
 const SIZER_STYLES: CSSProperties = {
     position: "absolute",
@@ -15,7 +16,7 @@ const STYLE_PROPS = ["fontSize", "fontFamily", "fontWeight", "fontStyle", "lette
 const SelectMenuSearch = forwardRef(
     (
         props: {
-            ui: UIManager;
+            ui: IUIManager;
             expanded: boolean;
             id: string;
             query: string;

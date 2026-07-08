@@ -4,7 +4,7 @@ import i18n from "shared/i18n";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/superstate/utils/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
-import { DragProjection, getDragDepth, getProjection } from "core/utils/dnd/dragPath";
+import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { hideFolderNoteFileFromItems } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
@@ -15,13 +15,16 @@ import { Pos } from "shared/types/Pos";
 import { SpaceSort } from "shared/types/spaceDef";
 import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
-import { eventToModifier } from "./SpaceTreeItem";
+import { DropModifiers, eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 import { isTagTreeItemPath } from "schemas/builtin";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
 }
+
+const ENABLE_OBSIDIAN_DRAG_GHOST = true;
+const ENABLE_DRAG_ACTION_LABEL = true;
 
 const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, activeId: string, sortable: boolean, root: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], pinned?: boolean) => {
     const tree: TreeNode[] = [];
@@ -151,14 +154,22 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const nextTreeScrollPath = useRef(null);
     const [presetRowHeight, setPresetRowHeight] = useState<number>(props.superstate.settings.spaceRowHeight);
 
-    // const [dropPlaceholderItem, setDropPlaceholderItem] = useState<[Record<string, string>, number] | null>(null);
     const [offset, setOffset] = useState<{
         x: number;
         y: number;
     }>({ x: 0, y: 0 });
+    const overIdRef = useRef<string>(null);
+    const offsetRef = useRef({ x: 0, y: 0 });
+    const modifierRef = useRef<DropModifiers>(null);
+    const activeRef = useRef<TreeNode>(null);
+    const dragPathsRef = useRef<string[]>([]);
+    const dragActionRef = useRef<DragActionModel | null>(null);
     const listRef = useRef<{
         scrollToIndex: (index: number, options: { align: "start" | "center" | "end" | "auto" }) => void;
     }>(null);
+    const reloadData = useCallback(() => {
+        setFlattenedTree(retrieveData(superstate, activeViewSpaces, active, expandedSpaces));
+    }, [superstate, activeViewSpaces, active, expandedSpaces]);
 
     const refreshableSpaces = useMemo(() => [...activeViewSpaces.filter((f) => f).map((f) => f.path), ...flattenedTree.filter((f) => f.type == "space").map((f) => f.path)].filter((f) => f), [activeViewSpaces, flattenedTree]);
 
@@ -256,11 +267,12 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         }
     }, [flattenedTree]);
     useEffect(() => {
-        const reloadData = () => {
-            setFlattenedTree(retrieveData(superstate, activeViewSpaces, active, expandedSpaces));
-        };
         const spaceUpdated = (payload: { path: string }) => {
             if (refreshableSpaces.some((f) => f == payload.path)) {
+                if (isDropping.current) {
+                    pendingDropReload.current = true;
+                    return;
+                }
                 if (pendingReset.current) {
                     // Batch data reload with state reset to prevent intermediate render
                     pendingReset.current = false;
@@ -280,7 +292,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         return () => {
             props.superstate.eventsDispatcher.removeListener("spaceStateUpdated", spaceUpdated);
         };
-    }, [expandedSpaces, activeViewSpaces, active, expandedSpaces, refreshableSpaces, setFlattenedTree]);
+    }, [refreshableSpaces, reloadData]);
 
     useEffect(() => {
         const tree = retrieveData(superstate, activeViewSpaces, active, expandedSpaces);
@@ -311,50 +323,123 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         [sortedIds, selectedPaths, setSelectedPaths, flattenedTree],
     );
 
-    const [projected, setProjected] = useState<DragProjection>(null);
-    useEffect(() => {
-        const dragDepth = getDragDepth(offset.x, indentationWidth);
-        const _projected = overId ? getProjection(active, flattenedTree, dragPaths, overIndex, dragDepth, offset.y, activeIndex < overIndex, modifier, active?.space) : null;
-        setProjected((p) => (!isEqual(p, _projected) ? _projected : p));
-    }, [active, flattenedTree, overId, overIndex, dragPaths, offset, activeIndex, modifier, indentationWidth, activeViewSpaces]);
+    const [dragAction, setDragAction] = useState<DragActionModel | null>(null);
 
     const dragStarted = (activeId: string) => {
         const activeItem = flattenedTree.find(({ id }) => id === activeId);
         //Dont drag vault
+        activeRef.current = activeItem;
         setActive(activeItem);
+        overIdRef.current = activeId;
         setOverId(activeId);
 
         if (activeItem) {
             if (selectedPaths.length > 1) {
-                setDragPaths(selectedPaths.map((f) => f.path));
+                const paths = selectedPaths.map((f) => f.path);
+                dragPathsRef.current = paths;
+                setDragPaths(paths);
             } else {
-                setDragPaths([activeItem.path]);
+                const paths = [activeItem.path];
+                dragPathsRef.current = paths;
+                setDragPaths(paths);
             }
         }
 
         document.body.style.setProperty("cursor", "grabbing");
     };
 
-    const parentName = useMemo(() => (projected ? flattenedTree.find((f) => f.id == projected.parentId)?.item?.name : null), [flattenedTree, projected]);
-    const overName = useMemo(() => projected && flattenedTree.find((f) => f.id == projected.overId)?.item?.name, [flattenedTree, projected]);
+    const focusName = focuses?.[activeFocus]?.name || "Spaces";
+    const containerName = (containerId: string | null) => (containerId ? flattenedTree.find((f) => f.id == containerId)?.item?.name : null) ?? focusName;
+    const dragActionLabel = (action: DragAction) => {
+        if (action.type == "reorder") return `${i18n.labels.reorderIn} ${containerName(action.containerId)}`;
+        const actionLabel = action.type == "link" ? i18n.labels.linkTo : action.type == "copy" ? i18n.labels.copyTo : i18n.labels.moveTo;
+        return `${actionLabel} ${containerName(action.containerId)}`;
+    };
+    const dragActionForProjection = (projection: DragProjection, currentModifier: DropModifiers): DragActionModel | null => {
+        if (!projection?.droppable) return null;
+        const overItem = flattenedTree.find((f) => f.id == projection.overId);
+        const targetContainerId = projection.insert ? projection.overId : projection.parentId;
+        const currentActive = activeRef.current ?? active;
+        if (!projection.insert && !projection.sortable && overItem?.id != targetContainerId && currentActive?.parentId == targetContainerId) return null;
+        const position: DragInsertPosition | undefined = projection.sortable
+            ? {
+                  kind: projection.linePosition == "bottom" ? "after" : "before",
+                  itemId: projection.overId,
+              }
+            : undefined;
+        const actionType = projection.reorder && position && currentModifier == "move" ? "reorder" : currentModifier == "link" ? "link" : currentModifier == "copy" ? "copy" : "move";
+        const action: DragAction =
+            actionType == "reorder"
+                ? { type: "reorder", containerId: targetContainerId, position, projection }
+                : {
+                      type: actionType,
+                      containerId: targetContainerId,
+                      ...(position ? { position } : {}),
+                      projection,
+                  };
+        const visual: DragActionVisual | null = position
+            ? { kind: "line", itemId: position.itemId, position: position.kind }
+            : targetContainerId
+              ? overItem?.id == targetContainerId && (overItem.collapsed || overItem.childrenCount == 0)
+                  ? { kind: "box", containerId: targetContainerId }
+                  : { kind: "folder", containerId: targetContainerId }
+              : null;
+        if (!visual) return null;
+        return {
+            action,
+            visual,
+            label: ENABLE_OBSIDIAN_DRAG_GHOST && ENABLE_DRAG_ACTION_LABEL ? dragActionLabel(action) : null,
+        };
+    };
 
     const dragOver = (e: React.DragEvent<HTMLElement>, _overId: string, position: Pos) => {
-        const modifier = eventToModifier(e);
-        setModifier(modifier);
-        e.dataTransfer.dropEffect = modifier;
-        if (projected) {
-            superstate.ui.setDragLabel(`${projected.reorder && !projected.insert ? i18n.labels.reorderIn : modifier == "move" || !modifier ? i18n.labels.moveTo : modifier == "link" ? i18n.labels.linkTo : i18n.labels.copyTo} ${projected.insert ? overName : (parentName ?? "Spaces")}`);
+        const currentActive = activeRef.current ?? active;
+        const modifier = currentActive?.parentId == null ? "move" : eventToModifier(e);
+        if (modifierRef.current != modifier) {
+            modifierRef.current = modifier;
+            setModifier(modifier);
         }
-        if (dragPaths.length > 1) {
-            if (_overId && _overId != overId) setOverId(_overId);
+        e.dataTransfer.dropEffect = modifier;
+        const x = offsetRef.current.x;
+        const y = offsetRef.current.y;
+        const rowHeight = spaceRowHeight(superstate, presetRowHeight, false);
+        const newY = position.y <= rowHeight / 3 ? 0 : position.y >= (rowHeight * 2) / 3 ? rowHeight : 13;
+        const nextOverId = _overId ?? overIdRef.current;
+        const currentDragPaths = dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths;
+        const nextOverIndex = flattenedTree.findIndex((f) => f.id == nextOverId);
+        const overItem = nextOverIndex == -1 ? null : flattenedTree[nextOverIndex];
+        const nextDepth = overItem?.depth ?? 0;
+        const newX = nextDepth * indentationWidth;
+        const nextActiveIndex = currentActive?.id ? flattenedTree.findIndex((f) => f.id == currentActive.id) : -1;
+        const nextProjection = currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, modifier, currentActive.space) : null;
+        const nextDragAction = dragActionForProjection(nextProjection, modifier);
+        if (!isEqual(dragActionRef.current, nextDragAction)) {
+            dragActionRef.current = nextDragAction;
+            setDragAction(nextDragAction);
+        }
+        if (nextDragAction?.label) {
+            superstate.ui.setDragLabel(nextDragAction.label);
+        }
+        if (currentDragPaths.length > 1) {
+            if (_overId && _overId != overIdRef.current) {
+                overIdRef.current = _overId;
+                setOverId(_overId);
+            }
+            if (x != newX || y != newY) {
+                offsetRef.current = { x: newX, y: newY };
+                setOffset({
+                    x: newX,
+                    y: newY,
+                });
+            }
             return;
         }
-        if (_overId && _overId != overId) setOverId(_overId);
-        const x = offset.x;
-        const y = offset.y;
-        const newX = 2 * Math.round(Math.max(1, position.x - indentationWidth - 20));
-        const newY = 2 * Math.round(position.y / 2);
+        if (_overId && _overId != overIdRef.current) {
+            overIdRef.current = _overId;
+            setOverId(_overId);
+        }
         if (x != newX || y != newY) {
+            offsetRef.current = { x: newX, y: newY };
             setOffset({
                 x: newX,
                 y: newY,
@@ -367,9 +452,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             setActive(null);
             setOffset({ x: 0, y: 0 });
             setModifier(null);
-            setProjected(null);
+            setDragAction(null);
+            activeRef.current = null;
+            dragPathsRef.current = [];
+            dragActionRef.current = null;
+            overIdRef.current = null;
+            offsetRef.current = { x: 0, y: 0 };
+            modifierRef.current = null;
             dragCounter.current = 0;
-            // setDropPlaceholderItem(null);
             document.body.style.setProperty("cursor", "");
         }
     }, [dragPaths]);
@@ -378,8 +468,18 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         isDropping.current = true;
         pendingReset.current = true;
         treeRef.current?.classList.add("mk-dropping");
-        const modifiers = eventToModifier(e);
-        await dropPathsInTree(superstate, dragPaths, active?.id, overId, projected, flattenedTree, activeViewSpaces, modifiers);
+        const currentActive = activeRef.current ?? active;
+        const actionModifier = dragActionRef.current?.action.type == "link" ? "link" : dragActionRef.current?.action.type == "copy" ? "copy" : "move";
+        await dropPathsInTree(superstate, dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths, currentActive?.id, dragActionRef.current?.action.projection.overId ?? overId, dragActionRef.current?.action.projection, flattenedTree, activeViewSpaces, actionModifier);
+        if (pendingDropReload.current) {
+            pendingDropReload.current = false;
+            pendingReset.current = false;
+            flushSync(() => {
+                reloadData();
+                resetState();
+            });
+            treeRef.current?.classList.remove("mk-dropping");
+        }
         isDropping.current = false;
         // Fallback reset in case spaceStateUpdated doesn't fire
         setTimeout(() => {
@@ -410,15 +510,21 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         setActive(null);
         setOffset({ x: 0, y: 0 });
         setModifier(null);
-        setProjected(null);
+        setDragAction(null);
+        activeRef.current = null;
+        dragPathsRef.current = [];
+        dragActionRef.current = null;
+        overIdRef.current = null;
+        offsetRef.current = { x: 0, y: 0 };
+        modifierRef.current = null;
         dragCounter.current = 0;
-        // setDropPlaceholderItem(null);
         document.body.style.setProperty("cursor", "");
     }
 
     const dragCounter = useRef(0);
     const isDropping = useRef(false);
     const pendingReset = useRef(false);
+    const pendingDropReload = useRef(false);
 
     const dragEnter = () => {
         dragCounter.current++;
@@ -428,7 +534,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         if (dragCounter.current == 0) {
             setOverId(null);
             setOffset({ x: 0, y: 0 });
-            setProjected(null);
+            setDragAction(null);
+            dragActionRef.current = null;
+            overIdRef.current = null;
+            offsetRef.current = { x: 0, y: 0 };
             dragCounter.current = 0;
         }
     };
@@ -473,13 +582,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     vRef={listRef}
                     rowHeights={rowHeights}
                     flattenedTree={flattenedTree}
-                    projected={projected}
+                    dragAction={dragAction}
                     handleCollapse={handleCollapse}
                     activePath={activePath}
                     superstate={superstate}
                     selectedPaths={selectedPaths}
                     selectRange={selectRange}
                     indentationWidth={indentationWidth}
+                    enableObsidianDragGhost={ENABLE_OBSIDIAN_DRAG_GHOST}
                     dragStarted={dragStarted}
                     dragOver={dragOver}
                     dragEnded={dragEnded}
@@ -487,7 +597,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     activeIndex={activeIndex}
                 ></VirtualizedList>
             )}
-            {modifier && (
+            {modifier && active?.parentId != null && (
                 <div
                     className="mk-hint-dnd"
                     style={{
@@ -502,7 +612,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                         fontSize: "12px",
                     }}
                 >
-                    <div>{i18n.hintText.dragDropModifierKeys}</div>
+                    <div>{i18n.hintText.dragDropCopyModifierKey}</div>
+                    <div>{i18n.hintText.dragDropLinkModifierKey}</div>
                 </div>
             )}
         </div>

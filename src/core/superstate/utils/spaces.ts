@@ -231,6 +231,45 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
     }
 };
 
+const rankOrderWithPathAtIndex = (superstate: Superstate, spaceState: SpaceState, path: string, previousPath: string, rank: number) => {
+    const currentOrder = ensureArray(spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(spaceState.path).map((item) => item.path));
+    const nextOrder = currentOrder.filter((itemPath) => itemPath != previousPath && itemPath != path);
+    nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
+    return [...new Set(nextOrder)];
+};
+
+const stagePathRankInSpace = (superstate: Superstate, path: string, previousPath: string, rank: number, space: string) => {
+    if (typeof rank != "number" || !Number.isFinite(rank)) return;
+
+    const spaceState = superstate.spacesIndex.get(space);
+    if (!spaceState) return;
+    if (!["tag", "folder", "vault"].includes(spaceState.type)) return;
+    if (effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings).field != "rank") return;
+
+    const nextMetadata = {
+        ...spaceState.metadata,
+        "rank-order": rankOrderWithPathAtIndex(superstate, spaceState, path, previousPath, rank),
+    };
+
+    superstate.spacesIndex.set(space, {
+        ...spaceState,
+        metadata: nextMetadata,
+        sortable: true,
+    });
+};
+
+const persistStagedPathRankInSpace = async (superstate: Superstate, path: string, previousPath: string, rank: number, space: string) => {
+    if (typeof rank != "number" || !Number.isFinite(rank)) return;
+
+    const spaceState = superstate.spacesIndex.get(space);
+    if (!spaceState) return;
+    if (!["tag", "folder", "vault"].includes(spaceState.type)) return;
+    if (effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings).field != "rank") return;
+
+    const nextOrder = rankOrderWithPathAtIndex(superstate, spaceState, path, previousPath, rank);
+    await saveSpaceMetadataValue(superstate, space, "rank-order", nextOrder);
+};
+
 export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: PathState, newParent: string, index: number, copy?: boolean) => {
     if (!item) return;
     //pre-save before vault change happens so we can save the rank
@@ -243,21 +282,14 @@ export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: Pa
         return;
     }
 
+    stagePathRankInSpace(superstate, newPath, item.path, index, newParent);
+
     if (copy) {
         await superstate.spaceManager.copyPath(item.path, newParent);
     } else {
         await superstate.spaceManager.renamePath(item.path, newPath);
     }
-    const targetSpace = superstate.spacesIndex.get(newParent);
-    if (targetSpace) {
-        await saveSpaceMetadataValue(
-            superstate,
-            newParent,
-            "rank-order",
-            ensureArray(targetSpace.metadata?.["rank-order"]).filter((itemPath) => itemPath != item.path && itemPath != newPath),
-        );
-    }
-    await updatePathRankInSpace(superstate, newPath, index, newParent);
+    await persistStagedPathRankInSpace(superstate, newPath, item.path, index, newParent);
 };
 
 export const createSpace = async (superstate: Superstate, path: string, newSpace?: SpaceDefinition) => {

@@ -98,9 +98,6 @@
     background: var(--mk-ui-divider);
     min-height: 5px;
 }
-.app-container[vaul-drawer-wrapper] {
-    transform-origin: center top;
-}
 
 .workspace-split {
     padding-top: var(--safe-area-inset-top);

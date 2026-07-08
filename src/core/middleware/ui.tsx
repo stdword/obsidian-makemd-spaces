@@ -35,6 +35,29 @@ export class UIManager implements IUIManager {
         this.resetFunctions.forEach((f) => f(id));
     };
     public eventsDispatch: EventDispatcher<UIManagerEventTypes> = new EventDispatcher<UIManagerEventTypes>();
+    private menuObjects = new Set<MenuObject>();
+    private destroyed = false;
+
+    private trackMenuObject(menu: MenuObject): MenuObject {
+        this.menuObjects.add(menu);
+        const hide = menu.hide;
+        menu.hide = (suppress?: boolean, immediate?: boolean) => {
+            this.menuObjects.delete(menu);
+            hide(suppress, immediate);
+        };
+        return menu;
+    }
+
+    public destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
+
+        Array.from(this.menuObjects).forEach((menu) => menu.hide(false, true));
+        this.menuObjects.clear();
+        this.inputManager.destroy();
+        this.resetFunctions = [];
+    }
+
     public quickOpen(mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void) {
         this.mainFrame.quickOpen(mode, offset, win, onSelect);
     }
@@ -100,21 +123,23 @@ export class UIManager implements IUIManager {
     }
 
     public openMenu(rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor: Anchors = "right", onHide?: () => void, force?: boolean): MenuObject {
-        return showSelectMenu(rect, menuProps, win, defaultAnchor, onHide, force);
+        return this.trackMenuObject(showSelectMenu(rect, menuProps, win, defaultAnchor, onHide, force));
     }
 
     public openCustomMenu(rect: Rect, fc: JSX.Element, props: any, win: Window, defaultAnchor: Anchors = "right", onHide?: () => void, className?: string, onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject): MenuObject {
-        return showMenu({
-            rect,
-            anchor: defaultAnchor,
-            win,
-            ui: this,
-            fc,
-            props,
-            onHide,
-            className,
-            onSubmenu,
-        });
+        return this.trackMenuObject(
+            showMenu({
+                rect,
+                anchor: defaultAnchor,
+                win,
+                ui: this,
+                fc,
+                props,
+                onHide,
+                className,
+                onSubmenu,
+            }),
+        );
     }
     public notify(content: string, destination?: string) {
         if (destination == "console") {
@@ -124,10 +149,10 @@ export class UIManager implements IUIManager {
     }
     public error(_error: any) {}
     public openPalette(modal: JSX.Element, win: Window, className?: string) {
-        return this.mainFrame.openPalette(modal, win, className);
+        return this.trackMenuObject(this.mainFrame.openPalette(modal, win, className));
     }
     public openModal(title: string, modal: JSX.Element, win: Window, className?: string, props?: any): MenuObject {
-        return this.mainFrame.openModal(title, modal, win, className, props);
+        return this.trackMenuObject(this.mainFrame.openModal(title, modal, win, className, props));
     }
     public openPopover(position: Pos, popover: JSX.Element) {
         this.mainFrame.openPopover(position, popover);

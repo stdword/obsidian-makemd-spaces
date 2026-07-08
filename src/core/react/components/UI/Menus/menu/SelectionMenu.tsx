@@ -1,10 +1,10 @@
-import { UIManager } from "core/middleware/ui";
 import { SelectMenuProps, SelectOption, SelectOptionType } from "makemd-core";
 import React from "react";
+import { IUIManager } from "shared/types/uiManager";
 import { windowFromDocument } from "shared/utils/dom";
 import { parseMultiString } from "utils/parsers";
 
-export const showDisclosureMenu = (ui: UIManager, e: React.MouseEvent, multi: boolean, editable: boolean, value: string, options: SelectOption[], saveOptions: (options: string[], value: string[]) => void) => {
+export const showDisclosureMenu = (ui: IUIManager, e: React.MouseEvent, multi: boolean, editable: boolean, value: string, options: SelectOption[], saveOptions: (options: string[], value: string[]) => void) => {
     const offset = (e.target as HTMLElement).getBoundingClientRect();
     ui.openMenu(
         offset,
@@ -42,7 +42,7 @@ export const menuSeparator: SelectOption = {
     type: SelectOptionType.Separator,
     disabled: true,
 };
-export const defaultMenu = (ui: UIManager, options: SelectOption[]): SelectMenuProps => ({
+export const defaultMenu = (ui: IUIManager, options: SelectOption[]): SelectMenuProps => ({
     ui,
     multi: false,
     value: [],

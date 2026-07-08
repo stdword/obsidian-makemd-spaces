@@ -67,7 +67,7 @@
 .mk-focuses {
     display: flex;
     overflow: auto;
-    padding: 12px 12px 4px 12px;
+    padding: 4px;
 }
 
 .mk-focuses-inner {

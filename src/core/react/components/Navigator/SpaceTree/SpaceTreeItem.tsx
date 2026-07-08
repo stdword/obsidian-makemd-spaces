@@ -25,20 +25,21 @@ export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) =>
 export interface TreeItemProps {
     id: string;
     disabled: boolean;
-    clone?: boolean;
     collapsed?: boolean;
     depth: number;
-    ghost: boolean;
     active: boolean;
     selected: boolean;
     highlighted: boolean;
+    dimmed: boolean;
     onSelectRange?(id: string): void;
     indicator: boolean;
+    indicatorVariant?: "line-top" | "line-bottom" | "box";
     indentationWidth: number;
     data: TreeNode;
     superstate: Superstate;
     style: CSSProperties;
     onCollapse?(node: TreeNode, open: boolean): void;
+    enableObsidianDragGhost: boolean;
     dragStarted: (activeId: string) => void;
     dragOver: (e: React.DragEvent<HTMLElement>, overId: string, position: Pos) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>, overId: string) => void;
@@ -46,7 +47,7 @@ export interface TreeItemProps {
 }
 
 export const TreeItem = (props: TreeItemProps) => {
-    const { id: _id, clone, data, depth, dragActive, ghost, active, indentationWidth, indicator, collapsed, selected, highlighted, onCollapse, onSelectRange, style, superstate, disabled: _disabled, dragStarted, dragOver, dragEnded } = props;
+    const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
     const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
 
@@ -91,27 +92,31 @@ export const TreeItem = (props: TreeItemProps) => {
 
     const onDragStarted = (e: React.DragEvent<HTMLDivElement>) => {
         if (selectedPaths.length > 1) {
-            setDragPaths(selectedPaths.map((f) => f.path));
-            superstate.ui.dragStarted(
-                e,
-                selectedPaths.map((f) => f.path),
-            );
+            const paths = selectedPaths.map((f) => f.path);
+            setDragPaths(paths);
+            if (enableObsidianDragGhost) {
+                superstate.ui.dragStarted(e, paths);
+            }
+            dragStarted(data.id);
 
             return;
         }
-        dragStarted(data.id);
         setDragPaths([data.path]);
-        superstate.ui.dragStarted(e, [data.path]);
+        if (enableObsidianDragGhost) {
+            superstate.ui.dragStarted(e, [data.path]);
+        }
+        dragStarted(data.id);
     };
     const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
         if (!innerRef.current) return;
         const rect = innerRef.current.getBoundingClientRect();
+        const position = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+        };
 
-        const x = e.clientX - rect.left; //x position within the element.
-        const y = e.clientY - rect.top; //y position within the element.
-
-        dragOver(e, data.id, { x, y });
+        dragOver(e, data.id, position);
     };
     const onKeyDown = (e: KeyboardEvent | React.KeyboardEvent) => {
         if (e.key === "Control" || e.key === "Meta") {
@@ -137,9 +142,15 @@ export const TreeItem = (props: TreeItemProps) => {
     const { getRootProps, getInputProps } = useDropzone({
         onDrop,
         onDragEnter,
-        onDragLeave: () => setDropHighlighted(false),
-        onDropAccepted: () => setDropHighlighted(false),
-        onDropRejected: () => setDropHighlighted(false),
+        onDragLeave: () => {
+            setDropHighlighted(false);
+        },
+        onDropAccepted: () => {
+            setDropHighlighted(false);
+        },
+        onDropRejected: () => {
+            setDropHighlighted(false);
+        },
         noClick: true,
     });
     const onDragEnded = (e: React.DragEvent<HTMLDivElement>) => {
@@ -211,7 +222,14 @@ export const TreeItem = (props: TreeItemProps) => {
     return (
         <>
             <div
-                className={classNames("mk-tree-wrapper", data.type == "group" && !isTagSpace ? "mk-tree-section" : "", data.type == "group" && isTagSpace ? "mk-tree-tag" : "", clone && "mk-clone", ghost && "mk-ghost", highlighted ? "is-highlighted" : "")}
+                className={classNames(
+                    "mk-tree-wrapper",
+                    data.type == "group" && !isTagSpace ? "mk-tree-section" : "",
+                    data.type == "group" && isTagSpace ? "mk-tree-tag" : "",
+                    indicator && indicatorVariant == "line-bottom" ? "mk-wrapper-indicator-bottom" : "",
+                    highlighted ? "is-highlighted" : "",
+                    dimmed ? "is-dimmed" : "",
+                )}
                 style={treeItemColorVariables(color, isFolder) as TreeItemStyle}
                 ref={innerRef}
                 onMouseLeave={mouseOut}
@@ -241,6 +259,8 @@ export const TreeItem = (props: TreeItemProps) => {
                             selected ? "is-selected" : "",
 
                             indicator || dropHighlighted ? "mk-indicator-row" : "",
+                            indicator && indicatorVariant == "line-bottom" ? "mk-indicator-row-bottom" : "",
+                            indicator && indicatorVariant == "box" ? "mk-indicator-row-box" : "",
                         )}
                         style={
                             {
