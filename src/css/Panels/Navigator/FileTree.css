@@ -52,7 +52,6 @@
 .mk-path-tree {
     flex: 1;
     overflow: hidden;
-    /* -webkit-overflow-scrolling: touch; */
 }
 .mk-context-tree .tree-item {
     padding: 4px;

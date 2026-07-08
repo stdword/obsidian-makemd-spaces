@@ -53,17 +53,6 @@
     display: flex;
     justify-content: center;
 }
-
-.is-mobile .mk-focuses {
-    box-shadow: var(--mk-shadow-card);
-    padding-top: 12px;
-}
-.is-mobile .mk-focuses > div {
-    gap: 8px;
-    overflow: initial;
-    padding: 0;
-    margin-bottom: 8px;
-}
 .mk-focuses {
     display: flex;
     overflow: auto;
@@ -102,27 +91,6 @@
 .mk-waypoint-new svg {
     width: var(--icon-size);
     height: var(--icon-size);
-}
-
-.is-mobile .mk-focuses-item {
-    width: 40px;
-    height: 40px;
-    border-radius: 20px;
-}
-
-.is-mobile .mk-focuses-item svg,
-.is-mobile .mk-waypoint-new svg {
-    width: 22px;
-    height: 22px;
-}
-
-.is-mobile .mk-focuses {
-    min-height: 60px;
-}
-
-.is-mobile .mk-focuses-inner {
-    min-height: 60px;
-    align-items: center;
 }
 
 .mk-focuses-item.mk-active {

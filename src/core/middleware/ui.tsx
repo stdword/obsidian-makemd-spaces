@@ -160,12 +160,6 @@ export class UIManager implements IUIManager {
     public openPath(path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) {
         return this.mainFrame.openPath(path, newLeaf, source, props);
     }
-    public primaryInteractionType() {
-        return this.mainFrame.primaryInteractionType();
-    }
-    public getScreenType() {
-        return this.mainFrame.getScreenType();
-    }
     public getOS() {
         return this.mainFrame.getOS();
     }

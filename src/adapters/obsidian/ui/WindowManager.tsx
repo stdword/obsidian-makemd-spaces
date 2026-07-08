@@ -1,4 +1,4 @@
-import { DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor, pointerWithin, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, pointerWithin, useSensor, useSensors } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { WindowProvider } from "core/react/context/WindowContext";
 import { useInTreeCreateRoot } from "core/react/hooks/useInTreeCreateRoot";
@@ -10,12 +10,6 @@ export const WindowManager = (props: { ui: ObsidianUI }) => {
         useSensor(MouseSensor, {
             activationConstraint: {
                 distance: 10,
-            },
-        }),
-        useSensor(TouchSensor, {
-            activationConstraint: {
-                delay: 250,
-                tolerance: 5,
             },
         }),
         useSensor(KeyboardSensor, {

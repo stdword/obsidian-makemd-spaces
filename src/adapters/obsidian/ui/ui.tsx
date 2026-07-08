@@ -1,5 +1,3 @@
-import { InteractionType, ScreenType } from "shared/types/ui";
-
 import MakeMDPlugin from "main";
 import { Sticker, Superstate, UIAdapter, UIManager } from "makemd-core";
 import i18n from "shared/i18n";
@@ -284,12 +282,6 @@ export class ObsidianUI implements UIAdapter {
         }
         const leaf = getLeaf(this.plugin.app, newLeaf);
         await this.plugin.openPath(leaf, path);
-    };
-    public primaryInteractionType = () => {
-        return Platform.isMobile ? InteractionType.Touch : InteractionType.Mouse;
-    };
-    public getScreenType = () => {
-        return Platform.isPhone ? ScreenType.Phone : Platform.isTablet ? ScreenType.Tablet : ScreenType.Desktop;
     };
     public hasNativePathMenu = (_path: string) => {
         return true;

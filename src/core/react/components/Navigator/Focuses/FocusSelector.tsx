@@ -5,9 +5,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { DragProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
-import { isTouchScreen } from "core/utils/ui/screen";
 import { Superstate } from "makemd-core";
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { SortablePinnedSpaceItem } from "./Focus";
 
@@ -106,9 +105,7 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
             window.removeEventListener("dragend", resetState);
         };
     });
-    const width = isTouchScreen(props.superstate.ui) ? 48 : 32;
-    const isTouch = isTouchScreen(props.superstate.ui);
-    const menuRef = useRef<HTMLDivElement>();
+    const width = 32;
     const calcXOffset = (index: number) => {
         if (!projected || projected.insert) return 0;
         const fromIndex = activeId;
@@ -166,18 +163,6 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                             __html: props.superstate.ui.getSticker("ui//plus"),
                         }}
                     ></div>
-                    {isTouch && (
-                        <div
-                            className="mk-waypoint-menu"
-                            ref={menuRef}
-                            onClick={() => {
-                                props.superstate.ui.mainMenu(menuRef.current, props.superstate);
-                            }}
-                            dangerouslySetInnerHTML={{
-                                __html: props.superstate.ui.getSticker("ui//options"),
-                            }}
-                        ></div>
-                    )}
                     {overId != null && activeId === null && <SortablePinnedSpaceItem id={focuses.length} superstate={props.superstate} highlighted={false} index={focuses.length} pin={null}></SortablePinnedSpaceItem>}
                 </div>
                 {createPortal(

@@ -7,7 +7,7 @@ import { TargetLocation } from "./path";
 import { SpaceState } from "./PathState";
 import { Anchors, Pos, Rect } from "./Pos";
 import { ISuperstate } from "./superstate";
-import { InteractionType, ScreenType, Sticker } from "./ui";
+import { Sticker } from "./ui";
 
 export interface IUIManager {
     inputManager: InputManager;
@@ -40,8 +40,6 @@ export interface IUIManager {
     openModal: (title: string, modal: JSX.Element, win: Window, className?: string, props?: any) => MenuObject;
     openPopover: (position: Pos, popover: JSX.Element) => void;
     openPath: (path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) => void;
-    primaryInteractionType: () => InteractionType;
-    getScreenType: () => ScreenType;
     getOS: () => string;
     getSticker: (icon: string, options?: Record<string, any>) => string;
     getPlaceholderImage: (icon: string) => string;
@@ -66,9 +64,7 @@ export interface UIAdapter {
     openPalette: (modal: JSX.Element, win: Window, className?: string) => MenuObject;
     openPath: (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => void;
     openPopover: (position: Pos, popover: JSX.Element) => void;
-    getScreenType: () => ScreenType;
     getOS: () => string;
-    primaryInteractionType: () => InteractionType;
     getSticker: (icon: string, options?: Record<string, any>) => string;
     allStickers: () => Sticker[];
     getUIPath: (path: string) => string;

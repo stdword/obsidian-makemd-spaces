@@ -1,7 +1,6 @@
-import { DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
-import { isPhone } from "core/utils/ui/screen";
 import React, { cloneElement, useEffect } from "react";
 import { MenuObject } from "shared/types/menu";
 import { Anchors, Rect } from "shared/types/Pos";
@@ -14,19 +13,12 @@ export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors
                 distance: 10,
             },
         }),
-        useSensor(TouchSensor, {
-            activationConstraint: {
-                delay: 250,
-                tolerance: 5,
-            },
-        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         }),
     );
     const ref = React.useRef(null);
     // const [rect, setRect] = React.useState<Rect>(props.rect);
-    const isReady = false;
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
             if (e.key == "Escape") {
@@ -74,7 +66,7 @@ export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors
                 },
             }}
         >
-            <div className={`mk-menu-wrapper ${!isPhone(props.ui) || isReady ? "mk-ready" : ""}`} ref={ref}>
+            <div className="mk-menu-wrapper mk-ready" ref={ref}>
                 {props.children}
             </div>
         </DndContext>

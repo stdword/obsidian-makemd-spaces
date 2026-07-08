@@ -70,13 +70,6 @@
     margin-right: 4px;
 }
 
-.is-mobile .mk-main-menu-button {
-    font-size: 16px;
-    font-weight: var(--font-medium);
-    gap: 4px;
-    padding: 8px 12px !important;
-}
-
 .mk-main-menu-button > div {
     display: flex;
 }
@@ -106,7 +99,7 @@
     height: 16px;
     width: 16px;
 }
-body:not(.is-mobile) .mk-main-menu-button:hover {
+.mk-main-menu-button:hover {
     background: var(--nav-item-background-hover);
 }
 
