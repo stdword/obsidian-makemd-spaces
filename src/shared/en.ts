@@ -129,6 +129,7 @@ export const en = {
         deleteFolder: "Delete Folder",
         deleteFiles: "Delete Files",
         deleteFile: "Delete File/Folder",
+        addTo: "Add to",
         moveTo: "Move to",
         linkTo: "Link to",
         copyTo: "Copy to",
@@ -152,6 +153,7 @@ export const en = {
 
         emptyfolderName: "Folder name must be non-empty",
         duplicateFolderName: "This folder already exist",
+        cannotLinkToOwnFolder: "Item is already in this folder",
         noPropertyName: "No Property Name",
 
         somethingWentWrong: "Something Went Wrong",

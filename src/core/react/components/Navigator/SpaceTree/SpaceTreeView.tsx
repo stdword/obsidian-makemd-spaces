@@ -352,8 +352,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const focusName = focuses?.[activeFocus]?.name || "Spaces";
     const containerName = (containerId: string | null) => (containerId ? flattenedTree.find((f) => f.id == containerId)?.item?.name : null) ?? focusName;
+    const isFocusLevelAdd = (projection: DragProjection | null, activeItem: TreeNode | null) => projection?.droppable && projection.parentId == null && activeItem?.parentId != null;
     const dragActionLabel = (action: DragAction) => {
         if (action.type == "reorder") return `${i18n.labels.reorderIn} ${containerName(action.containerId)}`;
+        if (action.type == "link" && action.containerId == null) return `${i18n.labels.addTo} ${containerName(null)}`;
         const actionLabel = action.type == "link" ? i18n.labels.linkTo : action.type == "copy" ? i18n.labels.copyTo : i18n.labels.moveTo;
         return `${actionLabel} ${containerName(action.containerId)}`;
     };
@@ -396,12 +398,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const dragOver = (e: React.DragEvent<HTMLElement>, _overId: string, position: Pos) => {
         const currentActive = activeRef.current ?? active;
-        const modifier = currentActive?.parentId == null ? "move" : eventToModifier(e);
-        if (modifierRef.current != modifier) {
-            modifierRef.current = modifier;
-            setModifier(modifier);
-        }
-        e.dataTransfer.dropEffect = modifier;
+        const requestedModifier = currentActive?.parentId == null ? "move" : eventToModifier(e);
         const x = offsetRef.current.x;
         const y = offsetRef.current.y;
         const rowHeight = spaceRowHeight(superstate, presetRowHeight, false);
@@ -413,7 +410,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         const nextDepth = overItem?.depth ?? 0;
         const newX = nextDepth * indentationWidth;
         const nextActiveIndex = currentActive?.id ? flattenedTree.findIndex((f) => f.id == currentActive.id) : -1;
-        const nextProjection = currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, modifier, currentActive.space) : null;
+        const nextProjection = currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, requestedModifier, currentActive.space) : null;
+        const modifier = isFocusLevelAdd(nextProjection, currentActive) ? "link" : requestedModifier;
+        if (modifierRef.current != modifier) {
+            modifierRef.current = modifier;
+            setModifier(modifier);
+        }
+        e.dataTransfer.dropEffect = modifier;
         const nextDragAction = dragActionForProjection(nextProjection, modifier);
         if (!isEqual(dragActionRef.current, nextDragAction)) {
             dragActionRef.current = nextDragAction;
@@ -599,7 +602,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     activeIndex={activeIndex}
                 ></VirtualizedList>
             )}
-            {modifier && active?.parentId != null && (
+            {modifier && active?.parentId != null && !(dragAction?.action.type == "link" && dragAction.action.containerId == null) && (
                 <div
                     className="mk-hint-dnd"
                     style={{

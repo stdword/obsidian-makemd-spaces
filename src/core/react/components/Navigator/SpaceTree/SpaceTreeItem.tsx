@@ -24,6 +24,7 @@ export const shouldShowFileTag = (isSpace: boolean, extension?: string) => {
 
 export const shouldShowLinkedItemIcon = (data: TreeNode) => {
     if (data.depth <= 0 || isTagSpacePath(data.space)) return false;
+    if (isTagTreeItemPath(data.item) && data.item?.path != data.space) return true;
     if (data.item?.linkedSpaces?.includes(data.space)) return true;
     return false
 }

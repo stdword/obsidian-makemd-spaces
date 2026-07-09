@@ -9,7 +9,7 @@ import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { PathStateWithRank } from "shared/types/superstate";
 import { movePath } from "utils/uri";
 import { deletePath } from "./path";
-import { addTagToPath, deleteTagFromPath } from "./tags";
+import { addTagToPath } from "./tags";
 
 const hasOwn = (value: Record<string, any>, key: string) => value != null && Object.prototype.hasOwnProperty.call(value, key);
 
@@ -265,6 +265,26 @@ const rankOrderWithPathAtIndex = (superstate: Superstate, spaceState: SpaceState
     return [...new Set(nextOrder)];
 };
 
+const isFiniteRank = (rank: unknown): rank is number => typeof rank == "number" && Number.isFinite(rank);
+
+const parentPathForPath = (path: string): string => {
+    const index = path.lastIndexOf("/");
+    return index == -1 ? "" : path.slice(0, index);
+};
+
+const physicalParentForPath = (superstate: Superstate, path: string): string => {
+    return (superstate.pathStateForPath?.(path) ?? superstate.pathsIndex?.get(path))?.parent ?? parentPathForPath(path);
+};
+
+export const pathIsAlreadyInFolderPath = (superstate: Superstate, path: string, folderPath: string): boolean => {
+    return physicalParentForPath(superstate, path) == folderPath;
+};
+
+const pathIsAlreadyInFolderSpace = (superstate: Superstate, path: string, space: SpaceState): boolean => {
+    if (!space || !["folder", "vault"].includes(space.type)) return false;
+    return pathIsAlreadyInFolderPath(superstate, path, space.path);
+};
+
 const stagePathRankInSpace = (superstate: Superstate, path: string, previousPath: string, rank: number, space: string) => {
     if (typeof rank != "number" || !Number.isFinite(rank)) return;
 
@@ -296,26 +316,45 @@ const persistStagedPathRankInSpace = async (superstate: Superstate, path: string
     await saveSpaceMetadataValue(superstate, space, "rank-order", nextOrder);
 };
 
-export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: PathState, newParent: string, index: number, copy?: boolean) => {
+export const movePathToNewSpaceAtIndex = async (superstate: Superstate, item: PathState, newParent: string, index?: number, copy?: boolean) => {
     if (!item) return;
     //pre-save before vault change happens so we can save the rank
     const currentPathState = superstate.pathsIndex.get(item.path);
     if (!currentPathState) return;
     const newPath = movePath(item.path, newParent);
+    const newSpaceState = superstate.spacesIndex.get(newParent);
+    const newSpaceLinks = ensureArray(newSpaceState?.metadata?.links);
+    const replacingLinkInDestination = !copy && newSpaceState && newSpaceLinks.includes(item.path);
+    const linkedRank = replacingLinkInDestination ? ensureArray(newSpaceState.metadata?.["rank-order"]).indexOf(item.path) : -1;
+    const explicitIndex = isFiniteRank(index);
+    const adjustedIndex = explicitIndex && linkedRank >= 0 && linkedRank < index ? index - 1 : index;
+    const effectiveIndex = explicitIndex ? adjustedIndex : linkedRank >= 0 ? linkedRank : index;
 
     if (await superstate.spaceManager.pathExists(newPath)) {
         superstate.ui.notify(i18n.notice.fileExists);
         return;
     }
 
-    stagePathRankInSpace(superstate, newPath, item.path, index, newParent);
+    if (replacingLinkInDestination) {
+        const nextMetadata: SpaceDefinition = {
+            ...newSpaceState.metadata,
+            links: newSpaceLinks.filter((linkPath) => linkPath != item.path),
+            ...(isFiniteRank(effectiveIndex) ? { "rank-order": rankOrderWithPathAtIndex(superstate, newSpaceState, newPath, item.path, effectiveIndex) } : {}),
+        };
+        await saveSpaceCache(superstate, newSpaceState, nextMetadata);
+        superstate.spacesMap.set(item.path, new Set([...superstate.spacesMap.get(item.path)].filter((spacePath) => spacePath != newSpaceState.path)));
+    } else {
+        stagePathRankInSpace(superstate, newPath, item.path, effectiveIndex, newParent);
+    }
 
     if (copy) {
         await superstate.spaceManager.copyPath(item.path, newParent);
     } else {
         await superstate.spaceManager.renamePath(item.path, newPath);
     }
-    await persistStagedPathRankInSpace(superstate, newPath, item.path, index, newParent);
+    if (!replacingLinkInDestination) {
+        await persistStagedPathRankInSpace(superstate, newPath, item.path, effectiveIndex, newParent);
+    }
 };
 
 export const createSpace = async (superstate: Superstate, path: string, newSpace?: SpaceDefinition) => {
@@ -406,11 +445,17 @@ export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: Spac
         // superstate.ui.notify('Pinning space to itself not currently allowed')
         return;
     }
+    if (pathIsAlreadyInFolderSpace(superstate, path, space)) {
+        superstate.ui.notify(i18n.notice.cannotLinkToOwnFolder);
+        return false;
+    }
     const spaceExists = ensureArray(space.metadata.links) ?? [];
     const pathExists = spaceExists.find((f) => f == path);
-    if (!pathExists) {
-        spaceExists.push(path);
+    if (pathExists) {
+        superstate.ui.notify(i18n.notice.cannotLinkToOwnFolder);
+        return false;
     }
+    spaceExists.push(path);
 
     await saveSpaceCache(superstate, space, { ...space.metadata, links: spaceExists });
 
@@ -502,7 +547,7 @@ export const removePathsFromSpace = async (superstate: Superstate, spacePath: st
     if (!space) return;
 
     if (space.type == "tag") {
-        await Promise.all(paths.map((path) => deleteTagFromPath(superstate, path, space.name)));
+        return;
     } else if (space.type == "folder" || space.type == "vault") {
         paths.forEach((path) => {
             const nextSpaces = new Set([...superstate.spacesMap.get(path)].filter((itemSpace) => itemSpace != space.path));

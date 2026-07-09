@@ -16,6 +16,22 @@ import { ensureTag } from "utils/tags";
 import { isTagSpacePath } from "schemas/builtin";
 
 
+export const highlightContainerIdForDrag = (flattenedTree: TreeNode[], activeIndex: number, overIndex: number, dragAction: DragActionModel | null) => {
+    const activeContainerId = flattenedTree[activeIndex]?.parentId;
+    if (!dragAction) {
+        const hoverNode = overIndex == -1 ? null : flattenedTree[overIndex];
+        if (!hoverNode || overIndex == activeIndex) return activeContainerId;
+        if (hoverNode.id == activeContainerId || hoverNode.parentId == activeContainerId) return activeContainerId;
+        if (isTagSpacePath(hoverNode.item?.path)) return hoverNode.parentId ?? null;
+        if (hoverNode.item?.type == "space") return hoverNode.id;
+        return hoverNode.parentId ?? null;
+    }
+    if (dragAction.visual.kind == "box") {
+        return dragAction.visual.containerId;
+    }
+    return dragAction.action.containerId;
+};
+
 const ensureTagSpaceLoaded = (superstate: Superstate, tagPath: string) => {
     if (superstate.spacesIndex.has(tagPath)) {
         return Promise.resolve(superstate.spacesIndex.get(tagPath));
@@ -114,18 +130,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         return node.id == containerId || node.id.startsWith(`${containerId}/`);
     };
     const highlightContainerId = () => {
-        const activeContainerId = flattenedTree[activeIndex]?.parentId;
-        if (!dragAction) {
-            const hoverNode = overIndex == -1 ? null : flattenedTree[overIndex];
-            if (!hoverNode || overIndex == activeIndex) return activeContainerId;
-            if (hoverNode.id == activeContainerId) return activeContainerId;
-            return hoverNode.parentId ?? activeContainerId;
-        }
-        if (dragAction.visual.kind == "box") {
-            const boxContainerId = dragAction.visual.containerId;
-            return flattenedTree.find((node) => node.id == boxContainerId)?.parentId ?? activeContainerId;
-        }
-        return dragAction.action.containerId;
+        return highlightContainerIdForDrag(flattenedTree, activeIndex, overIndex, dragAction);
     };
     const dragContextContainerHighlighted = (index: number) => {
         if (activeIndex == -1) return false;

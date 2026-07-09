@@ -3,15 +3,6 @@ import { tagSpacePathFromTag } from "schemas/builtin";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { ensureTag } from "utils/tags";
 
-
-export const deleteTagFromPath = (superstate: Superstate, path: string, tag: string) => {
-    console.log('TRACE deleteTagFromPath', {path, tag})
-    // if (superstate.spacesIndex.has(path)) {
-    //     return superstate.spaceManager.deleteTag(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), tag);
-    // }
-    // return superstate.spaceManager.deleteTag(path, tag);
-};
-
 export const addTagToPath = (superstate: Superstate, path: string, tag: string) => {
     console.log('TRACE addTagToPath', {path, tag})
     // if (superstate.spacesIndex.has(path)) {

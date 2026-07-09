@@ -36,6 +36,7 @@ This file documents non-obvious pitfalls, gotchas, and project-specific conventi
 
 - Reply in a concise style in chats. Avoid unnecessary repetition or filler language
 - If you encounter unexpected behavior or project conventions that contradict common defaults, OR when asked to add a rule, append a one-liner gotcha to the relevant existing section below.
+- В тестах никогда не используй мои данные или данные которые я предоставил для диагностики. Всегда сочиняй собственный тестовый кейс, иллюстрирующий ситуацию
 
 
 ## Known Gotchas

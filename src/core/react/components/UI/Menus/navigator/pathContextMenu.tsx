@@ -1,7 +1,7 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { savePathColor } from "core/utils/superstate/label";
 import { hidePath, hidePaths, renamePathByName } from "core/utils/superstate/path";
-import { TreeNode, isPathPinnedInSpace, removePathsFromSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
+import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import React from "react";
@@ -12,7 +12,6 @@ import { deletePath, movePathToSpace } from "core/utils/superstate/path";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import { Anchors, Rect } from "shared/types/Pos";
 import { windowFromDocument } from "utils/dom";
-import { movePath } from "utils/uri";
 import { ConfirmationModal } from "../../Modals/ConfirmationModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
@@ -315,7 +314,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             onClick: (e) => {
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
                 showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                    superstate.spaceManager.renamePath(path, movePath(path, link));
+                    return movePathToNewSpaceAtIndex(superstate, cache, link);
                 }, e.shiftKey);
             },
         });

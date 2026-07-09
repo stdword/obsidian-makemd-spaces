@@ -297,6 +297,82 @@ describe("showPathContextMenu", () => {
         );
     });
 
+    it("uses the shared move helper when moving a file from the context menu", async () => {
+        const openMenu = jest.fn();
+        const targetSpace = {
+            path: "Target",
+            type: "folder",
+            metadata: {
+                sort: { field: "rank", asc: true },
+                links: ["Source/Item.md"],
+                "rank-order": ["Source/Item.md"],
+            },
+            space: {
+                defPath: "Target/.space/context.json",
+            },
+        };
+        const pathState = {
+            path: "Source/Item.md",
+            name: "Item.md",
+            parent: "Source",
+            type: "file",
+            subtype: "md",
+        };
+        const renamePath = jest.fn(() => Promise.resolve());
+        const superstate = {
+            settings: {},
+            pathsIndex: new Map([["Source/Item.md", pathState]]),
+            pathStateForPath: jest.fn((path: string) => superstate.pathsIndex.get(path)),
+            spacesIndex: new Map([["Target", targetSpace]]),
+            spacesMap: {
+                get: jest.fn(() => new Set(["Target"])),
+                set: jest.fn(),
+            },
+            spaceManager: {
+                copyPath: jest.fn(),
+                pathExists: jest.fn(() => Promise.resolve(false)),
+                renamePath,
+                saveSpace: jest.fn((_path: string, update: (metadata: any) => any) => {
+                    targetSpace.metadata = update(targetSpace.metadata);
+                    return Promise.resolve();
+                }),
+            },
+            getSpaceItems: jest.fn(() => [{ path: "Source/Item.md" }]),
+            updateSpaceMetadata: jest.fn((_path: string, metadata: any) => {
+                targetSpace.metadata = metadata;
+                return Promise.resolve();
+            }),
+            ui: {
+                openMenu,
+                notify: jest.fn(),
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        } as any;
+        const event = {
+            target: {
+                getBoundingClientRect: jest.fn(() => ({ x: 1, y: 2, width: 3, height: 4 })),
+            },
+            view: {
+                document: { defaultView: {} } as Document,
+            },
+            shiftKey: false,
+        };
+
+        showPathContextMenu(superstate as any, "Source/Item.md", "Source", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const moveTo = openMenu.mock.calls[0][1].options.find((option: any) => option.name == i18n.menu.moveFile);
+        moveTo.onClick(event as any);
+        const saveFolder = (showFoldersMenu as jest.Mock).mock.calls[0][3];
+        await saveFolder("Target");
+
+        expect(renamePath).toHaveBeenCalledWith("Source/Item.md", "Target/Item.md");
+        expect(superstate.updateSpaceMetadata).toHaveBeenLastCalledWith("Target", expect.objectContaining({
+            links: [],
+            "rank-order": ["Target/Item.md"],
+        }));
+    });
+
     it("shows Unhide only for a folder space directly listed in hidden files", () => {
         const openMenu = jest.fn();
         const pathState = {

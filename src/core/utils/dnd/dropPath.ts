@@ -7,7 +7,7 @@ import i18n from "shared/i18n";
 import { PathState, SpaceState } from "shared/types/PathState";
 
 import { arrayMove } from "@dnd-kit/sortable";
-import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
+import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
 import { addTagToPath } from "core/utils/superstate/tags";
 import { DragProjection } from "./dragPath";
 
@@ -27,6 +27,8 @@ const rankForDropLinePosition = (rank: number, projected: DragProjection, active
     if (activeItem && oldSpace == newSpace && typeof activeItem.rank == "number" && activeItem.rank < rank) return rank;
     return rank + 1;
 };
+
+const focusNodePath = (node?: TreeNode | null) => node?.item?.path ?? node?.path ?? node?.id?.toString();
 
 const nodeContainsTarget = (nodeId: UniqueIdentifier, targetId: UniqueIdentifier) => {
     if (!nodeId || !targetId) return false;
@@ -78,7 +80,7 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
         const activeItem = activeIndex == -1 ? null : clonedItems[activeIndex];
         const oldSpace = activeItem?.parentId == null ? null : clonedItems.find(({ id }) => id === activeItem.parentId)?.item.path;
 
-        let newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == overItem.id) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
+        let newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == focusNodePath(overItem)) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
         newRank = rankForDropLinePosition(newRank, projected, activeItem, oldSpace, newSpace);
         if (projected.sortable && newSpace) {
             newRank = rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, clonedItems);
@@ -94,12 +96,18 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
 export const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
     const newWaypoint = superstate.focuses[superstate.settings.currentWaypoint] ?? { sticker: "", name: i18n.labels.waypoint, paths: [] as string[] };
     const currentIndex = newWaypoint.paths.findIndex((f) => f == path);
-    const newIndex = currentIndex < index ? Math.max(0, index - 1) : index;
-    newWaypoint.paths = arrayMove(
-        newWaypoint.paths,
-        newWaypoint.paths.findIndex((f) => f == path),
-        newIndex,
-    );
+    if (currentIndex == -1) {
+        const nextPaths = [...newWaypoint.paths];
+        nextPaths.splice(Math.max(0, index ?? nextPaths.length), 0, path);
+        newWaypoint.paths = nextPaths;
+    } else {
+        const newIndex = currentIndex < index ? Math.max(0, index - 1) : index;
+        newWaypoint.paths = arrayMove(
+            newWaypoint.paths,
+            newWaypoint.paths.findIndex((f) => f == path),
+            newIndex,
+        );
+    }
     if (superstate.settings.currentWaypoint > superstate.focuses.length) {
         superstate.spaceManager.saveFocuses([...superstate.focuses, newWaypoint]);
     }
@@ -113,9 +121,14 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
         reorderOpenSpace(superstate, path, index);
         return;
     }
+    if (modifier == "link" && pathIsAlreadyInFolderPath(superstate, path, newSpacePath)) {
+        superstate.ui.notify(i18n.notice.cannotLinkToOwnFolder);
+        return false;
+    }
     const newSpaceCache = superstate.spacesIndex.get(newSpacePath);
+    if (!newSpaceCache) return;
 
-    if (oldSpacePath == newSpacePath) {
+    if (oldSpacePath == newSpacePath && modifier != "link") {
         await updatePathRankInSpace(superstate, path, index, newSpacePath);
         return;
     }
@@ -124,6 +137,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
         if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
             await linkPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
         } else {
+            if (cache.parent == newSpaceCache.path) return;
             await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
         }
     }
@@ -132,6 +146,10 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
     }
 };
 export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: string[], newSpacePath: string, index: number, modifier?: DropModifiers) => {
+    if (modifier == "link" && paths.some((path) => pathIsAlreadyInFolderPath(superstate, path, newSpacePath))) {
+        superstate.ui.notify(i18n.notice.cannotLinkToOwnFolder);
+        return false;
+    }
     const newSpaceCache = superstate.spacesIndex.get(newSpacePath);
     if (!newSpaceCache) return;
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {

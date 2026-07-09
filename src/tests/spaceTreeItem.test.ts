@@ -44,14 +44,14 @@ describe("canOpenTreeItemPath", () => {
 describe("calculateFolderLineHeight", () => {
     it("extends a parent folder line through expanded nested descendants", () => {
         const flattenedTree = [
-            { id: "Atlas/AI", depth: 1, type: "space" },
-            { id: "Atlas/AI/0 Notes", depth: 2, type: "space" },
-            { id: "Atlas/AI/0 Notes/file-a.md", depth: 3, type: "file" },
-            { id: "Atlas/AI/0 Notes/file-b.md", depth: 3, type: "file" },
-            { id: "Atlas/AI/0 Notes/file-c.md", depth: 3, type: "file" },
-            { id: "Atlas/AI/1 Collections", depth: 2, type: "space" },
-            { id: "Atlas/AI/2 Resources", depth: 2, type: "space" },
-            { id: "spaces://#psy/self", depth: 0, type: "group" },
+            { id: "Workspace/Area", depth: 1, type: "space" },
+            { id: "Workspace/Area/Notes", depth: 2, type: "space" },
+            { id: "Workspace/Area/Notes/file-a.md", depth: 3, type: "file" },
+            { id: "Workspace/Area/Notes/file-b.md", depth: 3, type: "file" },
+            { id: "Workspace/Area/Notes/file-c.md", depth: 3, type: "file" },
+            { id: "Workspace/Area/Collections", depth: 2, type: "space" },
+            { id: "Workspace/Area/Resources", depth: 2, type: "space" },
+            { id: "spaces://#topic/subtopic", depth: 0, type: "group" },
         ] as any;
         const rowHeights = flattenedTree.map(() => 25);
 
@@ -96,10 +96,26 @@ describe("linked item icon", () => {
                 depth: 1,
                 space: "Projects",
                 item: {
-                    path: "Atlas/Obsidian",
+                    path: "Projects/LinkedFolder",
                     parent: "Projects",
                     linkedSpaces: ["Projects"],
                     hidden: true,
+                },
+            } as any),
+        ).toBe(true);
+    });
+
+    it("shows for virtual tag spaces linked into a folder", () => {
+        expect(
+            shouldShowLinkedItemIcon({
+                type: "space",
+                depth: 1,
+                space: "FixtureFolder",
+                item: {
+                    path: "spaces://#fixture-tag",
+                    type: "space",
+                    subtype: "tag",
+                    linkedSpaces: [],
                 },
             } as any),
         ).toBe(true);
