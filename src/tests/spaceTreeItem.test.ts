@@ -66,7 +66,7 @@ describe("linked item icon", () => {
                 type: "file",
                 depth: 1,
                 space: "LinkedSpace",
-                item: { path: "Folder/Note.md", parent: "Folder" },
+                item: { path: "Folder/Note.md", parent: "Folder", linkedSpaces: ["LinkedSpace"] },
             } as any),
         ).toBe(true);
 
@@ -75,7 +75,7 @@ describe("linked item icon", () => {
                 type: "space",
                 depth: 1,
                 space: "LinkedSpace",
-                item: { path: "Folder/Subfolder", parent: "Folder" },
+                item: { path: "Folder/Subfolder", parent: "Folder", linkedSpaces: ["LinkedSpace"] },
             } as any),
         ).toBe(true);
 
@@ -84,7 +84,7 @@ describe("linked item icon", () => {
                 type: "space",
                 depth: 1,
                 space: "LinkedSpace",
-                item: { path: "spaces://#tag", parent: "spaces://#" },
+                item: { path: "spaces://#tag", parent: "spaces://#", linkedSpaces: ["LinkedSpace"] },
             } as any),
         ).toBe(true);
     });

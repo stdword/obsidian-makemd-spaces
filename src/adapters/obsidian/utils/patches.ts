@@ -1,6 +1,6 @@
 import MakeMDPlugin from "main";
 import { around } from "monkey-around";
-import { OpenViewState, PaneType, Workspace } from "obsidian";
+import { Workspace } from "obsidian";
 import { FILE_TREE_VIEW_TYPE } from "../ui/navigator/NavigatorView";
 
 export const patchFilesPlugin = (plugin: MakeMDPlugin) => {
@@ -16,25 +16,4 @@ export const patchFilesPlugin = (plugin: MakeMDPlugin) => {
             },
         }),
     );
-};
-
-export const patchWorkspace = (plugin: MakeMDPlugin) => {
-    const uninstaller = around(Workspace.prototype, {
-        getLeaf(old) {
-            //Patch get leaf to always return root leaf if leaf is a flow block
-            return function (newLeaf?: PaneType | boolean) {
-                return old.call(this, newLeaf);
-            };
-        },
-        openLinkText(old) {
-            return function openLinkText(linkText: string, sourcePath: string, newLeaf?: PaneType | boolean, openViewState?: OpenViewState) {
-                if (plugin.superstate.spacesIndex.has(linkText)) {
-                    plugin.ui.openPath(linkText, newLeaf);
-                    return;
-                }
-                return old.call(this, linkText, sourcePath, newLeaf, openViewState);
-            };
-        },
-    });
-    plugin.register(uninstaller);
 };
