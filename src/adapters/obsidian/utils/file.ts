@@ -4,9 +4,9 @@ import { App, TAbstractFile, TFile, TFolder, WorkspaceLeaf, normalizePath } from
 
 import { TargetLocation } from "shared/types/path";
 import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
-import { selectElementContents } from "shared/utils/dom";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
-import { sanitizeFileName, sanitizeFolderName } from "shared/utils/sanitizers";
+import { selectElementContents } from "utils/dom";
+import { removeTrailingSlashFromFolder } from "utils/paths";
+import { sanitizeFileName, sanitizeFolderName } from "utils/sanitizers";
 
 export const splitFileName = (filename: string) => {
     if (filename.endsWith(".excalidraw.md")) {

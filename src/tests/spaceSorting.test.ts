@@ -1,4 +1,4 @@
-import { childSpaceSort, spaceSortFn, updateSpaceSort } from "core/superstate/utils/spaces";
+import { childSpaceSort, spaceSortFn, updateSpaceSort } from "core/utils/superstate/spaces";
 
 const settings = {
     defaultSpaceSort: {
@@ -39,12 +39,19 @@ describe("space tree sorting", () => {
 });
 
 describe("updateSpaceSort", () => {
-    const createSuperstate = (sort: any) => {
+    const items = [
+        { path: "Projects/Beta.md", name: "Beta", type: "file", rank: 0 },
+        { path: "Projects/Folder B", name: "Folder B", type: "space", rank: 1 },
+        { path: "Projects/Alpha.md", name: "Alpha", type: "file", rank: 2 },
+        { path: "Projects/Folder A", name: "Folder A", type: "space", rank: 3 },
+    ];
+    const createSuperstate = (sort: any, rankOrder: string[] = [], spaceItems: any[] = items) => {
         const space = {
             path: "Projects",
             type: "folder",
             metadata: {
                 sort,
+                "rank-order": rankOrder,
             },
             space: {
                 defPath: "Projects/.space/context.json",
@@ -57,6 +64,7 @@ describe("updateSpaceSort", () => {
                 pathExists: jest.fn(() => Promise.resolve(true)),
                 saveSpace: jest.fn(() => Promise.resolve()),
             },
+            getSpaceItems: jest.fn(() => spaceItems),
             updateSpaceMetadata: jest.fn(() => Promise.resolve()),
         } as any;
     };
@@ -112,6 +120,48 @@ describe("updateSpaceSort", () => {
                 group: false,
                 recursive: false,
             },
+        }));
+    });
+
+    it("resets rank-order to the default sort order when clearing custom sort", async () => {
+        const superstate = createSuperstate({ field: "rank", asc: true, group: false }, ["Projects/Beta.md", "Projects/Folder B", "Projects/Alpha.md", "Projects/Folder A"]);
+
+        await updateSpaceSort(superstate, "Projects", null);
+
+        expect(superstate.updateSpaceMetadata).toHaveBeenCalledWith("Projects", expect.objectContaining({
+            sort: undefined,
+            "rank-order": ["Projects/Folder A", "Projects/Folder B", "Projects/Alpha.md", "Projects/Beta.md"],
+        }));
+    });
+
+    it("moves folders to the top in current rank-order when enabling folder grouping for custom sort", async () => {
+        const superstate = createSuperstate({ field: "rank", asc: true, group: false }, ["Projects/Beta.md", "Projects/Folder B", "Projects/Alpha.md", "Projects/Folder A"]);
+
+        await updateSpaceSort(superstate, "Projects", { group: true });
+
+        expect(superstate.updateSpaceMetadata).toHaveBeenCalledWith("Projects", expect.objectContaining({
+            sort: {
+                field: "rank",
+                asc: true,
+                group: true,
+            },
+            "rank-order": ["Projects/Folder B", "Projects/Folder A", "Projects/Beta.md", "Projects/Alpha.md"],
+        }));
+    });
+
+    it("keeps existing rank-order when switching to custom sort with folder grouping already enabled", async () => {
+        const rankOrder = ["Projects/Beta.md", "Projects/Folder B", "Projects/Alpha.md", "Projects/Folder A"];
+        const superstate = createSuperstate({ field: "name", asc: true, group: true }, rankOrder);
+
+        await updateSpaceSort(superstate, "Projects", { field: "rank", asc: true });
+
+        expect(superstate.updateSpaceMetadata).toHaveBeenCalledWith("Projects", expect.objectContaining({
+            sort: {
+                field: "rank",
+                asc: true,
+                group: true,
+            },
+            "rank-order": rankOrder,
         }));
     });
 });

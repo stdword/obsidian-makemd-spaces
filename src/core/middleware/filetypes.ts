@@ -1,5 +1,5 @@
 import { AFile } from "shared/types/afile";
-import { EventTypeToPayload } from "../../shared/utils/dispatchers/dispatcher";
+import { EventTypeToPayload } from "utils/dispatcher";
 import { FilesystemMiddleware } from "./filesystem";
 
 export interface FileTypeEventTypes extends EventTypeToPayload {
@@ -34,5 +34,4 @@ export abstract class FileTypeAdapter<T extends FileTypeCache, C extends FileTyp
     public readContent: (file: AFile, contentType: keyof C, contentId: any) => Promise<C[typeof contentType]>;
     public newContent: (file: AFile, contentType: keyof C, name: string, content: C[typeof contentType], options: { [key: string]: any }) => Promise<any>;
     public saveContent: (file: AFile, contentType: keyof C, contentId: any, content: (prev: C[typeof contentType]) => any) => Promise<boolean>;
-    public deleteContent: (file: AFile, contentType: keyof C, contentId: any) => void;
 }

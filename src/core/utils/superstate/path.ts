@@ -1,7 +1,7 @@
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
-import { uniq } from "shared/utils/array";
-import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "shared/utils/uri";
+import { uniq } from "utils/array";
+import { movePath, renamePathWithExtension, renamePathWithoutExtension } from "utils/uri";
 import { renameTag } from "utils/tags";
 
 export const resolvePath = (path: string, source: string, isSpace?: (path: string) => boolean): string => {
@@ -29,10 +29,12 @@ export const resolvePath = (path: string, source: string, isSpace?: (path: strin
 };
 
 export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string): Promise<string> => {
+    console.log('TRACE renamePathByName', {oldPath, newName})
     if (superstate.spacesIndex.has(oldPath)) {
         const spaceState = superstate.spacesIndex.get(oldPath);
+        console.log('TRACE renamePathByName', spaceState.type)
         if (spaceState.type == "tag") {
-            return renameTag(superstate, spaceState.name, newName);
+            // return renameTag(superstate, spaceState.name, newName);
         }
         return superstate.spaceManager.renameSpace(oldPath, renamePathWithoutExtension(oldPath, newName));
     } else {

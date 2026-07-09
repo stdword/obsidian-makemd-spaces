@@ -1,48 +1,43 @@
 import MakeMDPlugin from "main";
 import { SpaceManager } from "makemd-core";
-import { App, CachedMetadata, Pos, TFile, TFolder, getAllTags } from "obsidian";
+import { App, CachedMetadata, Pos, TFile, getAllTags } from "obsidian";
 import { MakeMDSettings } from "shared/types/settings";
-import { uniq } from "shared/utils/array";
+import { uniq } from "utils/array";
 import { serializeMultiDisplayString } from "utils/serializers";
-import { stringFromTag, tagPathToTag, validateName } from "utils/tags";
+import { stringFromTag, validateName } from "utils/tags";
 
 const tagKeys = ["tags"];
 
 export const loadTags = (app: App, _settings: MakeMDSettings): string[] => {
-    const folder = app.vault.getRoot();
-    return uniq([...Object.keys(app.metadataCache.getTags()).map((f) => f.toLowerCase()), ...(folder?.children.filter((f) => f instanceof TFolder && f.name.charAt(0) == "#").map((f) => tagPathToTag(f.name)) ?? [])]);
+    return uniq(
+        [
+            ...Object.keys(app.metadataCache.getTags())
+                .map((tag) => tag.toLowerCase()),
+        ]
+    )
 };
 
-const tagExists = (currentCache: CachedMetadata, findTag: string): boolean => {
-    let currentTags: string[] = [];
-    if (getAllTags(currentCache)) {
-        //@ts-ignore
-        currentTags = getAllTags(currentCache);
-    }
-    return currentTags.find((tag) => tag.toLowerCase() == findTag.toLowerCase()) ? true : false;
+const tagExists = (currentCache: CachedMetadata, tag: string): boolean => {
+    const fileTags = getAllTags(currentCache)
+    if (!fileTags)
+        return false
+
+    return !!fileTags.find(
+        tag_ => tag_.toLowerCase() == tag.toLowerCase()
+    )
 };
 
-export const getAllFilesForTag = (plugin: MakeMDPlugin, tag: string) => {
-    const tagsCache: string[] = [];
-
-    (() => {
-        plugin.app.vault.getMarkdownFiles().forEach((tfile) => {
-            let currentCache!: CachedMetadata;
-            if (plugin.app.metadataCache.getFileCache(tfile) !== null) {
-                //@ts-ignore
-                currentCache = plugin.app.metadataCache.getFileCache(tfile);
-            }
-            const relativePath: string = tfile.path;
-            const hasTag: boolean = tagExists(currentCache, tag);
-            if (hasTag) {
-                tagsCache.push(relativePath);
-            }
-        });
-    })();
-    return tagsCache;
+export const getAllFilesForTag = (plugin: MakeMDPlugin, tag: string): string[] => {
+    return plugin.app.vault.getMarkdownFiles()
+        .filter(tfile => {
+            const cache = plugin.app.metadataCache.getFileCache(tfile);
+            return cache && tagExists(cache, tag);
+        })
+        .map(tfile => tfile.path);
 };
 
 export const addTagToProperties = (manager: SpaceManager, tag: string, path: string) => {
+    console.log('TRACE add tag', {path, tag})
     const newTag = validateName(tag);
     editTagInProperties(manager, "", newTag, path);
 };
@@ -68,12 +63,14 @@ const positionsForTag = (plugin: MakeMDPlugin, tag: string, file: TFile) => {
 };
 
 export const removeTagFromMarkdownFile = (plugin: MakeMDPlugin, tag: string, file: TFile) => {
+    console.log('TRACE rm tag file', {file, tag})
     const pos = positionsForTag(plugin, tag, file);
     removeTagInProperties(plugin.superstate.spaceManager, tag, file.path);
     editTagInFileBody(plugin, tag, "", pos, file);
 };
 
 export const renameTagInMarkdownFile = async (plugin: MakeMDPlugin, tag: string, newTag: string, tFile: TFile) => {
+    console.log('TRACE rename tag', {tFile, tag, newTag})
     const positions = positionsForTag(plugin, tag, tFile);
     if (positions.length > 0) {
         await editTagInFileBody(plugin, tag, newTag, positions, tFile);
@@ -83,6 +80,7 @@ export const renameTagInMarkdownFile = async (plugin: MakeMDPlugin, tag: string,
 };
 
 const removeTagInProperties = async (manager: SpaceManager, oldTag: string, path: string) => {
+    console.log('TRACE rm tag', {path, oldTag})
     const fm = await manager.readProperties(path);
     const processKey = (value: string | string[]) => {
         if (Array.isArray(value)) {
@@ -109,11 +107,12 @@ const removeTagInProperties = async (manager: SpaceManager, oldTag: string, path
         return false;
     });
     editKeys.forEach((tag) => {
-        manager.saveProperties(path, { [tag]: processKey(fm[tag]) });
+        // manager.saveProperties(path, { [tag]: processKey(fm[tag]) });
     });
 };
 
 const editTagInProperties = async (manager: SpaceManager, oldTag: string, newTag: string, path: string) => {
+    console.log('TRACE edit tag', {path, oldTag, newTag})
     const addTag = (value: string | string[]) => {
         if (Array.isArray(value)) {
             return uniq([...value, stringFromTag(newTag)]).filter((f) => f?.length > 0);
@@ -152,23 +151,24 @@ const editTagInProperties = async (manager: SpaceManager, oldTag: string, newTag
         });
         if (editKeys.length > 0) {
             editKeys.forEach((key) => {
-                manager.saveProperties(path, {
-                    [key]: processKey(fm[key]),
-                });
+                // manager.saveProperties(path, {
+                //     [key]: processKey(fm[key]),
+                // });
             });
         } else {
-            manager.saveProperties(path, {
-                tags: addTag(fm["tags"]),
-            });
+            // manager.saveProperties(path, {
+            //     tags: addTag(fm["tags"]),
+            // });
         }
     } else {
-        manager.saveProperties(path, {
-            tags: stringFromTag(newTag),
-        });
+        // manager.saveProperties(path, {
+        //     tags: stringFromTag(newTag),
+        // });
     }
 };
 
 const editTagInFileBody = async (plugin: MakeMDPlugin, oldTag: string, newTag: string, positions: Pos[], file: TFile) => {
+    console.log('TRACE edit tag body', {file, oldTag, newTag, positions})
     const offsetOffset = newTag.length - oldTag.length;
     if (positions.length == 0) return false;
     const original = await plugin.files.readTextFromFile(file.path);

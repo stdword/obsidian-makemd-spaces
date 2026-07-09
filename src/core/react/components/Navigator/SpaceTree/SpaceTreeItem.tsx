@@ -1,25 +1,37 @@
 import classNames from "classnames";
-import { Pos } from "shared/types/Pos";
-
-import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
-
-import { NavigatorContext } from "core/react/context/SidebarContext";
-import { savePathColor } from "core/superstate/utils/label";
-import { TreeNode, spaceSortLabel } from "core/superstate/utils/spaces";
-import { Superstate } from "makemd-core";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { PathStickerView } from "shared/components/PathSticker";
+
+import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
+import { NavigatorContext } from "core/react/context/SidebarContext";
+import { PathStickerView } from "core/react/components/PathSticker";
+import { Superstate } from "makemd-core";
+import { Pos } from "shared/types/Pos";
 import { PathState } from "shared/types/PathState";
-import { windowFromDocument } from "shared/utils/dom";
+import { TreeNode, spaceSortLabel } from "core/utils/superstate/spaces";
+import { windowFromDocument } from "utils/dom";
+import { canOpenTreeItemPath, isTagTreeItemPath, isTagSpacePath } from "schemas/builtin";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
-import { showColorPickerMenu } from "../../UI/Menus/modals/colorPickerMenu";
-import { shouldShowFileTag } from "./fileTags";
-import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
-import { linkedItemIconPathState, pinnedItemIconPathState, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "./linkedItemIcon";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
+
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
+
+export const shouldShowFileTag = (isSpace: boolean, extension?: string) => {
+    const registeredFileTagExtensions = ["md", "base", "canvas", "excalidraw"];
+    return !!extension && !isSpace && !registeredFileTagExtensions.includes(extension)
+};
+
+export const shouldShowLinkedItemIcon = (data: TreeNode) => {
+    if (data.depth <= 0 || isTagSpacePath(data.space)) return false;
+    if (data.item?.linkedSpaces?.includes(data.space)) return true;
+    return false
+}
+
+export const shouldShowPinnedItemIcon = (data: TreeNode) => {
+    if (data.depth == 0) return false;
+    return data.item?.pinnedSpaces?.includes(data.space);
+}
 
 export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) => (e.altKey ? "copy" : e.shiftKey || isDefaultSpace ? "link" : "move");
 export interface TreeItemProps {
@@ -206,19 +218,15 @@ export const TreeItem = (props: TreeItemProps) => {
         onDrop: onDragEnded,
     };
     const isSpace = pathState?.type == "space";
-    const isFolder = pathState?.metadata?.isFolder || isSpace;
-    const extension = pathState?.metadata?.file?.extension;
-    const showFileTag = shouldShowFileTag(isSpace, extension);
+    const isFolder = isSpace;
+    const extension = pathState?.subtype;
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
+
     const displayName = treeItemDisplayName(pathState, data, superstate.spacesIndex);
-    const showLinkedItemIcon = shouldShowLinkedItemIcon(data);
-    const showPinnedItemIcon = shouldShowPinnedItemIcon(data);
     const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
-    const openTagColorPicker = (e: React.MouseEvent) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        showColorPickerMenu(superstate, rect, windowFromDocument(e.view.document), color ?? "", (value) => savePathColor(superstate, pathState.path, value, data.space), false, false, false, "right");
-    };
+
     const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
+
     return (
         <>
             <div
@@ -285,10 +293,11 @@ export const TreeItem = (props: TreeItemProps) => {
                             <PathStickerView
                                 superstate={superstate}
                                 pathState={pathState}
-                                editable={data.type == "space" || (data.type == "group" && data.path != "/")}
+                                space={data.space}
+                                editable={true}
+                                useColorMenu={isTagSpace || pathState.type == "file" || (pathState.type == "space" && pathState.path == '/')}
                                 color={color}
                                 ariaLabel={stickerLabel}
-                                onIconClick={(isTagSpace || pathState?.path == "/") ? openTagColorPicker : undefined}
                             />
                         )}
                         <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{displayName}</div>
@@ -306,22 +315,34 @@ export const TreeItem = (props: TreeItemProps) => {
                         )}
 
                         <div className="mk-tree-span"></div>
-                        {showFileTag && <span className="nav-file-tag">{extension}</span>}
-                        {showLinkedItemIcon && (
+                        {shouldShowFileTag(isSpace, extension) &&
+                            <span className="nav-file-tag">{extension}</span>
+                        }
+                        {shouldShowLinkedItemIcon(data) && (
                             <div className="mk-linked-item-icon">
                                 <PathStickerView
                                     superstate={superstate}
-                                    pathState={linkedItemIconPathState}
-                                    ariaLabel="linked"
+                                    pathState={{
+                                        name: "linked",
+                                        path: "",
+                                        sticker: "lucide//link-2",
+                                    }}
+                                    space={data.space}
+                                    editable={false}
                                 />
                             </div>
                         )}
-                        {showPinnedItemIcon && (
+                        {shouldShowPinnedItemIcon(data) && (
                             <div className="mk-pinned-item-icon">
                                 <PathStickerView
                                     superstate={superstate}
-                                    pathState={pinnedItemIconPathState}
-                                    ariaLabel="pinned"
+                                    pathState={{
+                                        name: "pinned",
+                                        path: "",
+                                        sticker: "lucide//pin",
+                                    }}
+                                    space={data.space}
+                                    editable={false}
                                 />
                             </div>
                         )}

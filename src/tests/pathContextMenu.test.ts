@@ -137,7 +137,6 @@ describe("triggerMultiPathMenu", () => {
                         subtype: "md",
                         parent: "Projects",
                         spaces: [],
-                        label: { sticker: "", color: "" },
                     },
                 ],
                 [
@@ -149,7 +148,6 @@ describe("triggerMultiPathMenu", () => {
                         subtype: "md",
                         parent: "Projects",
                         spaces: [],
-                        label: { sticker: "", color: "" },
                     },
                 ],
             ]),
@@ -196,7 +194,8 @@ describe("showPathContextMenu", () => {
             name: "art",
             type: "space",
             subtype: "tag",
-            label: { color: "", sticker: "" },
+            color: "",
+            sticker: "",
         };
         const tagSpace = {
             path: "spaces://#art",
@@ -229,7 +228,8 @@ describe("showPathContextMenu", () => {
             parent: "Folder",
             type: "file",
             subtype: "md",
-            label: { color: "#123456", sticker: "ui//file-text" },
+            color: "#123456",
+            sticker: "ui//file-text",
         };
         const superstate = {
             pathsIndex: new Map([["Folder/Note.md", pathState]]),
@@ -259,7 +259,6 @@ describe("showPathContextMenu", () => {
             parent: "Folder",
             type: "file",
             subtype: "md",
-            label: {},
         };
         const superstate = {
             pathsIndex: new Map([["Folder/Note.md", pathState]]),
@@ -304,7 +303,6 @@ describe("showPathContextMenu", () => {
             path: "Atlas/Obsidian",
             parent: "Atlas",
             type: "space",
-            label: {},
             spaces: [] as string[],
         };
         const space = {
@@ -346,9 +344,8 @@ describe("showPathContextMenu", () => {
 });
 
 describe("showSpaceContextMenu", () => {
-    it("updates the home space label color when a color is selected", async () => {
+    it("updates the home space display color when a color is selected", async () => {
         const dispatchEvent = jest.fn();
-        const saveLabel = jest.fn(() => Promise.resolve());
         const saveSpace = jest.fn();
         const updateSpaceMetadata = jest.fn(() => Promise.resolve(true));
         const openMenu = jest.fn();
@@ -356,9 +353,8 @@ describe("showSpaceContextMenu", () => {
             path: "/",
             parent: "",
             type: "space",
-            label: {
-                color: "",
-            },
+            color: "",
+            sticker: "ui//home",
             spaces: ["/"],
         };
         const superstate = {
@@ -382,7 +378,6 @@ describe("showSpaceContextMenu", () => {
                 ],
             ]),
             spaceManager: {
-                saveLabel,
                 saveSpace,
             },
             updateSpaceMetadata,
@@ -399,7 +394,6 @@ describe("showSpaceContextMenu", () => {
         const changeColor = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//palette");
         await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
-        expect(saveLabel).toHaveBeenCalledWith("/", "color", "#123456");
         expect(saveSpace).not.toHaveBeenCalled();
         expect(updateSpaceMetadata).toHaveBeenCalledWith("/", { color: "#123456" });
     });
@@ -410,7 +404,6 @@ describe("showSpaceContextMenu", () => {
             path: "Projects",
             parent: "",
             type: "space",
-            label: {},
             spaces: ["Projects"],
         };
         const initialSpace = {
@@ -473,7 +466,6 @@ describe("showSpaceContextMenu", () => {
             path: "Projects",
             parent: "",
             type: "space",
-            label: {},
             spaces: ["Projects"],
         };
         const superstate = {
@@ -526,7 +518,6 @@ describe("showSpaceContextMenu", () => {
             path: "Projects",
             parent: "",
             type: "space",
-            label: {},
             spaces: ["Projects"],
         };
         const superstate = {
@@ -585,7 +576,6 @@ describe("showSpaceContextMenu", () => {
             path: "Projects",
             parent: "",
             type: "space",
-            label: {},
             spaces: ["Projects"],
         };
         const superstate = {
@@ -652,7 +642,6 @@ describe("showSpaceContextMenu", () => {
             parent: "",
             type: "space",
             subtype: "tag",
-            label: {},
             spaces: [] as string[],
         };
         const tagSpace = {
@@ -689,7 +678,6 @@ describe("showSpaceContextMenu", () => {
             parent: "",
             type: "space",
             subtype: "tag",
-            label: {},
             spaces: [] as string[],
         };
         const tagSpace = {
@@ -730,7 +718,6 @@ describe("showSpaceContextMenu", () => {
             parent: "",
             type: "space",
             subtype: "tag",
-            label: {},
             spaces: [] as string[],
         };
         const tagSpace = {
@@ -777,7 +764,6 @@ describe("showSpaceContextMenu", () => {
             path: "Projects",
             parent: "",
             type: "space",
-            label: {},
             spaces: ["Projects"],
         };
         const space = {

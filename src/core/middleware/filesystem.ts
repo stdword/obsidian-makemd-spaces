@@ -1,12 +1,7 @@
 import { AFile } from "shared/types/afile";
-import { PathCache } from "shared/types/caches";
-import { EventDispatcher, EventTypeToPayload } from "../../shared/utils/dispatchers/dispatcher";
+import { PathCache } from "shared/types/PathState";
+import { EventDispatcher, EventTypeToPayload } from "utils/dispatcher";
 import { FileTypeAdapter, FileTypeCache, FileTypeContent } from "./filetypes";
-
-export type FileCache = PathCache & {
-    file: AFile;
-    [key: string]: FileTypeCache;
-};
 
 export interface FileSystemEventTypes extends EventTypeToPayload {
     onCreate: { file: AFile };
@@ -20,7 +15,7 @@ export interface FileSystemEventTypes extends EventTypeToPayload {
 }
 
 export abstract class FileSystemAdapter {
-    public cache: Map<string, FileCache>;
+    public cache: Map<string, PathCache & { file?: AFile }>;
     public initiate: (middleware: FilesystemMiddleware) => void;
     public middleware: FilesystemMiddleware;
     public getRoot: () => Promise<AFile>;
@@ -35,18 +30,14 @@ export abstract class FileSystemAdapter {
     public readTextFromFile: (path: string) => Promise<string>;
     public writeBinaryToFile: (path: string, buffer: ArrayBuffer) => Promise<void>;
     public readBinaryToFile: (path: string) => Promise<ArrayBuffer>;
-    public updateFileLabel: (path: string, key: string, value: any) => void;
     public renameFile: (path: string, newPath: string) => Promise<string>;
     public createFolder: (path: string) => Promise<AFile>;
     public fileExists: (path: string) => Promise<boolean>;
     public childrenForFolder: (path: string, type?: string) => Promise<string[]>;
     public getFile: (path: string, source?: string) => Promise<AFile>;
-    public getFileCache: (path: string, source?: string) => FileCache;
+    public getFileCache: (path: string, source?: string) => PathCache & { file?: AFile };
     public deleteFile: (path: string) => Promise<void>;
     public readAllTags: () => string[];
-    public addTagToFile: (path: string, tag: string) => Promise<void>;
-    public renameTagForFile: (path: string, oldTag: string, newTag: string) => Promise<void>;
-    public removeTagFromFile: (path: string, tag: string) => Promise<void>;
     public filesForTag: (tag: string) => string[];
     public resolvePath: (path: string, source: string) => string;
 }
@@ -179,28 +170,14 @@ export class FilesystemMiddleware {
         }
     }
 
-    public saveFileLabel(file: AFile, key: string, value: any) {
-        const adapters = this.filetypeAdaptersForFileFragments(file, "label");
-        if (adapters.length >= 1) {
-            return adapters[0].saveContent(file, "label", key, () => value);
-        } else {
-            return this.primary.updateFileLabel(file.path, key, value);
-        }
-    }
-
     public saveFileFragment(file: AFile, fragmentType: string, fragmentId: any, saveContent: (prev: any) => any) {
+        console.log('TRACE saveFileFragment', {file, fragmentType, fragmentId})
         const adapters = this.filetypeAdaptersForFileFragments(file, fragmentType);
+        console.log('TRACE saveFileFragment::adapters', adapters)
         if (adapters.length >= 1) {
             return adapters[0].saveContent(file, fragmentType, fragmentId, saveContent);
         }
         return false;
-    }
-
-    public deleteFileFragment(file: AFile, fragmentType: string, fragmentId: any) {
-        const adapters = this.filetypeAdaptersForFileFragments(file, fragmentType);
-        if (adapters.length >= 1) {
-            return adapters[0].deleteContent(file, fragmentType, fragmentId);
-        }
     }
 
     public onCreate(file: AFile) {
@@ -270,20 +247,10 @@ export class FilesystemMiddleware {
     public async getFile(path: string, source?: string) {
         return this.adapterForPath(path).getFile(path, source);
     }
-
     public async deleteFile(path: string) {
         return this.adapterForPath(path).deleteFile(path);
     }
 
-    public async addTagToFile(path: string, tag: string) {
-        return this.adapterForPath(path).addTagToFile(path, tag);
-    }
-    public async renameTagForFile(path: string, oldTag: string, newTag: string) {
-        return this.adapterForPath(path).renameTagForFile(path, oldTag, newTag);
-    }
-    public async removeTagFromFile(path: string, tag: string) {
-        return this.adapterForPath(path).removeTagFromFile(path, tag);
-    }
     public filesForTag(tag: string) {
         return this.primary.filesForTag(tag);
     }

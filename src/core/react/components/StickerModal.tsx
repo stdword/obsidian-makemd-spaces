@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sticker } from "shared/types/ui";
-import { emojiFromString } from "shared/utils/stickers";
+import { emojiFromString } from "utils/stickers";
 import { default as i18n } from "shared/i18n";
-import { IUIManager as UIManager } from "../types/uiManager";
+import { IUIManager as UIManager } from "shared/types/uiManager";
 
 interface StickerModalProps {
     ui: UIManager;

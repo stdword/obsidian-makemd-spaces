@@ -1,14 +1,14 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { TreeNode, isPathPinnedInSpace } from "core/superstate/utils/spaces";
+import { TreeNode, isPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { nodeIsAncestorOfTarget } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { PathState, SpaceState } from "shared/types/PathState";
 
 import { arrayMove } from "@dnd-kit/sortable";
-import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, removePathsFromSpace, updatePathRankInSpace } from "core/superstate/utils/spaces";
-import { addTagToPath } from "core/superstate/utils/tags";
+import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
+import { addTagToPath } from "core/utils/superstate/tags";
 import { DragProjection } from "./dragPath";
 
 const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath: string, parentId: UniqueIdentifier, overIndex: number, rank: number, flattenedTree: TreeNode[]) => {
@@ -46,7 +46,7 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         const overItem = flattenedTree[overIndex];
         const dropTarget = overItem.type == "file" ? (overItem.depth == 0 ? null : flattenedTree.find((f) => f.id == overItem.parentId)?.item) : overItem.item;
 
-        const droppable = paths.filter((f) => !nodeIsAncestorOfTarget(f, (dropTarget as SpaceState).path));
+        const droppable = paths.filter((f) => !nodeIsAncestorOfTarget(f, dropTarget?.path));
 
         const parentId = projected.insert ? targetId : projected.parentId;
         const newSpace = flattenedTree.find(({ id }) => id === parentId)?.item.path;
@@ -116,7 +116,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
     const newSpaceCache = superstate.spacesIndex.get(newSpacePath);
 
     if (oldSpacePath == newSpacePath) {
-        updatePathRankInSpace(superstate, path, index, newSpacePath);
+        await updatePathRankInSpace(superstate, path, index, newSpacePath);
         return;
     }
 
@@ -127,10 +127,6 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
             await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
         }
     }
-    if (newSpaceCache.type == "tag") {
-        addTagToPath(superstate, path, newSpaceCache.name);
-    }
-
     if (oldSpacePath && oldSpacePath != newSpacePath) {
         await removePathsFromSpace(superstate, oldSpacePath, [path]);
     }
@@ -148,7 +144,7 @@ export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: str
         }));
     }
 
-    if (newSpaceCache.type == "tag") {
+    if (newSpaceCache.type == "tag" && modifier == "link" && index == -1) {
         await Promise.all(paths.map((path) => addTagToPath(superstate, path, newSpaceCache.name)));
     }
 };

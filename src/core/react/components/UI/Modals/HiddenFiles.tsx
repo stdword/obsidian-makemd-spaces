@@ -1,9 +1,8 @@
 import { Superstate } from "makemd-core";
 import React, { useEffect, useRef, useState } from "react";
 import i18n from "shared/i18n";
-import { windowFromDocument } from "shared/utils/dom";
-import { pathNameToString } from "utils/path";
-import { SearchMenuTab, showSearchMenu } from "../Menus/modals/searchMenu";
+import { windowFromDocument } from "utils/dom";
+import { showSearchMenu } from "../Menus/modals/searchMenu";
 
 export const HiddenPaths = (props: {
   superstate: Superstate;

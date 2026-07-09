@@ -3,8 +3,8 @@ import { showMenu } from "core/react/components/UI/Menus/menu";
 
 import { showSelectMenu } from "core/react/components/UI/Menus/selectMenu";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
-import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
-import { addTag } from "core/superstate/utils/tags";
+import { defaultSpace, newPathInSpace } from "core/utils/superstate/spaces";
+import { addTag } from "core/utils/superstate/tags";
 import _ from "lodash";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
@@ -15,9 +15,9 @@ import { MenuObject, SelectMenuProps } from "shared/types/menu";
 import { TargetLocation } from "shared/types/path";
 import { SpaceState } from "shared/types/PathState";
 import { IUIManager, UIAdapter, UIManagerEventTypes, ViewAdapter } from "shared/types/uiManager";
-import { Anchors, Pos, Rect } from "../../shared/types/Pos";
-import { EventDispatcher } from "../../shared/utils/dispatchers/dispatcher";
-import { InputManager } from "../../shared/utils/inputManager";
+import { Anchors, Pos, Rect } from "shared/types/Pos";
+import { EventDispatcher } from "utils/dispatcher";
+import { InputManager } from "utils/inputManager";
 
 export class UIManager implements IUIManager {
     inputManager: InputManager;

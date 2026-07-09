@@ -2,9 +2,9 @@ import { getParentPathFromString } from "utils/path";
 
 import JSZip from "jszip";
 import { DBTable, DBTables } from "shared/types/mdb";
-import { uniq } from "shared/utils/array";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
-import { sanitizeSQLStatement } from "shared/utils/sanitizers";
+import { uniq } from "utils/array";
+import { removeTrailingSlashFromFolder } from "utils/paths";
+import { sanitizeSQLStatement } from "utils/sanitizers";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
 import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializers";
 import { ZippedSqliteStorage } from "../localCache/sqliteStorage";

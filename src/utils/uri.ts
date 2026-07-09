@@ -1,5 +1,5 @@
 import { PathRefTypes, URI } from "shared/types/path";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { removeTrailingSlashFromFolder } from "utils/paths";
 
 export const parseURI = (uri: string): URI => {
     const fullPath = uri;
@@ -132,20 +132,4 @@ export const renamePathWithExtension = (path: string, newName: string): string =
     const dir = path.substring(0, path.lastIndexOf("/"));
     const ext = path.toLowerCase().endsWith(".excalidraw.md") ? ".excalidraw.md" : path.lastIndexOf(".") != -1 ? path.substring(path.lastIndexOf(".")) : "";
     return dir.length > 0 ? `${dir}/${newName}${ext}` : `${newName}${ext}`;
-};
-
-export const uriForFolder = (path: string): URI => {
-    return {
-        basePath: path,
-        fullPath: path,
-        authority: null,
-        path,
-        scheme: "vault",
-        alias: null,
-        ref: null,
-        refStr: null,
-        refType: null,
-        query: null,
-        trailSlash: true,
-    };
 };

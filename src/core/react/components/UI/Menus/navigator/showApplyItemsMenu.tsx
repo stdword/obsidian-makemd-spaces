@@ -1,9 +1,9 @@
-import { saveSpaceCache } from "core/superstate/utils/spaces";
+import { saveSpaceCache } from "core/utils/superstate/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { SpaceState } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
-import { openStickerPalette } from "../../../../../../shared/components/PathSticker";
+import { openStickerPalette } from "../../../PathSticker";
 import { defaultMenu } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 
@@ -22,7 +22,7 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
                     win,
                     space.metadata?.defaultColor ?? "",
                     (color) =>
-                        saveSpaceCache(superstate, space.space, {
+                        saveSpaceCache(superstate, space, {
                             ...space.metadata,
                             defaultColor: color,
                         }),
@@ -41,7 +41,7 @@ export const showApplyItemsMenu = (offset: Rect, superstate: Superstate, space: 
                 setTimeout(
                     () =>
                         openStickerPalette(superstate, win, (emoji) =>
-                            saveSpaceCache(superstate, space.space, {
+                            saveSpaceCache(superstate, space, {
                                 ...space.metadata,
                                 defaultSticker: emoji,
                             }),

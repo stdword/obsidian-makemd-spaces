@@ -1,8 +1,8 @@
 import { App, PluginSettingTab, Setting } from "obsidian";
 import i18n from "shared/i18n";
 import MakeMDPlugin from "../../main";
-import { MakeMDSettings } from "../../shared/types/settings";
-import { SpaceSort } from "../../shared/types/spaceDef";
+import { MakeMDSettings } from "shared/types/settings";
+import { SpaceSort } from "shared/types/spaceDef";
 
 type SettingObject = {
     name: keyof MakeMDSettings;

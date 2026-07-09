@@ -5,11 +5,17 @@ import { DEFAULT_SYSTEM_NAME } from "schemas/constants";
 export const vaultPath: PathState = {
     name: DEFAULT_SYSTEM_NAME,
     path: "/",
-    label: {
-        sticker: "ui//vault",
-        color: "",
-    },
-    type: "default",
+    sticker: "ui//vault",
+    color: "",
+    type: "space",
+    subtype: "folder",
+    parent: "",
+    metadata: {},
+    tags: [],
+    hidden: false,
+    spaces: [],
+    linkedSpaces: [],
+    pinnedSpaces: [],
 };
 
 export type BuiltinSpace = {

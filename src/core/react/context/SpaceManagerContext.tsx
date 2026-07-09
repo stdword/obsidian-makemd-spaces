@@ -1,9 +1,9 @@
 import { Superstate } from "makemd-core";
 import React, { createContext, useContext, useMemo } from "react";
 import { PathState } from "shared/types/PathState";
-import { SpaceManagerInterface } from "shared/types/spaceManager";
+import { ISpaceManager } from "shared/types/spaceManager";
 
-type NavigatorSpaceManager = SpaceManagerInterface & {
+type NavigatorSpaceManager = ISpaceManager & {
     isPreviewMode: boolean;
     getPathState: (path: string) => PathState | null;
     getPathsIndexMap: () => Map<string, PathState>;

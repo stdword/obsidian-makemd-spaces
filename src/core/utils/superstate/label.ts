@@ -1,6 +1,6 @@
 import { ISuperstate } from "shared/types/superstate";
 
-const isFolderPathState = (pathState: any) => pathState?.type == "space" || pathState?.subtype == "folder" || pathState?.metadata?.file?.isFolder;
+const isFolderPathState = (pathState: any) => pathState?.type == "space" || pathState?.subtype == "folder";
 
 const updatePathColor = (superstate: ISuperstate, path: string, color: string) => {
     const pathState = superstate.pathsIndex.get(path);
@@ -8,10 +8,7 @@ const updatePathColor = (superstate: ISuperstate, path: string, color: string) =
 
     superstate.pathsIndex.set(path, {
         ...pathState,
-        effectiveLabel: {
-            ...pathState.effectiveLabel,
-            color,
-        },
+        color,
     });
     superstate.dispatchEvent("pathStateUpdated", { path });
 };
@@ -54,7 +51,6 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
     if (!pathState) return;
 
     if (isFolderPathState(pathState)) {
-        await superstate.spaceManager.saveLabel(path, "color", color);
         if (spaceState) {
             await superstate.updateSpaceMetadata(path, {
                 ...spaceState.metadata,
@@ -63,10 +59,7 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
         } else {
             superstate.pathsIndex.set(path, {
                 ...pathState,
-                effectiveLabel: {
-                    ...pathState.effectiveLabel,
-                    color,
-                },
+                color,
             });
             superstate.dispatchEvent("pathStateUpdated", { path });
         }

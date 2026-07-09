@@ -1,5 +1,5 @@
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { TreeNode } from "core/superstate/utils/spaces";
+import { TreeNode } from "core/utils/superstate/spaces";
 import _ from "lodash";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
@@ -74,12 +74,13 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
             parent: "",
             type: "space",
             subtype,
-            label: { sticker: "", color: "" },
-            effectiveLabel: { sticker: subtype == "tag" ? "lucide//hash" : subtype == "vault" ? "ui//home" : "ui//folder", color: "" },
+            sticker: subtype == "tag" ? "lucide//hash" : subtype == "vault" ? "ui//home" : "ui//folder",
+            color: "",
             metadata: {},
             tags: [],
             spaces: [],
-            outlinks: [],
+            linkedSpaces: [],
+            pinnedSpaces: [],
             hidden: true,
         };
         const fallbackSpace: SpaceState = {
@@ -87,8 +88,7 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
             name: spaceInfo.name,
             type: subtype as any,
             metadata: {},
-            space: spaceInfo,
-            sortable: true,
+            space: spaceInfo.space,
         };
         props.superstate.pathsIndex.set(spaceInfo.path, fallbackPath);
         props.superstate.spacesIndex.set(spaceInfo.path, fallbackSpace);

@@ -3,7 +3,7 @@ import React from "react";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
 import { eventTypes } from "schemas/event";
 import i18n from "shared/i18n";
-import { windowFromDocument } from "shared/utils/dom";
+import { windowFromDocument } from "utils/dom";
 import MakeMDPlugin from "main";
 
 export const attachCommands = (plugin: MakeMDPlugin) => {

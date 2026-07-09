@@ -151,8 +151,8 @@ describe("showOpenMenu", () => {
             },
             spacesIndex: new Map(),
             pathsIndex: new Map([
-                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false, label: {} }],
-                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true, label: {} }],
+                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false }],
+                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true }],
             ]),
             settings: {},
             ui: {
@@ -198,8 +198,8 @@ describe("showOpenMenu", () => {
             },
             spacesIndex: new Map(),
             pathsIndex: new Map([
-                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false, label: {} }],
-                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true, label: {} }],
+                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false }],
+                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true }],
             ]),
             settings: {},
             ui: {
@@ -229,7 +229,7 @@ describe("showOpenMenu", () => {
             },
             spacesIndex: new Map(),
             pathsIndex: new Map([
-                ["Atlas/Obsidian/Notes.md", { name: "Notes", path: "Atlas/Obsidian/Notes.md", type: "file", hidden: false, label: {} }],
+                ["Atlas/Obsidian/Notes.md", { name: "Notes", path: "Atlas/Obsidian/Notes.md", type: "file", hidden: false }],
             ]),
             settings: {
                 hiddenExtensions: [],

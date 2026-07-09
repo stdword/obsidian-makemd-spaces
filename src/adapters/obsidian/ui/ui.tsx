@@ -11,12 +11,12 @@ import { Pos, Rect } from "shared/types/Pos";
 import { EmojiData } from "shared/types/emojis";
 import { TargetLocation } from "shared/types/path";
 import { MenuObject } from "shared/types/menu";
-import { openPathInElement } from "shared/utils/openPathInElement";
+import { openPathInElement } from "adapters/obsidian/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
-import { removeSpace } from "core/superstate/utils/spaces";
-import { getLineRangeFromRef } from "shared/utils/obsidian";
+import { removeSpace } from "core/utils/superstate/spaces";
+import { getLineRangeFromRef } from "utils/obsidian";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
@@ -242,10 +242,7 @@ export class ObsidianUI implements UIAdapter {
             return;
         }
 
-        if (newLeaf == "hover") {
-            this.plugin.app.workspace.trigger("link-hover", {}, source, path, path);
-            return;
-        } else if (source) {
+        if (source) {
             const uri = this.plugin.superstate.spaceManager.uriByString(path);
             openPathInElement(
                 this.plugin.app,

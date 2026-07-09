@@ -5,12 +5,10 @@ export { ISuperstate as Superstate } from "shared/types/superstate";
 
 //Filesystem
 export { FileSystemAdapter, FilesystemMiddleware } from "core/middleware/filesystem";
-export type { FileCache } from "core/middleware/filesystem";
 export { FileTypeAdapter } from "core/middleware/filetypes";
 export type { FileTypeCache } from "core/middleware/filetypes";
 export { FilesystemSpaceAdapter } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
 export type { AFile } from "shared/types/afile";
-export type { PathLabel } from "shared/types/caches";
 
 //UI
 export { UIManager } from "core/middleware/ui";

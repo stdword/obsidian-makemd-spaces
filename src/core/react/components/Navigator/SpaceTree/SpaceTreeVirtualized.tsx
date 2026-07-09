@@ -3,13 +3,13 @@ import { DragActionModel } from "core/utils/dnd/dragPath";
 import { Pos } from "shared/types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { createSpace, TreeNode } from "core/superstate/utils/spaces";
-import { addTag } from "core/superstate/utils/tags";
-import { tagSpacePathFromTag } from "core/utils/strings";
+import { createSpace, TreeNode } from "core/utils/superstate/spaces";
+import { addTag } from "core/utils/superstate/tags";
+import { tagSpacePathFromTag } from "schemas/builtin";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { CSSProperties, useContext } from "react";
-import { windowFromDocument } from "shared/utils/dom";
+import { windowFromDocument } from "utils/dom";
 import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";

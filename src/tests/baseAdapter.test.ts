@@ -21,13 +21,7 @@ describe("ObsidianBaseFiletypeAdapter", () => {
         };
         const adapter = new ObsidianBaseFiletypeAdapter(plugin as any);
         const middleware = {
-            getFileCache: jest.fn(() => ({
-                label: {
-                    name: "Database.base",
-                    sticker: "cache-sticker",
-                    color: "cache-color",
-                },
-            })),
+            getFileCache: jest.fn((): any => null),
             updateFileCache: jest.fn(),
             writeTextToFile: jest.fn(),
             getFile: jest.fn((path: string) => Promise.resolve({ path })),
@@ -49,20 +43,11 @@ describe("ObsidianBaseFiletypeAdapter", () => {
         expect(file).toEqual({ path: "Projects/Untitled.base" });
     });
 
-    it("uses the table sticker for base file cache", async () => {
+    it("does not write display metadata into base file cache", async () => {
         const { adapter, middleware } = createAdapter();
 
         await adapter.parseCache({ path: "Database.base", name: "Database.base" } as any, false);
 
-        expect(middleware.updateFileCache).toHaveBeenCalledWith(
-            "Database.base",
-            expect.objectContaining({
-                label: expect.objectContaining({
-                    sticker: "cache-sticker",
-                    color: "cache-color",
-                }),
-            }),
-            false,
-        );
+        expect(middleware.updateFileCache).not.toHaveBeenCalled();
     });
 });

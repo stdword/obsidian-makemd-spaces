@@ -1,6 +1,4 @@
-import { PathLabel } from "./caches";
-import { SpaceDefinition, SpaceType } from "./spaceDef";
-import { SpaceInfo } from "./spaceInfo";
+import { SpaceDefinition } from "./spaceDef";
 
 export type SuperstateEvent = {
     pathCreated: { path: string };
@@ -15,52 +13,55 @@ export type SuperstateEvent = {
     superstateUpdated: null;
     superstateReindex: null;
 };
+
 export type WorkerJobType = {
     type: string;
     path: string;
     payload?: { [key: string]: any };
 };
+
+
+export type SpaceType = "folder" | "tag" | "vault";
+export type FilesystemSpaceInfo = {
+    defPath: string;
+    folderPath: string;
+    notePath: string;
+};
 export type SpaceState = {
+    type: SpaceType;
+
     name: string;
     path: string;
-    metadata?: SpaceDefinition;
-    dependencies?: string[];
-    space?: SpaceInfo;
-    contexts?: string[];
-    type: SpaceType;
-    sortBy?: string;
-    sortable?: boolean;
+    space?: FilesystemSpaceInfo;  // empty for tag-spaces
 
-    properties?: Record<string, any>;
-} & CacheState;
-
-export type TagsCache = {
-    tag: string;
-    files: string[];
+    metadata: SpaceDefinition;
 };
 
-export type CacheState = {
-    rank?: number;
-};
-//everything needed to construct the file
-export type PathState = {
-    //File System Metadata
+
+export type PathType = "space" | "file";
+export type FileMetadata = {
+    ctime: number;
+    mtime: number;
+    size: number;
+}
+export type PathCache = {
+    type: PathType;
+    subtype: string;  // extension for files; "folder" for folders
+
+    name: string;
     path: string;
+    parent: string;
 
-    name?: string;
-    parent?: string;
-    type?: string;
-    subtype?: string;
-    label?: PathLabel;
-    effectiveLabel?: PathLabel;
-    metadata?: Record<string, any>;
-    properties?: Record<string, any>;
-    hidden?: boolean;
-    spaces?: string[];
-    linkedSpaces?: string[];
-    liveSpaces?: string[];
-    tags?: string[];
-    inlinks?: string[];
-    outlinks?: string[];
-    spaceNames?: string[];
-} & CacheState;
+    metadata: Partial<FileMetadata>;  // full for files, empty for folders
+
+    tags: string[];
+    hidden: boolean;
+};
+export type PathState = PathCache & {
+    color: string;
+    sticker: string;
+
+    spaces: string[];
+    linkedSpaces: string[];
+    pinnedSpaces: string[];
+};

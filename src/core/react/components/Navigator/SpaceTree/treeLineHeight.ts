@@ -1,4 +1,4 @@
-import { TreeNode } from "core/superstate/utils/spaces";
+import { TreeNode } from "core/utils/superstate/spaces";
 
 export const calculateFolderLineHeight = (flattenedTree: TreeNode[], rowHeights: number[], index: number, collapsed: boolean) => {
     const node = flattenedTree[index];

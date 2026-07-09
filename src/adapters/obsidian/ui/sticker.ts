@@ -1,6 +1,6 @@
 import MakeMDPlugin from "main";
 import { uiIconSet } from "shared/assets/icons";
-import { emojiFromString, parseStickerString } from "shared/utils/stickers";
+import { emojiFromString, parseStickerString } from "utils/stickers";
 import { lucideIcon } from "./icons";
 
 export const stickerFromString = (

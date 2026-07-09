@@ -3,6 +3,10 @@ jest.mock(
     () => ({
         TFile: class TFile {},
         TFolder: class TFolder {},
+        getAllTags: jest.fn((metadata) => [
+            ...(metadata?.tags ?? []).map((tagCache: any) => tagCache.tag),
+            ...(metadata?.frontmatter?.tags ? [`#${metadata.frontmatter.tags}`] : []),
+        ]),
     }),
     { virtual: true },
 );
@@ -37,13 +41,7 @@ describe("ObsidianMarkdownFiletypeAdapter", () => {
         };
         const adapter = new ObsidianMarkdownFiletypeAdapter(plugin as any);
         const middleware = {
-            getFileCache: jest.fn(() => ({
-                label: {
-                    name: "Note.md",
-                    sticker: "cache-sticker",
-                    color: "cache-color",
-                },
-            })),
+            getFileCache: jest.fn((): any => null),
             updateFileCache: jest.fn(),
         };
 
@@ -59,7 +57,7 @@ describe("ObsidianMarkdownFiletypeAdapter", () => {
         expect(adapter.cacheTypes({ extension: "md" } as any)).toEqual(["tags"]);
     });
 
-    it("uses file cache for markdown sticker and color", async () => {
+    it("writes only markdown tags into file cache", async () => {
         const { adapter, middleware } = createAdapter();
 
         await adapter.parseCache({ path: "Note.md", name: "Note.md" } as any, false);
@@ -67,10 +65,6 @@ describe("ObsidianMarkdownFiletypeAdapter", () => {
         expect(middleware.updateFileCache).toHaveBeenCalledWith(
             "Note.md",
             expect.objectContaining({
-                label: expect.objectContaining({
-                    sticker: "cache-sticker",
-                    color: "cache-color",
-                }),
                 tags: ["#inline-tag", "#frontmatter-tag"],
             }),
             false,

@@ -1,6 +1,6 @@
 import MakeMDPlugin from "main";
 import { MarkdownView } from "obsidian";
-import { parseStickerString } from "shared/utils/stickers";
+import { parseStickerString } from "utils/stickers";
 import { stickerFromString } from "../ui/sticker";
 
 export const dedupeTabHeaderIconEl = (iconEl?: HTMLElement) => {
@@ -32,11 +32,11 @@ export const modifyTabSticker = (plugin: MakeMDPlugin) => {
         const file = plugin.app.workspace.getActiveFile();
         if (!file) return;
         const pathCache = plugin.superstate.pathsIndex.get(file.path);
-        const sticker = pathCache?.effectiveLabel?.sticker ?? pathCache?.label?.sticker;
+        const sticker = pathCache?.sticker;
         if (sticker && leaf.tabHeaderInnerIconEl) {
             const [stickerType, stickerPath] = parseStickerString(sticker);
             if (stickerType == "image") {
-                const path = plugin.superstate.ui.getUIPath(plugin.superstate.imagesCache.get(stickerPath));
+                const path = plugin.superstate.ui.getUIPath(stickerPath);
                 if (path) {
                     leaf.tabHeaderInnerIconEl.innerHTML = `<img src="${path}" />`;
                     markTabStickerIcon(leaf.tabHeaderInnerIconEl);

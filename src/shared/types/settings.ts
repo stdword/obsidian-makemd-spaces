@@ -1,10 +1,6 @@
 import { SpaceSort } from "./spaceDef";
 
 export interface MakeMDSettings {
-    // constants, not settings
-    fmKeyColor: string;
-    fmKeySticker: string;
-
     // state, not settings
     currentWaypoint: number;
     expandedSpaces: string[];

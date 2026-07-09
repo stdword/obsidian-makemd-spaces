@@ -2,8 +2,7 @@
 
 import { parseAllMetadata, parseMetadata } from "core/superstate/metadataParsing";
 import Fuse from "fuse.js";
-import { PathCache } from "shared/types/caches";
-import { PathState, SpaceState } from "shared/types/PathState";
+import { PathCache, PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 
 export type SearchIndexPayload = {pathsIndex: Map<string, PathState>};
@@ -19,7 +18,7 @@ export function parsePath (payload: PathWorkerPayload) {
 export function indexAllPaths (payload: SearchIndexPayload) {
     const options = {
 
-        keys: [{ name: 'name', weight: 2 }, "path", { name: 'spaceNames', weight: 0.5 }],
+        keys: [{ name: 'name', weight: 2 }, "path"],
       };
     const items = [...payload.pathsIndex.values()].filter(f => f.hidden == false)
     return Fuse.createIndex(options.keys, items).toJSON();

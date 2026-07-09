@@ -147,7 +147,7 @@ export class Indexer {
             let cachePath = job.path;
             let name;
             if (spaceState) {
-                name = spaceState.space.name;
+                name = spaceState.name;
                 cachePath = spaceState.space.defPath;
             }
             const pathMetadata = (await this.cache.spaceManager.readPathCache(cachePath)) ?? (await this.cache.spaceManager.readPathCache(job.path));

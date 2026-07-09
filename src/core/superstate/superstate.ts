@@ -3,38 +3,32 @@ import i18n from "shared/i18n";
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { effectiveSpaceSort, saveSpaceCache } from "core/superstate/utils/spaces";
+import { effectiveSpaceSort, saveSpaceCache } from "core/utils/superstate/spaces";
 import { builtinSpaces } from "schemas/space";
+import { tagSpacePathFromTag } from "schemas/builtin";
 import { pathIsSpace } from "core/utils/superstate/space";
-import { tagSpacePathFromTag } from "core/utils/strings";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
 import { isTagSpacePath, tagsSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
-import { PathState, SpaceState } from "shared/types/PathState";
+import { FilesystemSpaceInfo, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
 import { MakeMDSettings } from "shared/types/settings";
-import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
-import { SpaceInfo } from "shared/types/spaceInfo";
-import { orderArrayByArrayWithKey, uniq } from "shared/utils/array";
-import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
-import { safelyParseJSON } from "shared/utils/json";
+import { SpaceDefinition } from "shared/types/spaceDef";
+import { orderArrayByArrayWithKey, uniq } from "utils/array";
+import { EventDispatcher } from "utils/dispatcher";
+import { safelyParseJSON } from "utils/json";
 import { excludePathPredicate, isSpaceInternalPath } from "utils/hide";
 import { API } from "./api";
 
 import { Indexer } from "./workers/indexer/indexer";
-import { PathLabel } from "shared/types/caches";
 
-import { SuperstateEvent } from "shared/types/PathState";
+import { SuperstateEvent, SpaceType } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
-import { ensureArray } from "core/utils/strings";
+import { ensureArray } from "core/utils/schema";
 
-export type SuperProperty = {
-    id: string;
-    name: string;
-};
 
 const spaceDisplayMetadata = (metadata: SpaceDefinition = {}) => {
     return {
@@ -46,20 +40,11 @@ const spaceDisplayMetadata = (metadata: SpaceDefinition = {}) => {
     }
 }
 
-const tagSpaceInfoForCache = (space: SpaceInfo): SpaceInfo =>
-    ({
-        ...(({ dbPath: _dbPath, ...spaceInfo }) => spaceInfo)(space as SpaceInfo & { dbPath?: string }),
-        defPath: "",
-        notePath: "",
-        folderPath: "",
-    }) as SpaceInfo;
-
-const tagSpaceInfoForStore = (): SpaceInfo =>
-    ({
-        defPath: "",
-        notePath: "",
-        folderPath: "",
-    }) as unknown as SpaceInfo;
+const tagSpaceInfoForCache = (): FilesystemSpaceInfo => ({
+    defPath: "",
+    notePath: "",
+    folderPath: "",
+}) as FilesystemSpaceInfo;
 
 const tagSpaceMetadata = (metadata: SpaceDefinition = {}): SpaceDefinition => ({
     ...(metadata.color ? { color: metadata.color } : {}),
@@ -68,61 +53,54 @@ const tagSpaceMetadata = (metadata: SpaceDefinition = {}): SpaceDefinition => ({
     pinned: ensureArray(metadata.pinned),
 });
 
-const tagSpaceState = (space: SpaceInfo, metadata?: SpaceDefinition): SpaceState => ({
+const tagSpaceState = (space: SpaceState, metadata?: SpaceDefinition): SpaceState => ({
     type: "tag",
     name: space.name,
     path: space.path,
     metadata: tagSpaceMetadata(metadata),
-    space: tagSpaceInfoForCache(space),
+    space: tagSpaceInfoForCache(),
 });
 
-const tagSpaceStateForStore = (space: SpaceState): SpaceState =>
-    ({
-        type: "tag",
-        name: tagSpaceNameFromPath(space.path),
-        path: space.path,
-        metadata: tagSpaceMetadata(space.metadata),
-        space: tagSpaceInfoForStore(),
-    }) as SpaceState;
+const tagSpaceStateForStore = (space: SpaceState): SpaceState => ({
+    type: "tag",
+    name: tagSpaceNameFromPath(space.path),
+    path: space.path,
+    metadata: tagSpaceMetadata(space.metadata),
+    space: tagSpaceInfoForCache(),
+}) as SpaceState;
 
-const folderSpaceInfoForStore = (space: SpaceInfo): SpaceInfo =>
-    ({
-        defPath: space.defPath,
-        folderPath: (space as any).folderPath,
-        notePath: space.notePath,
-    }) as unknown as SpaceInfo;
+const folderSpaceInfoForStore = (space: SpaceState): FilesystemSpaceInfo => ({
+    defPath: space.space.defPath,
+    folderPath: space.space.folderPath,
+    notePath: space.space.notePath,
+}) as FilesystemSpaceInfo;
 
-const folderSpaceStateForStore = (space: SpaceState): SpaceState =>
-    ({
-        type: space.type,
-        name: space.name,
-        path: space.path,
-        metadata: space.metadata,
-        space: folderSpaceInfoForStore(space.space),
-    }) as SpaceState;
+const folderSpaceStateForStore = (space: SpaceState): SpaceState => ({
+    type: space.type,
+    name: space.name,
+    path: space.path,
+    metadata: space.metadata,
+    space: folderSpaceInfoForStore(space),
+}) as SpaceState;
 
 const folderSpaceStateFromStore = (space: SpaceState): SpaceState => ({
     ...space,
-    space: {
-        ...(({ dbPath: _dbPath, ...spaceInfo }) => spaceInfo)(space.space as SpaceInfo & { dbPath?: string }),
-        name: space.name,
-        path: space.path,
-    } as SpaceInfo,
+    space: space.space,
 });
 
 const tagPathStateForSpace = (space: SpaceState): PathState => ({
-    path: space.path,
-    name: space.name,
     type: "space",
     subtype: "tag",
-    label: {
-        sticker: "",
-        color: space.metadata?.color ?? "",
-    },
+    path: space.path,
+    name: space.name,
     tags: [],
     spaces: [],
-    outlinks: [],
+    linkedSpaces: [],
+    pinnedSpaces: [],
     hidden: false,
+    parent: "",
+    color: "",
+    sticker: "lucide//hash",
     metadata: {},
 });
 
@@ -133,7 +111,7 @@ const fallbackStickerForPathState = (pathState: PathState): string => {
         if (isTagSpacePath(pathState.path)) return "lucide//hash";
         return "ui//folder";
     }
-    const fileExtension = pathState.metadata?.file?.extension?.toLowerCase() || pathState.subtype?.toLowerCase() || pathState.path?.split(".").pop()?.toLowerCase();
+    const fileExtension = pathState.subtype?.toLowerCase() || pathState.path?.split(".").pop()?.toLowerCase();
     if (["png", "jpg", "jpeg", "avif", "webp", "gif"].includes(fileExtension)) return "ui//image";
     if (fileExtension == "canvas") return "ui//layout-dashboard";
     if (fileExtension == "base") return "ui//table";
@@ -142,13 +120,10 @@ const fallbackStickerForPathState = (pathState: PathState): string => {
     return "ui//file";
 };
 
-const emptyPathLabel = (): PathLabel => ({ sticker: "", color: "" });
+const isFolderLikePathState = (pathState: PathState): boolean => pathState?.type == "space" || pathState?.subtype == "folder";
 
-const isFolderLikePathState = (pathState: PathState): boolean => pathState?.type == "space" || pathState?.subtype == "folder" || pathState?.metadata?.file?.isFolder;
-
-const effectiveLabelForPathState = (pathState: PathState, spacesIndex: Map<string, SpaceState>, parentSpacePath?: string): PathLabel => {
-    if (!pathState) return emptyPathLabel();
-
+const effectiveDisplayForPathState = (pathState: PathState, spacesIndex: Map<string, SpaceState>, parentSpacePath?: string): Pick<PathState, "color" | "sticker"> => {
+    if (!pathState) return { color: "", sticker: "" };
     const ownSpaceMetadata = spacesIndex.get(pathState.path)?.metadata ?? {};
     const parentMetadata = spacesIndex.get(parentSpacePath ?? pathState.parent)?.metadata ?? {};
 
@@ -166,10 +141,9 @@ const effectiveLabelForPathState = (pathState: PathState, spacesIndex: Map<strin
     };
 };
 
-const pathStateWithEffectiveLabel = <T extends PathState>(pathState: T, spacesIndex: Map<string, SpaceState>, parentSpacePath?: string): T => ({
+const pathStateWithEffectiveDisplay = <T extends PathState>(pathState: T, spacesIndex: Map<string, SpaceState>, parentSpacePath?: string): T => ({
     ...pathState,
-    label: pathState.label ?? emptyPathLabel(),
-    effectiveLabel: effectiveLabelForPathState(pathState, spacesIndex, parentSpacePath),
+    ...effectiveDisplayForPathState(pathState, spacesIndex, parentSpacePath),
 });
 
 const replacePathInList = (items: unknown, oldPath: string, newPath: string): string[] => uniq(ensureArray(items).map((path) => (path == oldPath ? newPath : path)));
@@ -206,16 +180,13 @@ export class Superstate implements ISuperstate {
     public api: API;
 
     public ui: UIManager;
+
     //Index
     public pathsIndex: Map<string, PathState>;
     public spacesIndex: Map<string, SpaceState>;
 
-    //Persistant Cache
-    public imagesCache: Map<string, string>;
-
     //Maps
     public spacesMap: IndexMap; //file to space mapping
-    public linksMap: IndexMap; //link between paths
     public tagsMap: IndexMap; //file to tag mapping
     public liveSpaceLinkMap: IndexMap;
     private indexer: Indexer;
@@ -247,12 +218,8 @@ export class Superstate implements ISuperstate {
         this.focuses = [];
         //Initiate Maps
         this.spacesMap = new IndexMap();
-        this.linksMap = new IndexMap();
         this.tagsMap = new IndexMap();
         this.liveSpaceLinkMap = new IndexMap();
-
-        //Initiate Persistance
-        this.imagesCache = new Map();
 
         //Intiate Workers
         this.indexer = new Indexer(2, this);
@@ -284,7 +251,7 @@ export class Superstate implements ISuperstate {
         await this.initializePaths();
 
         this.dispatchEvent("superstateUpdated", null);
-        this.ui.notify(`Make.md - Superstate Loaded in ${(Date.now() - start) / 1000} seconds`, "console");
+        this.ui.notify(`Spaces :: Superstate Loaded in ${(Date.now() - start) / 1000} seconds`, "console");
         this.persister.cleanType("space");
         this.persister.cleanType("path");
     }
@@ -367,7 +334,7 @@ export class Superstate implements ISuperstate {
                 if (!pathCache) return null;
 
                 return {
-                    ...pathStateWithEffectiveLabel(pathCache, this.spacesIndex, spacePath),
+                    ...pathStateWithEffectiveDisplay(pathCache, this.spacesIndex, spacePath),
                     rank: ranks.indexOf(f),
                 } as PathStateWithRank;
             })
@@ -379,16 +346,16 @@ export class Superstate implements ISuperstate {
         const allSpaces = await this.persister.loadAll("space");
 
         for (const s of allSpaces) {
-            const space = safelyParseJSON(s.cache);
+            const space = safelyParseJSON(s.cache) as SpaceState;
             if (space && space.type) {
                 if (space.type != "tag") {
-                    const defPath = space.space?.defPath ?? this.spaceManager.spaceInfoForPath(s.path)?.defPath;
+                    const defPath = space.space?.defPath ?? this.spaceManager.spaceInfoForPath(s.path)?.space.defPath;
                     if (!defPath || !(await this.spaceManager.pathExists(defPath))) {
                         this.persister.remove(s.path, "space");
                         continue;
                     }
                 }
-                const normalizedSpace = space.type == "tag" ? tagSpaceState({ ...space.space, name: space.name, path: space.path }, space.metadata) : folderSpaceStateFromStore(space);
+                const normalizedSpace = space.type == "tag" ? tagSpaceState(space, space.metadata) : folderSpaceStateFromStore(space);
                 this.spacesIndex.set(s.path, normalizedSpace);
                 const normalizedStore = normalizedSpace.type == "tag" ? tagSpaceStateForStore(normalizedSpace) : folderSpaceStateForStore(normalizedSpace);
                 if (!_.isEqual(space, normalizedStore)) {
@@ -406,7 +373,6 @@ export class Superstate implements ISuperstate {
                 this.pathsIndex.set(f.path, cache);
                 this.tagsMap.set(f.path, new Set(cache.tags));
                 this.spacesMap.set(f.path, new Set(cache.spaces));
-                this.linksMap.set(f.path, new Set(cache.outlinks));
             }
         });
         this.dispatchEvent("superstateUpdated", null);
@@ -419,12 +385,12 @@ export class Superstate implements ISuperstate {
     public pathStateForPath(path: string): PathState {
         if (isTagSpacePath(path)) {
             const spaceState = this.spacesIndex.get(path);
-            if (spaceState?.type == "tag") return pathStateWithEffectiveLabel(tagPathStateForSpace(spaceState), this.spacesIndex);
+            if (spaceState?.type == "tag") return pathStateWithEffectiveDisplay(tagPathStateForSpace(spaceState), this.spacesIndex);
         }
         const pathState = this.pathsIndex.get(path);
-        if (pathState) return pathStateWithEffectiveLabel(pathState, this.spacesIndex);
+        if (pathState) return pathStateWithEffectiveDisplay(pathState, this.spacesIndex);
         const spaceState = this.spacesIndex.get(path);
-        if (spaceState?.type == "tag") return pathStateWithEffectiveLabel(tagPathStateForSpace(spaceState), this.spacesIndex);
+        if (spaceState?.type == "tag") return pathStateWithEffectiveDisplay(tagPathStateForSpace(spaceState), this.spacesIndex);
         return null;
     }
 
@@ -457,7 +423,7 @@ export class Superstate implements ISuperstate {
         });
 
         if (displayMetadataChanged) {
-            await Promise.all(currentPaths.map((path) => this.refreshPathEffectiveLabel(path, space.path)));
+            await Promise.all(currentPaths.map((path) => this.refreshPathDisplay(path, space.path)));
         }
 
         const cachedPromises = diff.map((f) => {
@@ -470,11 +436,11 @@ export class Superstate implements ISuperstate {
         await Promise.all(cachedPromises);
     }
 
-    private async refreshPathEffectiveLabel(path: string, parentSpacePath?: string) {
+    private async refreshPathDisplay(path: string, parentSpacePath?: string) {
         const pathState = this.pathsIndex.get(path);
         if (!pathState) return;
-        const nextPathState = pathStateWithEffectiveLabel(pathState, this.spacesIndex, parentSpacePath);
-        if (_.isEqual(pathState.effectiveLabel, nextPathState.effectiveLabel)) return;
+        const nextPathState = pathStateWithEffectiveDisplay(pathState, this.spacesIndex, parentSpacePath);
+        if (pathState.color == nextPathState.color && pathState.sticker == nextPathState.sticker) return;
         this.pathsIndex.set(path, nextPathState);
         await this.onPathReloaded(path);
         this.dispatchEvent("pathStateUpdated", { path });
@@ -532,11 +498,6 @@ export class Superstate implements ISuperstate {
         }
         this.dispatchEvent("spaceChanged", { path: oldPath, newPath: newSpaceInfo.path });
 
-        for (const spaceCache of this.spacesIndex.values()) {
-            if (spaceCache.metadata?.contexts?.includes(tag)) {
-                saveSpaceCache(this, spaceCache.space, { ...spaceCache.metadata, contexts: spaceCache.metadata.contexts.map((f) => (f == tag ? newTag : f)) });
-            }
-        }
         this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
     }
 
@@ -545,11 +506,6 @@ export class Superstate implements ISuperstate {
             this.deleteTagInPath(tag, path);
         });
         this.onSpaceDeleted(tagSpacePathFromTag(tag));
-        for (const spaceCache of this.spacesIndex.values()) {
-            if (spaceCache.metadata?.contexts?.includes(tag)) {
-                saveSpaceCache(this, spaceCache.space, { ...spaceCache.metadata, contexts: spaceCache.metadata.contexts.filter((f) => f != tag) });
-            }
-        }
         this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
     }
 
@@ -593,7 +549,7 @@ export class Superstate implements ISuperstate {
         await this.reloadPath(path);
         const spaceState = this.spacesIndex.get(path);
         if (spaceState) {
-            const nextSpaceState = await this.reloadSpace(spaceState.space);
+            const nextSpaceState = await this.reloadSpace(spaceState);
             await this.onSpaceDefinitionChanged(nextSpaceState, spaceState.metadata);
         }
         this.dispatchEvent("pathStateUpdated", { path: path });
@@ -606,21 +562,19 @@ export class Superstate implements ISuperstate {
     public async onPathRename(oldPath: string, newPath: string) {
         //assume that space indexer has updated all records properly
         const newFilePath = newPath;
-        const oldFileCache = this.pathsIndex.get(oldPath);
-        const oldSpaces = oldFileCache?.spaces ?? [];
-        if (oldFileCache) {
+        const oldPathState = this.pathsIndex.get(oldPath);
+        const oldSpaces = oldPathState?.spaces ?? [];
+        if (oldPathState) {
             this.spacesMap.delete(oldPath);
             this.spacesMap.deleteInverse(oldPath);
-            this.linksMap.delete(oldPath);
-            this.linksMap.deleteInverse(oldPath);
             this.tagsMap.delete(oldPath);
             this.pathsIndex.delete(oldPath);
 
-            // Index the new path FIRST so it's available when contexts reload
+            // Index the new path first so link and rank updates can resolve it.
             await this.reloadPath(newFilePath, true);
 
             for (const space of oldSpaces.map((f) => this.spacesIndex.get(f)).filter((f) => f)) {
-                await saveSpaceCache(this, space.space, {
+                await saveSpaceCache(this, space, {
                     ...space.metadata,
                     links: replacePathInList(space.metadata?.links, oldPath, newPath),
                     "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newPath),
@@ -674,8 +628,6 @@ export class Superstate implements ISuperstate {
         if (await this.keepHiddenPathOnDelete(path)) return;
 
         this.spacesMap.delete(path);
-        this.linksMap.delete(path);
-        this.linksMap.deleteInverse(path);
         this.persister.remove(path, "path");
         const fileCache = this.pathsIndex.get(path);
 
@@ -688,7 +640,7 @@ export class Superstate implements ISuperstate {
             .filter((f) => f)
             .forEach((space) => {
                 const { [path]: _removedColor, ...fileColors } = space.metadata?.["file-colors"] ?? {};
-                saveSpaceCache(this, space.space, {
+                saveSpaceCache(this, space, {
                     ...space.metadata,
                     links: ensureArray(space.metadata?.links).filter((f) => f != path),
                     "rank-order": ensureArray(space.metadata?.["rank-order"]).filter((f) => f != path),
@@ -704,14 +656,14 @@ export class Superstate implements ISuperstate {
         this.dispatchEvent("pathDeleted", { path });
     }
 
-    public async onSpaceRenamed(oldPath: string, newSpaceInfo: SpaceInfo) {
+    public async onSpaceRenamed(oldPath: string, newSpaceInfo: SpaceState) {
         if (this.spacesIndex.has(oldPath)) {
             const oldmetadata = this.spacesIndex.get(oldPath).metadata;
             this.spacesIndex.set(newSpaceInfo.path, {
                 ...this.spacesIndex.get(oldPath),
                 path: newSpaceInfo.path,
                 name: newSpaceInfo.name,
-                space: newSpaceInfo,
+                space: newSpaceInfo.space,
             });
             this.spacesMap.rename(oldPath, newSpaceInfo.path);
             this.spacesMap.renameInverse(oldPath, newSpaceInfo.path);
@@ -747,41 +699,38 @@ export class Superstate implements ISuperstate {
             return this.reloadSpaceByPath(spacePath);
         }
         if (space.type == "tag") {
-            const newSpaceCache = tagSpaceState(space.space, metadata);
+            const newSpaceCache = tagSpaceState(space, metadata);
             this.spacesIndex.set(spacePath, newSpaceCache);
             this.persister.store(spacePath, JSON.stringify(tagSpaceStateForStore(newSpaceCache)), "space", "");
             this.dispatchEvent("spaceStateUpdated", { path: space.path });
             return newSpaceCache;
         }
-        let spaceDefChanged = false;
+        let spaceDefinitionChanged = false;
 
-        const spaceSort = effectiveSpaceSort(metadata?.sort, this.settings);
-        const sortable = spaceSort.field == "rank";
         if (!_.isEqual(space.metadata.links, metadata.links)) {
-            spaceDefChanged = true;
+            spaceDefinitionChanged = true;
         }
         const newSpaceCache: SpaceState = {
             ...space,
             metadata: metadata,
-            sortable,
         };
         this.spacesIndex.set(spacePath, newSpaceCache);
         this.persister.store(spacePath, JSON.stringify(folderSpaceStateForStore(newSpaceCache)), "space");
         const pathState = this.pathsIndex.get(spacePath);
         if (pathState) {
-            this.pathsIndex.set(spacePath, pathStateWithEffectiveLabel(pathState, this.spacesIndex));
+            this.pathsIndex.set(spacePath, pathStateWithEffectiveDisplay(pathState, this.spacesIndex));
             this.persister.store(spacePath, serializePathState(this.pathsIndex.get(spacePath)), "path");
             this.dispatchEvent("pathStateUpdated", { path: spacePath });
         }
 
-        if (spaceDefChanged) {
+        if (spaceDefinitionChanged) {
             await this.onSpaceDefinitionChanged(newSpaceCache, oldDef);
         }
         this.dispatchEvent("spaceStateUpdated", { path: space.path });
         return newSpaceCache;
     }
 
-    public async reloadSpace(space: SpaceInfo, spaceMetadata?: SpaceDefinition, initialized = true) {
+    public async reloadSpace(space: SpaceState, spaceMetadata?: SpaceDefinition, initialized = true) {
         if (!space) return;
         const uri = this.spaceManager.uriByString(space.path);
         if (!uri) return null;
@@ -797,7 +746,7 @@ export class Superstate implements ISuperstate {
         }
 
         let pathState = this.pathsIndex.get(space.path);
-        const metadata = spaceMetadata ?? (await this.spaceManager.spaceDefForSpace(space.path));
+        const metadata = spaceMetadata ?? (await this.spaceManager.spaceDefinitionForPath(space.path));
         if (!pathState) {
             const pathCache = await this.spaceManager.readPathCache(space.path);
             pathState = {
@@ -805,33 +754,30 @@ export class Superstate implements ISuperstate {
                 name: space.name,
                 tags: pathCache?.tags ?? [],
                 spaces: [],
-                outlinks: [],
+                linkedSpaces: [],
+                pinnedSpaces: [],
                 hidden: false,
                 parent: pathCache?.parent ?? "",
-                metadata: pathCache?.metadata,
+                metadata: pathCache?.metadata ?? {},
                 type: "space",
                 subtype: type,
-                label: pathCache?.label ?? emptyPathLabel(),
+                color: "",
+                sticker: fallbackStickerForPathState({ path: space.path, type: "space", subtype: type } as PathState),
             };
             this.pathsIndex.set(space.path, pathState);
             this.persister.store(space.path, serializePathState(pathState), "path");
         }
 
-        const spaceSort = effectiveSpaceSort(metadata?.sort, this.settings);
-        const sortable = spaceSort.field == "rank" || !spaceSort;
-
         const cache: SpaceState = {
             name: space.name,
-            space: space,
+            space: space.space,
             path: space.path,
             type,
             metadata,
-            dependencies: [],
-            sortable,
         };
         this.spacesIndex.set(space.path, cache);
         if (pathState) {
-            pathState = pathStateWithEffectiveLabel(pathState, this.spacesIndex);
+            pathState = pathStateWithEffectiveDisplay(pathState, this.spacesIndex);
             this.pathsIndex.set(space.path, pathState);
             this.persister.store(space.path, serializePathState(pathState), "path");
         }
@@ -849,18 +795,14 @@ export class Superstate implements ISuperstate {
     }
     private async pathReloaded(path: string, cache: PathState, changed: boolean, force: boolean) {
         if (!cache) return false;
-        cache = pathStateWithEffectiveLabel(cache, this.spacesIndex);
+        cache = pathStateWithEffectiveDisplay(cache, this.spacesIndex);
         this.pathsIndex.set(path, cache);
         await this.onPathReloaded(path);
-        if (cache.subtype == "image") {
-            this.imagesCache.set(cache.metadata.file.filename, path);
-        }
         if (!changed && !force) {
             return false;
         }
 
         this.tagsMap.set(path, new Set(cache.tags));
-        this.linksMap.set(path, new Set(cache.outlinks));
 
         if (!_.isEqual(cache.spaces, Array.from(this.spacesMap.get(path)))) {
             this.spacesMap.set(path, new Set(cache.spaces));

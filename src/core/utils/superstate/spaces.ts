@@ -1,18 +1,23 @@
-import { ensureArray, ensureBoolean, ensureString } from "core/utils/strings";
+import { ensureArray, ensureBoolean, ensureString } from "core/utils/schema";
 import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { TargetLocation } from "shared/types/path";
-import { CacheState, PathState, SpaceState } from "shared/types/PathState";
+import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
-import { SpaceInfo } from "shared/types/spaceInfo";
 import { PathStateWithRank } from "shared/types/superstate";
-import { movePath } from "shared/utils/uri";
+import { movePath } from "utils/uri";
 import { deletePath } from "./path";
 import { addTagToPath, deleteTagFromPath } from "./tags";
 
 const hasOwn = (value: Record<string, any>, key: string) => value != null && Object.prototype.hasOwnProperty.call(value, key);
+
+type RankedItem = {
+    path: string;
+    rank?: number;
+    [key: string]: any;
+};
 
 export const defaultSortForSettings = (settings: MakeMDSettings): SpaceSort => ({
     field: settings?.defaultSpaceSort?.field ?? "name",
@@ -30,6 +35,9 @@ export const effectiveSpaceSort = (value: Partial<SpaceSort>, settings: MakeMDSe
         recursive: hasOwn(value as Record<string, any>, "recursive") ? ensureBoolean(value.recursive) : fallback.recursive,
     };
 };
+
+export const isSpaceSortable = (space: SpaceState, settings: MakeMDSettings): boolean =>
+    effectiveSpaceSort(space?.metadata?.sort, settings).field == "rank";
 
 export const childSpaceSort = (value: Partial<SpaceSort>, parentSort: Partial<SpaceSort>, settings: MakeMDSettings): SpaceSort => {
     const effectiveParentSort = effectiveSpaceSort(parentSort, settings);
@@ -52,6 +60,25 @@ const mergedStoredSpaceSort = (current: Partial<SpaceSort>, update: Partial<Spac
         ...(update ?? {}),
     };
     return storedSpaceSort(next);
+};
+
+const rankOrderForSort = (superstate: Superstate, path: string, sort: SpaceSort): string[] | undefined => {
+    if (typeof superstate.getSpaceItems != "function") return undefined;
+    return [...(superstate.getSpaceItems(path) ?? [])].sort(spaceSortFn(sort)).map((item) => item.path);
+};
+
+const rankOrderWithFoldersFirst = (superstate: Superstate, space: SpaceState): string[] => {
+    const items = superstate.getSpaceItems(space.path) ?? [];
+    const itemsByPath = new Map(items.map((item) => [item.path, item]));
+    const currentOrder = [
+        ...ensureArray(space.metadata?.["rank-order"]).filter((itemPath) => itemsByPath.has(itemPath)),
+        ...items.map((item) => item.path).filter((itemPath) => !ensureArray(space.metadata?.["rank-order"]).includes(itemPath)),
+    ];
+
+    return [
+        ...currentOrder.filter((itemPath) => itemsByPath.get(itemPath)?.type == "space"),
+        ...currentOrder.filter((itemPath) => itemsByPath.get(itemPath)?.type != "space"),
+    ];
 };
 
 export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: MakeMDSettings): SpaceDefinition => {
@@ -134,7 +161,7 @@ export const setPathPinnedInSpace = async (superstate: Superstate, spacePath: st
     await saveSpaceMetadataValue(superstate, space.path, "pinned", nextPinned);
 };
 
-export const pinnedItemsFirst = <T extends CacheState & { path: string }>(items: T[], space: SpaceState, sort: SpaceSort): T[] => {
+export const pinnedItemsFirst = <T extends RankedItem>(items: T[], space: SpaceState, sort: SpaceSort): T[] => {
     const pinned = ensureArray(space?.metadata?.pinned);
     if (pinned.length == 0) return [...items].sort(spaceSortFn(sort));
 
@@ -171,7 +198,7 @@ export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
     return `${!tagSpace && sort.group ? ":" : ""}${fieldLabel}${directionLabel}${!tagSpace && sort.recursive ? "*" : ""}`;
 };
 
-export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: CacheState) => {
+export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: RankedItem) => {
     if (sortStrategy.field == "rank") {
         const aRanked = typeof a.rank == "number" && a.rank >= 0;
         const bRanked = typeof b.rank == "number" && b.rank >= 0;
@@ -198,7 +225,7 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: Cache
         const fieldFunc = (obj: Record<string, any>) => obj?.metadata?.property?.[propName];
         sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc));
     } else if (["ctime", "mtime"].includes(sortStrategy.field)) {
-        const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.file?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field] ?? "";
+        const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field] ?? "";
         sortFns.push((_a: Record<string, any>, _b: Record<string, any>) => {
             const a = sortStrategy.asc ? _a : _b;
             const b = sortStrategy.asc ? _b : _a;
@@ -207,7 +234,7 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: CacheState, b: Cache
             return aValue - bValue;
         });
     } else {
-        const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.file?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field];
+        const fieldFunc = (obj: Record<string, any>) => obj?.[sortStrategy.field] ?? obj?.metadata?.[sortStrategy.field];
         sortFns.push(compareByFieldDeep(fieldFunc, sortStrategy.asc));
     }
     return sortFns.reduce((p, c) => {
@@ -254,7 +281,6 @@ const stagePathRankInSpace = (superstate: Superstate, path: string, previousPath
     superstate.spacesIndex.set(space, {
         ...spaceState,
         metadata: nextMetadata,
-        sortable: true,
     });
 };
 
@@ -298,11 +324,11 @@ export const createSpace = async (superstate: Superstate, path: string, newSpace
     let newSpaceCache;
     if (space) {
         if (!superstate.pathsIndex.has(path)) {
-            return await superstate.reloadSpace(space.space);
+            return await superstate.reloadSpace(space);
             return;
         }
         if (newSpace) {
-            newSpaceCache = await saveSpaceCache(superstate, space.space, newSpace);
+            newSpaceCache = await saveSpaceCache(superstate, space, newSpace);
         } else {
             return;
         }
@@ -334,7 +360,7 @@ export const saveSpaceProperties = async (superstate: Superstate, space: string,
     superstate.spaceManager.saveSpace(space, (metadata) => metadata, properties);
 };
 
-export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceInfo, metadata: SpaceDefinition) => {
+export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceState, metadata: SpaceDefinition) => {
     const spaceCache = superstate.spacesIndex.get(spaceInfo.path);
     const nextMetadata = { ...(spaceCache?.metadata ?? {}), ...metadata };
     if (spaceCache?.type != "tag") {
@@ -386,7 +412,7 @@ export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: Spac
         spaceExists.push(path);
     }
 
-    await saveSpaceCache(superstate, space.space, { ...space.metadata, links: spaceExists });
+    await saveSpaceCache(superstate, space, { ...space.metadata, links: spaceExists });
 
     const currentSpaces = superstate.spacesMap.get(path);
     superstate.spacesMap.set(path, new Set([...currentSpaces, space.path]));
@@ -418,6 +444,7 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
     if (sort == null) {
         if (!space.metadata?.sort)
             return;
+        const nextRankOrder = rankOrderForSort(superstate, path, defaultSortForSettings(superstate.settings));
         if (space.type != "tag") {
             const defPath = space.space?.defPath;
             const defExists = defPath ? await superstate.spaceManager.pathExists(defPath) : false;
@@ -425,19 +452,25 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
                 superstate.spaceManager.saveSpace(path, (metadata) => ({
                     ...metadata,
                     sort: undefined,
+                    ...(nextRankOrder != undefined ? { "rank-order": nextRankOrder } : {}),
                 }));
             }
         }
         await superstate.updateSpaceMetadata(path, {
             ...space.metadata,
             sort: undefined,
+            ...(nextRankOrder != undefined ? { "rank-order": nextRankOrder } : {}),
         });
         return;
     }
 
     const currentStoredSort = storedSpaceSort(space.metadata?.sort);
     const nextStoredSort = mergedStoredSpaceSort(currentStoredSort, sort);
-    if (JSON.stringify(currentStoredSort) == JSON.stringify(nextStoredSort))
+    const currentSort = effectiveSpaceSort(currentStoredSort, superstate.settings);
+    const nextSort = effectiveSpaceSort(nextStoredSort, superstate.settings);
+    const shouldGroupCurrentRankOrder = space.type != "tag" && currentSort.field == "rank" && nextSort.field == "rank" && currentSort.group != true && nextSort.group == true;
+    const nextRankOrder = shouldGroupCurrentRankOrder ? rankOrderWithFoldersFirst(superstate, space) : undefined;
+    if (JSON.stringify(currentStoredSort) == JSON.stringify(nextStoredSort) && nextRankOrder == undefined)
         return;
 
     if (space.type == "tag") {
@@ -451,15 +484,17 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
     await superstate.spaceManager.saveSpace(path, (metadata) => ({
         ...metadata,
         sort: nextStoredSort,
+        ...(nextRankOrder != undefined ? { "rank-order": nextRankOrder } : {}),
     }));
     await superstate.updateSpaceMetadata(path, {
         ...space.metadata,
         sort: nextStoredSort,
+        ...(nextRankOrder != undefined ? { "rank-order": nextRankOrder } : {}),
     });
 };
 
-export const metadataPathForSpace = (_superstate: Superstate, space: SpaceInfo) => {
-    return space.defPath;
+export const metadataPathForSpace = (_superstate: Superstate, space: SpaceState) => {
+    return space.space.defPath;
 };
 
 export const removePathsFromSpace = async (superstate: Superstate, spacePath: string, paths: string[]) => {
@@ -498,14 +533,12 @@ export const newPathInSpace = async (superstate: Superstate, space: SpaceState, 
     return newPath;
 };
 
-export const saveLabel = (superstate: Superstate, path: string, label: string, value: string) => {
-    superstate.spaceManager.saveLabel(path, label, value);
-};
 
 export const saveProperties = (superstate: Superstate, path: string, properties: Record<string, any>) => {
-    if (superstate.spacesIndex.has(path)) {
-        return saveSpaceProperties(superstate, path, properties);
-    } else {
-        return superstate.spaceManager.saveProperties(path, properties);
-    }
+    console.log('TRACE saveProperties', {path, properties})
+    // if (superstate.spacesIndex.has(path)) {
+    //     return saveSpaceProperties(superstate, path, properties);
+    // } else {
+    //     return superstate.spaceManager.saveProperties(path, properties);
+    // }
 };

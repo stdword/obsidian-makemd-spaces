@@ -1,6 +1,6 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import StickerModal, { defaultStickerCategory } from "shared/components/StickerModal";
+import StickerModal, { defaultStickerCategory } from "core/react/components/StickerModal";
 
 describe("StickerModal", () => {
     it("opens on the lucide sticker category by default", () => {

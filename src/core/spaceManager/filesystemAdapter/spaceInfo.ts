@@ -1,41 +1,47 @@
 import { pathInSpaceFolder } from "core/utils/superstate/space";
-import { FilesystemSpaceInfo } from "shared/types/spaceInfo";
-import { tagToTagPath } from "utils/tags";
+import { FilesystemSpaceInfo, SpaceState } from "shared/types/PathState";
+import { encodeSpaceName, tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { builtinSpaces } from "schemas/space";
-import { DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE, SPACE_DEF_PATH } from "schemas/constants";
+import { DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE, SPACE_CONFIG_PATH } from "schemas/constants";
 import { builtinSpacePathPrefix } from "schemas/builtin";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { removeTrailingSlashFromFolder } from "utils/paths";
 import { folderPathToString } from "utils/path";
-import { encodeSpaceName, tagSpacePathFromTag } from "../../utils/strings";
+import { tagSpacePathFromTag } from "schemas/builtin";
 
-export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): FilesystemSpaceInfo => {
+export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): SpaceState => {
     const path = tagSpacePathFromTag(tag.toLowerCase());
     const folderPath = tagToTagPath(tag);
     return {
+        type: "tag",
         name: tag.replace(/^#/, ""),
         path,
-
-        folderPath,
-        defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
-        notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
+        space: {
+            folderPath,
+            defPath: pathInSpaceFolder(folderPath, SPACE_CONFIG_FILE),
+            notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
+        },
+        metadata: {},
     };
 };
 
-export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: string): FilesystemSpaceInfo => {
+export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: string): SpaceState => {
     if (!contextPath) return;
     if (contextPath.startsWith(builtinSpacePathPrefix)) {
         const builtinPath = contextPath.slice(builtinSpacePathPrefix.length);
 
         const folderPath = "$" + builtinPath;
         return {
+            type: "tag",
             name: builtinSpaces[builtinPath].name,
             path: contextPath,
-
-            folderPath,
-            defPath: pathInSpaceFolder(folderPath, SPACE_DEF_FILE),
-            notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
+            space: {
+                folderPath,
+                defPath: pathInSpaceFolder(folderPath, SPACE_CONFIG_FILE),
+                notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
+            },
+            metadata: {},
         };
     }
     const uri = manager.uriByString(contextPath);
@@ -55,25 +61,30 @@ export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: st
     return null;
 };
 
-export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: string): FilesystemSpaceInfo => {
+export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: string): SpaceState => {
     if (folder == "/") {
-        const vaultName = "Vault";
         return {
+            type: "folder",
             name: DEFAULT_SYSTEM_NAME,
-
             path: folder,
-            folderPath: folder,
-            defPath: SPACE_DEF_PATH,
-            notePath: "",
+            space: {
+                folderPath: folder,
+                defPath: SPACE_CONFIG_PATH,
+                notePath: "",
+            },
+            metadata: {},
         };
     }
     const folderName = folderPathToString(folder);
     return {
+        type: "folder",
         name: folderName,
-
         path: folder,
-        folderPath: folder,
-        defPath: folder + `/${SPACE_DEF_PATH}`,
-        notePath: folder + "/" + folderName + ".md",
+        space: {
+            folderPath: folder,
+            defPath: folder + `/${SPACE_CONFIG_PATH}`,
+            notePath: folder + "/" + folderName + ".md",
+        },
+        metadata: {},
     };
 };

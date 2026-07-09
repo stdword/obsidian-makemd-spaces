@@ -4,8 +4,8 @@ import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { useContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
-import { windowFromDocument } from "shared/utils/dom";
-import StickerModal from "../../../../../shared/components/StickerModal";
+import { windowFromDocument } from "utils/dom";
+import StickerModal from "../../StickerModal";
 import { showOpenMenuInRect } from "./SpaceTreeVirtualized";
 
 export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveFocus: (focus: Focus) => void }) => {

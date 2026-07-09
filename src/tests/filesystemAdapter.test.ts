@@ -1,6 +1,6 @@
 import { fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { FilesystemSpaceAdapter } from "core/spaceManager/filesystemAdapter/filesystemAdapter";
-import { SPACE_DEF_DEFAULT_CONTENT } from "schemas/constants";
+import { SPACE_CONFIG_DEFAULT_CONTENT } from "schemas/constants";
 
 describe("FilesystemSpaceAdapter", () => {
     const createAdapter = () => {
@@ -99,7 +99,7 @@ describe("FilesystemSpaceAdapter", () => {
 
         expect(tagSpace.name).toBe("books/psy");
         expect(tagSpace.path).toBe("spaces://#books/psy");
-        expect(tagSpace.folderPath).toBe("#books+psy");
+        expect(tagSpace.space.folderPath).toBe("#books+psy");
     });
 
     it("uses the folder name for folder note paths without reading folder-note settings", () => {
@@ -111,12 +111,12 @@ describe("FilesystemSpaceAdapter", () => {
 
         const space = fileSystemSpaceInfoFromFolder(manager as any, "Projects/Alpha");
 
-        expect(space.defPath).toBe("Projects/Alpha/.space/context.json");
-        expect(space.notePath).toBe("Projects/Alpha/Alpha.md");
+        expect(space.space.defPath).toBe("Projects/Alpha/.space/context.json");
+        expect(space.space.notePath).toBe("Projects/Alpha/Alpha.md");
     });
 
     it("creates context.json default content without sort until sort is explicitly changed", () => {
-        expect(JSON.parse(SPACE_DEF_DEFAULT_CONTENT())).toEqual({
+        expect(JSON.parse(SPACE_CONFIG_DEFAULT_CONTENT())).toEqual({
             color: "",
             sticker: "",
             defaultColor: "",
@@ -148,7 +148,7 @@ describe("FilesystemSpaceAdapter", () => {
     it("does not create context.json while reading missing metadata", async () => {
         const { adapter, text } = createAdapter();
 
-        const metadata = await adapter.spaceDefForSpace("Projects");
+        const metadata = await adapter.spaceDefinitionForPath("Projects");
 
         expect(metadata.sort).toBeUndefined();
         expect(text.has("Projects/.space/context.json")).toBe(false);
@@ -231,6 +231,27 @@ describe("FilesystemSpaceAdapter", () => {
         expect(folders.has("Projects/.space")).toBe(false);
     });
 
+    it("deletes context.json after clearing manual sort when rank-order matches the default grouped sort", async () => {
+        const { adapter, text, files, folders } = createAdapter();
+
+        adapter.spaceManager.superstate.getSpaceItems = jest.fn(() => [
+            { path: "Projects/Folder", name: "Folder", type: "space" },
+            { path: "Projects/Alpha.md", name: "Alpha", type: "file" },
+            { path: "Projects/Beta.md", name: "Beta", type: "file" },
+        ]);
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({
+            ...metadata,
+            sort: { field: "rank", asc: true },
+            "rank-order": ["Projects/Folder", "Projects/Alpha.md", "Projects/Beta.md"],
+        }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: undefined }));
+
+        expect(text.has("Projects/.space/context.json")).toBe(false);
+        expect(files.has("Projects/.space/context.json")).toBe(false);
+        expect(folders.has("Projects/.space")).toBe(false);
+    });
+
     it("deletes context.json when file-colors only contains cleared colors", async () => {
         const { adapter, text, files, folders } = createAdapter();
 
@@ -294,10 +315,12 @@ describe("FilesystemSpaceAdapter", () => {
 
         await expect(adapter.readPathCache("Projects/HiddenFolder")).resolves.toEqual(
             expect.objectContaining({
-                file: expect.objectContaining({ path: "Projects/HiddenFolder", isFolder: true }),
                 type: "space",
                 subtype: "folder",
+                name: "HiddenFolder",
+                path: "Projects/HiddenFolder",
                 parent: "Projects",
+                metadata: {},
             }),
         );
     });

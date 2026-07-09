@@ -1,4 +1,5 @@
 import { parseMetadata } from "core/superstate/metadataParsing";
+import { serializePathState } from "core/utils/superstate/serializer";
 import { SpaceState } from "shared/types/PathState";
 
 describe("parseMetadata", () => {
@@ -28,19 +29,15 @@ describe("parseMetadata", () => {
             spacesCache,
             {
                 metadata: {},
-                name: "Child.md",
+                name: "Child",
                 ctime: 0,
-                label: {
-                    sticker: "",
-                    color: "",
-                },
                 contentTypes: [],
                 tags: [],
                 type: "file",
                 subtype: "md",
                 parent: "Parent",
                 readOnly: false,
-            },
+            } as any,
             "Child.md",
             "file",
             "md",
@@ -48,8 +45,7 @@ describe("parseMetadata", () => {
             null,
         );
 
-        expect(cache.label.color).toBe("");
-        expect(cache.effectiveLabel.color).toBe("#00aaee");
+        expect(cache.color).toBe("#00aaee");
     });
 
     it("derives display name from file metadata without label name", () => {
@@ -58,26 +54,21 @@ describe("parseMetadata", () => {
             settings,
             new Map(),
             {
-                metadata: {},
-                ctime: 0,
-                name: "Child.md",
-                label: {
-                    sticker: "",
-                    color: "",
+                metadata: {
+                    ctime: 0,
+                    mtime: 0,
+                    size: 0,
                 },
-                contentTypes: [],
+                name: "Child",
                 tags: [],
                 type: "file",
                 subtype: "md",
                 parent: "Parent",
-                readOnly: false,
-                file: {
-                    name: "Child",
-                    filename: "Child.md",
-                    path: "Parent/Child.md",
-                    extension: "md",
-                },
-            },
+                path: "Parent/Child.md",
+                hidden: false,
+                spaces: [],
+                linkedSpaces: [],
+            } as any,
             "Child.md",
             "file",
             "md",
@@ -116,10 +107,6 @@ describe("parseMetadata", () => {
                 metadata: {},
                 ctime: 0,
                 name: "context",
-                label: {
-                    sticker: "",
-                    color: "",
-                },
                 contentTypes: [],
                 tags: [],
                 type: "file",
@@ -132,7 +119,7 @@ describe("parseMetadata", () => {
                     path: "Atlas/Obsidian/.space/context.json",
                     extension: "json",
                 },
-            },
+            } as any,
             "Obsidian",
             "space",
             "folder",
@@ -165,10 +152,6 @@ describe("parseMetadata", () => {
                     metadata: {},
                     ctime: 0,
                     name,
-                    label: {
-                        sticker: "ui//cached",
-                        color: "",
-                    },
                     contentTypes: [],
                     tags: [],
                     type: "file",
@@ -178,7 +161,7 @@ describe("parseMetadata", () => {
                     file: {
                         extension,
                     },
-                },
+                } as any,
                 name,
                 "file",
                 extension,
@@ -186,12 +169,11 @@ describe("parseMetadata", () => {
                 null,
             );
 
-            expect(cache.label.sticker).toBe("ui//cached");
-            expect(cache.effectiveLabel.sticker).toBe(sticker);
+            expect(cache.sticker).toBe(sticker);
         });
     });
 
-    it("uses cached sticker for folders", () => {
+    it("uses default sticker for folders", () => {
         const { cache } = parseMetadata(
             "Projects",
             settings,
@@ -200,17 +182,13 @@ describe("parseMetadata", () => {
                 metadata: {},
                 ctime: 0,
                 name: "Projects",
-                label: {
-                    sticker: "emoji//1f4c1",
-                    color: "",
-                },
                 contentTypes: [],
                 tags: [],
                 type: "space",
                 subtype: "folder",
                 parent: "",
                 readOnly: false,
-            },
+            } as any,
             "Projects",
             "space",
             "folder",
@@ -218,7 +196,7 @@ describe("parseMetadata", () => {
             null,
         );
 
-        expect(cache.label.sticker).toBe("emoji//1f4c1");
+        expect(cache.sticker).toBe("ui//folder");
     });
 
     it("does not copy space definition into folder path metadata", () => {
@@ -234,10 +212,6 @@ describe("parseMetadata", () => {
                 },
                 ctime: 0,
                 name: "Projects",
-                label: {
-                    sticker: "emoji//1f4c1",
-                    color: "",
-                },
                 contentTypes: [],
                 tags: [],
                 type: "space",
@@ -252,7 +226,7 @@ describe("parseMetadata", () => {
             null,
         );
 
-        expect(cache.metadata.definition).toBeUndefined();
+        expect((cache.metadata as any).definition).toBeUndefined();
     });
 
     it("keeps hidden files visible in spaces where they are linked or pinned", () => {
@@ -294,17 +268,13 @@ describe("parseMetadata", () => {
                 metadata: {},
                 ctime: 0,
                 name: "Hidden.md",
-                label: {
-                    sticker: "",
-                    color: "",
-                },
                 contentTypes: [],
                 tags: [],
                 type: "file",
                 subtype: "md",
                 parent: "Projects",
                 readOnly: false,
-            },
+            } as any,
             "Hidden.md",
             "file",
             "md",
@@ -315,5 +285,45 @@ describe("parseMetadata", () => {
         expect(cache.hidden).toBe(true);
         expect(cache.spaces).toEqual(["Projects", "Pinned"]);
         expect(cache.linkedSpaces).toEqual(["Projects"]);
+        expect(cache.pinnedSpaces).toEqual(["Pinned"]);
+    });
+
+    it("serializes only persisted path fields", () => {
+        const serialized = JSON.parse(
+            serializePathState({
+                type: "file",
+                subtype: "md",
+                metadata: {
+                    ctime: 1685026609752,
+                    mtime: 1766814740400,
+                    size: 171,
+                },
+                name: "Note",
+                path: "Content/Books/Library/Note.md",
+                parent: "Content/Books/Library",
+                tags: [],
+                hidden: true,
+                spaces: [],
+                linkedSpaces: [],
+                color: "#ffaa00",
+                sticker: "ui//file-text",
+                pinnedSpaces: ["Pinned"],
+            }),
+        );
+
+        expect(serialized).toEqual({
+            type: "file",
+            subtype: "md",
+            metadata: {
+                ctime: 1685026609752,
+                mtime: 1766814740400,
+                size: 171,
+            },
+            name: "Note",
+            path: "Content/Books/Library/Note.md",
+            parent: "Content/Books/Library",
+            tags: [],
+            hidden: true,
+        });
     });
 });

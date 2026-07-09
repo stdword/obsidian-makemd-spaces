@@ -1,4 +1,4 @@
-import { EmojiData } from "../types/emojis";
+import { EmojiData } from "shared/types/emojis";
 
 export const emojis = {
   smileys_people: [

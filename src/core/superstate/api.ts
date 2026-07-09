@@ -1,16 +1,13 @@
 import { showPathContextMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
-import { parseFieldValue } from "utils/parseFieldValue";
-import { SelectOption, SpaceManager } from "makemd-core";
-import { SpaceManagerInterface } from "shared/types/spaceManager";
+import { SpaceManager } from "makemd-core";
+import { ISpaceManager } from "shared/types/spaceManager";
 import { PathState } from "shared/types/superstate";
-import { stickerForField } from "schemas/mdb";
 import { IAPI } from "shared/types/api";
 import { SpaceProperty } from "shared/types/mdb";
 import { TargetLocation } from "shared/types/path";
-import { windowFromDocument } from "shared/utils/dom";
-import { parseMDBStringValue } from "utils/properties";
+import { windowFromDocument } from "utils/dom";
 import { ISuperstate } from "shared/types/superstate";
-import { newPathInSpace, saveProperties } from "./utils/spaces";
+import { newPathInSpace, saveProperties } from "core/utils/superstate/spaces";
 
 // Interface for the minimal space manager functionality needed by API
 export interface APISpaceManager {
@@ -20,33 +17,37 @@ export interface APISpaceManager {
 
 export class API implements IAPI {
     private superstate: ISuperstate;
-    private spaceManager: SpaceManager | SpaceManagerInterface | APISpaceManager; // Can be SpaceManager, SpaceManagerInterface or SpaceManagerContext
+    private spaceManager: SpaceManager | ISpaceManager | APISpaceManager; // Can be SpaceManager, SpaceManagerInterface or SpaceManagerContext
 
-    public constructor(superstate: ISuperstate, spaceManager?: SpaceManager | SpaceManagerInterface | APISpaceManager) {
+    public constructor(superstate: ISuperstate, spaceManager?: SpaceManager | ISpaceManager | APISpaceManager) {
         this.superstate = superstate;
         this.spaceManager = spaceManager || superstate.spaceManager;
     }
     public properties = {
         color: (property: SpaceProperty, value: string) => {
             if (property?.type?.includes("option")) {
-                const fields = parseFieldValue(property.value, property.type);
-                const option = (fields.options as SelectOption[])?.find((f) => f.value == value);
-                if (option?.color.length > 0) return option.color;
+                console.log('TRACE API properties.color parsing', {property, value})
+                // const fields = parseFieldValue(property.value, property.type);
+                // const option = (fields.options as SelectOption[])?.find((f) => f.value == value);
+                // if (option?.color.length > 0) return option.color;
+                return value
             }
             return "var(--mk-ui-background-contrast)";
         },
-        sticker: (property: SpaceProperty) => property && stickerForField(property),
+        sticker: (property: SpaceProperty) => {
+            console.log('TRACE API properties.sticker parsing', {property})
+            // return property && stickerForField(property)
+            return property.toString()
+        },
         value: (type: string, value: string) => {
             if (!type) return value;
-            return parseMDBStringValue(type, value, false);
+            console.log('TRACE API properties.value parsing', {type, value})
+            // return parseMDBStringValue(type, value, false);
+            return value
         },
     };
 
     public path = {
-        label: (path: string) => {
-            const pathState = this.spaceManager.getPathState(path);
-            return pathState?.effectiveLabel ?? pathState?.label;
-        },
         open: (path: string, target?: TargetLocation, source?: string) => {
             const resolvedPath = source ? this.spaceManager.resolvePath(path, source) : path;
             this.superstate.ui.openPath(resolvedPath, target);

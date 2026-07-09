@@ -1,54 +1,18 @@
 import MakeMDPlugin from "main";
-import { AFile, FileTypeAdapter, FilesystemMiddleware, PathLabel } from "makemd-core";
-import { App, CachedMetadata, TFile, TFolder } from "obsidian";
-import { uniq } from "shared/utils/array";
-import { parseMultiDisplayString } from "utils/parsers";
-import { ensureTag } from "utils/tags";
+import { AFile, FileTypeAdapter, FilesystemMiddleware } from "makemd-core";
+import { App, getAllTags, TFile, TFolder } from "obsidian";
 import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
 import { getAbstractFileAtPath, tFileToAFile } from "../utils/file";
 
-type MarkdownCache = {
-    tags: string[];
-    label: PathLabel;
-};
 
 type MarkdownContent = {
     tags: string[];
 };
 
-const tagsFromCache = (cache: CachedMetadata): string[] => {
-    const tags: string[] = [];
-    if (cache?.tags) tags.push(...(cache.tags.map((f) => f.tag) ?? []));
-    if (cache?.frontmatter?.tags) {
-        tags.push(
-            ...(typeof cache.frontmatter.tags === "string"
-                ? parseMultiDisplayString(cache.frontmatter.tags.replace(/ /g, ""))
-                : Array.isArray(cache.frontmatter.tags)
-                  ? (cache.frontmatter.tags ?? [])
-                  : []
-            )
-                .filter((f) => typeof f === "string")
-                .map((f) => ensureTag(f)),
-        );
-    }
-    if (cache?.frontmatter?.tag) {
-        tags.push(
-            ...(typeof cache.frontmatter.tag === "string"
-                ? parseMultiDisplayString(cache.frontmatter.tag.replace(/ /g, ""))
-                : Array.isArray(cache.frontmatter.tag)
-                  ? (cache.frontmatter.tag ?? [])
-                  : []
-            )
-                .filter((f) => typeof f === "string")
-                .map((f) => ensureTag(f)),
-        );
-    }
-    return uniq(tags.filter((f) => f));
-};
 
-export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<MarkdownCache, MarkdownContent> {
+export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<MarkdownContent, MarkdownContent> {
     public id = "metadata.obsidian.md";
-    public cache: Map<string, MarkdownCache>;
+    public cache: Map<string, MarkdownContent>;
     public supportedFileTypes = ["md"];
     public middleware: FilesystemMiddleware;
     public app: App;
@@ -67,23 +31,22 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
     }
 
     public async parseCache(file: AFile, refresh?: boolean) {
-        if (!file) return;
+        if (!file)
+            return;
+
         const metadata = this.app.metadataCache.getCache(file.path);
-        if (!metadata) return;
-        const label = this.middleware.getFileCache(file.path)?.label;
-        const updatedCache: MarkdownCache = {
-            tags: tagsFromCache(metadata),
-            label: {
-                sticker: label?.sticker,
-                color: label?.color,
-            },
+        if (!metadata)
+            return;
+
+        const updatedCache: MarkdownContent = {
+            tags: getAllTags(metadata),
         };
 
         this.cache.set(file.path, updatedCache);
         this.middleware.updateFileCache(file.path, updatedCache, refresh);
     }
 
-    public cacheTypes(_file: AFile): (keyof MarkdownCache)[] {
+    public cacheTypes(_file: AFile): (keyof MarkdownContent)[] {
         return ["tags"];
     }
 
@@ -95,14 +58,14 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
         return null;
     }
 
-    public getCache(file: AFile, fragmentType: keyof MarkdownCache, _query?: any) {
-        return this.cache.get(file.path)?.[fragmentType] as MarkdownCache[typeof fragmentType];
+    public getCache(file: AFile, fragmentType: keyof MarkdownContent, _query?: any) {
+        return this.cache.get(file.path)?.[fragmentType] as MarkdownContent[typeof fragmentType];
     }
 
     public async readContent(file: AFile, fragmentType: keyof MarkdownContent, _fragmentId: any) {
         if (fragmentType == "tags") {
             const tFile = getAbstractFileAtPath(this.app, file.path) as TFile;
-            return tagsFromCache(this.app.metadataCache.getFileCache(tFile));
+            return getAllTags(this.app.metadataCache.getFileCache(tFile));
         }
         return null;
     }
@@ -124,5 +87,4 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
 
     public newContent: (file: AFile, fragmentType: keyof MarkdownContent, fragmentId: string, content: MarkdownContent[keyof MarkdownContent], options: { [key: string]: any }) => Promise<any>;
     public saveContent: (file: AFile, fragmentType: keyof MarkdownContent, fragmentId: string, content: (prev: any) => any) => Promise<boolean>;
-    public deleteContent: (file: AFile, fragmentType: keyof MarkdownContent, fragmentId: any) => void;
 }

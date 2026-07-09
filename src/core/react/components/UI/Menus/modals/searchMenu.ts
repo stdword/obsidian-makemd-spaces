@@ -3,8 +3,8 @@ import { MakeMDSettings } from "shared/types/settings";
 import i18n from "shared/i18n";
 import { Superstate } from "makemd-core";
 import { Rect } from "shared/types/Pos";
-import { syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
-import { SpaceInfo } from "shared/types/spaceInfo";
+import { syncTagSpacesFromObsidian } from "core/utils/superstate/tags";
+import { SpaceState } from "shared/types/PathState";
 import { excludePathPredicate } from "utils/hide";
 
 export type SearchMenuTab = "folders" | "files" | "tags" | "refs";
@@ -67,7 +67,7 @@ export const searchMenuOptionSort = (a: SelectOption, b: SelectOption) => {
 
 const pathStickerForSearch = (superstate: Superstate, path: string) => {
     const pathState = (superstate as any).pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
-    return pathState?.effectiveLabel?.sticker ?? pathState?.label?.sticker;
+    return pathState?.sticker;
 };
 
 const spacesForSearch = (superstate: Superstate, ordered: boolean, hidden?: boolean, includeUnindexedFolders?: boolean) => {
@@ -75,7 +75,7 @@ const spacesForSearch = (superstate: Superstate, ordered: boolean, hidden?: bool
     if (!hidden || !includeUnindexedFolders) return spaces;
 
     const indexedPaths = new Set(spaces.map((space) => space.path));
-    const adapterSpaces: SpaceInfo[] = (superstate.spaceManager as any)?.allSpaces?.(true) ?? [];
+    const adapterSpaces: SpaceState[] = (superstate.spaceManager as any)?.allSpaces?.(true) ?? [];
     const missingFolderSpaces = adapterSpaces
         .filter((space) => !indexedPaths.has(space.path))
         .map((space) => ({
@@ -103,7 +103,7 @@ const searchMenuOptions = (superstate: Superstate, tabs: SearchMenuTab[], visibl
             .filter((f) => f.type == "file" && (hidden || !isHiddenForSearch(superstate, f.path)))
             .map<SelectOption>((f) => ({
                 section: 'files',
-                icon: f.effectiveLabel?.sticker ?? f.label?.sticker,
+                icon: f.sticker,
                 name: f.name,
                 description: f.path.replace(/[^\/]+$/, ""),
                 value: f.path,

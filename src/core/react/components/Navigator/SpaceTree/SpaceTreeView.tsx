@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/superstate/utils/spaces";
+import { TreeNode, childSpaceSort, effectiveSpaceSort, isSpaceSortable, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
@@ -34,17 +34,18 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const spaceCollapsed = !expandedSpaces.includes(id);
     const parentSort = effectiveSpaceSort(sort, superstate.settings);
     const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
+    const childrenSortable = isSpaceSortable(space, superstate.settings);
     let children = superstate.getSpaceItems(space.path) ?? [];
     children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (!spaceCollapsed || root) {
         pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
             const _parentId = parentId ? parentId + "/" + space.path : space.path;
-            const pinned = isPathPinnedInSpace(space, item.path);
+            const pinned = item.pinnedSpaces?.includes(space.path);
             if (item.type != "space") {
-                tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, depth + 1, 0, true, space.sortable, 0, _parentId, pinned));
+                tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, depth + 1, 0, true, childrenSortable, 0, _parentId, pinned));
             } else {
                 if (superstate.spacesIndex.has(item.path)) {
-                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, activeId, space.sortable, false, space.path, spaceSort, expandedSpaces, pinned));
+                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, activeId, childrenSortable, false, space.path, spaceSort, expandedSpaces, pinned));
                 }
             }
         });
@@ -58,6 +59,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
 
     const pathIndex = superstate.pathStateForPath(space.path);
     const spaceSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
+    const childrenSortable = isSpaceSortable(space, superstate.settings);
     let children = superstate.getSpaceItems(space.path) ?? [];
     children = hideFolderNoteFileFromItems(superstate, space.path, children);
     if (pathIndex)
@@ -71,7 +73,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
             item: pathIndex,
             rank: null,
             collapsed: expandedSpaces.includes(space.path) ? false : true,
-            sortable: space.sortable,
+            sortable: childrenSortable,
             childrenCount: children.length,
             type: "group",
             sort: spaceSort,
@@ -82,13 +84,13 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
     }
     pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
         const _parentId = space.path;
-        const pinned = isPathPinnedInSpace(space, item.path);
+        const pinned = item.pinnedSpaces?.includes(space.path);
         if (item.type != "space") {
             const id = _parentId + "/" + item.path;
             const itemCollapsed = !expandedSpaces.includes(id);
-            tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, 1, 0, itemCollapsed, space.sortable, 0, _parentId, pinned));
+            tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
         } else {
-            if (superstate.spacesIndex.has(item.path)) tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, 1, _parentId, active?.id, space.sortable, false, space.path, spaceSort, expandedSpaces, pinned));
+            if (superstate.spacesIndex.has(item.path)) tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, 1, _parentId, active?.id, childrenSortable, false, space.path, spaceSort, expandedSpaces, pinned));
         }
     });
     return tree;

@@ -6,7 +6,7 @@ import i18n from "shared/i18n";
 import React, { forwardRef, useContext, useRef } from "react";
 import { Focus } from "shared/types/focus";
 import { Rect } from "shared/types/Pos";
-import { windowFromDocument } from "shared/utils/dom";
+import { windowFromDocument } from "utils/dom";
 import { ConfirmationModal } from "../../UI/Modals/ConfirmationModal";
 import { defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";

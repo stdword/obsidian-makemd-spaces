@@ -9,11 +9,11 @@ jest.mock("core/superstate/workers/indexer/indexer", () => ({
 }));
 
 import { Superstate } from "core/superstate/superstate";
-import { savePathColor } from "core/superstate/utils/label";
-import { spaceSortFn } from "core/superstate/utils/spaces";
+import { savePathColor } from "core/utils/superstate/label";
+import { isSpaceSortable, spaceSortFn } from "core/utils/superstate/spaces";
 import { saveColorForPaths } from "core/utils/emoji";
-import { addTag, syncTagSpacesFromObsidian } from "core/superstate/utils/tags";
-import { tagSpacePathFromTag } from "core/utils/strings";
+import { addTag, syncTagSpacesFromObsidian } from "core/utils/superstate/tags";
+import { tagSpacePathFromTag } from "schemas/builtin";
 
 const createSuperstate = () => {
     const spaceManager = {
@@ -25,15 +25,20 @@ const createSuperstate = () => {
         loadPath: jest.fn(),
         createSpace: jest.fn(() => Promise.resolve()),
         saveSpace: jest.fn(() => Promise.resolve()),
-        spaceDefForSpace: jest.fn(() => Promise.resolve({})),
+        spaceDefinitionForPath: jest.fn(() => Promise.resolve({})),
         spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.replace("spaces://#", "") })),
         readPathCache: jest.fn((path: string) =>
             Promise.resolve({
                 metadata: {},
-                label: { sticker: "", color: "" },
+                name: path.split("/").pop() ?? path,
+                type: path.includes(".") ? "file" : "space",
+                subtype: path.includes(".") ? path.split(".").pop() : "folder",
                 parent: "",
                 tags: [],
                 path,
+                hidden: false,
+                spaces: [],
+                linkedSpaces: [],
             }),
         ),
         uriByString: jest.fn(),
@@ -99,10 +104,8 @@ describe("Superstate tag initialization", () => {
                 path: tagSpacePathFromTag("#project"),
                 type: "space",
                 subtype: "tag",
-                effectiveLabel: {
-                    sticker: "lucide//hash",
-                    color: "",
-                },
+                sticker: "lucide//hash",
+                color: "",
             }),
         );
     });
@@ -185,9 +188,7 @@ describe("Superstate tag initialization", () => {
                 subtype: "md",
                 tags: [],
                 spaces: ["Projects"],
-                outlinks: [],
                 hidden: false,
-                label: { sticker: "", color: "" },
             });
         });
 
@@ -225,14 +226,17 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: [],
             spaces: ["Projects"],
-            outlinks: [],
+            linkedSpaces: [],
+            pinnedSpaces: [],
             hidden: false,
-            label: { sticker: "", color: "" },
+            color: "",
+            sticker: "ui//file-text",
+            metadata: {},
         });
 
         const colorSave = savePathColor(superstate, "Projects/Alpha.md", "#123456");
 
-        expect(superstate.pathsIndex.get("Projects/Alpha.md").effectiveLabel.color).toBe("#123456");
+        expect(superstate.pathsIndex.get("Projects/Alpha.md").color).toBe("#123456");
 
         await Promise.resolve();
         resolveSave();
@@ -259,7 +263,7 @@ describe("Superstate tag initialization", () => {
                 return Promise.resolve([
                     {
                         path: tagSpacePathFromTag("#project"),
-                        cache: JSON.stringify({ path: tagSpacePathFromTag("#project"), type: "space", subtype: "tag", label: { sticker: "", color: "" } }),
+                        cache: JSON.stringify({ path: tagSpacePathFromTag("#project"), type: "space", subtype: "tag", name: "project", parent: "", metadata: {}, tags: [], hidden: false, spaces: [], linkedSpaces: [] }),
                     },
                 ]);
             return Promise.resolve([]);
@@ -273,7 +277,7 @@ describe("Superstate tag initialization", () => {
             "rank-order": ["Tagged.md"],
             pinned: [],
         });
-        expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).space.path).toBe(tagSpacePathFromTag("#project"));
+        expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).path).toBe(tagSpacePathFromTag("#project"));
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
         expect(superstate.persister.remove).not.toHaveBeenCalledWith(tagSpacePathFromTag("#project"), "path");
     });
@@ -291,9 +295,7 @@ describe("Superstate tag initialization", () => {
             subtype: "tag",
             tags: [],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
 
         expect(superstate.pathStateForPath(tagSpacePathFromTag("#📖/psy/self")).name).toBe("📖/psy/self");
@@ -372,9 +374,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: [],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.tagsMap.set("Tagged.md", new Set());
 
@@ -387,9 +387,7 @@ describe("Superstate tag initialization", () => {
                 subtype: "md",
                 tags: ["#project"],
                 spaces: [],
-                outlinks: [],
                 hidden: false,
-                label: { sticker: "", color: "" },
             },
             true,
             false,
@@ -408,9 +406,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#project"],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.pathsIndex.set("Other.md", {
             path: "Other.md",
@@ -419,9 +415,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#other"],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
         superstate.tagsMap.set("Other.md", new Set(["#other"]));
@@ -439,9 +433,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#📖/art/painting"],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#📖/art/painting"]));
 
@@ -458,9 +450,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#project"],
             spaces: [],
-            outlinks: [],
             hidden: true,
-            label: { sticker: "", color: "" },
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
 
@@ -488,9 +478,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#project"],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
         superstate.persister.store.mockClear();
@@ -521,9 +509,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#project"],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.pathsIndex.set("Other.md", {
             path: "Other.md",
@@ -532,9 +518,7 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: ["#project"],
             spaces: [],
-            outlinks: [],
             hidden: false,
-            label: { sticker: "", color: "" },
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
         superstate.tagsMap.set("Other.md", new Set(["#project"]));
@@ -543,6 +527,30 @@ describe("Superstate tag initialization", () => {
             ["Tagged.md", 1],
             ["Other.md", 0],
         ]);
+    });
+
+    it("marks custom-sorted tag spaces as sortable when metadata is updated", async () => {
+        const { superstate } = createSuperstate();
+        const tagPath = tagSpacePathFromTag("#project");
+        superstate.spacesIndex.set(tagPath, {
+            type: "tag",
+            name: "project",
+            path: tagPath,
+            metadata: {
+                sort: { field: "name", asc: true },
+                "rank-order": [],
+                pinned: [],
+            },
+            space: { path: tagPath, name: "project", defPath: "", notePath: "" },
+        } as any);
+
+        await superstate.updateSpaceMetadata(tagPath, {
+            sort: { field: "rank", asc: true },
+            "rank-order": ["Tagged.md"],
+            pinned: [],
+        });
+
+        expect(isSpaceSortable(superstate.spacesIndex.get(tagPath), superstate.settings)).toBe(true);
     });
 
     it("returns linked tag spaces as folder children without requiring tag path cache", () => {
@@ -602,9 +610,7 @@ describe("Superstate tag initialization", () => {
                 subtype: "folder",
                 tags: [],
                 spaces: ["Projects"],
-                outlinks: [],
                 hidden: false,
-                label: { sticker: "", color: "" },
             });
             superstate.spacesMap.set(path, new Set(["Projects"]));
         });
@@ -636,11 +642,12 @@ describe("Superstate tag initialization", () => {
             subtype: "folder",
             tags: [],
             spaces: [],
-            outlinks: [],
             hidden: true,
             parent: "Atlas",
-            label: { sticker: "lucide//folder", color: "" },
-            effectiveLabel: { sticker: "lucide//folder", color: "#123456" },
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            color: "#123456",
+            sticker: "lucide//folder",
             metadata: {},
         } as any);
         superstate.pathsIndex.set("Atlas/Obsidian/Notes", {
@@ -650,11 +657,12 @@ describe("Superstate tag initialization", () => {
             subtype: "folder",
             tags: [],
             spaces: [],
-            outlinks: [],
             hidden: true,
             parent: "Atlas/Obsidian",
-            label: { sticker: "lucide//notebook", color: "" },
-            effectiveLabel: { sticker: "lucide//notebook", color: "#123456" },
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            color: "#123456",
+            sticker: "lucide//notebook",
             metadata: {},
         } as any);
         superstate.spacesIndex.set("Atlas/Obsidian/Notes", {
@@ -696,11 +704,11 @@ describe("Superstate tag initialization", () => {
                 tags: [],
                 spaces,
                 linkedSpaces,
-                outlinks: [],
                 hidden,
                 parent: path.startsWith("Projects/") ? "Projects" : "Archive",
-                label: { sticker: "", color: "" },
-                effectiveLabel: { sticker: "ui//file-text", color: "" },
+                pinnedSpaces: [],
+                color: "",
+                sticker: "ui//file-text",
                 metadata: {},
             } as any);
             spaces.forEach((space: string) => superstate.spacesMap.set(path, new Set([space])));
@@ -718,13 +726,18 @@ describe("Superstate tag initialization", () => {
                 event,
                 payload,
                 metadata: superstate.spacesIndex.get("Projects")?.metadata,
-                effectiveLabel: superstate.pathsIndex.get(eventPath)?.effectiveLabel,
-                sortable: superstate.spacesIndex.get("Projects")?.sortable,
+                display: superstate.pathsIndex.get(eventPath)
+                    ? {
+                          sticker: superstate.pathsIndex.get(eventPath)?.sticker,
+                          color: superstate.pathsIndex.get(eventPath)?.color,
+                      }
+                    : undefined,
+                sortable: isSpaceSortable(superstate.spacesIndex.get("Projects"), superstate.settings),
             });
         });
         spaceManager.uriByString = jest.fn(() => ({ path: "Projects" }));
         spaceManager.spaceTypeByString = jest.fn(() => "folder");
-        spaceManager.spaceDefForSpace = jest.fn(() =>
+        spaceManager.spaceDefinitionForPath = jest.fn(() =>
             Promise.resolve({
                 color: "",
                 sticker: "",
@@ -740,10 +753,15 @@ describe("Superstate tag initialization", () => {
         spaceManager.readPathCache = jest.fn((path: string) =>
             Promise.resolve({
                 metadata: {},
-                label: { sticker: "", color: "" },
+                name: path.split("/").pop() ?? path,
+                type: path.includes(".") ? "file" : "space",
+                subtype: path.includes(".") ? path.split(".").pop() : "folder",
                 parent: "",
                 tags: [],
                 path,
+                hidden: false,
+                spaces: [],
+                linkedSpaces: [],
             }),
         );
         (superstate as any).indexer.reload = jest.fn((job: any) => {
@@ -756,11 +774,13 @@ describe("Superstate tag initialization", () => {
                           subtype: "md",
                           tags: [] as string[],
                           spaces: ["Projects"],
-                          outlinks: [] as string[],
+                          linkedSpaces: [] as string[],
+                          pinnedSpaces: [] as string[],
                           hidden: false,
                           parent: "Projects",
-                          label: { sticker: "", color: "" },
-                          metadata: { file: { extension: "md" } },
+                          color: "",
+                          sticker: "ui//file-text",
+                          metadata: {},
                       }
                     : {
                           path: "Projects",
@@ -769,10 +789,12 @@ describe("Superstate tag initialization", () => {
                           subtype: "folder",
                           tags: [] as string[],
                           spaces: [] as string[],
-                          outlinks: [] as string[],
+                          linkedSpaces: [] as string[],
+                          pinnedSpaces: [] as string[],
                           hidden: false,
                           parent: "",
-                          label: { sticker: "", color: "" },
+                          color: "",
+                          sticker: "ui//folder",
                           metadata: {},
                       };
             return Promise.resolve({ cache, changed: true });
@@ -787,7 +809,6 @@ describe("Superstate tag initialization", () => {
                 sort: { field: "rank", asc: true },
                 links: [],
             },
-            sortable: true,
             space: { path: "Projects", name: "Projects", defPath: "Projects/.space/context.json", notePath: "", folderPath: "Projects" },
         } as any);
         superstate.pathsIndex.set("Projects", {
@@ -797,11 +818,12 @@ describe("Superstate tag initialization", () => {
             subtype: "folder",
             tags: [],
             spaces: [],
-            outlinks: [],
             hidden: false,
             parent: "",
-            label: { sticker: "", color: "" },
-            effectiveLabel: { sticker: "ui//folder", color: "#ffaa00" },
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            color: "#ffaa00",
+            sticker: "ui//folder",
             metadata: {},
         } as any);
         superstate.pathsIndex.set("Projects/Note.md", {
@@ -811,12 +833,13 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: [],
             spaces: ["Projects"],
-            outlinks: [],
             hidden: false,
             parent: "Projects",
-            label: { sticker: "", color: "" },
-            effectiveLabel: { sticker: "ui//file-text", color: "#ffaa00" },
-            metadata: { file: { extension: "md" } },
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            color: "#ffaa00",
+            sticker: "ui//file-text",
+            metadata: {},
         } as any);
         superstate.spacesMap.set("Projects/Note.md", new Set(["Projects"]));
 
@@ -833,15 +856,9 @@ describe("Superstate tag initialization", () => {
             pinned: [],
             "file-colors": {},
         });
-        expect(superstate.pathsIndex.get("Projects").effectiveLabel).toEqual({
-            sticker: "ui//folder",
-            color: "",
-        });
-        expect(superstate.pathsIndex.get("Projects/Note.md").effectiveLabel).toEqual({
-            sticker: "ui//file-text",
-            color: "",
-        });
-        expect(superstate.spacesIndex.get("Projects").sortable).toBe(false);
+        expect(superstate.pathsIndex.get("Projects")).toMatchObject({ sticker: "ui//folder", color: "" });
+        expect(superstate.pathsIndex.get("Projects/Note.md")).toMatchObject({ sticker: "ui//file-text", color: "" });
+        expect(isSpaceSortable(superstate.spacesIndex.get("Projects"), superstate.settings)).toBe(false);
         superstate.getSpaceItems("Projects");
         expect(superstate.spacesIndex.get("Projects").metadata["rank-order"]).toEqual([]);
         expect(events).toEqual(
@@ -849,12 +866,12 @@ describe("Superstate tag initialization", () => {
                 expect.objectContaining({
                     event: "pathStateUpdated",
                     payload: { path: "Projects/Note.md" },
-                    effectiveLabel: { sticker: "ui//file-text", color: "" },
+                    display: { sticker: "ui//file-text", color: "" },
                 }),
                 expect.objectContaining({
                     event: "pathStateUpdated",
                     payload: { path: "Projects" },
-                    effectiveLabel: { sticker: "ui//folder", color: "" },
+                    display: { sticker: "ui//folder", color: "" },
                     sortable: false,
                 }),
                 expect.objectContaining({
@@ -891,10 +908,8 @@ describe("Superstate tag initialization", () => {
             subtype: "md",
             tags: [],
             spaces: ["Atlas/AI/0 Notes"],
-            outlinks: [],
             hidden: false,
             parent: "Atlas/AI/0 Notes",
-            label: { sticker: "", color: "" },
         });
         superstate.spacesMap.set(oldPath, new Set(["Atlas/AI/0 Notes"]));
         superstate.reloadPath = jest.fn(async (path: string) => {
@@ -906,10 +921,8 @@ describe("Superstate tag initialization", () => {
                     subtype: "md",
                     tags: [],
                     spaces: ["Atlas/AI"],
-                    outlinks: [],
                     hidden: false,
                     parent: "Atlas/AI",
-                    label: { sticker: "", color: "" },
                 });
                 superstate.spacesMap.set(newPath, new Set(["Atlas/AI"]));
             }
@@ -934,21 +947,20 @@ describe("Superstate SVG handling", () => {
                 name: "logo.svg",
                 type: "file",
                 subtype: "svg",
-                metadata: {
-                    file: {
-                        filename: "logo.svg",
-                        extension: "svg",
-                    },
-                },
+                metadata: {},
                 tags: [],
                 spaces: [],
-                outlinks: [],
+                linkedSpaces: [],
+                hidden: false,
+                parent: "icons",
+                color: "",
+                sticker: "ui//file",
+                pinnedSpaces: [],
             },
             true,
             true,
         );
 
-        expect(superstate.imagesCache.has("logo.svg")).toBe(false);
         expect(superstate.spaceManager.readPath).not.toHaveBeenCalled();
         expect(superstate.persister.store).toHaveBeenCalledTimes(1);
         expect(superstate.persister.store).toHaveBeenCalledWith("icons/logo.svg", expect.any(String), "path");

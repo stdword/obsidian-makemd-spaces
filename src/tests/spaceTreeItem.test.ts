@@ -1,9 +1,7 @@
-import { shouldShowFileTag } from "core/react/components/Navigator/SpaceTree/fileTags";
-import { linkedItemIconPathState, shouldShowLinkedItemIcon } from "core/react/components/Navigator/SpaceTree/linkedItemIcon";
+import { shouldShowFileTag, shouldShowLinkedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
-import { canEditPathSticker } from "shared/components/PathSticker";
 import fs from "fs";
 import path from "path";
 
@@ -24,22 +22,22 @@ describe("shouldShowFileTag", () => {
 
 describe("canOpenTreeItemPath", () => {
     it("keeps tag space groups inside the navigator tree", () => {
-        const tagPath = { type: "space", subtype: "tag", path: "spaces://#bio", label: { sticker: "", color: "" } } as any;
+        const tagPath = { type: "space", subtype: "tag", path: "spaces://#bio" } as any;
 
         expect(isTagTreeItemPath(tagPath)).toBe(true);
         expect(canOpenTreeItemPath(tagPath)).toBe(false);
     });
 
     it("recognizes tag space groups by path when older cache has no subtype", () => {
-        const tagPath = { type: "space", path: "spaces://#bio", label: { sticker: "", color: "" } } as any;
+        const tagPath = { type: "space", path: "spaces://#bio" } as any;
 
         expect(isTagTreeItemPath(tagPath)).toBe(true);
         expect(canOpenTreeItemPath(tagPath)).toBe(false);
     });
 
     it("keeps folders and files openable", () => {
-        expect(canOpenTreeItemPath({ type: "space", subtype: "folder", path: "Projects", label: { sticker: "", color: "" } })).toBe(true);
-        expect(canOpenTreeItemPath({ type: "file", subtype: "md", path: "Note.md", label: { sticker: "", color: "" } })).toBe(true);
+        expect(canOpenTreeItemPath({ type: "space", subtype: "folder", path: "Projects", sticker: "", color: "" } as any)).toBe(true);
+        expect(canOpenTreeItemPath({ type: "file", subtype: "md", path: "Note.md", sticker: "", color: "" } as any)).toBe(true);
     });
 });
 
@@ -135,15 +133,6 @@ describe("linked item icon", () => {
             } as any),
         ).toBe(false);
     });
-
-    it("uses a non-space lucide link sticker with a linked label", () => {
-        expect(linkedItemIconPathState).toEqual({
-            path: "",
-            name: "linked",
-            type: "file",
-            label: { sticker: "lucide//link-2", color: "" },
-        });
-    });
 });
 
 describe("navigator file label color CSS", () => {
@@ -172,7 +161,8 @@ describe("treeItemColorVariables", () => {
                 {
                     type: "space",
                     subtype: "folder",
-                    label: { sticker: "ui//folder", color: "" },
+                    sticker: "ui//folder",
+                    color: "",
                 } as any,
                 "#ff6699",
             ),
@@ -185,7 +175,7 @@ describe("treeItemColorVariables", () => {
                 {
                     type: "space",
                     subtype: "folder",
-                    label: { sticker: "ui//folder", color: "#112233" },
+                    color: "#112233",
                 } as any,
                 "#ff6699",
             ),

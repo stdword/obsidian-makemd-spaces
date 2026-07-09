@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import i18n from "shared/i18n";
 import { MenuObject } from "shared/types/menu";
 import { IUIManager } from "shared/types/uiManager";
-import { uniq } from "shared/utils/array";
+import { uniq } from "utils/array";
 import SelectMenuSearch from "./SelectMenuInput";
 import SelectMenuPillComponent from "./SelectMenuPill";
 import SelectMenuSuggestions from "./SelectMenuSuggestions";

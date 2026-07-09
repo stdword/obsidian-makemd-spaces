@@ -1,7 +1,7 @@
 import { Root, RootOptions } from "react-dom/client";
 import { SelectMenuProps } from "shared/types/menu";
-import { EventDispatcher } from "shared/utils/dispatchers/dispatcher";
-import { InputManager } from "shared/utils/inputManager";
+import { EventDispatcher } from "utils/dispatcher";
+import { InputManager } from "utils/inputManager";
 import { MenuObject } from "./menu";
 import { TargetLocation } from "./path";
 import { SpaceState } from "./PathState";

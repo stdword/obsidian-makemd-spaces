@@ -404,5 +404,9 @@ export const ColorPicker = (props: { superstate: Superstate; color: string; hide
 };
 
 export const showColorPickerMenu = (superstate: Superstate, rect: Rect, win: Window, value: string, setValue: (color: string) => void, stayOpen?: boolean, _isSubmenu?: boolean, hidePaletteSelector?: boolean, anchor: Anchors = "bottom") => {
-    return superstate.ui.openCustomMenu(rect, <ColorPicker superstate={superstate} color={value} saveValue={setValue} stayOpen={stayOpen} hidePaletteSelector={hidePaletteSelector}></ColorPicker>, {}, win, anchor);
+    return superstate.ui.openCustomMenu(
+        rect,
+        <ColorPicker superstate={superstate} color={value} saveValue={setValue} stayOpen={stayOpen} hidePaletteSelector={hidePaletteSelector}></ColorPicker>,
+        {}, win, anchor,
+    );
 };

@@ -5,7 +5,17 @@ const item = (path: string, type = "file"): PathStateWithRank =>
     ({
         path,
         type,
-        label: {},
+        subtype: type == "space" ? "folder" : "md",
+        name: path.split("/").pop(),
+        parent: path.split("/").slice(0, -1).join("/"),
+        metadata: {},
+        tags: [],
+        hidden: false,
+        color: "",
+        sticker: "",
+        spaces: [],
+        linkedSpaces: [],
+        pinnedSpaces: [],
     }) as PathStateWithRank;
 
 const superstateWithFolderNotes = (settings?: Record<string, unknown>) =>

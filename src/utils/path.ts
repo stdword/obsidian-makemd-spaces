@@ -1,5 +1,8 @@
-import { removeLeadingSlash } from "core/utils/strings";
 import { Superstate } from "makemd-core";
+
+export const removeLeadingSlash = (path: string) => (
+    path.charAt(0) == "/" ? path.substring(1) : path
+);
 
 export const pathDisplayName = (path: string, superstate: Superstate) => {
     if (!path) return "";

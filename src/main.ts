@@ -7,8 +7,8 @@ import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFi
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
-import { safelyParseJSON } from "shared/utils/json";
-import { SPACE_SUB_FOLDER } from "schemas/constants";
+import { safelyParseJSON } from "utils/json";
+import { SPACE_FOLDER } from "schemas/constants";
 
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
 
@@ -26,7 +26,7 @@ import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 
 import { attachCommands } from "commands";
 import { Superstate } from "core/superstate/superstate";
-import { defaultSpace, newPathInSpace } from "core/superstate/utils/spaces";
+import { defaultSpace, newPathInSpace } from "core/utils/superstate/spaces";
 import "css/DefaultVibe.css";
 import "css/Menus/ColorPicker.css";
 import "css/Menus/MainMenu.css";
@@ -40,7 +40,7 @@ import "css/Panels/Navigator/Navigator.css";
 // import "css/System/Settings.css";
 import "css/UI/Buttons.css";
 import { IMakeMDPlugin } from "shared/types/makemd";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
+import { removeTrailingSlashFromFolder } from "utils/paths";
 import { getParentPathFromString } from "utils/path";
 import { ISuperstate } from "shared/types/superstate";
 
@@ -196,7 +196,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.files.initiateFiletypeAdapter(new ObsidianCanvasFiletypeAdapter(this));
         this.files.initiateFiletypeAdapter(new ObsidianBaseFiletypeAdapter(this));
 
-        const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_SUB_FOLDER);
+        const filesystemCosmoform = new FilesystemSpaceAdapter(this.files, SPACE_FOLDER);
         this.ui = new ObsidianUI(this);
         const uiManager = UIManager.create(this.ui);
         this.superstate = Superstate.create(
@@ -212,7 +212,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.saveSettings = () => this.saveSettings();
         this.loadViews();
 
-        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_SUB_FOLDER}/${ObsidianFileSystem.stateFileName}`, new LocalSqliteStorage(this, this.files), ["path", "space"]);
+        const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_FOLDER}/${ObsidianFileSystem.stateFileName}`, new LocalSqliteStorage(this, this.files), ["path", "space"]);
 
         await cachePersister.initialize()
         this.superstate.persister = cachePersister;

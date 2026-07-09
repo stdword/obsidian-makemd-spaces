@@ -1,4 +1,4 @@
-export const treeItemDisplayColor = (pathState: any, _defaultColor = "") => pathState?.effectiveLabel?.color ?? pathState?.label?.color ?? "";
+export const treeItemDisplayColor = (pathState: any, _defaultColor = "") => pathState?.color ?? "";
 
 export const treeItemDisplayName = (pathState: any, data: any, spacesIndex?: Map<string, any>) => {
     if (pathState?.name?.length > 0) return pathState.name;

@@ -12,10 +12,10 @@ describe("showLinkMenu", () => {
                 readTags: jest.fn((): string[] => []),
             },
             pathsIndex: new Map([
-                ["/", { name: "Home", path: "/", type: "space", subtype: "vault", label: {}, hidden: false }],
-                ["Folder", { name: "Folder", path: "Folder", type: "space", subtype: "folder", label: {}, hidden: false }],
-                ["Note.md", { name: "Note", path: "Note.md", type: "file", subtype: "md", label: {}, hidden: false }],
-                ["spaces://#tag", { name: "tag", path: "spaces://#tag", type: "space", subtype: "tag", label: {}, hidden: false }],
+                ["/", { name: "Home", path: "/", type: "space", subtype: "vault", hidden: false }],
+                ["Folder", { name: "Folder", path: "Folder", type: "space", subtype: "folder", hidden: false }],
+                ["Note.md", { name: "Note", path: "Note.md", type: "file", subtype: "md", hidden: false }],
+                ["spaces://#tag", { name: "tag", path: "spaces://#tag", type: "space", subtype: "tag", hidden: false }],
             ]),
             settings: {
                 searchMenuFoldersLimit: 75,
@@ -74,8 +74,8 @@ describe("showLinkMenu", () => {
                 readTags: jest.fn((): string[] => []),
             },
             pathsIndex: new Map([
-                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false, label: {} }],
-                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true, label: {} }],
+                ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false }],
+                ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true }],
             ]),
             settings: {},
             ui: {

@@ -1,4 +1,4 @@
-import { parseSpaceMetadata } from "core/superstate/utils/spaces";
+import { parseSpaceMetadata } from "core/utils/superstate/spaces";
 
 describe("parseSpaceMetadata", () => {
     it("does not preserve legacy presentation/template fields", () => {

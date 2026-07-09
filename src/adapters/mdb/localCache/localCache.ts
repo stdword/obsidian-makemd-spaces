@@ -3,9 +3,9 @@ import { dbResultsToDBTables, deleteFromDB, dropTable, getZippedDB, insertIntoDB
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
 import { DBRow, DBTable, DBTables } from "shared/types/mdb";
-import { sanitizeSQLStatement } from "shared/utils/sanitizers";
+import { sanitizeSQLStatement } from "utils/sanitizers";
 import { Database } from "sql.js";
-import { LocalCachePersister } from "../../../shared/types/persister";
+import { LocalCachePersister } from "shared/types/persister";
 import { ZippedSqliteStorage } from "./sqliteStorage";
 
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */

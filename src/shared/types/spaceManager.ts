@@ -1,15 +1,13 @@
 import { IAPI } from "shared/types/api";
-import { PathLabel } from "shared/types/caches";
 import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
-import { PathCache } from "./caches";
-import { SpaceProperty } from "./mdb";
-import { SpaceDefinition, SpaceType } from "./spaceDef";
+import { PathCache } from "./PathState";
+import { SpaceDefinition } from "./spaceDef";
 import { SpaceFragmentType } from "./spaceFragment";
-import { SpaceInfo } from "./spaceInfo";
+import { SpaceState, SpaceType } from "./PathState";
 import { ISuperstate, PathState } from "./superstate";
 
-export interface SpaceManagerInterface {
+export interface ISpaceManager {
     primarySpaceAdapter: SpaceAdapter;
     spaceAdapters: SpaceAdapter[];
     superstate: ISuperstate;
@@ -50,19 +48,10 @@ export interface SpaceManagerInterface {
     writeToPath(path: string, content: any, binary?: boolean): Promise<void>;
     parentPathForPath(path: string): string;
     readPathCache(path: string): Promise<PathCache>;
-    allSpaces(): SpaceInfo[];
-    spaceInfoForPath(path: string): SpaceInfo;
-    spaceDefForSpace(path: string): Promise<SpaceDefinition>;
-    readLabel(path: string): Promise<PathLabel>;
-    saveLabel(path: string, key: string, value: any): void;
-    addProperty(path: string, property: SpaceProperty): void;
-    saveProperties(path: string, properties: { [key: string]: any }): Promise<boolean>;
+    allSpaces(): SpaceState[];
+    spaceInfoForPath(path: string): SpaceState;
+    spaceDefinitionForPath(path: string): Promise<SpaceDefinition>;
     readProperties(path: string): Promise<{ [key: string]: any }>;
-    renameProperty(path: string, property: string, newProperty: string): void;
-    deleteProperty(path: string, property: string): void;
-    addTag(path: string, tag: string): void;
-    deleteTag(path: string, tag: string): void;
-    renameTag(path: string, tag: string, newTag: string): void;
     readTags(): string[];
     pathsForTag(tag: string): string[];
     childrenForPath(path: string, type?: string): Promise<string[]>;
@@ -76,10 +65,10 @@ export abstract class SpaceAdapter {
     //authorities that this cosmoform supports
     public schemes: string[];
     public loadPath: (path: string) => Promise<PathCache | void>;
-    public initiateAdapter: (manager: SpaceManagerInterface) => void;
+    public initiateAdapter: (manager: ISpaceManager) => void;
     //basic space operations
-    public spaceInfoForPath: (path: string) => SpaceInfo;
-    public spaceDefForSpace: (path: string) => Promise<SpaceDefinition>;
+    public spaceInfoForPath: (path: string) => SpaceState;
+    public spaceDefinitionForPath: (path: string) => Promise<SpaceDefinition>;
     public parentPathForPath: (path: string) => string;
     public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void;
     public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void;
@@ -105,22 +94,12 @@ export abstract class SpaceAdapter {
 
     public writeToPath: (path: string, content: any, binary?: boolean) => Promise<void>;
 
-    public allSpaces: (hidden?: boolean) => SpaceInfo[];
+    public allSpaces: (hidden?: boolean) => SpaceState[];
     public allCaches: () => Map<string, PathCache>;
-    public addProperty: (path: string, property: SpaceProperty) => void;
+
     public readProperties: (path: string) => Promise<{ [key: string]: any }>;
-    public saveProperties: (path: string, properties: { [key: string]: any }) => Promise<boolean>;
-    public renameProperty: (path: string, property: string, newProperty: string) => void;
-    public deleteProperty: (path: string, property: string) => void;
-
-    public readLabel: (path: string) => Promise<PathLabel>;
-    public saveLabel: (path: string, key: string, value: any) => void;
-
 
     //tag management
-    public addTag: (path: string, tag: string) => void;
-    public deleteTag: (path: string, tag: string) => void;
-    public renameTag: (path: string, tag: string, newTag: string) => void;
     public readTags: () => string[];
 
     public pathsForTag: (tag: string) => string[];

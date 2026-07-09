@@ -18,16 +18,7 @@ export class ObsidianBaseFiletypeAdapter implements FileTypeAdapter<Record<strin
     public middleware: FilesystemMiddleware;
     public async parseCache(file: AFile, refresh?: boolean) {
         if (!file) return;
-        const label = this.middleware.getFileCache(file.path)?.label;
-        const updatedCache = {
-            label: {
-                sticker: label?.sticker,
-                color: label?.color,
-            },
-        };
-
-        this.cache.set(file.path, updatedCache);
-        this.middleware.updateFileCache(file.path, updatedCache, refresh);
+        this.cache.set(file.path, {});
     }
     public cache: Map<string, Record<string, any>>;
     public cacheTypes: (file: AFile) => string[];
@@ -45,5 +36,4 @@ export class ObsidianBaseFiletypeAdapter implements FileTypeAdapter<Record<strin
     public readContent: (file: AFile, fragmentType: string, fragmentId: any) => never;
     public newContent: (file: AFile, fragmentType: string, name: string, content: never, options: { [key: string]: any }) => Promise<any>;
     public saveContent: (file: AFile, fragmentType: string, fragmentId: any, content: (prev: never) => any) => Promise<boolean>;
-    public deleteContent: (file: AFile, fragmentType: string, fragmentId: any) => void;
 }

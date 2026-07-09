@@ -1,17 +1,16 @@
-import { resolvePath } from "core/superstate/utils/path";
-import { builtinSpacePathPrefix } from "schemas/builtin";
+import { resolvePath } from "core/utils/superstate/path";
 import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
-import { SpaceProperty } from "shared/types/mdb";
 import { URI } from "shared/types/path";
-import { SpaceDefinition, SpaceType } from "shared/types/spaceDef";
+import { SpaceDefinition } from "shared/types/spaceDef";
+import { SpaceType } from "shared/types/PathState";
 import { SpaceFragmentType } from "shared/types/spaceFragment";
-import { SpaceAdapter, SpaceManagerInterface } from "shared/types/spaceManager";
+import { SpaceAdapter, ISpaceManager } from "shared/types/spaceManager";
 import { ISuperstate } from "shared/types/superstate";
-import { parseURI } from "shared/utils/uri";
-import { PathCache } from "../../shared/types/caches";
+import { parseURI } from "utils/uri";
+import { PathCache } from "shared/types/PathState";
 
-export class SpaceManager implements SpaceManagerInterface {
+export class SpaceManager implements ISpaceManager {
     public primarySpaceAdapter: SpaceAdapter;
     public spaceAdapters: SpaceAdapter[] = [];
     public superstate: ISuperstate;
@@ -83,19 +82,12 @@ export class SpaceManager implements SpaceManagerInterface {
     }
 
     public spaceTypeByString = (uri: URI): SpaceType => {
-        if (uri.fullPath.startsWith(builtinSpacePathPrefix)) {
-            return "default";
-        }
-        if (uri.scheme == "space") {
-            return "folder";
-        }
-        if (uri.authority?.charAt(0) == "#") {
+        if (uri.path == "/")
+            return "vault";
+        if (uri.authority?.charAt(0) == "#")
             return "tag";
-        }
-        if (uri.path.charAt(uri.path.length - 1) == "/") {
-            if (uri.path == "/") return "vault";
+        if (uri.path.charAt(uri.path.length - 1) == "/")
             return "folder";
-        }
         return "folder";
     };
 
@@ -126,6 +118,7 @@ export class SpaceManager implements SpaceManagerInterface {
         if (!uri) return this.primarySpaceAdapter;
         return this.spaceAdapters.find((f) => f.schemes.includes(uri.scheme)) ?? this.primarySpaceAdapter;
     }
+
     //basic space operations
     public createSpace(name: string, parentPath: string, definition: SpaceDefinition) {
         return this.adapterForPath(parentPath).createSpace(name, parentPath, definition);
@@ -148,6 +141,7 @@ export class SpaceManager implements SpaceManagerInterface {
     public spaceInitiated(path: string) {
         return this.adapterForPath(path).spaceInitiated(path);
     }
+
     //basic item operations
     public allPaths(type?: string[], hidden?: boolean) {
         return this.spaceAdapters.flatMap((f) => f.allPaths(type, hidden));
@@ -180,14 +174,6 @@ export class SpaceManager implements SpaceManagerInterface {
 
     public async readPathCache(path: string) {
         const pathCache = await this.adapterForPath(path).readPathCache(path);
-        if (pathCache && pathCache.type == "space") {
-            const defPath = this.spaceInfoForPath(path).defPath;
-
-            if (defPath && (await this.pathExists(defPath))) {
-                pathCache.label = { ...pathCache.label, ...(await this.readLabel(defPath)) };
-                pathCache.property = await this.readProperties(defPath);
-            }
-        }
         return pathCache;
     }
 
@@ -195,58 +181,28 @@ export class SpaceManager implements SpaceManagerInterface {
         return this.primarySpaceAdapter.allSpaces(hidden);
     }
 
-    //Local SpaceInfo for Path
+    // Local
     public spaceInfoForPath(path: string) {
         return this.adapterForPath(path).spaceInfoForPath(path);
     }
-    public spaceDefForSpace(path: string) {
-        return this.adapterForPath(path).spaceDefForSpace(path);
+    public spaceDefinitionForPath(path: string) {
+        return this.adapterForPath(path).spaceDefinitionForPath(path);
     }
 
-    public readLabel(path: string) {
-        return this.adapterForPath(path).readLabel(path);
-    }
-    public saveLabel(path: string, key: string, value: any) {
-        return this.adapterForPath(path).saveLabel(path, key, value);
-    }
-    public addProperty(path: string, property: SpaceProperty) {
-        return this.adapterForPath(path).addProperty(path, property);
-    }
-    public saveProperties(path: string, properties: { [key: string]: any }) {
-        if (!path) return;
-        return this.adapterForPath(path).saveProperties(path, properties);
-    }
     public readProperties(path: string) {
         return this.adapterForPath(path).readProperties(path);
-    }
-    public renameProperty(path: string, property: string, newProperty: string) {
-        return this.adapterForPath(path).renameProperty(path, property, newProperty);
-    }
-    public deleteProperty(path: string, property: string) {
-        return this.adapterForPath(path).deleteProperty(path, property);
-    }
-
-
-    public addTag(path: string, tag: string) {
-        return this.adapterForPath(path).addTag(path, tag);
-    }
-
-    public deleteTag(path: string, tag: string) {
-        return this.adapterForPath(path).deleteTag(path, tag);
-    }
-
-    public renameTag(path: string, tag: string, newTag: string) {
-        return this.adapterForPath(path).renameTag(path, tag, newTag);
     }
     public readTags() {
         return this.primarySpaceAdapter.readTags();
     }
+
     public pathsForTag(tag: string) {
         return this.primarySpaceAdapter.pathsForTag(tag);
     }
     public childrenForPath(path: string, type?: string) {
         return this.adapterForPath(path).childrenForPath(path, type);
     }
+
     public readFocuses() {
         return this.primarySpaceAdapter.readFocuses();
     }

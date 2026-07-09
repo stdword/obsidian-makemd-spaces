@@ -1,20 +1,20 @@
 import { addTagToProperties, getAllFilesForTag, loadTags, removeTagFromMarkdownFile, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
 import _ from "lodash";
 import MakeMDPlugin from "main";
-import { AFile, FileCache, FileSystemAdapter, FileTypeCache, FilesystemMiddleware, PathLabel } from "makemd-core";
+import { AFile, FileSystemAdapter, FileTypeCache, FilesystemMiddleware } from "makemd-core";
 import { FileSystemAdapter as ObsidianFileSystemAdapter, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
 
 import { DEFAULT_SETTINGS } from "schemas/settings";
 import { DBRows } from "shared/types/mdb";
-import { uniqueNameFromString } from "shared/utils/array";
-import { removeTrailingSlashFromFolder } from "shared/utils/paths";
-import { parseURI } from "shared/utils/uri";
+import { PathCache } from "shared/types/PathState";
+import { uniqueNameFromString } from "utils/array";
+import { removeTrailingSlashFromFolder } from "utils/paths";
+import { parseURI } from "utils/uri";
 import { excludePathPredicate } from "utils/hide";
 import { getParentPathFromString, pathToString } from "utils/path";
 import { urlRegex } from "utils/regex";
-import { serializeMultiDisplayString } from "utils/serializers";
 import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
-import { SPACE_SUB_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_DEF_FILE } from "schemas/constants";
+import { SPACE_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE } from "schemas/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
     static stateFileName = "superstate.mdc";
@@ -26,7 +26,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     public vaultDBCache: DBRows = [];
     public tagsCache: Set<string>;
 
-    public cache: Map<string, FileCache> = new Map();
+    public cache: Map<string, PathCache & { file?: AFile }> = new Map();
     public pathLastUpdated: Map<string, number> = new Map();
 
     public updateFileCache(path: string, cache: FileTypeCache, refresh: boolean) {
@@ -66,7 +66,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
         const vaultItem = this.cache.get(path);
         if (!vaultItem) return;
-        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags, tag]));
+        this.updateFileCache(path, { tags: [...vaultItem.tags, tag] }, true);
     }
     public async renameTagForFile(path: string, oldTag: string, newTag: string) {
         const file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
@@ -76,7 +76,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
         const vaultItem = this.cache.get(path);
         if (!vaultItem) return;
-        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter((t) => t.toLowerCase() != oldTag.toLowerCase()), newTag]));
+        this.updateFileCache(path, { tags: [...vaultItem.tags.filter((t) => t.toLowerCase() != oldTag.toLowerCase()), newTag] }, true);
     }
     public async removeTagFromFile(path: string, tag: string) {
         const file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
@@ -86,7 +86,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         }
         const vaultItem = this.cache.get(path);
         if (!vaultItem) return;
-        this.updateFileLabel(path, "tags", serializeMultiDisplayString([...vaultItem.tags.filter((t) => t.toLowerCase() != tag.toLowerCase())]));
+        this.updateFileCache(path, { tags: [...vaultItem.tags.filter((t) => t.toLowerCase() != tag.toLowerCase())] }, true);
     }
 
     public async loadFilesFromObsidian() {
@@ -106,21 +106,26 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                 f.name = DEFAULT_SYSTEM_NAME;
             }
             if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
-            let cache: Partial<FileCache> = {
+            let cache: Partial<PathCache & { file?: AFile }> = {
                 metadata: {},
                 tags: [],
-                label: { sticker: f.sticker, color: f.color } as PathLabel,
+                hidden: false,
             };
             if (file) {
                 cache = {
                     ...cache,
                     file: file,
-                    ctime: cache.ctime > 0 ? cache.ctime : file.ctime,
-                    contentTypes: file.isFolder ? [] : ["md", "canvas", "folder"],
-                    label: { sticker: cache.label.sticker ?? "", color: cache.label.color ?? "" } as PathLabel,
+                    metadata: file.isFolder ? {} : {
+                        ctime: file.ctime,
+                        mtime: file.mtime,
+                        size: file.size,
+                    },
                     parent: file.parent,
                     type: file.isFolder ? "space" : "file",
                     subtype: file.isFolder ? "folder" : file.extension,
+                    name: file.isFolder ? file.name : file.name.replace(new RegExp(`\\.${file.extension}$`), ""),
+                    path: file.path,
+                    hidden: false,
                 };
             }
             this.updateFileCache(f.path, cache, false);
@@ -167,13 +172,13 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         if (!path) return null;
         const parts = path.split("/");
         const lastPart = parts[parts.length - 1];
-        if (lastPart == SPACE_SUB_FOLDER) {
+        if (lastPart == SPACE_FOLDER) {
             return {
                 spacePath: parts.slice(0, -1).join("/") || "/",
-                type: SPACE_DEF_FILE,
+                type: SPACE_CONFIG_FILE,
             };
         }
-        if (parts.length < 2 || parts[parts.length - 2] != SPACE_SUB_FOLDER) return null;
+        if (parts.length < 2 || parts[parts.length - 2] != SPACE_FOLDER) return null;
         return {
             spacePath: parts.slice(0, -2).join("/") || "/",
             type: lastPart,
@@ -217,11 +222,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         return this.plugin.app.metadataCache.getFirstLinkpathDest(path, source)?.path ?? path;
     }
 
-    public updateFileLabel(path: string, label: string, content: any) {
-        const file = this.cache.get(path);
-        this.middleware.updateFileCache(path, { label: { ...file.label, [label]: content } as PathLabel }, true);
-    }
-
     public initiate(middleware: FilesystemMiddleware) {
         this.middleware = middleware;
     }
@@ -245,14 +245,19 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
         this.cache.set(afile.path, {
             file: afile,
-            ctime: afile.ctime,
-            metadata: {},
-            label: { sticker: "", color: "" } as PathLabel,
+            metadata: afile.isFolder ? {} : {
+                ctime: afile.ctime,
+                mtime: afile.mtime,
+                size: afile.size,
+            },
             tags: [],
             parent: afile.parent,
             type: afile.isFolder ? "space" : "file",
             subtype: afile.isFolder ? "folder" : afile.extension,
-        } as FileCache);
+            name: afile.isFolder ? afile.name : afile.name.replace(new RegExp(`\\.${afile.extension}$`), ""),
+            path: afile.path,
+            hidden: false,
+        });
 
         await this.middleware.createFileCache(afile.path);
         this.middleware.onCreate(afile);
@@ -274,12 +279,18 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.cache.set(newFile.path, {
             ...this.cache.get(oldPath),
             file: newFile,
-            ctime: oldCache.ctime > 0 ? oldCache.ctime : newFile.ctime,
-            label: { ...oldCache.label } as PathLabel,
+            metadata: newFile.isFolder ? {} : {
+                ctime: newFile.ctime,
+                mtime: newFile.mtime,
+                size: newFile.size,
+            },
             parent: newFile.parent,
             type: newFile.isFolder ? "space" : "file",
             subtype: newFile.isFolder ? "folder" : newFile.extension,
-        } as FileCache);
+            name: newFile.isFolder ? newFile.name : newFile.name.replace(new RegExp(`\\.${newFile.extension}$`), ""),
+            path: newFile.path,
+            hidden: false,
+        });
 
         this.cache.delete(oldPath);
         this.middleware.onRename(tFileToAFile(file), oldPath);
@@ -338,7 +349,9 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                     newPath = folder + "/" + fileNameWithExtension(newName, file.extension);
                 }
                 await this.plugin.app.vault.adapter.copy(file.path, newPath);
-            } catch (e) {}
+            } catch (e) {
+                // empty
+            }
             newFile = tFileToAFile(this.plugin.app.vault.getAbstractFileByPath(newPath));
         }
         if (!newFile) return;
@@ -350,12 +363,18 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.cache.set(newFile.path, {
             ...clonedCache,
             file: newFile,
-            ctime: newFile.ctime,
-            label: { ...this.cache.get(path)?.label } as PathLabel,
+            metadata: newFile.isFolder ? {} : {
+                ctime: newFile.ctime,
+                mtime: newFile.mtime,
+                size: newFile.size,
+            },
             parent: newFile.parent,
             type: newFile.isFolder ? "space" : "file",
             subtype: newFile.isFolder ? "folder" : newFile.extension,
-        } as FileCache);
+            name: newFile.isFolder ? newFile.name : newFile.name.replace(new RegExp(`\\.${newFile.extension}$`), ""),
+            path: newFile.path,
+            hidden: false,
+        });
         return newPath;
     }
     public async writeTextToFile(path: string, content: string) {

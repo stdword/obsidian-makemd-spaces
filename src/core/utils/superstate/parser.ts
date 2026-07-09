@@ -1,11 +1,15 @@
 import { PathState } from "shared/types/PathState";
-import { safelyParseJSON } from "shared/utils/json";
+import { safelyParseJSON } from "utils/json";
 
 export const parsePathState = (cache: string): PathState => {
-    const pathState = safelyParseJSON(cache);
+    const pathState = safelyParseJSON(cache) as PathState;
     if (!pathState) return pathState;
     return {
         ...pathState,
-        label: pathState.label ?? { sticker: "", color: "" },
+        color: pathState.color ?? "",
+        sticker: pathState.sticker ?? "",
+        spaces: pathState.spaces ?? [],
+        linkedSpaces: pathState.linkedSpaces ?? [],
+        pinnedSpaces: pathState.pinnedSpaces ?? [],
     };
 };

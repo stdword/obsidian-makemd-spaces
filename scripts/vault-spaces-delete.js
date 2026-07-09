@@ -10,6 +10,8 @@ const USAGE = `Usage:
 Deletes .space directories whose only direct child is def.json.
 Without --apply, prints a dry-run list and does not delete anything.`;
 
+const SPACE_CONFIG_FILE = "context.json";
+
 function parseArgs(argv) {
     const args = argv.slice(2);
     const apply = args.includes("--apply");
@@ -27,8 +29,8 @@ function parseArgs(argv) {
     return { help: false, apply, root: path.resolve(paths[0]) };
 }
 
-function isOnlyDefJson(entries) {
-    return entries.length === 1 && entries[0].name === "def.json" && entries[0].isFile();
+function isOnlyConfigFile(entries) {
+    return entries.length === 1 && entries[0].name === SPACE_CONFIG_FILE && entries[0].isFile();
 }
 
 function readDir(dir) {
@@ -66,7 +68,7 @@ function listEmptySpaces(root) {
             return;
         }
 
-        if (path.basename(dir) === ".space" && isOnlyDefJson(entries)) {
+        if (path.basename(dir) === ".space" && isOnlyConfigFile(entries)) {
             candidates.push(dir);
             return;
         }

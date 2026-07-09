@@ -5,18 +5,16 @@ export type SpaceSort = {
     recursive?: boolean;
 };
 
-export type SpaceType = "folder" | "tag" | "vault" | "default" | "unknown";
-
 export type SpaceDefinition = {
-    contexts?: string[];
-    sort?: Partial<SpaceSort>;
-    links?: string[];
-    tags?: string[];
     color?: string;
     sticker?: string;
-    "rank-order"?: string[];
-    pinned?: string[];
     defaultSticker?: string;
     defaultColor?: string;
+
+    links?: string[];
+    pinned?: string[];
+
+    sort?: Partial<SpaceSort>;
+    "rank-order"?: string[];
     "file-colors"?: Record<string, string>;
 };

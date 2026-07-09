@@ -1,4 +1,4 @@
-import { parseURI } from "shared/utils/uri";
+import { parseURI } from "utils/uri";
 
 describe("parseURI", () => {
     it("keeps question marks and percent signs in plain vault paths", () => {

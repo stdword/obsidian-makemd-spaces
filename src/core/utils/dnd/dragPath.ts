@@ -1,5 +1,5 @@
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { TreeNode } from "../../superstate/utils/spaces";
+import { TreeNode } from "core/utils/superstate/spaces";
 
 export enum ProjectionType {
     PathRank,
@@ -60,6 +60,15 @@ const nodeContainsTarget = (nodeId: string, targetId: string | null) => {
     return targetId == nodeId || targetId.startsWith(`${nodeId}/`);
 };
 
+const isTagSpaceNode = (node?: TreeNode | null) => node?.item?.subtype == "tag";
+
+const selectedNodesForPaths = (items: TreeNode[], paths: string[]) => items.filter((node) => node.item?.path && paths.includes(node.item.path));
+
+const selectedNodesAreInsideTagSpace = (items: TreeNode[], paths: string[], tagSpaceId: string) => {
+    const selectedNodes = selectedNodesForPaths(items, paths);
+    return selectedNodes.length == paths.length && selectedNodes.every((node) => node.parentId == tagSpaceId);
+};
+
 export function getDragDepth(offset: number, indentationWidth: number) {
     return Math.round(offset / indentationWidth);
 }
@@ -113,6 +122,7 @@ export const getMultiProjection = (flattenedTree: TreeNode[], _paths: string[], 
     const dropTarget = overItem.type == "file" ? flattenedTree.find((f) => f.id == overItem.parentId) : overItem;
 
     if (dropTarget && dropTarget.type != "file") {
+        if (isTagSpaceNode(dropTarget) && !selectedNodesAreInsideTagSpace(flattenedTree, _paths, dropTarget.id)) return null;
         const _projected: DragProjection = {
             depth: overItem.depth,
             overId: overItem.id,
@@ -150,6 +160,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
         const firstChild = items[overItemIndex + 1];
         if (firstChild?.parentId == previousItem.id) {
             if (modifier == "move" && activeItem.parentId == previousItem.id && activeItem.id == firstChild.id) return null;
+            if (isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
             return {
                 depth: firstChild.depth,
                 overId: firstChild.id,
@@ -164,6 +175,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
         }
     }
     if (activeItem.depth > 0 && previousItemDroppable && !previousItem.collapsed && previousItem.childrenCount > 0 && isMiddleZone) {
+        if (isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
         return {
             depth: previousItem.depth + 1,
             overId: previousItem.id,
@@ -192,6 +204,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
     if (nodeContainsTarget(activeItem?.id, parentId)) return null;
 
     const parent = items.find((f) => f.id == parentId);
+    if (isTagSpaceNode(parent) && activeItem.parentId != parent.id) return null;
     const nextSibling = !insert && isBottomZone ? findNextSibling(items, overItemIndex, previousItem, parentId) : null;
     const targetItem = insert ? previousItem : (nextSibling ?? previousItem);
     const linePosition = insert ? undefined : nextSibling ? "top" : isBottomZone ? "bottom" : "top";
