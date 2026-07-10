@@ -3,7 +3,7 @@ import { App, MarkdownView, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile, openTagContext } from "adapters/obsidian/utils/file";
+import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile } from "adapters/obsidian/utils/file";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
@@ -42,7 +42,6 @@ import "css/UI/Buttons.css";
 import { IMakeMDPlugin } from "shared/types/makemd";
 import { removeTrailingSlashFromFolder } from "utils/paths";
 import { getParentPathFromString } from "utils/path";
-import { ISuperstate } from "shared/types/superstate";
 
 export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     app: App;
@@ -54,11 +53,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     superstate: Superstate;
     ui: ObsidianUI;
 
-    quickOpen(superstate: ISuperstate, mode?: number, onSelect?: (link: string) => void, source?: string) {
-        console.log("TRACE", "quickOpen", { superstate, mode, onSelect, source });
-        // const win = windowFromDocument(this.app.workspace.getLeaf()?.containerEl.ownerDocument);
-        // openBlinkModal(superstate, mode, win, onSelect, source);
-    }
     loadSuperState() {
         this.app.workspace.onLayoutReady(async () => {
             await this.superstate.initializeIndex();
@@ -130,8 +124,8 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     openPath = async (leaf: WorkspaceLeaf, path: string, _flow?: boolean) => {
         const uri = this.superstate.spaceManager.uriByString(path);
-        console.log("TRACE", "openPath", path);
-        if (!uri) return;
+        if (!uri)
+            return;
 
         if (uri.scheme == "https" || uri.scheme == "http") {
             if (this.superstate.spacesIndex.has(path)) {
@@ -156,26 +150,21 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
             return;
         }
 
-        if (uri.scheme == "spaces" || uri.scheme == "mk-core") {
-            openTagContext(leaf, uri.basePath, this.app);
+        if (uri.scheme == "spaces")
             return;
-        }
+
         const f = await this.files.getFile(path);
         if (f) {
-            if (f.isFolder) {
+            if (f.isFolder)
                 return;
-            } else if (f) {
-                await openTFile(leaf, getAbstractFileAtPath(this.app, f.path) as TFile, this.app);
-            } else {
-                return;
-            }
+
+            await openTFile(leaf, getAbstractFileAtPath(this.app, f.path) as TFile, this.app);
         } else {
             if (path.contains("/")) {
                 const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
                 const spaceFolder = this.superstate.spacesIndex.get(folder);
-                if (spaceFolder) {
+                if (spaceFolder)
                     await newPathInSpace(this.superstate, spaceFolder, fileExtensionForFile(path), fileNameForFile(path));
-                }
             } else {
                 const f = await defaultSpace(this.superstate, this.superstate.pathsIndex.get(this.superstate.ui.activePath));
                 if (f) await newPathInSpace(this.superstate, f, fileExtensionForFile(path), fileNameForFile(path));

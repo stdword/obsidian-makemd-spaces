@@ -4,7 +4,6 @@ import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { SpaceType } from "shared/types/PathState";
-import { SpaceFragmentType } from "shared/types/spaceFragment";
 import { SpaceAdapter, ISpaceManager } from "shared/types/spaceManager";
 import { ISuperstate } from "shared/types/superstate";
 import { parseURI } from "utils/uri";
@@ -16,7 +15,7 @@ export class SpaceManager implements ISpaceManager {
     public superstate: ISuperstate;
     public api: IAPI;
 
-    public onSpaceUpdated(_path: string, _type: SpaceFragmentType) {
+    public onSpaceUpdated(_path: string, _type: string) {
         return;
     }
 
@@ -123,8 +122,8 @@ export class SpaceManager implements ISpaceManager {
     public createSpace(name: string, parentPath: string, definition: SpaceDefinition) {
         return this.adapterForPath(parentPath).createSpace(name, parentPath, definition);
     }
-    public saveSpace(path: string, definition: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) {
-        return this.adapterForPath(path).saveSpace(path, definition, properties);
+    public saveSpace(path: string, definition: (def: SpaceDefinition) => SpaceDefinition) {
+        return this.adapterForPath(path).saveSpace(path, definition);
     }
     public renameSpace(path: string, newPath: string) {
         return this.adapterForPath(path).renameSpace(path, newPath);

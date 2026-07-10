@@ -231,7 +231,7 @@ body .mk-tree-new {
     background: var(--nav-item-background-active) !important;
 }
 
-.workspace-leaf.mod-active .is-highlighted {
+.mk-tree-wrapper.is-highlighted {
     background: var(--nav-item-background-active) !important;
 }
 

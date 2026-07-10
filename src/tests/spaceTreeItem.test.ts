@@ -1,24 +1,9 @@
-import { shouldShowFileTag, shouldShowLinkedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
 import fs from "fs";
 import path from "path";
-
-describe("shouldShowFileTag", () => {
-    it("hides tags for registered file extensions", () => {
-        expect(shouldShowFileTag(false, "md")).toBe(false);
-        expect(shouldShowFileTag(false, "base")).toBe(false);
-        expect(shouldShowFileTag(false, "canvas")).toBe(false);
-        expect(shouldShowFileTag(false, "excalidraw")).toBe(false);
-    });
-
-    it("shows tags only for unregistered file extensions", () => {
-        expect(shouldShowFileTag(false, "pdf")).toBe(true);
-        expect(shouldShowFileTag(false, "")).toBe(false);
-        expect(shouldShowFileTag(true, "pdf")).toBe(false);
-    });
-});
 
 describe("canOpenTreeItemPath", () => {
     it("keeps tag space groups inside the navigator tree", () => {
@@ -151,15 +136,51 @@ describe("linked item icon", () => {
     });
 });
 
+describe("pinned item icon", () => {
+    it("uses the tree node pinned state instead of stale path state metadata", () => {
+        expect(
+            shouldShowPinnedItemIcon({
+                type: "space",
+                depth: 1,
+                space: "Projects",
+                pinned: false,
+                item: {
+                    path: "Projects/Topics",
+                    pinnedSpaces: ["Projects"],
+                },
+            } as any),
+        ).toBe(false);
+    });
+});
+
 
 describe("treeItemColorVariables", () => {
+    it("uses the current tag-space file color instead of stale global path color", () => {
+        const path = "Notes/Tagged.md";
+        const space = "spaces://#project";
+        const superstate = {
+            pathStateForPath: jest.fn(() => ({ path, type: "file", color: "" })),
+            spacesIndex: new Map([[space, {
+                metadata: {
+                    "file-colors": { [path]: "#ff6699" },
+                },
+            }]]),
+        } as any;
+
+        expect(pathStateForTreeItem(superstate, {
+            path,
+            space,
+            item: { path, type: "file", color: "" },
+        } as any).color).toBe("#ff6699");
+    });
+
     it("does not use a folder defaultColor as the folder's own display color", () => {
         expect(
             treeItemDisplayColor(
                 {
                     type: "space",
                     subtype: "folder",
-                    sticker: "ui//folder",
+                    sticker: "lucide//folder-closed",
                     color: "",
                 } as any,
                 "#ff6699",
@@ -200,8 +221,22 @@ describe("treeItemDisplayName", () => {
     it("falls back to the space name when a vault path state has an empty name", () => {
         expect(
             treeItemDisplayName(
-                { type: "space", subtype: "vault", path: "/", name: "" },
-                { path: "/" },
+                {
+                    type: "space",
+                    subtype: "vault",
+                    path: "/",
+                    name: "",
+                    parent: "",
+                    metadata: {},
+                    tags: [],
+                    hidden: false,
+                    color: "",
+                    sticker: "ui//home",
+                    spaces: [],
+                    linkedSpaces: [],
+                    pinnedSpaces: [],
+                },
+                { path: "/" } as any,
                 new Map([["/", { name: "Home" }]]),
             ),
         ).toBe("Home");
@@ -210,8 +245,22 @@ describe("treeItemDisplayName", () => {
     it("keeps non-empty path state names before fallbacks", () => {
         expect(
             treeItemDisplayName(
-                { type: "space", path: "/", name: "Vault" },
-                { path: "/" },
+                {
+                    type: "space",
+                    subtype: "vault",
+                    path: "/",
+                    name: "Vault",
+                    parent: "",
+                    metadata: {},
+                    tags: [],
+                    hidden: false,
+                    color: "",
+                    sticker: "ui//home",
+                    spaces: [],
+                    linkedSpaces: [],
+                    pinnedSpaces: [],
+                },
+                { path: "/" } as any,
                 new Map([["/", { name: "Home" }]]),
             ),
         ).toBe("Vault");

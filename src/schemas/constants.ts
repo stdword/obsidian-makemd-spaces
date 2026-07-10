@@ -1,7 +1,8 @@
+import i18n from "shared/i18n";
 import { SpaceDefinition } from "shared/types/spaceDef";
 
 export const DEFAULT_NEW_NOTE_NAME = "Untitled";
-export const DEFAULT_SYSTEM_NAME = "Home";
+export const DEFAULT_SYSTEM_NAME = i18n.labels.home;
 
 export const FOCUSES_FILE = "focuses.json";
 

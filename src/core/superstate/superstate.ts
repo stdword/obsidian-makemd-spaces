@@ -1,16 +1,13 @@
-import i18n from "shared/i18n";
-
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { effectiveSpaceSort, saveSpaceCache } from "core/utils/superstate/spaces";
-import { builtinSpaces } from "schemas/space";
 import { tagSpacePathFromTag } from "schemas/builtin";
 import { pathIsSpace } from "core/utils/superstate/space";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
-import { isTagSpacePath, tagsSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
+import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
 import { Focus } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { FilesystemSpaceInfo, PathState, SpaceState } from "shared/types/PathState";
@@ -28,6 +25,7 @@ import { Indexer } from "./workers/indexer/indexer";
 import { SuperstateEvent, SpaceType } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { ensureArray } from "core/utils/schema";
+import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 
 const spaceDisplayMetadata = (metadata: SpaceDefinition = {}) => {
@@ -51,6 +49,7 @@ const tagSpaceMetadata = (metadata: SpaceDefinition = {}): SpaceDefinition => ({
     ...(metadata.sort ? { sort: metadata.sort } : {}),
     "rank-order": ensureArray(metadata["rank-order"]),
     pinned: ensureArray(metadata.pinned),
+    "file-colors": metadata["file-colors"] ?? {},
 });
 
 const tagSpaceState = (space: SpaceState, metadata?: SpaceDefinition): SpaceState => ({
@@ -104,22 +103,6 @@ const tagPathStateForSpace = (space: SpaceState): PathState => ({
     metadata: {},
 });
 
-const fallbackStickerForPathState = (pathState: PathState): string => {
-    if (!pathState) return "";
-    if (pathState.type == "space") {
-        if (pathState.path == "/") return "ui//home";
-        if (isTagSpacePath(pathState.path)) return "lucide//hash";
-        return "ui//folder";
-    }
-    const fileExtension = pathState.subtype?.toLowerCase() || pathState.path?.split(".").pop()?.toLowerCase();
-    if (["png", "jpg", "jpeg", "avif", "webp", "gif"].includes(fileExtension)) return "ui//image";
-    if (fileExtension == "canvas") return "ui//layout-dashboard";
-    if (fileExtension == "base") return "ui//table";
-    if (fileExtension == "excalidraw" || fileExtension == "excalidraw.md" || pathState.path?.toLowerCase().endsWith(".excalidraw.md")) return "ui//excalidraw";
-    if (fileExtension == "md") return "ui//file-text";
-    return "ui//file";
-};
-
 const isFolderLikePathState = (pathState: PathState): boolean => pathState?.type == "space" || pathState?.subtype == "folder";
 
 const effectiveDisplayForPathState = (pathState: PathState, spacesIndex: Map<string, SpaceState>, parentSpacePath?: string): Pick<PathState, "color" | "sticker"> => {
@@ -129,14 +112,14 @@ const effectiveDisplayForPathState = (pathState: PathState, spacesIndex: Map<str
 
     if (isFolderLikePathState(pathState)) {
         return {
-            sticker: ownSpaceMetadata.sticker || parentMetadata.defaultSticker || fallbackStickerForPathState(pathState),
+            sticker: ownSpaceMetadata.sticker || parentMetadata.defaultSticker || pathDisplayInfo(pathState.path, "folder").icon,
             color: ownSpaceMetadata.color ?? parentMetadata.defaultColor ?? "",
         };
     }
 
     const fileColors = parentMetadata["file-colors"] ?? {};
     return {
-        sticker: fallbackStickerForPathState(pathState),
+        sticker: pathDisplayInfo(pathState.path).icon,
         color: fileColors[pathState.path] ?? parentMetadata.defaultColor ?? "",
     };
 };
@@ -244,10 +227,7 @@ export class Superstate implements ISuperstate {
 
         this.initializeFocuses();
         await this.initializeSpaces();
-
-        await this.initializeBuiltins();
         await this.initializeTags();
-
         await this.initializePaths();
 
         this.dispatchEvent("superstateUpdated", null);
@@ -394,12 +374,6 @@ export class Superstate implements ISuperstate {
         return null;
     }
 
-    public async initializeBuiltins() {
-        const allBuiltins = builtinSpaces;
-        const promises = Object.keys(allBuiltins).map((f) => this.reloadPath("spaces://$" + f, true));
-        await Promise.all(promises);
-    }
-
     public async initializeTags() {
         return;
     }
@@ -449,7 +423,12 @@ export class Superstate implements ISuperstate {
     public async initializeFocuses() {
         const allFocuses = await this.spaceManager.readFocuses();
         if (allFocuses.length == 0) {
-            this.spaceManager.saveFocuses([{ name: i18n.labels.home, sticker: "ui//home", paths: ["/"] }]);
+            const display = pathDisplayInfo("/");
+            this.spaceManager.saveFocuses([{
+                    name: display.title,
+                    sticker: display.icon,
+                    paths: ["/"],
+            }]);
             return;
         }
         this.focuses = allFocuses;
@@ -497,8 +476,6 @@ export class Superstate implements ISuperstate {
             await this.spaceManager.saveFocuses(this.focuses);
         }
         this.dispatchEvent("spaceChanged", { path: oldPath, newPath: newSpaceInfo.path });
-
-        this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
     }
 
     public async onTagDeleted(tag: string) {
@@ -506,7 +483,6 @@ export class Superstate implements ISuperstate {
             this.deleteTagInPath(tag, path);
         });
         this.onSpaceDeleted(tagSpacePathFromTag(tag));
-        this.dispatchEvent("spaceStateUpdated", { path: tagsSpacePath });
     }
 
     public async deleteTagInPath(tag: string, path: string) {
@@ -762,7 +738,7 @@ export class Superstate implements ISuperstate {
                 type: "space",
                 subtype: type,
                 color: "",
-                sticker: fallbackStickerForPathState({ path: space.path, type: "space", subtype: type } as PathState),
+                sticker: pathDisplayInfo(space.path, "folder").icon,
             };
             this.pathsIndex.set(space.path, pathState);
             this.persister.store(space.path, serializePathState(pathState), "path");

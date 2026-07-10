@@ -73,12 +73,17 @@ const selectedNodesAreInsideTagSpace = (items: TreeNode[], paths: string[], tagS
 const isSpaceContainerNode = (node?: TreeNode | null) => node?.item?.type == "space";
 const isFolderContainerNode = (node?: TreeNode | null) => node?.item?.type == "space" && node.item?.subtype != "tag";
 
-const isPathInsideFolder = (path: string | undefined, folderPath: string | undefined) => Boolean(path && folderPath && path != folderPath && path.startsWith(`${folderPath}/`));
+const parentPathForPath = (path: string | undefined) => {
+    if (!path) return "";
+    const separatorIndex = path.lastIndexOf("/");
+    return separatorIndex == -1 ? "" : path.slice(0, separatorIndex);
+};
 
-const isAlreadyInFolderContainer = (activeItem: TreeNode, folderNode?: TreeNode | null) =>
-    isFolderContainerNode(folderNode) &&
-    activeItem.parentId != folderNode.id &&
-    (activeItem.item?.parent == folderNode.item?.path || isPathInsideFolder(activeItem.item?.path, folderNode.item?.path));
+const isAlreadyInFolderContainer = (activeItem: TreeNode, folderNode?: TreeNode | null) => {
+    if (!isFolderContainerNode(folderNode) || activeItem.parentId == folderNode.id) return false;
+    const physicalParent = activeItem.item?.parent ?? parentPathForPath(activeItem.item?.path);
+    return physicalParent == folderNode.item?.path;
+};
 
 export function getDragDepth(offset: number, indentationWidth: number) {
     return Math.round(offset / indentationWidth);

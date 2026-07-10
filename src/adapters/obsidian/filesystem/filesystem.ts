@@ -1,4 +1,4 @@
-import { addTagToProperties, getAllFilesForTag, loadTags, removeTagFromMarkdownFile, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
+import { addTagToProperties, getAllFilesForTag, loadTags, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
 import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileSystemAdapter, FileTypeCache, FilesystemMiddleware } from "makemd-core";
@@ -78,17 +78,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         if (!vaultItem) return;
         this.updateFileCache(path, { tags: [...vaultItem.tags.filter((t) => t.toLowerCase() != oldTag.toLowerCase()), newTag] }, true);
     }
-    public async removeTagFromFile(path: string, tag: string) {
-        const file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
-        if (file.extension == "md") {
-            removeTagFromMarkdownFile(this.plugin, tag, file);
-            return;
-        }
-        const vaultItem = this.cache.get(path);
-        if (!vaultItem) return;
-        this.updateFileCache(path, { tags: [...vaultItem.tags.filter((t) => t.toLowerCase() != tag.toLowerCase())] }, true);
-    }
-
     public async loadFilesFromObsidian() {
         this.vaultDBCache = getAllAbstractFilesInVault(this.plugin.app)
             .map((file) => ({

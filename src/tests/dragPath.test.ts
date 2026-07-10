@@ -1,5 +1,54 @@
 import { getMultiProjection, getProjection } from "core/utils/dnd/dragPath";
 
+describe("nested folder drag projections", () => {
+    it("allows moving a nested file one level up into an ancestor folder", () => {
+        const root: any = {
+            id: "Workspace",
+            parentId: null,
+            depth: 0,
+            type: "space",
+            item: { path: "Workspace", type: "space", subtype: "folder" },
+            collapsed: false,
+            childrenCount: 1,
+            sortable: true,
+        };
+        const nested: any = {
+            id: "Workspace/Nested",
+            parentId: "Workspace",
+            depth: 1,
+            type: "space",
+            item: { path: "Workspace/Nested", parent: "Workspace", type: "space", subtype: "folder" },
+            collapsed: false,
+            childrenCount: 2,
+            sortable: true,
+        };
+        const active: any = {
+            id: "Workspace/Nested/First.md",
+            parentId: "Workspace/Nested",
+            depth: 2,
+            type: "file",
+            item: { path: "Workspace/Nested/First.md", parent: "Workspace/Nested", type: "file" },
+            collapsed: false,
+            childrenCount: 0,
+            sortable: true,
+            rank: 0,
+        };
+        const sibling: any = {
+            ...active,
+            id: "Workspace/Nested/Second.md",
+            item: { path: "Workspace/Nested/Second.md", parent: "Workspace/Nested", type: "file" },
+            rank: 1,
+        };
+
+        const projection = getProjection(active, [root, nested, active, sibling], [active.item.path], 3, 1, 29, true, "move", nested.item.path);
+
+        expect(projection).toEqual(expect.objectContaining({
+            parentId: "Workspace",
+            droppable: true,
+        }));
+    });
+});
+
 describe("tag space drag projections", () => {
     const tagNode: any = {
         id: "spaces://#fixture",

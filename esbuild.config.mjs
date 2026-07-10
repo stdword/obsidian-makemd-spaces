@@ -20,7 +20,7 @@ const prod = process.argv[2] === "production";
 const prev = process.argv[2] === "preview";
 const buildv = prod || prev;
 
-import findCacheDir from "find-cache-dir";
+import findCacheDir from "find-cache-directory";
 
 function inlineWorkerPlugin(extraConfig) {
     return {
@@ -120,46 +120,55 @@ let renamePlugin = {
 };
 
 const outputDir = prev ? process.env.prevDir : prod ? process.env.buildDir : demo ? process.env.demoDir : process.env.devDir;
-esbuild
-    .build({
-        banner: {
-            js: banner,
-        },
-        entryPoints: ["main.ts"],
-        bundle: true,
-        external: [
-            "obsidian",
-            "electron",
-            ...builtins,
-        ],
-        format: "cjs",
-        loader: {
-            ".ttf": "base64",
-        },
-        watch: !buildv,
-        target: "es2020",
-        logLevel: "info",
-        sourcemap: buildv ? false : "inline",
-        treeShaking: true,
-        minify: true,
-        outfile: outputDir + "/main.js",
-        define: { "process.env.NODE_ENV": prod ? '"production"' : '"development"' },
-        plugins: [
-            renamePlugin,
-            // preactCompatPlugin,
-            inlineWorkerPlugin(),
-            watPlugin(),
-            ...(buildv
-                ? [
-                      copy({
-                          resolveFrom: "cwd",
-                          assets: {
-                              from: "manifest.json",
-                              to: outputDir + "/manifest.json",
-                          },
-                      }),
-                  ]
-                : []),
-        ],
-    })
-    .catch(() => process.exit(1));
+const buildOptions = {
+    banner: {
+        js: banner,
+    },
+    entryPoints: ["main.ts"],
+    bundle: true,
+    external: [
+        "obsidian",
+        "electron",
+        ...builtins,
+    ],
+    format: "cjs",
+    loader: {
+        ".ttf": "base64",
+    },
+    target: "es2020",
+    logLevel: "info",
+    sourcemap: buildv ? false : "inline",
+    treeShaking: true,
+    minify: true,
+    outfile: outputDir + "/main.js",
+    define: { "process.env.NODE_ENV": prod ? '"production"' : '"development"' },
+    plugins: [
+        renamePlugin,
+        // preactCompatPlugin,
+        inlineWorkerPlugin(),
+        watPlugin(),
+        ...(buildv
+            ? [
+                  copy({
+                      resolveFrom: "cwd",
+                      assets: {
+                          from: "manifest.json",
+                          to: outputDir + "/manifest.json",
+                      },
+                  }),
+              ]
+            : []),
+    ],
+};
+
+async function runBuild() {
+    if (buildv) {
+        await esbuild.build(buildOptions);
+        return;
+    }
+
+    const context = await esbuild.context(buildOptions);
+    await context.watch();
+}
+
+runBuild().catch(() => process.exit(1));

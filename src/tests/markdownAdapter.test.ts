@@ -50,10 +50,9 @@ describe("ObsidianMarkdownFiletypeAdapter", () => {
         return { adapter, middleware };
     };
 
-    it("only exposes tags as markdown content", () => {
+    it("only exposes tags as markdown cache", () => {
         const { adapter } = createAdapter();
 
-        expect(adapter.contentTypes({ extension: "md" } as any)).toEqual(["tags"]);
         expect(adapter.cacheTypes({ extension: "md" } as any)).toEqual(["tags"]);
     });
 
@@ -70,4 +69,5 @@ describe("ObsidianMarkdownFiletypeAdapter", () => {
             false,
         );
     });
+
 });

@@ -20,6 +20,8 @@ const createSuperstate = () => {
         allPaths: jest.fn(() => ["icons/logo.svg"]),
         allSpaces: jest.fn((): any[] => []),
         readTags: jest.fn((): string[] => []),
+        readFocuses: jest.fn(() => Promise.resolve([])),
+        saveFocuses: jest.fn(() => Promise.resolve()),
         pathsForTag: jest.fn((): string[] => []),
         pathExists: jest.fn((_path: string) => false),
         loadPath: jest.fn(),
@@ -64,6 +66,34 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
+    it("loads folder rank-order from context metadata during initialization", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const rankedSpace = {
+            type: "folder",
+            name: "RankedSpace",
+            path: "RankedSpace",
+            metadata: {},
+            space: {
+                folderPath: "RankedSpace",
+                defPath: "RankedSpace/.space/context.json",
+                notePath: "RankedSpace/RankedSpace.md",
+            },
+        } as any;
+        spaceManager.allSpaces = jest.fn(() => [rankedSpace]);
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "folder");
+        spaceManager.spaceDefinitionForPath = jest.fn().mockResolvedValue({
+            sort: { field: "rank", asc: true },
+            "rank-order": ["RankedSpace/ChildA", "RankedSpace/ChildB"],
+        });
+        superstate.persister.cleanType = jest.fn();
+
+        await superstate.initialize();
+
+        expect(spaceManager.spaceDefinitionForPath).toHaveBeenCalledTimes(1);
+        expect(superstate.spacesIndex.get("RankedSpace").metadata["rank-order"]).toEqual(["RankedSpace/ChildA", "RankedSpace/ChildB"]);
+    });
+
     it("does not create space states for Obsidian tags during initialization", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.readTags = jest.fn(() => ["#project"]);
@@ -142,6 +172,7 @@ describe("Superstate tag initialization", () => {
             metadata: {
                 "rank-order": [],
                 pinned: [],
+                "file-colors": {},
             },
             space: {
                 defPath: "",
@@ -166,6 +197,45 @@ describe("Superstate tag initialization", () => {
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
         const stored = JSON.parse(superstate.persister.store.mock.calls[0][1]);
         expect(stored.metadata.color).toBe("var(--mk-color-teal)");
+    });
+
+    it("stores and displays an item color inside a tag space without filesystem metadata", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const tagPath = tagSpacePathFromTag("#project");
+        const itemPath = "NoteFolder/Tagged.md";
+        spaceManager.pathsForTag = jest.fn(() => [itemPath]);
+        superstate.spacesIndex.set(tagPath, {
+            type: "tag",
+            name: "project",
+            path: tagPath,
+            metadata: {
+                "file-colors": {},
+                "rank-order": [],
+            },
+        } as any);
+        superstate.pathsIndex.set(itemPath, {
+            path: itemPath,
+            name: "Tagged",
+            parent: "NoteFolder",
+            type: "file",
+            subtype: "md",
+            tags: ["#project"],
+            spaces: [tagPath],
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            hidden: false,
+            color: "",
+            sticker: "ui//file-text",
+            metadata: {},
+        });
+
+        await savePathColor(superstate, itemPath, "#123456", tagPath);
+
+        expect(superstate.spacesIndex.get(tagPath).metadata["file-colors"]).toEqual({
+            [itemPath]: "#123456",
+        });
+        expect(superstate.getSpaceItems(tagPath)[0].color).toBe("#123456");
+        expect(spaceManager.saveSpace).not.toHaveBeenCalled();
     });
 
     it("persists the home space color to its context.json metadata", async () => {
@@ -201,33 +271,33 @@ describe("Superstate tag initialization", () => {
     it("stores color for every selected file in the same space", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.saveSpace = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 0)));
-        superstate.spacesIndex.set("Projects", {
+        superstate.spacesIndex.set("FolderSpace", {
             type: "folder",
-            name: "Projects",
-            path: "Projects",
+            name: "FolderSpace",
+            path: "FolderSpace",
             metadata: {
                 "file-colors": {},
             },
-            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+            space: { path: "FolderSpace", name: "FolderSpace", defPath: "", notePath: "", folderPath: "" },
         } as any);
-        ["Projects/Alpha.md", "Projects/Beta.md"].forEach((path) => {
+        ["FolderSpace/Alpha.md", "FolderSpace/Beta.md"].forEach((path) => {
             superstate.pathsIndex.set(path, {
                 path,
                 name: path.split("/").pop(),
                 type: "file",
                 subtype: "md",
                 tags: [],
-                spaces: ["Projects"],
+                spaces: ["FolderSpace"],
                 hidden: false,
             });
         });
 
-        await saveColorForPaths(superstate, ["Projects/Alpha.md", "Projects/Beta.md"], "#123456");
+        await saveColorForPaths(superstate, ["FolderSpace/Alpha.md", "FolderSpace/Beta.md"], "#123456");
         await new Promise((resolve) => setTimeout(resolve, 0));
 
-        expect(superstate.spacesIndex.get("Projects").metadata["file-colors"]).toEqual({
-            "Projects/Alpha.md": "#123456",
-            "Projects/Beta.md": "#123456",
+        expect(superstate.spacesIndex.get("FolderSpace").metadata["file-colors"]).toEqual({
+            "FolderSpace/Alpha.md": "#123456",
+            "FolderSpace/Beta.md": "#123456",
         });
     });
 
@@ -240,22 +310,22 @@ describe("Superstate tag initialization", () => {
                     resolveSave = resolve;
                 }),
         );
-        superstate.spacesIndex.set("Projects", {
+        superstate.spacesIndex.set("FolderSpace", {
             type: "folder",
-            name: "Projects",
-            path: "Projects",
+            name: "FolderSpace",
+            path: "FolderSpace",
             metadata: {
                 "file-colors": {},
             },
-            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+            space: { path: "FolderSpace", name: "FolderSpace", defPath: "", notePath: "", folderPath: "" },
         } as any);
-        superstate.pathsIndex.set("Projects/Alpha.md", {
-            path: "Projects/Alpha.md",
+        superstate.pathsIndex.set("FolderSpace/Alpha.md", {
+            path: "FolderSpace/Alpha.md",
             name: "Alpha.md",
             type: "file",
             subtype: "md",
             tags: [],
-            spaces: ["Projects"],
+            spaces: ["FolderSpace"],
             linkedSpaces: [],
             pinnedSpaces: [],
             hidden: false,
@@ -264,9 +334,9 @@ describe("Superstate tag initialization", () => {
             metadata: {},
         });
 
-        const colorSave = savePathColor(superstate, "Projects/Alpha.md", "#123456");
+        const colorSave = savePathColor(superstate, "FolderSpace/Alpha.md", "#123456");
 
-        expect(superstate.pathsIndex.get("Projects/Alpha.md").color).toBe("#123456");
+        expect(superstate.pathsIndex.get("FolderSpace/Alpha.md").color).toBe("#123456");
 
         await Promise.resolve();
         resolveSave();
@@ -306,6 +376,7 @@ describe("Superstate tag initialization", () => {
             sort: { field: "rank", asc: false },
             "rank-order": ["Tagged.md"],
             pinned: [],
+            "file-colors": {},
         });
         expect(superstate.spacesIndex.get(tagSpacePathFromTag("#project")).path).toBe(tagSpacePathFromTag("#project"));
         expect(superstate.pathsIndex.has(tagSpacePathFromTag("#project"))).toBe(false);
@@ -586,16 +657,16 @@ describe("Superstate tag initialization", () => {
     it("returns linked tag spaces as folder children without requiring tag path cache", () => {
         const { superstate } = createSuperstate();
         const tagPath = tagSpacePathFromTag("#sample/linked");
-        superstate.spacesIndex.set("Projects", {
+        superstate.spacesIndex.set("FolderSpace", {
             type: "folder",
-            name: "Projects",
-            path: "Projects",
+            name: "FolderSpace",
+            path: "FolderSpace",
             metadata: {
                 links: [tagPath],
                 "rank-order": [],
                 pinned: [],
             },
-            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+            space: { path: "FolderSpace", name: "FolderSpace", defPath: "", notePath: "", folderPath: "" },
         } as any);
         superstate.spacesIndex.set(tagPath, {
             type: "tag",
@@ -607,9 +678,9 @@ describe("Superstate tag initialization", () => {
             },
             space: { path: tagPath, name: "sample/linked", defPath: "", notePath: "", folderPath: "" },
         } as any);
-        superstate.spacesMap.set(tagPath, new Set(["Projects"]));
+        superstate.spacesMap.set(tagPath, new Set(["FolderSpace"]));
 
-        const items = superstate.getSpaceItems("Projects");
+        const items = superstate.getSpaceItems("FolderSpace");
 
         expect(items.map((item: any) => [item.path, item.subtype])).toEqual([[tagPath, "tag"]]);
         expect(superstate.pathsIndex.has(tagPath)).toBe(false);
@@ -617,21 +688,21 @@ describe("Superstate tag initialization", () => {
 
     it("leaves empty folder rank-order unset so manual sort falls back to name ascending", () => {
         const { superstate } = createSuperstate();
-        superstate.spacesIndex.set("Projects", {
+        superstate.spacesIndex.set("FolderSpace", {
             type: "folder",
-            name: "Projects",
-            path: "Projects",
+            name: "FolderSpace",
+            path: "FolderSpace",
             metadata: {
                 sort: { field: "rank", asc: true },
                 "rank-order": [],
                 pinned: [],
             },
-            space: { path: "Projects", name: "Projects", defPath: "", notePath: "", folderPath: "" },
+            space: { path: "FolderSpace", name: "FolderSpace", defPath: "", notePath: "", folderPath: "" },
         } as any);
         [
-            ["Projects/2 Resources", "2 Resources"],
-            ["Projects/0 Notes", "0 Notes"],
-            ["Projects/1 Collections", "1 Collections"],
+            ["FolderSpace/2 Gamma", "2 Gamma"],
+            ["FolderSpace/0 Alpha", "0 Alpha"],
+            ["FolderSpace/1 Beta", "1 Beta"],
         ].forEach(([path, name]) => {
             superstate.pathsIndex.set(path, {
                 path,
@@ -639,92 +710,92 @@ describe("Superstate tag initialization", () => {
                 type: "space",
                 subtype: "folder",
                 tags: [],
-                spaces: ["Projects"],
+                spaces: ["FolderSpace"],
                 hidden: false,
             });
-            superstate.spacesMap.set(path, new Set(["Projects"]));
+            superstate.spacesMap.set(path, new Set(["FolderSpace"]));
         });
         superstate.persister.store.mockClear();
 
-        const items = superstate.getSpaceItems("Projects");
+        const items = superstate.getSpaceItems("FolderSpace");
 
-        expect(superstate.spacesIndex.get("Projects").metadata["rank-order"]).toEqual([]);
+        expect(superstate.spacesIndex.get("FolderSpace").metadata["rank-order"]).toEqual([]);
         expect(superstate.persister.store).not.toHaveBeenCalled();
-        expect([...items].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((item: any) => item.name)).toEqual(["0 Notes", "1 Collections", "2 Resources"]);
+        expect([...items].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((item: any) => item.name)).toEqual(["0 Alpha", "1 Beta", "2 Gamma"]);
     });
 
     it("shows indexed hidden children inside a hidden folder section without creating fallback cache entries", () => {
         const { superstate, spaceManager } = createSuperstate();
-        superstate.spacesIndex.set("Workspace/HiddenFolder", {
+        superstate.spacesIndex.set("VaultRoot/HiddenFolder", {
             type: "folder",
             name: "HiddenFolder",
-            path: "Workspace/HiddenFolder",
+            path: "VaultRoot/HiddenFolder",
             metadata: {
                 links: [],
                 pinned: [],
             },
-            space: { path: "Workspace/HiddenFolder", name: "HiddenFolder", defPath: "Workspace/HiddenFolder/.space/context.json", notePath: "", folderPath: "Workspace/HiddenFolder" },
+            space: { path: "VaultRoot/HiddenFolder", name: "HiddenFolder", defPath: "VaultRoot/HiddenFolder/.space/context.json", notePath: "", folderPath: "VaultRoot/HiddenFolder" },
         } as any);
-        superstate.pathsIndex.set("Workspace/HiddenFolder", {
-            path: "Workspace/HiddenFolder",
+        superstate.pathsIndex.set("VaultRoot/HiddenFolder", {
+            path: "VaultRoot/HiddenFolder",
             name: "HiddenFolder",
             type: "space",
             subtype: "folder",
             tags: [],
             spaces: [],
             hidden: true,
-            parent: "Workspace",
+            parent: "VaultRoot",
             linkedSpaces: [],
             pinnedSpaces: [],
             color: "#123456",
             sticker: "lucide//folder",
             metadata: {},
         } as any);
-        superstate.pathsIndex.set("Workspace/HiddenFolder/ChildFolder", {
-            path: "Workspace/HiddenFolder/ChildFolder",
+        superstate.pathsIndex.set("VaultRoot/HiddenFolder/ChildFolder", {
+            path: "VaultRoot/HiddenFolder/ChildFolder",
             name: "ChildFolder",
             type: "space",
             subtype: "folder",
             tags: [],
             spaces: [],
             hidden: true,
-            parent: "Workspace/HiddenFolder",
+            parent: "VaultRoot/HiddenFolder",
             linkedSpaces: [],
             pinnedSpaces: [],
             color: "#123456",
             sticker: "lucide//notebook",
             metadata: {},
         } as any);
-        superstate.spacesIndex.set("Workspace/HiddenFolder/ChildFolder", {
+        superstate.spacesIndex.set("VaultRoot/HiddenFolder/ChildFolder", {
             type: "folder",
             name: "ChildFolder",
-            path: "Workspace/HiddenFolder/ChildFolder",
+            path: "VaultRoot/HiddenFolder/ChildFolder",
             metadata: {},
-            space: { path: "Workspace/HiddenFolder/ChildFolder", name: "ChildFolder", defPath: "Workspace/HiddenFolder/ChildFolder/.space/context.json", notePath: "", folderPath: "Workspace/HiddenFolder/ChildFolder" },
+            space: { path: "VaultRoot/HiddenFolder/ChildFolder", name: "ChildFolder", defPath: "VaultRoot/HiddenFolder/ChildFolder/.space/context.json", notePath: "", folderPath: "VaultRoot/HiddenFolder/ChildFolder" },
         } as any);
 
-        const items = superstate.getSpaceItems("Workspace/HiddenFolder");
+        const items = superstate.getSpaceItems("VaultRoot/HiddenFolder");
 
-        expect(items.map((item: any) => [item.path, item.name])).toEqual([["Workspace/HiddenFolder/ChildFolder", "ChildFolder"]]);
-        expect(spaceManager.spaceInfoForPath).not.toHaveBeenCalledWith("Workspace/HiddenFolder/ChildFolder");
+        expect(items.map((item: any) => [item.path, item.name])).toEqual([["VaultRoot/HiddenFolder/ChildFolder", "ChildFolder"]]);
+        expect(spaceManager.spaceInfoForPath).not.toHaveBeenCalledWith("VaultRoot/HiddenFolder/ChildFolder");
     });
 
     it("filters hidden children from normal folder spaces unless they are explicitly linked", () => {
         const { superstate } = createSuperstate();
-        superstate.spacesIndex.set("Projects", {
+        superstate.spacesIndex.set("FolderSpace", {
             type: "folder",
-            name: "Projects",
-            path: "Projects",
+            name: "FolderSpace",
+            path: "FolderSpace",
             metadata: {
-                links: ["Archive/Linked.md"],
+                links: ["ExternalFolder/Linked.md"],
                 pinned: [],
             },
-            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/context.json", notePath: "", folderPath: "Projects" },
+            space: { path: "FolderSpace", name: "FolderSpace", defPath: "FolderSpace/.space/context.json", notePath: "", folderPath: "FolderSpace" },
         } as any);
         [
-            ["Projects/Visible.md", false, ["Projects"], []],
-            ["Projects/Hidden.md", true, ["Projects"], []],
-            ["Archive/Linked.md", true, ["Projects"], ["Projects"]],
+            ["FolderSpace/Visible.md", false, ["FolderSpace"], []],
+            ["FolderSpace/Hidden.md", true, ["FolderSpace"], []],
+            ["ExternalFolder/Linked.md", true, ["FolderSpace"], ["FolderSpace"]],
         ].forEach(([path, hidden, spaces, linkedSpaces]: any[]) => {
             superstate.pathsIndex.set(path, {
                 path,
@@ -735,7 +806,7 @@ describe("Superstate tag initialization", () => {
                 spaces,
                 linkedSpaces,
                 hidden,
-                parent: path.startsWith("Projects/") ? "Projects" : "Archive",
+                parent: path.startsWith("FolderSpace/") ? "FolderSpace" : "ExternalFolder",
                 pinnedSpaces: [],
                 color: "",
                 sticker: "ui//file-text",
@@ -744,28 +815,28 @@ describe("Superstate tag initialization", () => {
             spaces.forEach((space: string) => superstate.spacesMap.set(path, new Set([space])));
         });
 
-        expect(superstate.getSpaceItems("Projects").map((item: any) => item.path)).toEqual(["Projects/Visible.md", "Archive/Linked.md"]);
+        expect(superstate.getSpaceItems("FolderSpace").map((item: any) => item.path)).toEqual(["FolderSpace/Visible.md", "ExternalFolder/Linked.md"]);
     });
 
     it("refreshes folder display metadata after context.json is removed", async () => {
         const { superstate, spaceManager } = createSuperstate();
         const events: any[] = [];
         superstate.dispatchEvent = jest.fn((event: string, payload: any) => {
-            const eventPath = payload?.path ?? "Projects";
+            const eventPath = payload?.path ?? "FolderSpace";
             events.push({
                 event,
                 payload,
-                metadata: superstate.spacesIndex.get("Projects")?.metadata,
+                metadata: superstate.spacesIndex.get("FolderSpace")?.metadata,
                 display: superstate.pathsIndex.get(eventPath)
                     ? {
                           sticker: superstate.pathsIndex.get(eventPath)?.sticker,
                           color: superstate.pathsIndex.get(eventPath)?.color,
                       }
                     : undefined,
-                sortable: isSpaceSortable(superstate.spacesIndex.get("Projects"), superstate.settings),
+                sortable: isSpaceSortable(superstate.spacesIndex.get("FolderSpace"), superstate.settings),
             });
         });
-        spaceManager.uriByString = jest.fn(() => ({ path: "Projects" }));
+        spaceManager.uriByString = jest.fn(() => ({ path: "FolderSpace" }));
         spaceManager.spaceTypeByString = jest.fn(() => "folder");
         spaceManager.spaceDefinitionForPath = jest.fn(() =>
             Promise.resolve({
@@ -796,25 +867,25 @@ describe("Superstate tag initialization", () => {
         );
         (superstate as any).indexer.reload = jest.fn((job: any) => {
             const cache =
-                job.path == "Projects/Note.md"
+                job.path == "FolderSpace/Note.md"
                     ? {
-                          path: "Projects/Note.md",
+                          path: "FolderSpace/Note.md",
                           name: "Note",
                           type: "file",
                           subtype: "md",
                           tags: [] as string[],
-                          spaces: ["Projects"],
+                          spaces: ["FolderSpace"],
                           linkedSpaces: [] as string[],
                           pinnedSpaces: [] as string[],
                           hidden: false,
-                          parent: "Projects",
+                          parent: "FolderSpace",
                           color: "",
                           sticker: "ui//file-text",
                           metadata: {},
                       }
                     : {
-                          path: "Projects",
-                          name: "Projects",
+                          path: "FolderSpace",
+                          name: "FolderSpace",
                           type: "space",
                           subtype: "folder",
                           tags: [] as string[],
@@ -824,26 +895,26 @@ describe("Superstate tag initialization", () => {
                           hidden: false,
                           parent: "",
                           color: "",
-                          sticker: "ui//folder",
+                          sticker: "lucide//folder-closed",
                           metadata: {},
                       };
             return Promise.resolve({ cache, changed: true });
         });
-        superstate.spacesIndex.set("Projects", {
+        superstate.spacesIndex.set("FolderSpace", {
             type: "folder",
-            name: "Projects",
-            path: "Projects",
+            name: "FolderSpace",
+            path: "FolderSpace",
             metadata: {
-                sticker: "ui//folder",
+                sticker: "lucide//folder-closed",
                 color: "#ffaa00",
                 sort: { field: "rank", asc: true },
                 links: [],
             },
-            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/context.json", notePath: "", folderPath: "Projects" },
+            space: { path: "FolderSpace", name: "FolderSpace", defPath: "FolderSpace/.space/context.json", notePath: "", folderPath: "FolderSpace" },
         } as any);
-        superstate.pathsIndex.set("Projects", {
-            path: "Projects",
-            name: "Projects",
+        superstate.pathsIndex.set("FolderSpace", {
+            path: "FolderSpace",
+            name: "FolderSpace",
             type: "space",
             subtype: "folder",
             tags: [],
@@ -853,29 +924,29 @@ describe("Superstate tag initialization", () => {
             linkedSpaces: [],
             pinnedSpaces: [],
             color: "#ffaa00",
-            sticker: "ui//folder",
+            sticker: "lucide//folder-closed",
             metadata: {},
         } as any);
-        superstate.pathsIndex.set("Projects/Note.md", {
-            path: "Projects/Note.md",
+        superstate.pathsIndex.set("FolderSpace/Note.md", {
+            path: "FolderSpace/Note.md",
             name: "Note",
             type: "file",
             subtype: "md",
             tags: [],
-            spaces: ["Projects"],
+            spaces: ["FolderSpace"],
             hidden: false,
-            parent: "Projects",
+            parent: "FolderSpace",
             linkedSpaces: [],
             pinnedSpaces: [],
             color: "#ffaa00",
             sticker: "ui//file-text",
             metadata: {},
         } as any);
-        superstate.spacesMap.set("Projects/Note.md", new Set(["Projects"]));
+        superstate.spacesMap.set("FolderSpace/Note.md", new Set(["FolderSpace"]));
 
-        await superstate.onMetadataChange("Projects");
+        await superstate.onMetadataChange("FolderSpace");
 
-        expect(superstate.spacesIndex.get("Projects").metadata).toEqual({
+        expect(superstate.spacesIndex.get("FolderSpace").metadata).toEqual({
             color: "",
             sticker: "",
             defaultColor: "",
@@ -886,27 +957,27 @@ describe("Superstate tag initialization", () => {
             pinned: [],
             "file-colors": {},
         });
-        expect(superstate.pathsIndex.get("Projects")).toMatchObject({ sticker: "ui//folder", color: "" });
-        expect(superstate.pathsIndex.get("Projects/Note.md")).toMatchObject({ sticker: "ui//file-text", color: "" });
-        expect(isSpaceSortable(superstate.spacesIndex.get("Projects"), superstate.settings)).toBe(false);
-        superstate.getSpaceItems("Projects");
-        expect(superstate.spacesIndex.get("Projects").metadata["rank-order"]).toEqual([]);
+        expect(superstate.pathsIndex.get("FolderSpace")).toMatchObject({ sticker: "lucide//folder-closed", color: "" });
+        expect(superstate.pathsIndex.get("FolderSpace/Note.md")).toMatchObject({ sticker: "ui//file-text", color: "" });
+        expect(isSpaceSortable(superstate.spacesIndex.get("FolderSpace"), superstate.settings)).toBe(false);
+        superstate.getSpaceItems("FolderSpace");
+        expect(superstate.spacesIndex.get("FolderSpace").metadata["rank-order"]).toEqual([]);
         expect(events).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
                     event: "pathStateUpdated",
-                    payload: { path: "Projects/Note.md" },
+                    payload: { path: "FolderSpace/Note.md" },
                     display: { sticker: "ui//file-text", color: "" },
                 }),
                 expect.objectContaining({
                     event: "pathStateUpdated",
-                    payload: { path: "Projects" },
-                    display: { sticker: "ui//folder", color: "" },
+                    payload: { path: "FolderSpace" },
+                    display: { sticker: "lucide//folder-closed", color: "" },
                     sortable: false,
                 }),
                 expect.objectContaining({
                     event: "spaceStateUpdated",
-                    payload: { path: "Projects" },
+                    payload: { path: "FolderSpace" },
                     metadata: expect.objectContaining({ sticker: "", color: "", sort: undefined }),
                     sortable: false,
                 }),
@@ -916,20 +987,20 @@ describe("Superstate tag initialization", () => {
 
     it("unpins a file from its old folder space when moving it out", async () => {
         const { superstate } = createSuperstate();
-        const oldPath = "Workspace/Sample Area/0 Inbox/example-note.md";
-        const newPath = "Workspace/Sample Area/example-note.md";
+        const oldPath = "VaultRoot/ParentFolder/PinnedFolder/example-note.md";
+        const newPath = "VaultRoot/ParentFolder/example-note.md";
 
-        superstate.spacesIndex.set("Workspace/Sample Area/0 Inbox", {
+        superstate.spacesIndex.set("VaultRoot/ParentFolder/PinnedFolder", {
             type: "folder",
-            name: "0 Inbox",
-            path: "Workspace/Sample Area/0 Inbox",
+            name: "PinnedFolder",
+            path: "VaultRoot/ParentFolder/PinnedFolder",
             metadata: {
                 links: [],
                 "rank-order": [],
                 pinned: [oldPath],
                 "file-colors": {},
             },
-            space: { path: "Workspace/Sample Area/0 Inbox", name: "0 Inbox", defPath: "Workspace/Sample Area/0 Inbox/.space/context.json", notePath: "", folderPath: "Workspace/Sample Area/0 Inbox" },
+            space: { path: "VaultRoot/ParentFolder/PinnedFolder", name: "PinnedFolder", defPath: "VaultRoot/ParentFolder/PinnedFolder/.space/context.json", notePath: "", folderPath: "VaultRoot/ParentFolder/PinnedFolder" },
         } as any);
         superstate.pathsIndex.set(oldPath, {
             path: oldPath,
@@ -937,11 +1008,11 @@ describe("Superstate tag initialization", () => {
             type: "file",
             subtype: "md",
             tags: [],
-            spaces: ["Workspace/Sample Area/0 Inbox"],
+            spaces: ["VaultRoot/ParentFolder/PinnedFolder"],
             hidden: false,
-            parent: "Workspace/Sample Area/0 Inbox",
+            parent: "VaultRoot/ParentFolder/PinnedFolder",
         });
-        superstate.spacesMap.set(oldPath, new Set(["Workspace/Sample Area/0 Inbox"]));
+        superstate.spacesMap.set(oldPath, new Set(["VaultRoot/ParentFolder/PinnedFolder"]));
         superstate.reloadPath = jest.fn(async (path: string) => {
             if (path == newPath) {
                 superstate.pathsIndex.set(newPath, {
@@ -950,19 +1021,19 @@ describe("Superstate tag initialization", () => {
                     type: "file",
                     subtype: "md",
                     tags: [],
-                    spaces: ["Workspace/Sample Area"],
+                    spaces: ["VaultRoot/ParentFolder"],
                     hidden: false,
-                    parent: "Workspace/Sample Area",
+                    parent: "VaultRoot/ParentFolder",
                 });
-                superstate.spacesMap.set(newPath, new Set(["Workspace/Sample Area"]));
+                superstate.spacesMap.set(newPath, new Set(["VaultRoot/ParentFolder"]));
             }
             return true;
         });
 
         await superstate.onPathRename(oldPath, newPath);
 
-        expect(superstate.spacesIndex.get("Workspace/Sample Area/0 Inbox").metadata.pinned).toEqual([]);
-        expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("Workspace/Sample Area/0 Inbox", expect.any(Function));
+        expect(superstate.spacesIndex.get("VaultRoot/ParentFolder/PinnedFolder").metadata.pinned).toEqual([]);
+        expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("VaultRoot/ParentFolder/PinnedFolder", expect.any(Function));
     });
 });
 

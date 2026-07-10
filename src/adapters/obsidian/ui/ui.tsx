@@ -24,7 +24,8 @@ import { lucideIcons } from "./icons";
 import { showModal } from "./modal";
 import { showMainMenu } from "./showMainMenu";
 import { stickerFromString } from "./sticker";
-import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
+import { isTagSpacePath } from "schemas/builtin";
+import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 export class ObsidianUI implements UIAdapter {
     public manager: UIManager;
@@ -71,9 +72,6 @@ export class ObsidianUI implements UIAdapter {
         return Object.keys(this.plugin.app.viewRegistry.typeByExtension);
     };
 
-    public quickOpen = (mode?: number, _offset?: Rect, _win?: Window, onSelect?: (link: string) => void, source?: string) => {
-        this.plugin.quickOpen(this.manager.superstate, mode, onSelect, source);
-    };
     public mainMenu = (el: HTMLElement, superstate: Superstate) => {
         showMainMenu(el, superstate, this.plugin);
     };
@@ -95,6 +93,26 @@ export class ObsidianUI implements UIAdapter {
     };
     public getSticker = (icon: string, options?: Record<string, any>) => {
         return stickerFromString(icon, this.plugin, options);
+    };
+
+    private replaceDragGhostSticker = (e: React.DragEvent<HTMLDivElement>, sticker: string) => {
+        const doc = (e.nativeEvent as DragEvent & { doc?: Document }).doc ?? e.currentTarget?.ownerDocument ?? document;
+        const ghost = doc.querySelector(".drag-ghost-self");
+        if (!ghost) return;
+
+        const template = doc.createElement("template");
+        template.innerHTML = this.getSticker(sticker).trim();
+        const replacement = template.content.firstElementChild;
+        if (!replacement) return;
+
+        const currentIcon = ghost.querySelector("svg");
+        if (replacement instanceof SVGElement) replacement.classList.add("svg-icon");
+        if (currentIcon) {
+            currentIcon.classList.forEach((className) => replacement.classList.add(className));
+            currentIcon.replaceWith(replacement);
+        } else {
+            ghost.prepend(replacement);
+        }
     };
 
     public getOS = () => {
@@ -136,26 +154,36 @@ export class ObsidianUI implements UIAdapter {
             const file = getAbstractFileAtPath(this.plugin.app, path);
             if (!file) {
                 if (isTagSpacePath(path)) {
+                    const display = pathDisplayInfo(path, "folder");
                     this.plugin.app.dragManager.onDragStart(e.nativeEvent, {
                         icon: "lucide-tags",
                         source: undefined,
-                        title: `#${tagSpaceNameFromPath(path)}`,
+                        title: display.title,
                         type: "file",
                     });
+                    this.replaceDragGhostSticker(e, display.icon);
                 }
                 return;
             }
             if (file instanceof TFile) {
-                const dragData = this.plugin.app.dragManager.dragFile(e.nativeEvent, file);
+                const display = pathDisplayInfo(file.path);
+                const dragData = {
+                    ...this.plugin.app.dragManager.dragFile(e.nativeEvent, file),
+                    icon: "lucide-file",
+                    title: display.title,
+                };
                 this.plugin.app.dragManager.onDragStart(e.nativeEvent, dragData);
+                this.replaceDragGhostSticker(e, display.icon);
             } else {
+                const display = pathDisplayInfo(file.path, "folder");
                 this.plugin.app.dragManager.onDragStart(e.nativeEvent, {
-                    icon: "lucide-folder",
+                    icon: "lucide-folder-closed",
                     source: undefined,
-                    title: file.name,
+                    title: display.title,
                     type: "file",
                     file: file,
                 });
+                this.replaceDragGhostSticker(e, display.icon);
                 this.plugin.app.dragManager.dragFolder(e.nativeEvent, file, true);
             }
         } else {

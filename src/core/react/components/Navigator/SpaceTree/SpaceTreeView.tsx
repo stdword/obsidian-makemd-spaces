@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, childSpaceSort, effectiveSpaceSort, isSpaceSortable, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
+import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
@@ -40,7 +40,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     if (!spaceCollapsed || root) {
         pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
             const _parentId = parentId ? parentId + "/" + space.path : space.path;
-            const pinned = item.pinnedSpaces?.includes(space.path);
+            const pinned = isPathPinnedInSpace(space, item.path);
             if (item.type != "space") {
                 tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, depth + 1, 0, true, childrenSortable, 0, _parentId, pinned));
             } else {
@@ -84,7 +84,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
     }
     pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
         const _parentId = space.path;
-        const pinned = item.pinnedSpaces?.includes(space.path);
+        const pinned = isPathPinnedInSpace(space, item.path);
         if (item.type != "space") {
             const id = _parentId + "/" + item.path;
             const itemCollapsed = !expandedSpaces.includes(id);
@@ -295,6 +295,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             props.superstate.eventsDispatcher.removeListener("spaceStateUpdated", spaceUpdated);
         };
     }, [refreshableSpaces, reloadData]);
+    useEffect(() => {
+        props.superstate.eventsDispatcher.addListener("superstateUpdated", reloadData);
+
+        return () => {
+            props.superstate.eventsDispatcher.removeListener("superstateUpdated", reloadData);
+        };
+    }, [reloadData]);
 
     useEffect(() => {
         const tree = retrieveData(superstate, activeViewSpaces, active, expandedSpaces);

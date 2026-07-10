@@ -10,7 +10,7 @@ type MarkdownContent = {
 };
 
 
-export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<MarkdownContent, MarkdownContent> {
+export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<MarkdownContent> {
     public id = "metadata.obsidian.md";
     public cache: Map<string, MarkdownContent>;
     public supportedFileTypes = ["md"];
@@ -50,24 +50,8 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
         return ["tags"];
     }
 
-    public contentTypes(_file: AFile) {
-        return ["tags"] as Array<keyof MarkdownContent>;
-    }
-
-    public getCacheTypeByRefString(_file: AFile, _refString: string): null {
-        return null;
-    }
-
-    public getCache(file: AFile, fragmentType: keyof MarkdownContent, _query?: any) {
-        return this.cache.get(file.path)?.[fragmentType] as MarkdownContent[typeof fragmentType];
-    }
-
-    public async readContent(file: AFile, fragmentType: keyof MarkdownContent, _fragmentId: any) {
-        if (fragmentType == "tags") {
-            const tFile = getAbstractFileAtPath(this.app, file.path) as TFile;
-            return getAllTags(this.app.metadataCache.getFileCache(tFile));
-        }
-        return null;
+    public getCache(file: AFile, cacheType: keyof MarkdownContent, _query?: any) {
+        return this.cache.get(file.path)?.[cacheType] as MarkdownContent[typeof cacheType];
     }
 
     public async newFile(parent: string, name: string, _type: string, content?: string) {
@@ -84,7 +68,4 @@ export class ObsidianMarkdownFiletypeAdapter implements FileTypeAdapter<Markdown
             return tFileToAFile(f);
         });
     }
-
-    public newContent: (file: AFile, fragmentType: keyof MarkdownContent, fragmentId: string, content: MarkdownContent[keyof MarkdownContent], options: { [key: string]: any }) => Promise<any>;
-    public saveContent: (file: AFile, fragmentType: keyof MarkdownContent, fragmentId: string, content: (prev: any) => any) => Promise<boolean>;
 }

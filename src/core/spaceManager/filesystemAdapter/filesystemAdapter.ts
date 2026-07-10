@@ -3,7 +3,6 @@ import { AFile } from "shared/types/afile";
 
 import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { defaultSortForSettings, parseSpaceMetadata, spaceSortFn } from "core/utils/superstate/spaces";
-import { builtinSpaces } from "schemas/space";
 import { ensureArray } from "core/utils/schema";
 import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_CONFIG_DEFAULT_CONTENT, SPACE_CONFIG_FILE, SPACE_FOLDER } from "schemas/constants";
 import { Focus } from "shared/types/focus";
@@ -104,19 +103,10 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public async pathExists(path: string) {
         const uri = this.uriByPath(path);
         if (uri.scheme == "spaces") {
-            if (uri.authority.charAt(0) == "$") {
-                const builtIn = Object.keys(builtinSpaces).find((f) => f == uri.authority.slice(1));
-                if (builtIn) {
-                    return true;
-                }
-            }
-
-            if (uri.authority.charAt(0) == "#") {
+            if (uri.authority.charAt(0) == "#")
                 return true;
-            }
-            if (path == "/") {
+            if (path == "/")
                 return true;
-            }
         }
         return this.fileSystem.fileExists(path);
     }
@@ -132,43 +122,20 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (!parentURI) {
             await this.fileSystem.createFolder(parent);
         } else if (!parentURI?.isFolder) {
-            const file = await this.fileSystem.getFile(parent);
-            if (!file) return null;
-            return this.fileSystem.newFileFragment(file, type, name, content)?.then(() => file.path);
+            return null;
         }
         return this.fileSystem.newFile(parent, name, type, content).then((f) => f?.path);
     }
     public async renamePath(oldPath: string, path: string): Promise<string> {
-        console.log('TRACE renamePath', {path, oldPath})
-        const uri = this.uriByPath(oldPath);
-        if (uri.refStr) {
-            const newUri = this.uriByPath(path);
-            const file = await this.fileSystem.getFile(uri.path);
-            const refType = await this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
-            await this.fileSystem.saveFileFragment(file, refType, uri.refStr, () => newUri.refStr);
-            return path;
-            return null;
-        }
         return await this.fileSystem.renameFile(oldPath, path);
     }
     public async deletePath(path: string) {
-        const uri = this.uriByPath(path);
-        if (uri.refStr) {
-            console.log('TRACE del frag', {path, uri})
-            // const file = await this.fileSystem.getFile(uri.path);
-            // const refType = await this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
-            // return this.fileSystem.deleteFileFragment(file, refType, uri.refStr);
-            return null;
-        }
         return this.fileSystem.deleteFile(path);
     }
 
     public async getPathInfo(path: string) {
         const uri = this.uriByPath(path);
         const file = await this.fileSystem.getFile(uri.path);
-        if (uri.refStr) {
-            this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
-        }
         return file as Record<string, any>;
     }
 
@@ -179,22 +146,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public async readPathCache(path: string): Promise<PathCache> {
         const uri = this.uriByPath(path);
         if (uri.scheme == "spaces") {
-            if (uri.authority.charAt(0) == "$") {
-                const builtIn = Object.keys(builtinSpaces).find((f) => f == uri.authority.slice(1));
-                if (builtIn) {
-                    return {
-                        metadata: {},
-                        type: "space",
-                        subtype: "folder",
-                        name: builtinSpaces[builtIn].name,
-                        path,
-                        parent: "",
-                        tags: [],
-                        hidden: builtinSpaces[builtIn].hidden,
-                    };
-                }
-            }
-
             if (uri.authority.charAt(0) == "#") {
                 return {
                     metadata: {},
@@ -254,12 +205,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
     public async readPath(path: string) {
         const uri = this.uriByPath(path);
-        const file = await this.fileSystem.getFile(uri.path);
-        if (uri.refStr) {
-            const fragmentType = this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
-            this.fileSystem.getFileContent(file, fragmentType, uri.refStr);
-        }
-        return this.fileSystem.readTextFromFile(path);
+        return this.fileSystem.readTextFromFile(uri.path);
     }
     public async copyPath(path: string, newPath: string, newName?: string) {
         const uri = this.uriByPath(path);
@@ -270,15 +216,13 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public async writeToPath(path: string, content: any, binary: boolean) {
         console.log('TRACE writeToPath', {path, content})
         const uri = this.uriByPath(path);
-        const file = await this.fileSystem.getFile(uri.path);
         if (uri.refStr) {
-            const fragmentType = this.fileSystem.getFileCacheTypeByRefString(file, uri.refStr);
-            this.fileSystem.saveFileFragment(file, fragmentType, uri.refStr, () => content);
+            return null;
         }
         if (binary) {
-            return this.fileSystem.writeBinaryToFile(path, content);
+            return this.fileSystem.writeBinaryToFile(uri.path, content);
         }
-        return this.fileSystem.writeTextToFile(path, content);
+        return this.fileSystem.writeTextToFile(uri.path, content);
     }
 
     public async childrenForPath(path: string, type?: string) {
@@ -295,8 +239,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public async readProperties(path: string) {
-        const file = await this.fileSystem.getFile(path);
-        return this.fileSystem.readFileFragments(file, "property", null);
+        return {};
     }
 
     onCreate = async (payload: { file: AFile }) => {
@@ -384,7 +327,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             }
             defFile = await this.fileSystem.newFile(folder, filename, extension, SPACE_CONFIG_DEFAULT_CONTENT(metadataForStore));
         }
-        await this.fileSystem.saveFileFragment(defFile, "definition", null, () => metadataForStore);
+        await this.fileSystem.writeTextToFile(defFile.path, JSON.stringify(metadataForStore, null, 2));
     }
 
     private spaceFolderForDefinition(space: SpaceState) {
@@ -461,36 +404,19 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (Object.keys(definition ?? {}).length > 0) return this.saveSpace(newPath, () => definition);
     }
 
-    public async saveSpace(path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) {
+    public async saveSpace(path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition) {
         const spaceInfo = this.spaceInfoForPath(path);
         const filesystemInfo = this.filesystemInfo(spaceInfo);
         const rawDefinition = safelyParseJSON(filesystemInfo.defPath ? await this.fileSystem.readTextFromFile(filesystemInfo.defPath) : null) ?? {};
         const currentMetadata = parseSpaceMetadata(rawDefinition, this.spaceManager.superstate.settings);
         const metadata = definitionFn(currentMetadata) ?? {};
         const sortChanged = JSON.stringify(metadata.sort) != JSON.stringify(currentMetadata.sort);
-        const metadataForStore = {
+        const metadataForStore: SpaceDefinition = {
             ...metadata,
             sort: sortChanged ? metadata.sort : rawDefinition.sort,
         };
-        if (properties) {
-            let noteFile = await this.fileSystem.getFile(filesystemInfo.defPath);
-            if (!noteFile) {
-                const extension = filesystemInfo.defPath.split(".").pop();
-                const folder = filesystemInfo.defPath.split("/").slice(0, -1).join("/");
-                const filename = filesystemInfo.defPath.split("/").pop().split(".")[0];
-                if (!(await this.fileSystem.fileExists(folder))) {
-                    await this.fileSystem.createFolder(folder);
-                }
-                noteFile = await this.fileSystem.newFile(folder, filename, extension, SPACE_CONFIG_DEFAULT_CONTENT(this.spaceDefinitionForStore(metadataForStore)));
-            }
-            await this.fileSystem.saveFileFragment(noteFile, "property", null, (frontmatter) => ({
-                ...frontmatter,
-                ...(properties ?? {}),
-            }));
-        }
         const storedDefinition = this.spaceDefinitionForStore(metadataForStore);
-        const hasProperties = !!properties || Object.keys(rawDefinition.property ?? {}).length > 0;
-        if (hasProperties || (await this.spaceDefinitionHasContent(path, storedDefinition))) {
+        if (await this.spaceDefinitionHasContent(path, storedDefinition)) {
             await this.writeSpaceDefinition(spaceInfo, metadataForStore);
         } else {
             await this.deleteEmptySpaceDefinition(spaceInfo);

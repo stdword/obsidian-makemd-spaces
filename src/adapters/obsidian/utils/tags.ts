@@ -62,13 +62,6 @@ const positionsForTag = (plugin: MakeMDPlugin, tag: string, file: TFile) => {
     return [];
 };
 
-export const removeTagFromMarkdownFile = (plugin: MakeMDPlugin, tag: string, file: TFile) => {
-    console.log('TRACE rm tag file', {file, tag})
-    const pos = positionsForTag(plugin, tag, file);
-    removeTagInProperties(plugin.superstate.spaceManager, tag, file.path);
-    editTagInFileBody(plugin, tag, "", pos, file);
-};
-
 export const renameTagInMarkdownFile = async (plugin: MakeMDPlugin, tag: string, newTag: string, tFile: TFile) => {
     console.log('TRACE rename tag', {tFile, tag, newTag})
     const positions = positionsForTag(plugin, tag, tFile);
@@ -77,38 +70,6 @@ export const renameTagInMarkdownFile = async (plugin: MakeMDPlugin, tag: string,
     } else {
         await editTagInProperties(plugin.superstate.spaceManager, tag, newTag, tFile.path);
     }
-};
-
-const removeTagInProperties = async (manager: SpaceManager, oldTag: string, path: string) => {
-    console.log('TRACE rm tag', {path, oldTag})
-    const fm = await manager.readProperties(path);
-    const processKey = (value: string | string[]) => {
-        if (Array.isArray(value)) {
-            return value.filter((f) => stringFromTag(oldTag).toLowerCase() != f.toLowerCase());
-        } else if (typeof value === "string") {
-            return serializeMultiDisplayString(
-                value
-                    .replace(/\s/g, "")
-                    .split(",")
-                    .filter((f) => stringFromTag(oldTag).toLowerCase() != f.toLowerCase()),
-            );
-        }
-        return value;
-    };
-
-    const editKeys = tagKeys.filter((f) => {
-        let tags: string[] = [];
-        if (Array.isArray(fm[f])) {
-            tags = fm[f];
-        } else if (typeof fm[f] === "string") {
-            tags = fm[f].replace(/\s/g, "").split(",");
-        }
-        if (tags.find((g) => g.toLowerCase() == stringFromTag(oldTag).toLowerCase())) return true;
-        return false;
-    });
-    editKeys.forEach((tag) => {
-        // manager.saveProperties(path, { [tag]: processKey(fm[tag]) });
-    });
 };
 
 const editTagInProperties = async (manager: SpaceManager, oldTag: string, newTag: string, path: string) => {
@@ -169,6 +130,7 @@ const editTagInProperties = async (manager: SpaceManager, oldTag: string, newTag
 
 const editTagInFileBody = async (plugin: MakeMDPlugin, oldTag: string, newTag: string, positions: Pos[], file: TFile) => {
     console.log('TRACE edit tag body', {file, oldTag, newTag, positions})
+    if (!newTag) return false;
     const offsetOffset = newTag.length - oldTag.length;
     if (positions.length == 0) return false;
     const original = await plugin.files.readTextFromFile(file.path);

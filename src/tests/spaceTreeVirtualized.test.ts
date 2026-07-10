@@ -35,6 +35,13 @@ describe("highlightContainerIdForDrag", () => {
         item: { path: "spaces://#linked-fixture", type: "space", subtype: "tag" },
         collapsed: true,
     };
+    const collapsedChildFolderNode: any = {
+        id: "TargetFolder/CollapsedChild",
+        parentId: "TargetFolder",
+        type: "space",
+        item: { path: "TargetFolder/CollapsedChild", type: "space", subtype: "folder" },
+        collapsed: true,
+    };
 
     it("does not keep the source tag space highlighted for a root box target", () => {
         const highlightedContainer = highlightContainerIdForDrag(
@@ -60,6 +67,28 @@ describe("highlightContainerIdForDrag", () => {
 
     it("moves no-op hover context from the source tag space to the hovered folder", () => {
         const highlightedContainer = highlightContainerIdForDrag([tagNode, tagChildNode, targetFolderNode], 1, 2, null);
+
+        expect(highlightedContainer).toBe("TargetFolder");
+    });
+
+    it("highlights the containing folder for a collapsed child box target", () => {
+        const highlightedContainer = highlightContainerIdForDrag(
+            [tagNode, tagChildNode, targetFolderNode, collapsedChildFolderNode],
+            1,
+            3,
+            {
+                action: {
+                    type: "move",
+                    containerId: collapsedChildFolderNode.id,
+                    projection: {} as any,
+                },
+                visual: {
+                    kind: "box",
+                    containerId: collapsedChildFolderNode.id,
+                },
+                label: "Move to CollapsedChild",
+            },
+        );
 
         expect(highlightedContainer).toBe("TargetFolder");
     });

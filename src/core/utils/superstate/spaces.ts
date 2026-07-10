@@ -194,8 +194,10 @@ export const defaultSpaceSort = {
 
 export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
     const fieldLabel = sort.field == "name" ? "AZ" : sort.field == "ctime" ? "+" : sort.field == "mtime" ? "~" : sort.field == "rank" ? "#" : sort.field;
-    const directionLabel = sort.field == "name" ? (sort.asc ? "↓" : "↑") : sort.asc ? "↓" : "↑";
-    return `${!tagSpace && sort.group ? ":" : ""}${fieldLabel}${directionLabel}${!tagSpace && sort.recursive ? "*" : ""}`;
+    const directionLabel = fieldLabel == "#" ? "" : (sort.asc ? "↓" : "↑");
+    const groupLabel = (!tagSpace && sort.group) ? ":" : "";
+    const recursiveLabel = (!tagSpace && sort.recursive) ? "*" : "";
+    return `${groupLabel}${fieldLabel}${directionLabel}${recursiveLabel}`;
 };
 
 export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: RankedItem) => {
@@ -205,6 +207,7 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: Ranke
         if (aRanked && bRanked && a.rank != b.rank) {
             return a.rank - b.rank;
         }
+        if (aRanked != bRanked) return aRanked ? -1 : 1;
         const fallbackFns = [];
         if (sortStrategy.group) {
             fallbackFns.push(compareByField("type", false));
@@ -390,13 +393,13 @@ export const createSpace = async (superstate: Superstate, path: string, newSpace
 export const saveSpaceMetadataValue = async (superstate: Superstate, space: string, key: keyof SpaceDefinition, value: any) => {
     const spaceCache = superstate.spacesIndex.get(space);
     if (spaceCache?.type != "tag") {
-        superstate.spaceManager.saveSpace(space, (metadata) => ({ ...metadata, [key]: value }));
+        await superstate.spaceManager.saveSpace(space, (metadata) => ({ ...metadata, [key]: value }));
     }
     await superstate.updateSpaceMetadata(space, { ...spaceCache.metadata, [key]: value });
 };
 
-export const saveSpaceProperties = async (superstate: Superstate, space: string, properties: Record<string, any>) => {
-    superstate.spaceManager.saveSpace(space, (metadata) => metadata, properties);
+export const saveSpaceProperties = async (_superstate: Superstate, _space: string, _properties: Record<string, any>) => {
+    return;
 };
 
 export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceState, metadata: SpaceDefinition) => {

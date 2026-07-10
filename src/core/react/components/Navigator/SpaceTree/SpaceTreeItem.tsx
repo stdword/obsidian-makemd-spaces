@@ -13,14 +13,10 @@ import { windowFromDocument } from "utils/dom";
 import { canOpenTreeItemPath, isTagTreeItemPath, isTagSpacePath } from "schemas/builtin";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
+import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
-
-export const shouldShowFileTag = (isSpace: boolean, extension?: string) => {
-    const registeredFileTagExtensions = ["md", "base", "canvas", "excalidraw"];
-    return !!extension && !isSpace && !registeredFileTagExtensions.includes(extension)
-};
 
 export const shouldShowLinkedItemIcon = (data: TreeNode) => {
     if (data.depth <= 0 || isTagSpacePath(data.space)) return false;
@@ -31,8 +27,20 @@ export const shouldShowLinkedItemIcon = (data: TreeNode) => {
 
 export const shouldShowPinnedItemIcon = (data: TreeNode) => {
     if (data.depth == 0) return false;
-    return data.item?.pinnedSpaces?.includes(data.space);
+    return !!data.pinned;
 }
+
+export const pathStateForTreeItem = (superstate: Superstate, data: TreeNode): PathState => {
+    const indexedPathState = superstate.pathStateForPath(data.item.path) ?? data.item;
+    const pathState = { ...indexedPathState, ...data.item } as PathState;
+    if (pathState.type == "space" || !data.space) return pathState;
+
+    const spaceMetadata = superstate.spacesIndex.get(data.space)?.metadata;
+    return {
+        ...pathState,
+        color: spaceMetadata?.["file-colors"]?.[pathState.path] ?? spaceMetadata?.defaultColor ?? "",
+    };
+};
 
 export const eventToModifier = (e: React.DragEvent, isDefaultSpace?: boolean) => (e.altKey ? "copy" : e.shiftKey || isDefaultSpace ? "link" : "move");
 export interface TreeItemProps {
@@ -65,9 +73,8 @@ export const TreeItem = (props: TreeItemProps) => {
 
     const innerRef = useRef(null);
     const [dropHighlighted, setDropHighlighted] = useState(false);
-    const [pathState, setPathState] = useState<PathState>(superstate.pathStateForPath(data.item.path) ?? data.item);
-
-    useEffect(() => setPathState(superstate.pathStateForPath(data.item.path) ?? data.item), [data.item]);
+    const [, refreshPathState] = useState(0);
+    const pathState = pathStateForTreeItem(superstate, data);
     const openAuxClick = (e: React.MouseEvent) => {
         if (e.button == 1 && canOpenTreeItemPath(pathState)) {
             superstate.ui.openPath(pathState.path, "tab");
@@ -85,7 +92,7 @@ export const TreeItem = (props: TreeItemProps) => {
         }
         if (isTagSpace) {
             onCollapse?.(data, Boolean(collapsed));
-        } else if (isFolder) {
+        } else if (isSpace) {
             if (superstate.settings.expandFolderOnClick) {
                 if (collapsed) {
                     onCollapse(data, true);
@@ -131,7 +138,7 @@ export const TreeItem = (props: TreeItemProps) => {
         dragOver(e, data.id, position);
     };
     const onDrop = useCallback((files: File[]) => {
-        if (isFolder) {
+        if (isSpace) {
             // Do something with the files
             files.map(async (file) => {
                 file.arrayBuffer().then((arrayBuffer) => {
@@ -141,7 +148,7 @@ export const TreeItem = (props: TreeItemProps) => {
         }
     }, []);
     const onDragEnter = useCallback(() => {
-        if (isFolder) setDropHighlighted(true);
+        if (isSpace) setDropHighlighted(true);
     }, []);
 
     const { getRootProps, getInputProps } = useDropzone({
@@ -174,17 +181,19 @@ export const TreeItem = (props: TreeItemProps) => {
         showPathContextMenu(superstate, data.path, data.type == "group" ? null : data.space, (e.target as HTMLElement).getBoundingClientRect(), windowFromDocument(e.view.document), "right", data.type == "group" ? () => closeActiveSpace(data.path) : null, data.depth);
     };
     const pathStateUpdated = (payload: { path: string }) => {
-        if (payload.path == pathState?.path) {
-            const _pathState = superstate.pathStateForPath(pathState.path);
-            if (_pathState) setPathState(_pathState);
-        }
+        if (payload.path == data.item.path) refreshPathState((version) => version + 1);
+    };
+    const spaceStateUpdated = (payload: { path: string }) => {
+        if (payload.path == data.space) refreshPathState((version) => version + 1);
     };
     useEffect(() => {
         superstate.eventsDispatcher.addListener("pathStateUpdated", pathStateUpdated);
+        superstate.eventsDispatcher.addListener("spaceStateUpdated", spaceStateUpdated);
         return () => {
             superstate.eventsDispatcher.removeListener("pathStateUpdated", pathStateUpdated);
+            superstate.eventsDispatcher.removeListener("spaceStateUpdated", spaceStateUpdated);
         };
-    }, []);
+    }, [superstate, data.item.path, data.space]);
     const dropProps = {
         onDragOver: onDragOver,
     };
@@ -194,12 +203,12 @@ export const TreeItem = (props: TreeItemProps) => {
         onDrop: onDragEnded,
     };
     const isSpace = pathState?.type == "space";
-    const isFolder = isSpace;
-    const extension = pathState?.subtype;
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
 
-    const displayName = treeItemDisplayName(pathState, data, superstate.spacesIndex);
-    const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
+    const displayInfo = pathDisplayInfo(pathState.path);
+    const displayExtension = pathState.name != displayInfo.title ? pathState.name.slice(displayInfo.title.length + 1) : ""
+    const displayName = isSpace ? treeItemDisplayName(pathState, data, superstate.spacesIndex) : displayInfo.title;
+    const stickerLabel = data.sort && isSpace ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
 
     const spacing = data.type == "group" ? -2 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
 
@@ -214,7 +223,7 @@ export const TreeItem = (props: TreeItemProps) => {
                     highlighted ? "is-highlighted" : "",
                     dimmed ? "is-dimmed" : "",
                 )}
-                style={treeItemColorVariables(color, isFolder) as TreeItemStyle}
+                style={treeItemColorVariables(color, isSpace) as TreeItemStyle}
                 data-depth={depth}
                 ref={innerRef}
                 onAuxClick={openAuxClick}
@@ -224,7 +233,7 @@ export const TreeItem = (props: TreeItemProps) => {
                 {...innerProps}
             >
                 <div
-                    className={classNames(isFolder ? "nav-folder" : "nav-file")}
+                    className={classNames(isSpace ? "nav-folder" : "nav-file")}
                     style={{
                         ...style,
                         ...(dragActive ? { pointerEvents: "none" } : {}),
@@ -236,7 +245,7 @@ export const TreeItem = (props: TreeItemProps) => {
                         className={classNames(
                             "mk-tree-item",
                             "tree-item-self",
-                            isFolder ? "nav-folder-title" : "nav-file-title",
+                            isSpace ? "nav-folder-title" : "nav-file-title",
                             active ? "is-active" : "",
                             selected ? "is-selected" : "",
 
@@ -247,7 +256,7 @@ export const TreeItem = (props: TreeItemProps) => {
                         style={
                             {
                                 "--spacing": `${spacing}px`,
-                                ...treeItemActiveColorVariables(color, isFolder),
+                                ...treeItemActiveColorVariables(color, isSpace),
                             } as TreeItemStyle
                         }
                         data-path={pathState?.path}
@@ -275,7 +284,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 ariaLabel={stickerLabel}
                             />
                         )}
-                        <div className={`mk-tree-text ${isFolder ? "nav-folder-title-content" : "nav-file-title-content"}`}>{displayName}</div>
+                        <div className={`mk-tree-text ${isSpace ? "nav-folder-title-content" : "nav-file-title-content"}`}>{displayName}</div>
 
                         {data.type == "group" && data.childrenCount > 0 && (
                             <CollapseToggle
@@ -290,9 +299,9 @@ export const TreeItem = (props: TreeItemProps) => {
                         )}
 
                         <div className="mk-tree-span"></div>
-                        {shouldShowFileTag(isSpace, extension) &&
-                            <span className="nav-file-tag">{extension}</span>
-                        }
+                        {displayExtension && (
+                            <span className="nav-file-tag">{displayExtension}</span>
+                        )}
                         {shouldShowLinkedItemIcon(data) && (
                             <div className="mk-linked-item-icon">
                                 <PathStickerView

@@ -27,7 +27,9 @@ export const highlightContainerIdForDrag = (flattenedTree: TreeNode[], activeInd
         return hoverNode.parentId ?? null;
     }
     if (dragAction.visual.kind == "box") {
-        return dragAction.visual.containerId;
+        const boxContainerId = dragAction.visual.containerId;
+        const boxTarget = flattenedTree.find((node) => node.id == boxContainerId);
+        return boxTarget?.parentId ?? boxContainerId;
     }
     return dragAction.action.containerId;
 };

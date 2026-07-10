@@ -3,9 +3,7 @@ import { FilesystemSpaceInfo, SpaceState } from "shared/types/PathState";
 import { encodeSpaceName, tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { builtinSpaces } from "schemas/space";
 import { DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE, SPACE_CONFIG_PATH } from "schemas/constants";
-import { builtinSpacePathPrefix } from "schemas/builtin";
 import { removeTrailingSlashFromFolder } from "utils/paths";
 import { folderPathToString } from "utils/path";
 import { tagSpacePathFromTag } from "schemas/builtin";
@@ -28,22 +26,7 @@ export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): 
 
 export const fileSystemSpaceInfoByPath = (manager: SpaceManager, contextPath: string): SpaceState => {
     if (!contextPath) return;
-    if (contextPath.startsWith(builtinSpacePathPrefix)) {
-        const builtinPath = contextPath.slice(builtinSpacePathPrefix.length);
 
-        const folderPath = "$" + builtinPath;
-        return {
-            type: "tag",
-            name: builtinSpaces[builtinPath].name,
-            path: contextPath,
-            space: {
-                folderPath,
-                defPath: pathInSpaceFolder(folderPath, SPACE_CONFIG_FILE),
-                notePath: `${folderPath}/${builtinSpaces[builtinPath].name}.md`,
-            },
-            metadata: {},
-        };
-    }
     const uri = manager.uriByString(contextPath);
     if (!uri) return null;
     const pathType = manager.spaceTypeByString(uri);

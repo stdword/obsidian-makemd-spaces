@@ -38,7 +38,6 @@ export abstract class ISuperstate {
     pathStateForPath: (path: string) => PathState;
     loadFromCache: () => Promise<void>;
     dispatchEvent: (event: keyof SuperstateEvent, payload: any) => void;
-    initializeBuiltins: () => Promise<void>;
     initializeTags: () => Promise<void>;
     onTagRenamed: (tag: string, newTag: string) => Promise<void>;
     onTagDeleted: (tag: string) => Promise<void>;

@@ -4,7 +4,7 @@ import MakeMDPlugin from "main";
 import { TFolder } from "obsidian";
 import { getAbstractFileAtPath, uniqueFileName } from "../utils/file";
 
-export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<string, any>, Record<string, never>> {
+export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<string, any>> {
     public supportedFileTypes: string[] = ["canvas"];
     public id = "canvas.obsidian.md";
     public constructor(public plugin: MakeMDPlugin) {
@@ -22,7 +22,6 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
     }
     public cache: Map<string, Record<string, any>>;
     public cacheTypes: (file: AFile) => string[];
-    public contentTypes: (file: AFile) => string[];
     public async newFile(parent: string, name: string, _type: string) {
         if (!name) {
             name = uniqueFileName("Untitled", "Untitled", "canvas", getAbstractFileAtPath(this.plugin.app, parent) as TFolder);
@@ -31,9 +30,5 @@ export class ObsidianCanvasFiletypeAdapter implements FileTypeAdapter<Record<str
         await this.middleware.writeTextToFile(`${parent}/${name}`, "{}");
         return this.middleware.getFile(newPath);
     }
-    public getCacheTypeByRefString: (file: AFile, refString: string) => any;
-    public getCache: (file: AFile, fragmentType: string, query?: string) => never;
-    public readContent: (file: AFile, fragmentType: string, fragmentId: any) => never;
-    public newContent: (file: AFile, fragmentType: string, name: string, content: never, options: { [key: string]: any }) => Promise<any>;
-    public saveContent: (file: AFile, fragmentType: string, fragmentId: any, content: (prev: never) => any) => Promise<boolean>;
+    public getCache: (file: AFile, cacheType: string, query?: string) => never;
 }

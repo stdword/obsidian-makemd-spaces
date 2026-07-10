@@ -193,10 +193,6 @@ export const openTFile = async (leaf: WorkspaceLeaf, file: TFile, app: App) => {
     await leaf.openFile(file);
 };
 
-export const openTagContext = async (_leaf: WorkspaceLeaf, _tag: string, _app: App) => {
-    return;
-};
-
 export const openArbitraryView = async (view: string, app: App, newLeaf: TargetLocation) => {
     const leaf = getLeaf(app, newLeaf);
     app.workspace.setActiveLeaf(leaf, { focus: true });

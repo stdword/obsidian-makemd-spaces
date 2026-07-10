@@ -6,6 +6,8 @@ import i18n from "shared/i18n";
 import React, { createContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { PathState, SpaceState } from "shared/types/PathState";
+import { iconForSpace, pathDisplayInfo } from "../components/UI/pathDisplay";
+import { tagSpacePathPrefix } from "schemas/builtin";
 
 type NavigatorContextProps = {
     dragPaths: string[];
@@ -74,7 +76,7 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
             parent: "",
             type: "space",
             subtype,
-            sticker: subtype == "tag" ? "lucide//hash" : subtype == "vault" ? "ui//home" : "ui//folder",
+            sticker: iconForSpace(subtype),
             color: "",
             metadata: {},
             tags: [],

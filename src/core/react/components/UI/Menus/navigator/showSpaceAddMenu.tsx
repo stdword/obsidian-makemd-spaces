@@ -1,12 +1,9 @@
-import { createSpace, defaultSpace, newPathInSpace, linkPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
-import { addTag } from "core/utils/superstate/tags";
+import { createSpace, newPathInSpace, linkPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
 import { isString } from "lodash";
 import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
 import { default as i18n } from "shared/i18n";
 import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
-import { tagsSpacePath } from "schemas/builtin";
-import { TargetLocation } from "shared/types/path";
 import { SpaceState, FilesystemSpaceInfo } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
 import { windowFromDocument } from "utils/dom";
@@ -14,17 +11,6 @@ import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showLinkMenu } from "../modals/linkMenu";
 
-export const defaultAddAction = async (superstate: Superstate, _space: SpaceState, win: Window, location?: TargetLocation) => {
-    let space = _space;
-    if (space?.path == tagsSpacePath) {
-        superstate.ui.openModal("New Tag", <InputModal value="" saveLabel={i18n.labels.saveView} saveValue={(value) => addTag(superstate, value)}></InputModal>, win);
-        return;
-    }
-    if (!space || space.type == "tag") {
-        space = await defaultSpace(superstate, superstate.pathsIndex.get(superstate.ui.activePath));
-    }
-    newPathInSpace(superstate, space, "md", null, false, null, location);
-};
 
 export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, _isSubmenu?: boolean, onHide?: () => void) => {
     const menuOptions: SelectOption[] = [];

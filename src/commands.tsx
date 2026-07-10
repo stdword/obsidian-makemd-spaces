@@ -5,6 +5,7 @@ import { eventTypes } from "schemas/event";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "utils/dom";
 import MakeMDPlugin from "main";
+import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 export const attachCommands = (plugin: MakeMDPlugin) => {
     plugin.addCommand({
@@ -29,24 +30,41 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
     });
 
     plugin.addCommand({
-        id: "mk-pin-active",
+        id: "mk-link-active-file",
         name: i18n.commandPalette.linkActiveFileToSpace,
         callback: () => {
+            console.log('TRACE!!')
             const file = plugin.superstate.ui.activePath;
-            if (!file) return;
+            if (!file)
+                return;
+            console.log('TRACE', {file})
             const pathState = plugin.superstate.pathsIndex.get(file);
-            if (!pathState) return;
-            const currentFocusIndex = plugin.superstate.settings.currentWaypoint;
-            const currentFocus = plugin.superstate.focuses[currentFocusIndex] ?? {
-                name: i18n.labels.home,
-                sticker: "ui//home",
-                paths: [] as string[],
-            };
-            if (currentFocus.paths.includes(file)) return;
-            const nextFocuses = plugin.superstate.focuses.map((focus, index) => (index == currentFocusIndex ? { ...currentFocus, paths: [...currentFocus.paths, file] } : focus));
-            if (currentFocusIndex >= plugin.superstate.focuses.length) {
-                nextFocuses.push({ ...currentFocus, paths: [file] });
+            if (!pathState)
+                return;
+
+            console.log('TRACE', {file, pathState})
+
+            if (plugin.superstate.focuses.length == 0) {
+                const display = pathDisplayInfo('/');
+                const newFocuses = [{
+                    name: display.title,
+                    sticker: display.icon,
+                    paths: [file],
+                }] as typeof plugin.superstate.focuses;
+                plugin.superstate.spaceManager.saveFocuses(newFocuses);
+                return;
             }
+
+            const currentFocusIndex = plugin.superstate.settings.currentWaypoint;
+            const currentFocus = plugin.superstate.focuses[currentFocusIndex];
+            if (currentFocus.paths.includes(file))
+                return;
+
+            const nextFocuses = plugin.superstate.focuses.map((focus, index) => (
+                (index == currentFocusIndex)
+                    ? { ...focus, paths: [...focus.paths, file] }
+                    : focus
+            ));
             plugin.superstate.spaceManager.saveFocuses(nextFocuses);
         },
     });

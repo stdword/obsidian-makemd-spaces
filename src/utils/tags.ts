@@ -3,16 +3,18 @@ import { pathToString } from "utils/path";
 
 export const renameTag = async (superstate: Superstate, tag: string, toTag: string) => {
     console.log('TRACE renameTag', {toTag, tag})
-    // const tags = getAllSubtags(superstate, tag);
+    // const subtags = getAllSubtags(superstate, tag);
+
     // const newTag = ensureTag(validateName(toTag));
     // const paths = superstate.spaceManager.pathsForTag(tag);
-    // for (const path of paths) {
+    // for (const path of paths)
     //     superstate.spaceManager.renameTag(path, tag, newTag);
-    // }
+
     // superstate.onTagRenamed(tag, newTag);
-    // for (const subtag of tags) {
+
+    // for (const subtag of subtags)
     //     await renameTag(superstate, subtag, subtag.replace(tag, newTag));
-    // }
+
     // return newTag;
 };
 

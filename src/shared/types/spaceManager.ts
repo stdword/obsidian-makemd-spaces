@@ -3,7 +3,6 @@ import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
 import { PathCache } from "./PathState";
 import { SpaceDefinition } from "./spaceDef";
-import { SpaceFragmentType } from "./spaceFragment";
 import { SpaceState, SpaceType } from "./PathState";
 import { ISuperstate, PathState } from "./superstate";
 
@@ -15,7 +14,7 @@ export interface ISpaceManager {
     getPathState: (path: string) => PathState;
     getPathsIndexMap: () => Map<string, PathState>;
     loadPath: (path: string) => Promise<PathCache | void>;
-    onSpaceUpdated(path: string, type: SpaceFragmentType): void;
+    onSpaceUpdated(path: string, type: string): void;
     onFocusesUpdated(): void;
     onPathCreated(path: string): Promise<void>;
     onPathDeleted(path: string): Promise<void>;
@@ -33,7 +32,7 @@ export interface ISpaceManager {
     addSpaceAdapter(spaceAdapter: SpaceAdapter, primary?: boolean): void;
     adapterForPath(path: string): SpaceAdapter;
     createSpace(name: string, parentPath: string, definition: SpaceDefinition): void;
-    saveSpace(path: string, definition: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>): void;
+    saveSpace(path: string, definition: (def: SpaceDefinition) => SpaceDefinition): void;
     renameSpace(path: string, newPath: string): Promise<string>;
     deleteSpace(path: string): void;
     childrenForSpace(path: string): string[];
@@ -71,7 +70,7 @@ export abstract class SpaceAdapter {
     public spaceDefinitionForPath: (path: string) => Promise<SpaceDefinition>;
     public parentPathForPath: (path: string) => string;
     public createSpace: (name: string, parentPath: string, definition: SpaceDefinition) => void;
-    public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition, properties?: Record<string, any>) => void;
+    public saveSpace: (path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition) => void;
     public renameSpace: (path: string, newPath: string) => Promise<string>;
     public deleteSpace: (path: string) => void;
     public childrenForSpace: (path: string) => string[];

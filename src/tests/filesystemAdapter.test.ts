@@ -45,11 +45,9 @@ describe("FilesystemSpaceAdapter", () => {
                 text.set(path, content);
                 return file;
             }),
-            saveFileFragment: jest.fn(async (file: { path: string }, _type: string, _id: string, save: (prev: any) => any) => {
-                const prev = JSON.parse(text.get(file.path) ?? "{}");
-                const next = save(prev);
-                text.set(file.path, JSON.stringify(next, null, 2));
-                return true;
+            writeTextToFile: jest.fn(async (path: string, content: string) => {
+                files.set(path, files.get(path) ?? { path });
+                text.set(path, content);
             }),
         };
         const adapter = new FilesystemSpaceAdapter(fileSystem as any, ".obsidian/plugins/make-md-spaces") as any;
@@ -131,11 +129,11 @@ describe("FilesystemSpaceAdapter", () => {
     it("does not write default sort when creating context.json for a sticker change", async () => {
         const { adapter, text } = createAdapter();
 
-        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "ui//folder" }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "lucide//folder-closed" }));
 
         expect(JSON.parse(text.get("Projects/.space/context.json"))).toEqual({
             color: "",
-            sticker: "ui//folder",
+            sticker: "lucide//folder-closed",
             defaultColor: "",
             defaultSticker: "",
             "rank-order": [],
@@ -154,7 +152,31 @@ describe("FilesystemSpaceAdapter", () => {
         expect(text.has("Projects/.space/context.json")).toBe(false);
     });
 
-    it("writes only the changed sort fragment when creating context.json for a sort change", async () => {
+    it("reads rank-order from folder context metadata when space info stores filesystem paths under space", async () => {
+        const { adapter, text, files } = createAdapter();
+        adapter.spaceInfoForPath = jest.fn((path: string) => ({
+            name: path.split("/").pop() || "Home",
+            path,
+            type: "folder",
+            space: {
+                folderPath: path,
+                defPath: `${path}/.space/context.json`,
+                notePath: "",
+            },
+        }));
+        files.set("Projects/.space/context.json", { path: "Projects/.space/context.json" });
+        text.set("Projects/.space/context.json", JSON.stringify({
+            sort: { field: "rank", asc: true },
+            "rank-order": ["Projects/Beta.md", "Projects/Alpha.md"],
+        }));
+
+        const metadata = await adapter.spaceDefinitionForPath("Projects");
+
+        expect(metadata.sort).toEqual({ field: "rank", asc: true });
+        expect(metadata["rank-order"]).toEqual(["Projects/Beta.md", "Projects/Alpha.md"]);
+    });
+
+    it("writes only the changed sort value when creating context.json for a sort change", async () => {
         const { adapter, text } = createAdapter();
 
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sort: { group: true } }));
@@ -162,10 +184,34 @@ describe("FilesystemSpaceAdapter", () => {
         expect(JSON.parse(text.get("Projects/.space/context.json")).sort).toEqual({ group: true });
     });
 
+    it("writes context.json as a complete file without partial-content APIs", async () => {
+        const { adapter, fileSystem } = createAdapter();
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "lucide//folder-closed" }));
+
+        expect(fileSystem.writeTextToFile).toHaveBeenLastCalledWith(
+            "Projects/.space/context.json",
+            JSON.stringify(
+                {
+                    color: "",
+                    sticker: "lucide//folder-closed",
+                    defaultColor: "",
+                    defaultSticker: "",
+                    "rank-order": [],
+                    links: [],
+                    pinned: [],
+                    "file-colors": {},
+                },
+                null,
+                2,
+            ),
+        );
+    });
+
     it("deletes context.json and empty .space folder after clearing the last folder sticker", async () => {
         const { adapter, text, files, folders } = createAdapter();
 
-        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "ui//folder" }));
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "lucide//folder-closed" }));
         await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, sticker: "" }));
 
         expect(text.has("Projects/.space/context.json")).toBe(false);
@@ -189,7 +235,7 @@ describe("FilesystemSpaceAdapter", () => {
 
     it.each([
         ["defaultColor", "#112233"],
-        ["defaultSticker", "ui//folder"],
+        ["defaultSticker", "lucide//folder-closed"],
         ["sort", { group: true }],
     ])("deletes context.json after clearing the last %s setting", async (key, value) => {
         const { adapter, text, files, folders } = createAdapter();

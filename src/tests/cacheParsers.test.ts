@@ -31,7 +31,6 @@ describe("parseMetadata", () => {
                 metadata: {},
                 name: "Child",
                 ctime: 0,
-                contentTypes: [],
                 tags: [],
                 type: "file",
                 subtype: "md",
@@ -107,7 +106,6 @@ describe("parseMetadata", () => {
                 metadata: {},
                 ctime: 0,
                 name: "context",
-                contentTypes: [],
                 tags: [],
                 type: "file",
                 subtype: "json",
@@ -152,7 +150,6 @@ describe("parseMetadata", () => {
                     metadata: {},
                     ctime: 0,
                     name,
-                    contentTypes: [],
                     tags: [],
                     type: "file",
                     subtype: extension,
@@ -182,7 +179,6 @@ describe("parseMetadata", () => {
                 metadata: {},
                 ctime: 0,
                 name: "Projects",
-                contentTypes: [],
                 tags: [],
                 type: "space",
                 subtype: "folder",
@@ -196,7 +192,7 @@ describe("parseMetadata", () => {
             null,
         );
 
-        expect(cache.sticker).toBe("ui//folder");
+        expect(cache.sticker).toBe("lucide//folder-closed");
     });
 
     it("does not copy space definition into folder path metadata", () => {
@@ -212,7 +208,6 @@ describe("parseMetadata", () => {
                 },
                 ctime: 0,
                 name: "Projects",
-                contentTypes: [],
                 tags: [],
                 type: "space",
                 subtype: "folder",
@@ -268,7 +263,6 @@ describe("parseMetadata", () => {
                 metadata: {},
                 ctime: 0,
                 name: "Hidden.md",
-                contentTypes: [],
                 tags: [],
                 type: "file",
                 subtype: "md",

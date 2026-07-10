@@ -1,6 +1,4 @@
-import { SpaceFragmentType } from "./spaceFragment";
-
-export type PathRefTypes = SpaceFragmentType | "block" | "heading" | "unknown";
+export type PathRefTypes = "context" | "action" | "vis" | "block" | "heading" | "unknown";
 
 export type URI = {
     basePath: string;

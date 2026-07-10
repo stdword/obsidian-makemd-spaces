@@ -1,6 +1,7 @@
 import { ISuperstate } from "shared/types/superstate";
 
 const isFolderPathState = (pathState: any) => pathState?.type == "space" || pathState?.subtype == "folder";
+const supportsFileColors = (spaceState: any) => spaceState?.type == "tag" || !!spaceState?.space;
 
 const updatePathColor = (superstate: ISuperstate, path: string, color: string) => {
     const pathState = superstate.pathsIndex.get(path);
@@ -75,7 +76,7 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
 
     const spaces = [...new Set([...(pathState.spaces ?? []), treeSpace].filter((spacePath) => spacePath))]
         .map((spacePath) => superstate.spacesIndex.get(spacePath))
-        .filter((space) => space?.space);
+        .filter(supportsFileColors);
     const spaceSaves = spaces.map((spaceState) => saveFileColorInSpace(superstate, spaceState, path, color));
     updatePathColor(superstate, path, color);
     await Promise.all(spaceSaves);
@@ -99,7 +100,7 @@ export const savePathColors = async (superstate: ISuperstate, targets: PathColor
         ([...(pathState.spaces ?? []), treeSpace] as string[])
             .filter((spacePath) => spacePath)
             .map((spacePath) => superstate.spacesIndex.get(spacePath))
-            .filter((space) => space?.space)
+            .filter(supportsFileColors)
             .forEach((spaceState) => {
                 const currentUpdate = spacePathUpdates.get(spaceState.path) ?? {
                     spaceState,

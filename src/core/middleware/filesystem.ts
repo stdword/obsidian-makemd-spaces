@@ -1,7 +1,7 @@
 import { AFile } from "shared/types/afile";
 import { PathCache } from "shared/types/PathState";
 import { EventDispatcher, EventTypeToPayload } from "utils/dispatcher";
-import { FileTypeAdapter, FileTypeCache, FileTypeContent } from "./filetypes";
+import { FileTypeAdapter, FileTypeCache } from "./filetypes";
 
 export interface FileSystemEventTypes extends EventTypeToPayload {
     onCreate: { file: AFile };
@@ -46,7 +46,7 @@ export class FilesystemMiddleware {
     public eventDispatch: EventDispatcher<FileSystemEventTypes>;
     public primary: FileSystemAdapter;
     public filesystems: FileSystemAdapter[] = [];
-    public filetypes: FileTypeAdapter<FileTypeCache, FileTypeContent>[] = [];
+    public filetypes: FileTypeAdapter<FileTypeCache>[] = [];
     public static create(): FilesystemMiddleware {
         return new FilesystemMiddleware();
     }
@@ -76,10 +76,6 @@ export class FilesystemMiddleware {
         return this.primary.readAllTags();
     }
 
-    public fileFragmentChanged(file: AFile) {
-        this.eventDispatch.dispatchEvent("onFileFragmentChanged", { file });
-    }
-
     public initiateFileSystemAdapter(adapter: FileSystemAdapter, primary: boolean) {
         adapter.initiate(this);
         if (primary) {
@@ -88,7 +84,7 @@ export class FilesystemMiddleware {
         this.filesystems.push(adapter);
     }
 
-    public initiateFiletypeAdapter(adapter: FileTypeAdapter<FileTypeCache, FileTypeContent>) {
+    public initiateFiletypeAdapter(adapter: FileTypeAdapter<FileTypeCache>) {
         adapter.initiate(this);
         this.filetypes.push(adapter);
     }
@@ -96,18 +92,6 @@ export class FilesystemMiddleware {
     public filetypeAdaptersForFile(file: AFile) {
         if (!file) return [];
         return this.filetypes.filter((f) => f.supportedFileTypes.includes(file.extension));
-    }
-
-    private filetypeAdaptersForFileFragments(file: AFile, fragmentType: string) {
-        return this.filetypeAdaptersForFile(file).filter((f) => (f.contentTypes ? f.contentTypes(file).includes(fragmentType) : false));
-    }
-
-    public getFileCacheTypeByRefString(file: AFile, refString: string) {
-        const adapters = this.filetypeAdaptersForFile(file);
-        return adapters.reduce((p, c) => {
-            if (p) return p;
-            return c.getCacheTypeByRefString(file, refString);
-        }, null);
     }
 
     public allCaches() {
@@ -135,22 +119,8 @@ export class FilesystemMiddleware {
         return this.adapterForPath(path).getFileCache(path);
     }
 
-    public getFileContent(file: AFile, contentType: string, contentId: any) {
-        const adapters = this.filetypeAdaptersForFile(file).filter((f) => f.contentTypes(file).includes(contentType));
-        if (adapters.length >= 1) {
-            return adapters[0].readContent(file, contentType, contentId);
-        }
-    }
-
     public updateFileCache(path: string, cache: FileTypeCache, refresh: boolean) {
         this.adapterForPath(path).updateFileCache(path, cache, refresh);
-    }
-
-    public readFileFragments(file: AFile, fragmentType: string, query?: string) {
-        const adapters = this.filetypeAdaptersForFileFragments(file, fragmentType);
-        if (adapters.length >= 1) {
-            return adapters[0].readContent(file, fragmentType, query);
-        }
     }
 
     public async newFile(parent: string, name: string, type: string, content?: any): Promise<AFile> {
@@ -161,23 +131,6 @@ export class FilesystemMiddleware {
         if (adapter?.newFile) {
             return adapter.newFile(parent, name, type, content);
         }
-    }
-
-    public newFileFragment(file: AFile, fragmentType: string, name: string, content: any, options?: { [key: string]: any }) {
-        const adapters = this.filetypeAdaptersForFileFragments(file, fragmentType);
-        if (adapters.length >= 1) {
-            return adapters[0].newContent(file, fragmentType, name, content, options);
-        }
-    }
-
-    public saveFileFragment(file: AFile, fragmentType: string, fragmentId: any, saveContent: (prev: any) => any) {
-        console.log('TRACE saveFileFragment', {file, fragmentType, fragmentId})
-        const adapters = this.filetypeAdaptersForFileFragments(file, fragmentType);
-        console.log('TRACE saveFileFragment::adapters', adapters)
-        if (adapters.length >= 1) {
-            return adapters[0].saveContent(file, fragmentType, fragmentId, saveContent);
-        }
-        return false;
     }
 
     public onCreate(file: AFile) {

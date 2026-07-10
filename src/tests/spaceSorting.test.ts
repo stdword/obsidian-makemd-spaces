@@ -1,4 +1,4 @@
-import { childSpaceSort, spaceSortFn, updateSpaceSort } from "core/utils/superstate/spaces";
+import { childSpaceSort, saveSpaceMetadataValue, spaceSortFn, updateSpaceSort } from "core/utils/superstate/spaces";
 
 const settings = {
     defaultSpaceSort: {
@@ -35,6 +35,48 @@ describe("space tree sorting", () => {
         ];
 
         expect([...rows].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((row) => row.name)).toEqual(["0 Inbox", "1 Lists", "2 References"]);
+    });
+
+    it("keeps ranked items in rank-order before sorting unranked items by fallback fields", () => {
+        const rows: any[] = [
+            { path: "Projects/A New.md", name: "A New", type: "file", rank: -1 },
+            { path: "Projects/Beta.md", name: "Beta", type: "file", rank: 1 },
+            { path: "Projects/Alpha.md", name: "Alpha", type: "file", rank: 0 },
+        ];
+
+        expect([...rows].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((row) => row.name)).toEqual(["Alpha", "Beta", "A New"]);
+    });
+});
+
+describe("space metadata persistence", () => {
+    it("waits for the context file write before updating in-memory metadata", async () => {
+        let finishWrite: () => void = (): void => undefined;
+        const saveSpace = jest.fn(() => new Promise<void>((resolve) => {
+            finishWrite = resolve;
+        }));
+        const updateSpaceMetadata = jest.fn(() => Promise.resolve());
+        const superstate = {
+            spacesIndex: new Map([["Workspace", {
+                path: "Workspace",
+                type: "folder",
+                metadata: { "rank-order": [] },
+            }]]),
+            spaceManager: { saveSpace },
+            updateSpaceMetadata,
+        } as any;
+
+        const saving = saveSpaceMetadataValue(superstate, "Workspace", "rank-order", ["Workspace/First.md"]);
+        await Promise.resolve();
+
+        expect(saveSpace).toHaveBeenCalled();
+        expect(updateSpaceMetadata).not.toHaveBeenCalled();
+
+        finishWrite();
+        await saving;
+
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("Workspace", {
+            "rank-order": ["Workspace/First.md"],
+        });
     });
 });
 

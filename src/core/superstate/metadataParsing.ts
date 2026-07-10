@@ -3,11 +3,11 @@ import { PathCache, PathState, PathType, SpaceState } from "shared/types/PathSta
 import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "utils/array";
 
-import { builtinSpaces } from "schemas/space";
-import { builtinSpacePathPrefix, isTagSpacePath, tagsSpacePath, tagSpacePathFromTag } from "schemas/builtin";
+import { isTagSpacePath, tagSpacePathFromTag } from "schemas/builtin";
 import { excludePathPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
+import { iconForSpace, pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 const stripExtension = (fileName: string) => {
     const dotIndex = fileName.lastIndexOf(".");
@@ -40,56 +40,51 @@ export const parseAllMetadata = (fileCache: Map<string, PathCache>, settings: Ma
 };
 
 export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCache: Map<string, SpaceState>, pathCache: PathCache, name: string, type: string, subtype: string, parent: string, oldMetadata: PathState): { changed: boolean; cache: PathState } => {
-    if (!pathCache) return { changed: false, cache: null };
-    const displayName = displayNameForPath(path, pathCache, name, type);
-    const defaultSticker = (sticker: string, type: string, subtype: string, path: string, savedSticker?: string): string => {
+    if (!pathCache)
+        return { changed: false, cache: null };
+
+    const getSticker = (type: string, path: string, sticker: string): string => {
         if (type == "space") {
-            if (path == "/") return "ui//home";
-            if (isTagSpacePath(path)) return "ui//hash";
-            if (savedSticker?.length > 0) return savedSticker;
-            if (sticker?.length > 0) return sticker;
-            return "ui//folder";
+            if (path == "/") return iconForSpace('vault');
+            if (isTagSpacePath(path)) return iconForSpace('tag');
+            return sticker || iconForSpace('folder');
         }
-        const fileExtension = subtype?.toLowerCase() || path.split(".").pop()?.toLowerCase();
-        if (["png", "jpg", "jpeg", "avif", "webp", "gif"].includes(fileExtension)) return "ui//image";
-        if (fileExtension == "canvas") return "ui//layout-dashboard";
-        if (fileExtension == "base") return "ui//table";
-        if (fileExtension == "excalidraw" || fileExtension == "excalidraw.md" || path.toLowerCase().endsWith(".excalidraw.md")) return "ui//excalidraw";
-        if (fileExtension == "md") return "ui//file-text";
-        return "ui//file";
+
+        return pathDisplayInfo(path).icon;
+    };
+
+    const getColor = (type: string, path: string, spaceColor: string, parentDefaultColor: string, fileColors: Record<string, string>): string => {
+        if (type == "space")
+            return ownColor || parentDefaultColor || ""
+
+        return fileColors[path] || parentDefaultColor || ""
     };
 
     const tags: string[] = [];
     const fileTags: string[] = pathCache?.tags?.filter((f) => f).map((f) => f.toLowerCase()) ?? [];
-    let hidden = excludePathPredicate(settings, path);
-    if (path.startsWith(builtinSpacePathPrefix)) {
-        const builtin = path.replace(builtinSpacePathPrefix, "");
-        hidden = builtinSpaces[builtin]?.hidden;
-    }
     tags.push(...fileTags);
+
+    const hidden = excludePathPredicate(settings, path);
 
     const parentDefaultSticker = spacesCache.get(parent)?.metadata?.defaultSticker;
     const ownSpaceMetadata = spacesCache.get(path)?.metadata;
     const ownSticker = ownSpaceMetadata?.sticker ?? "";
-    const sticker = type == "space" ? defaultSticker(parentDefaultSticker, type, subtype, path, ownSticker) : defaultSticker("", type, subtype, path);
+
     const parentDefaultColor = spacesCache.get(parent)?.metadata?.defaultColor;
     const ownColor = ownSpaceMetadata?.color ?? "";
     const fileColors = spacesCache.get(parent)?.metadata?.["file-colors"] ?? {};
-    const color = type == "space" ? ((ownColor || parentDefaultColor) ?? "") : (fileColors[path] ?? parentDefaultColor ?? "");
 
-    const isSpacePath = type == "space" || subtype == "folder";
-    const pathType: PathType = isSpacePath ? "space" : "file";
-    const pathMetadata = isSpacePath ? {} : { ...(pathCache?.metadata ?? {}) };
+    const isSpacePath = type == "space";
     const pathState: PathState = {
         path,
-        name: displayName,
+        name: displayNameForPath(path, pathCache, name, type),
         tags: uniq(tags),
-        type: pathType,
+        type: isSpacePath ? "space" : "file",
         subtype,
         parent,
-        sticker,
-        color,
-        metadata: pathMetadata,
+        sticker: getSticker(type, path, ownSticker || parentDefaultSticker),
+        color: getColor(type, path, ownColor, parentDefaultColor, fileColors),
+        metadata: isSpacePath ? {} : { ...(pathCache?.metadata ?? {}) },
         spaces: [],
         linkedSpaces: [],
         pinnedSpaces: [],
@@ -99,9 +94,6 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
     const spaces: string[] = [];
     const linkedSpaces: string[] = [];
     const pinnedSpaces: string[] = [];
-    if (subtype == "tag") {
-        spaces.push(tagsSpacePath);
-    }
     for (const s of tags) {
         spaces.push(tagSpacePathFromTag(s));
     }
@@ -156,8 +148,8 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
           };
     let changed = true;
 
-    if (oldMetadata && _.isEqual(metadata, oldMetadata)) {
+    if (oldMetadata && _.isEqual(metadata, oldMetadata))
         changed = false;
-    }
+
     return { changed, cache: metadata };
 };

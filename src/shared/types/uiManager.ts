@@ -18,7 +18,6 @@ export interface IUIManager {
     removeResetFunction: (reset: (id: string) => void) => void;
     resetSelection: (id: string) => void;
     eventsDispatch: EventDispatcher<UIManagerEventTypes>;
-    defaultAdd: (space: SpaceState, win: Window, location?: TargetLocation) => void;
     quickOpen: (mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => void;
     availableViews: () => string[];
     activeState: Record<string, any>;
@@ -77,7 +76,6 @@ export interface UIAdapter {
     isPluginEnabled: (id: string) => boolean;
     createExcalidrawDrawing: (folder?: string) => Promise<void>;
     mainMenu: (el: HTMLElement, superstate: ISuperstate) => void;
-    quickOpen: (mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => void;
 }
 export type UIManagerEventTypes = {
     activePathChanged: string;
