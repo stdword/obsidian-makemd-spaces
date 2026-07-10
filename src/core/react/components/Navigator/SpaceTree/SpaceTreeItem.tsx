@@ -206,7 +206,6 @@ export const TreeItem = (props: TreeItemProps) => {
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
 
     const displayInfo = pathDisplayInfo(pathState.path);
-    const displayExtension = pathState.name != displayInfo.title ? pathState.name.slice(displayInfo.title.length + 1) : ""
     const displayName = isSpace ? treeItemDisplayName(pathState, data, superstate.spacesIndex) : displayInfo.title;
     const stickerLabel = data.sort && isSpace ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
 
@@ -299,8 +298,8 @@ export const TreeItem = (props: TreeItemProps) => {
                         )}
 
                         <div className="mk-tree-span"></div>
-                        {displayExtension && (
-                            <span className="nav-file-tag">{displayExtension}</span>
+                        {!isSpace && displayInfo.extension && (
+                            <span className="nav-file-tag">{displayInfo.extension.slice(1)}</span>
                         )}
                         {shouldShowLinkedItemIcon(data) && (
                             <div className="mk-linked-item-icon">

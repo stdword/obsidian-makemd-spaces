@@ -5,9 +5,10 @@ import { SpaceType } from "shared/types/PathState";
 export type PathDisplayInfo = {
     icon: string;
     title: string;
+    extension?: string;
 };
 
-const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".avif", ".webp", ".gif"]);
+const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".avif", ".webp", ".gif", ".svg"]);
 
 const pathParts = (path: string) => {
     const fullName = path.split("/").pop() ?? "";
@@ -48,7 +49,7 @@ export const pathDisplayInfo = (path: string, type: "file" | "folder" = "file"):
     if (extension == ".canvas") return { icon: "ui//layout-dashboard", title };
 
     if (imageExtensions.has(extension))
-        return { icon: "ui//image", title: fullName };
+        return { icon: "ui//image", title, extension };
     else
-        return { icon: "ui//file",  title: fullName };
+        return { icon: "ui//file",  title, extension };
 };

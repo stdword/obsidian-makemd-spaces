@@ -42,6 +42,7 @@
 }
 .nav-file-tag {
     font-size: 7px;
+    color: var(--nav-tag-color-hover);
 }
 
 .mk-tree-wrapper > div {

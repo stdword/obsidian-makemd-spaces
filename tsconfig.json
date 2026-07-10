@@ -17,10 +17,6 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["dom", "es5", "scripthost", "es2020", "es2022"],
     "skipLibCheck": true,
-    // "paths": {
-    //   "react": ["node_modules/preact/compat/"],
-    //   "react-dom": ["node_modules/preact/compat/"]
-    // }
   },
   "include": [
     "**/*.ts",
