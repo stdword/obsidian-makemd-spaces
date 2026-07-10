@@ -261,13 +261,16 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     useEffect(() => {
         if (nextTreeScrollPath.current) {
-            const index = flattenedTree.findIndex((f) => f.id == nextTreeScrollPath.current);
+            const index = flattenedTree.findIndex((node) => node.id == nextTreeScrollPath.current);
             if (index != -1) {
                 listRef.current.scrollToIndex(index, { align: "center" });
+                const node = flattenedTree[index];
+                setActivePath(node.item.path);
+                setSelectedPaths([node]);
                 nextTreeScrollPath.current = null;
             }
         }
-    }, [flattenedTree]);
+    }, [flattenedTree, setActivePath, setSelectedPaths]);
     useEffect(() => {
         const spaceUpdated = (payload: { path: string }) => {
             if (refreshableSpaces.some((f) => f == payload.path)) {

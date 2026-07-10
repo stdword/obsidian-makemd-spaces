@@ -18,7 +18,7 @@ export abstract class ISuperstate {
     spaceManager: ISpaceManager;
     settings: MakeMDSettings;
     onSpaceDefinitionChanged: (space: SpaceState, metadata?: SpaceDefinition) => Promise<void>;
-    saveSettings: () => void;
+    saveSettings: () => Promise<void>;
     api: IAPI;
     ui: IUIManager;
     pathsIndex: Map<string, PathState>;

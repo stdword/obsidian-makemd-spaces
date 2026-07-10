@@ -19,11 +19,58 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
     plugin.addCommand({
         id: "mk-reveal-file",
         name: i18n.commandPalette.revealFile,
-        callback: () => {
-            const file = plugin.superstate.ui.activePath;
-            if (!file) return;
+        callback: async () => {
+            const path = plugin.superstate.ui.activePath;
+            if (!path)
+                return;
+
+            const focuses = plugin.superstate.focuses;
+            const currentFocusIndex = plugin.superstate.settings.currentWaypoint;
+            if (!focuses.length)
+                return;
+
+            // order of search
+            const focusIndexes = [
+                ...focuses.slice(currentFocusIndex).map((_, offset) => currentFocusIndex + offset),
+                ...focuses.slice(0, currentFocusIndex).map((_, index) => index),
+            ];
+
+            let found: {
+                    focus: typeof focuses[number];
+                    focusIndex: number;
+                    path: string;
+                } | undefined;
+
+            for (const focusIndex of focusIndexes) {
+                const focus = focuses[focusIndex];
+
+                const matchedPath = focus.paths
+                    .filter(availablePath =>
+                        path === availablePath ||
+                        availablePath === '/' ||
+                        path.startsWith(`${availablePath}/`)
+                    )[0];
+
+                if (matchedPath) {
+                    found = {
+                        focus,
+                        focusIndex,
+                        path: matchedPath,
+                    };
+
+                    break;
+                }
+            }
+
+            if (found && found.focusIndex !== currentFocusIndex) {
+                plugin.superstate.settings.currentWaypoint = found.focusIndex;
+                await plugin.superstate.saveSettings();
+                // Let React commit the new focus so revealPath reads the updated activeViewSpaces.
+                await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+            }
+
             const evt = new CustomEvent(eventTypes.revealPath, {
-                detail: { path: file },
+                detail: { path },
             });
             window.dispatchEvent(evt);
         },

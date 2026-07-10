@@ -66,6 +66,23 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
+    it("handles a newly created root-level space without previous metadata", async () => {
+        const { superstate } = createSuperstate();
+        const space = {
+            type: "folder",
+            name: "Root Space",
+            path: "Root Space",
+            metadata: {},
+            space: {
+                folderPath: "Root Space",
+                defPath: "Root Space/.space/context.json",
+                notePath: "Root Space/Root Space.md",
+            },
+        } as any;
+
+        await expect(superstate.onSpaceDefinitionChanged(space, null)).resolves.toBeUndefined();
+    });
+
     it("loads folder rank-order from context metadata during initialization", async () => {
         const { superstate, spaceManager } = createSuperstate();
         const rankedSpace = {

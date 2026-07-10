@@ -28,7 +28,8 @@ import { ensureArray } from "core/utils/schema";
 import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 
-const spaceDisplayMetadata = (metadata: SpaceDefinition = {}) => {
+const spaceDisplayMetadata = (metadata?: SpaceDefinition | null) => {
+    metadata ??= {};
     return {
         color: metadata.color,
         sticker: metadata.sticker,
@@ -159,7 +160,7 @@ export class Superstate implements ISuperstate {
     public eventsDispatcher: EventDispatcher<SuperstateEvent>;
     public spaceManager: SpaceManager;
     public settings: MakeMDSettings;
-    public saveSettings: () => void;
+    public saveSettings: () => Promise<void>;
     public api: API;
 
     public ui: UIManager;
