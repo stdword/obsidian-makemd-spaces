@@ -33,16 +33,12 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
         id: "mk-link-active-file",
         name: i18n.commandPalette.linkActiveFileToSpace,
         callback: () => {
-            console.log('TRACE!!')
             const file = plugin.superstate.ui.activePath;
             if (!file)
                 return;
-            console.log('TRACE', {file})
             const pathState = plugin.superstate.pathsIndex.get(file);
             if (!pathState)
                 return;
-
-            console.log('TRACE', {file, pathState})
 
             if (plugin.superstate.focuses.length == 0) {
                 const display = pathDisplayInfo('/');

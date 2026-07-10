@@ -79,23 +79,14 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     getActiveFile() {
         modifyTabSticker(this);
-        let filePath = null;
-        let state = null;
-        const leaf = this.app.workspace.getActiveViewOfType(MarkdownView)?.leaf;
+        const file = this.app.workspace.getActiveFile();
+        if (!file) return null;
 
-        const activeView = leaf?.view;
-        if (!activeView) return null;
-
-        if (activeView.getViewType() == "markdown") {
-            filePath = activeView.file.path;
-            state = activeView.getState();
-        }
-
-        if (!filePath || !state) return null;
+        const state = this.app.workspace.getMostRecentLeaf()?.view.getState() ?? {};
 
         return {
-            path: filePath,
-            state: state,
+            path: file.path,
+            state,
         };
     }
     activeFileChange() {
