@@ -210,13 +210,17 @@ export class ObsidianUI implements UIAdapter {
     public dragEnded = (_e: React.DragEvent<HTMLDivElement>) => {};
 
     public allStickers = () => {
-        const allLucide: Sticker[] = lucideIcons.map((f) => ({
-            name: f,
-            type: "lucide",
-            keywords: f,
-            value: f,
-            html: getIcon(f).outerHTML,
-        }));
+        const allLucide: Sticker[] = lucideIcons
+            // Lucide removed all brand icons in v1.0; getIcon() returns null for those
+            // names on Obsidian >=1.13.1, so drop any that no longer resolve (#548).
+            .filter((f) => getIcon(f) != null)
+            .map((f) => ({
+                name: f,
+                type: "lucide",
+                keywords: f,
+                value: f,
+                html: getIcon(f)?.outerHTML ?? "",
+            }));
 
         const allEmojis: Sticker[] = Object.keys(emojis as EmojiData).reduce(
             (p, c: string) => [
