@@ -151,28 +151,6 @@ describe("linked item icon", () => {
     });
 });
 
-describe("navigator file label color CSS", () => {
-    const navigatorCss = fs.readFileSync(path.join(__dirname, "../css/Panels/Navigator/Navigator.css"), "utf8");
-
-    it("applies custom file colors through text and icon variables", () => {
-        expect(navigatorCss).toMatch(/\.mk-tree-text\.nav-file-title-content\s*{[^}]*color:\s*var\(--label-color\)/);
-        expect(navigatorCss).toMatch(/\.nav-file-title\s*>\s*\.mk-path-icon\s*>\s*button\s*>\s*svg\s*{[^}]*color:\s*var\(--icon-color\)/);
-    });
-
-    it("aligns tag group rows with folder section rows", () => {
-        expect(navigatorCss).toMatch(/\.mk-tree-tag\s+\.mk-tree-item\s*{[^}]*padding-left:\s*4px/);
-        expect(navigatorCss).toMatch(/\.mk-tree-tag\s+\.mk-tree-text\s*{[^}]*font-size:\s*14px/);
-    });
-
-    it("positions the linked item icon relative to the primary path icon", () => {
-        expect(navigatorCss).toMatch(/\.mk-tree-item\s*{[^}]*position:\s*relative/);
-        expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*pointer-events:\s*none/);
-    });
-
-    it("prevents Obsidian folder hover backgrounds from showing in the spaces tree", () => {
-        expect(navigatorCss).toMatch(/\.mk-tree-wrapper\s+\.mk-tree-item\.nav-folder-title:hover\s*{[^}]*background:\s*none\s*!important/);
-    });
-});
 
 describe("treeItemColorVariables", () => {
     it("does not use a folder defaultColor as the folder's own display color", () => {

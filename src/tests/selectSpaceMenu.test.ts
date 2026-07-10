@@ -5,16 +5,16 @@ describe("showOpenMenu", () => {
         const openMenu = jest.fn();
         const superstate = {
             allSpaces: jest.fn(() => [
-                { name: "project", path: "spaces://#project", type: "tag" },
+                { name: "sample", path: "spaces://#sample", type: "tag" },
                 { name: "archive", path: "spaces://#archive", type: "tag" },
                 { name: "Internal", path: "spaces://$tags", type: "default" },
                 { name: "Folder", path: "Folder", type: "folder" },
             ]),
             spaceManager: {
-                readTags: jest.fn(() => ["#project"]),
+                readTags: jest.fn(() => ["#sample"]),
             },
             spacesIndex: new Map([
-                ["spaces://#project", { name: "project", path: "spaces://#project", type: "tag" }],
+                ["spaces://#sample", { name: "sample", path: "spaces://#sample", type: "tag" }],
                 ["spaces://#archive", { name: "archive", path: "spaces://#archive", type: "tag" }],
             ]),
             pathsIndex: new Map(),
@@ -29,8 +29,8 @@ describe("showOpenMenu", () => {
         expect(menuConfig.options).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
-                    name: "project",
-                    value: "spaces://#project",
+                    name: "sample",
+                    value: "spaces://#sample",
                     section: "tags",
                     icon: "lucide//hash",
                     description: "",
@@ -62,8 +62,8 @@ describe("showOpenMenu", () => {
                 { name: "Shared", path: "Zeta/Shared", type: "folder" },
                 { name: "c", path: "spaces://#it/languages/c", type: "tag" },
                 { name: "Alpha", path: "Alpha", type: "folder" },
-                { name: "Applications", path: "Atlas/Applications", type: "folder" },
-                { name: "Atlas", path: "Atlas", type: "folder" },
+                { name: "Tools", path: "Workspace/Tools", type: "folder" },
+                { name: "Workspace", path: "Workspace", type: "folder" },
                 { name: "Content", path: "Content", type: "folder" },
                 { name: "Items", path: "Beta/Items", type: "folder" },
                 { name: "Shared", path: "Alpha/Shared", type: "folder" },
@@ -100,14 +100,14 @@ describe("showOpenMenu", () => {
         expect(menuConfig.options.filter((option: any) => option.section == "tags").map((option: any) => option.name)).toEqual(["c", "cpp", "python"]);
         expect(menuConfig.options.filter((option: any) => option.section == "folders").map((option: any) => option.value)).toEqual([
             "Alpha",
-            "Atlas",
             "Beta",
             "Content",
+            "Workspace",
             "Alpha/Shared",
             "Alpha/Sub1",
             "Alpha/Sub2",
-            "Atlas/Applications",
             "Beta/Items",
+            "Workspace/Tools",
             "Zeta/Shared",
             "Alpha/Sub1/Leaf",
         ]);
@@ -132,9 +132,9 @@ describe("showOpenMenu", () => {
         await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink);
 
         const menuConfig = openMenu.mock.calls[0][1];
-        menuConfig.saveOptions([], ["project"], true, "tags");
+        menuConfig.saveOptions([], ["sample"], true, "tags");
 
-        expect(saveLink).toHaveBeenCalledWith("project", true, "tags");
+        expect(saveLink).toHaveBeenCalledWith("sample", true, "tags");
     });
 
     it("includes hidden items when opened in hidden mode", async () => {
@@ -220,20 +220,20 @@ describe("showOpenMenu", () => {
         const superstate = {
             allSpaces: jest.fn((_ordered: boolean, hidden?: boolean) =>
                 [
-                    { name: "Obsidian", path: "Atlas/Obsidian", type: "folder" },
-                    { name: "Notes", path: "Atlas/Obsidian/Notes", type: "folder" },
-                ].filter((space) => hidden || !space.path.startsWith("Atlas/Obsidian")),
+                    { name: "HiddenFolder", path: "Workspace/HiddenFolder", type: "folder" },
+                    { name: "ChildFolder", path: "Workspace/HiddenFolder/ChildFolder", type: "folder" },
+                ].filter((space) => hidden || !space.path.startsWith("Workspace/HiddenFolder")),
             ),
             spaceManager: {
                 readTags: jest.fn((): string[] => []),
             },
             spacesIndex: new Map(),
             pathsIndex: new Map([
-                ["Atlas/Obsidian/Notes.md", { name: "Notes", path: "Atlas/Obsidian/Notes.md", type: "file", hidden: false }],
+                ["Workspace/HiddenFolder/ChildFolder.md", { name: "ChildFolder", path: "Workspace/HiddenFolder/ChildFolder.md", type: "file", hidden: false }],
             ]),
             settings: {
                 hiddenExtensions: [],
-                hiddenFiles: ["Atlas/Obsidian"],
+                hiddenFiles: ["Workspace/HiddenFolder"],
             },
             ui: {
                 openMenu,
@@ -243,8 +243,8 @@ describe("showOpenMenu", () => {
         await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn(), false);
 
         const menuConfig = openMenu.mock.calls[0][1];
-        expect(menuConfig.options).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Atlas/Obsidian/Notes.md" })]));
-        expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(expect.arrayContaining([expect.objectContaining({ value: "Atlas/Obsidian/Notes.md" })]));
-        expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Atlas/Obsidian/Notes.md" })]));
+        expect(menuConfig.options).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Workspace/HiddenFolder/ChildFolder.md" })]));
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(expect.arrayContaining([expect.objectContaining({ value: "Workspace/HiddenFolder/ChildFolder.md" })]));
+        expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Workspace/HiddenFolder/ChildFolder.md" })]));
     });
 });

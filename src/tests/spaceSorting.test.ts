@@ -29,12 +29,12 @@ describe("space tree sorting", () => {
 
     it("falls back to file name ascending when manual sort has no rank-order ranks", () => {
         const rows: any[] = [
-            { path: "Atlas/AI/2 Resources", name: "2 Resources", type: "space", rank: -1 },
-            { path: "Atlas/AI/0 Notes", name: "0 Notes", type: "space", rank: -1 },
-            { path: "Atlas/AI/1 Collections", name: "1 Collections", type: "space", rank: -1 },
+            { path: "Workspace/Sample Area/2 References", name: "2 References", type: "space", rank: -1 },
+            { path: "Workspace/Sample Area/0 Inbox", name: "0 Inbox", type: "space", rank: -1 },
+            { path: "Workspace/Sample Area/1 Lists", name: "1 Lists", type: "space", rank: -1 },
         ];
 
-        expect([...rows].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((row) => row.name)).toEqual(["0 Notes", "1 Collections", "2 Resources"]);
+        expect([...rows].sort(spaceSortFn({ field: "rank", asc: true, group: true, recursive: false })).map((row) => row.name)).toEqual(["0 Inbox", "1 Lists", "2 References"]);
     });
 });
 

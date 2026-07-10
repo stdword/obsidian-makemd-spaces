@@ -317,10 +317,10 @@ describe("Superstate tag initialization", () => {
         spaceManager.uriByString = jest.fn(() => ({}));
         spaceManager.spaceTypeByString = jest.fn(() => "tag");
 
-        await addTag(superstate, "📖/psy/self");
-        superstate.pathsIndex.set(tagSpacePathFromTag("#📖/psy/self"), {
-            path: tagSpacePathFromTag("#📖/psy/self"),
-            name: tagSpacePathFromTag("#📖/psy/self"),
+        await addTag(superstate, "sample/category/item");
+        superstate.pathsIndex.set(tagSpacePathFromTag("#sample/category/item"), {
+            path: tagSpacePathFromTag("#sample/category/item"),
+            name: tagSpacePathFromTag("#sample/category/item"),
             type: "space",
             subtype: "tag",
             tags: [],
@@ -328,12 +328,12 @@ describe("Superstate tag initialization", () => {
             hidden: false,
         });
 
-        expect(superstate.pathStateForPath(tagSpacePathFromTag("#📖/psy/self")).name).toBe("📖/psy/self");
+        expect(superstate.pathStateForPath(tagSpacePathFromTag("#sample/category/item")).name).toBe("sample/category/item");
     });
 
     it("trusts stored tag space names from cache without read-time normalization", async () => {
         const { superstate } = createSuperstate();
-        const tagPath = tagSpacePathFromTag("#📖/psy/self");
+        const tagPath = tagSpacePathFromTag("#sample/category/item");
         superstate.persister.loadAll = jest.fn((type: string) =>
             Promise.resolve(
                 type == "space"
@@ -370,7 +370,7 @@ describe("Superstate tag initialization", () => {
 
     it("stores tag space names normalized from tag paths", async () => {
         const { superstate, spaceManager } = createSuperstate();
-        const tagPath = tagSpacePathFromTag("#📖/psy/self");
+        const tagPath = tagSpacePathFromTag("#sample/category/item");
         spaceManager.uriByString = jest.fn(() => ({}));
         spaceManager.spaceTypeByString = jest.fn(() => "tag");
 
@@ -388,7 +388,7 @@ describe("Superstate tag initialization", () => {
         );
 
         const stored = JSON.parse(superstate.persister.store.mock.calls[0][1]);
-        expect(stored.name).toBe("📖/psy/self");
+        expect(stored.name).toBe("sample/category/item");
     });
 
     it("does not add tag spaces when a file metadata reload introduces a new Obsidian tag", async () => {
@@ -461,14 +461,14 @@ describe("Superstate tag initialization", () => {
             name: "Tagged",
             type: "file",
             subtype: "md",
-            tags: ["#📖/art/painting"],
+            tags: ["#sample/group/item"],
             spaces: [],
             hidden: false,
         });
-        superstate.tagsMap.set("Tagged.md", new Set(["#📖/art/painting"]));
+        superstate.tagsMap.set("Tagged.md", new Set(["#sample/group/item"]));
 
-        expect(superstate.getSpaceItems(tagSpacePathFromTag("#📖/art")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
-        expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#📖/art");
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#sample/group")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+        expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#sample/group");
     });
 
     it("shows hidden tagged files inside tag spaces", () => {
@@ -585,7 +585,7 @@ describe("Superstate tag initialization", () => {
 
     it("returns linked tag spaces as folder children without requiring tag path cache", () => {
         const { superstate } = createSuperstate();
-        const tagPath = tagSpacePathFromTag("#📖/brain");
+        const tagPath = tagSpacePathFromTag("#sample/linked");
         superstate.spacesIndex.set("Projects", {
             type: "folder",
             name: "Projects",
@@ -599,13 +599,13 @@ describe("Superstate tag initialization", () => {
         } as any);
         superstate.spacesIndex.set(tagPath, {
             type: "tag",
-            name: "📖/brain",
+            name: "sample/linked",
             path: tagPath,
             metadata: {
                 "rank-order": [],
                 pinned: [],
             },
-            space: { path: tagPath, name: "📖/brain", defPath: "", notePath: "", folderPath: "" },
+            space: { path: tagPath, name: "sample/linked", defPath: "", notePath: "", folderPath: "" },
         } as any);
         superstate.spacesMap.set(tagPath, new Set(["Projects"]));
 
@@ -655,58 +655,58 @@ describe("Superstate tag initialization", () => {
 
     it("shows indexed hidden children inside a hidden folder section without creating fallback cache entries", () => {
         const { superstate, spaceManager } = createSuperstate();
-        superstate.spacesIndex.set("Atlas/Obsidian", {
+        superstate.spacesIndex.set("Workspace/HiddenFolder", {
             type: "folder",
-            name: "Obsidian",
-            path: "Atlas/Obsidian",
+            name: "HiddenFolder",
+            path: "Workspace/HiddenFolder",
             metadata: {
                 links: [],
                 pinned: [],
             },
-            space: { path: "Atlas/Obsidian", name: "Obsidian", defPath: "Atlas/Obsidian/.space/context.json", notePath: "", folderPath: "Atlas/Obsidian" },
+            space: { path: "Workspace/HiddenFolder", name: "HiddenFolder", defPath: "Workspace/HiddenFolder/.space/context.json", notePath: "", folderPath: "Workspace/HiddenFolder" },
         } as any);
-        superstate.pathsIndex.set("Atlas/Obsidian", {
-            path: "Atlas/Obsidian",
-            name: "Obsidian",
+        superstate.pathsIndex.set("Workspace/HiddenFolder", {
+            path: "Workspace/HiddenFolder",
+            name: "HiddenFolder",
             type: "space",
             subtype: "folder",
             tags: [],
             spaces: [],
             hidden: true,
-            parent: "Atlas",
+            parent: "Workspace",
             linkedSpaces: [],
             pinnedSpaces: [],
             color: "#123456",
             sticker: "lucide//folder",
             metadata: {},
         } as any);
-        superstate.pathsIndex.set("Atlas/Obsidian/Notes", {
-            path: "Atlas/Obsidian/Notes",
-            name: "Notes",
+        superstate.pathsIndex.set("Workspace/HiddenFolder/ChildFolder", {
+            path: "Workspace/HiddenFolder/ChildFolder",
+            name: "ChildFolder",
             type: "space",
             subtype: "folder",
             tags: [],
             spaces: [],
             hidden: true,
-            parent: "Atlas/Obsidian",
+            parent: "Workspace/HiddenFolder",
             linkedSpaces: [],
             pinnedSpaces: [],
             color: "#123456",
             sticker: "lucide//notebook",
             metadata: {},
         } as any);
-        superstate.spacesIndex.set("Atlas/Obsidian/Notes", {
+        superstate.spacesIndex.set("Workspace/HiddenFolder/ChildFolder", {
             type: "folder",
-            name: "Notes",
-            path: "Atlas/Obsidian/Notes",
+            name: "ChildFolder",
+            path: "Workspace/HiddenFolder/ChildFolder",
             metadata: {},
-            space: { path: "Atlas/Obsidian/Notes", name: "Notes", defPath: "Atlas/Obsidian/Notes/.space/context.json", notePath: "", folderPath: "Atlas/Obsidian/Notes" },
+            space: { path: "Workspace/HiddenFolder/ChildFolder", name: "ChildFolder", defPath: "Workspace/HiddenFolder/ChildFolder/.space/context.json", notePath: "", folderPath: "Workspace/HiddenFolder/ChildFolder" },
         } as any);
 
-        const items = superstate.getSpaceItems("Atlas/Obsidian");
+        const items = superstate.getSpaceItems("Workspace/HiddenFolder");
 
-        expect(items.map((item: any) => [item.path, item.name])).toEqual([["Atlas/Obsidian/Notes", "Notes"]]);
-        expect(spaceManager.spaceInfoForPath).not.toHaveBeenCalledWith("Atlas/Obsidian/Notes");
+        expect(items.map((item: any) => [item.path, item.name])).toEqual([["Workspace/HiddenFolder/ChildFolder", "ChildFolder"]]);
+        expect(spaceManager.spaceInfoForPath).not.toHaveBeenCalledWith("Workspace/HiddenFolder/ChildFolder");
     });
 
     it("filters hidden children from normal folder spaces unless they are explicitly linked", () => {
@@ -916,53 +916,53 @@ describe("Superstate tag initialization", () => {
 
     it("unpins a file from its old folder space when moving it out", async () => {
         const { superstate } = createSuperstate();
-        const oldPath = "Atlas/AI/0 Notes/работа с агентами при программировании.md";
-        const newPath = "Atlas/AI/работа с агентами при программировании.md";
+        const oldPath = "Workspace/Sample Area/0 Inbox/example-note.md";
+        const newPath = "Workspace/Sample Area/example-note.md";
 
-        superstate.spacesIndex.set("Atlas/AI/0 Notes", {
+        superstate.spacesIndex.set("Workspace/Sample Area/0 Inbox", {
             type: "folder",
-            name: "0 Notes",
-            path: "Atlas/AI/0 Notes",
+            name: "0 Inbox",
+            path: "Workspace/Sample Area/0 Inbox",
             metadata: {
                 links: [],
                 "rank-order": [],
                 pinned: [oldPath],
                 "file-colors": {},
             },
-            space: { path: "Atlas/AI/0 Notes", name: "0 Notes", defPath: "Atlas/AI/0 Notes/.space/context.json", notePath: "", folderPath: "Atlas/AI/0 Notes" },
+            space: { path: "Workspace/Sample Area/0 Inbox", name: "0 Inbox", defPath: "Workspace/Sample Area/0 Inbox/.space/context.json", notePath: "", folderPath: "Workspace/Sample Area/0 Inbox" },
         } as any);
         superstate.pathsIndex.set(oldPath, {
             path: oldPath,
-            name: "работа с агентами при программировании.md",
+            name: "example-note.md",
             type: "file",
             subtype: "md",
             tags: [],
-            spaces: ["Atlas/AI/0 Notes"],
+            spaces: ["Workspace/Sample Area/0 Inbox"],
             hidden: false,
-            parent: "Atlas/AI/0 Notes",
+            parent: "Workspace/Sample Area/0 Inbox",
         });
-        superstate.spacesMap.set(oldPath, new Set(["Atlas/AI/0 Notes"]));
+        superstate.spacesMap.set(oldPath, new Set(["Workspace/Sample Area/0 Inbox"]));
         superstate.reloadPath = jest.fn(async (path: string) => {
             if (path == newPath) {
                 superstate.pathsIndex.set(newPath, {
                     path: newPath,
-                    name: "работа с агентами при программировании.md",
+                    name: "example-note.md",
                     type: "file",
                     subtype: "md",
                     tags: [],
-                    spaces: ["Atlas/AI"],
+                    spaces: ["Workspace/Sample Area"],
                     hidden: false,
-                    parent: "Atlas/AI",
+                    parent: "Workspace/Sample Area",
                 });
-                superstate.spacesMap.set(newPath, new Set(["Atlas/AI"]));
+                superstate.spacesMap.set(newPath, new Set(["Workspace/Sample Area"]));
             }
             return true;
         });
 
         await superstate.onPathRename(oldPath, newPath);
 
-        expect(superstate.spacesIndex.get("Atlas/AI/0 Notes").metadata.pinned).toEqual([]);
-        expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("Atlas/AI/0 Notes", expect.any(Function));
+        expect(superstate.spacesIndex.get("Workspace/Sample Area/0 Inbox").metadata.pinned).toEqual([]);
+        expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("Workspace/Sample Area/0 Inbox", expect.any(Function));
     });
 });
 
