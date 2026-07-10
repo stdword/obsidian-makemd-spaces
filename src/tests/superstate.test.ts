@@ -168,6 +168,36 @@ describe("Superstate tag initialization", () => {
         expect(stored.metadata.color).toBe("var(--mk-color-teal)");
     });
 
+    it("persists the home space color to its context.json metadata", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.spacesIndex.set("/", {
+            type: "vault",
+            name: "Home",
+            path: "/",
+            metadata: {},
+            space: { path: "/", name: "Home", defPath: ".space/context.json", notePath: "", folderPath: "/" },
+        } as any);
+        superstate.pathsIndex.set("/", {
+            path: "/",
+            name: "Home",
+            type: "space",
+            subtype: "vault",
+            tags: [],
+            spaces: [],
+            hidden: false,
+            color: "",
+            sticker: "ui//home",
+            metadata: {},
+        } as any);
+
+        await savePathColor(superstate, "/", "#123456");
+
+        expect(superstate.spacesIndex.get("/").metadata.color).toBe("#123456");
+        expect(spaceManager.saveSpace).toHaveBeenCalledWith("/", expect.any(Function));
+        const saveDefinition = (spaceManager.saveSpace as jest.Mock).mock.calls[0][1];
+        expect(saveDefinition({ color: "", sticker: "" })).toEqual({ color: "#123456", sticker: "" });
+    });
+
     it("stores color for every selected file in the same space", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.saveSpace = jest.fn(() => new Promise((resolve) => setTimeout(resolve, 0)));

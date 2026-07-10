@@ -470,7 +470,7 @@ describe("showSpaceContextMenu", () => {
         const changeColor = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//palette");
         await changeColor.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
-        expect(saveSpace).not.toHaveBeenCalled();
+        expect(saveSpace).toHaveBeenCalledWith("/", expect.any(Function));
         expect(updateSpaceMetadata).toHaveBeenCalledWith("/", { color: "#123456" });
     });
 

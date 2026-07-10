@@ -62,7 +62,6 @@ export interface TreeItemProps {
 export const TreeItem = (props: TreeItemProps) => {
     const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
-    const [hoverTarget, setHoverTarget] = useState<EventTarget>(null);
 
     const innerRef = useRef(null);
     const [dropHighlighted, setDropHighlighted] = useState(false);
@@ -131,13 +130,6 @@ export const TreeItem = (props: TreeItemProps) => {
 
         dragOver(e, data.id, position);
     };
-    const onKeyDown = (e: KeyboardEvent | React.KeyboardEvent) => {
-        if (e.key === "Control" || e.key === "Meta") {
-            if (e.repeat) return;
-            const el = hoverTarget;
-            if (el && canOpenTreeItemPath(pathState)) superstate.ui.openPath(pathState.path, "hover", el);
-        }
-    };
     const onDrop = useCallback((files: File[]) => {
         if (isFolder) {
             // Do something with the files
@@ -170,9 +162,6 @@ export const TreeItem = (props: TreeItemProps) => {
         e.stopPropagation();
         dragEnded(e, data.id);
     };
-    const mouseOut = (_e: React.MouseEvent) => {
-        setHoverTarget(null);
-    };
     const handleRightClick = (e: React.MouseEvent) => {
         selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string)) ? triggerMultiPathMenu(superstate, selectedPaths, e) : contextMenu(e);
     };
@@ -196,20 +185,6 @@ export const TreeItem = (props: TreeItemProps) => {
             superstate.eventsDispatcher.removeListener("pathStateUpdated", pathStateUpdated);
         };
     }, []);
-    const hoverItem = (e: React.MouseEvent) => {
-        setHoverTarget(e.target);
-        if ((e.ctrlKey || e.metaKey) && canOpenTreeItemPath(pathState)) {
-            superstate.ui.openPath(pathState.path, "hover", e.target);
-        }
-    };
-    useEffect(() => {
-        if (hoverTarget) {
-            window.addEventListener("keydown", onKeyDown);
-            return () => {
-                window.removeEventListener("keydown", onKeyDown);
-            };
-        }
-    }, [hoverTarget]);
     const dropProps = {
         onDragOver: onDragOver,
     };
@@ -226,7 +201,7 @@ export const TreeItem = (props: TreeItemProps) => {
     const displayName = treeItemDisplayName(pathState, data, superstate.spacesIndex);
     const stickerLabel = data.sort && pathState?.type == "space" ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
 
-    const spacing = data.type == "group" ? 0 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
+    const spacing = data.type == "group" ? -2 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
 
     return (
         <>
@@ -240,10 +215,8 @@ export const TreeItem = (props: TreeItemProps) => {
                     dimmed ? "is-dimmed" : "",
                 )}
                 style={treeItemColorVariables(color, isFolder) as TreeItemStyle}
+                data-depth={depth}
                 ref={innerRef}
-                onMouseLeave={mouseOut}
-                onMouseEnter={hoverItem}
-                onKeyDown={onKeyDown}
                 onAuxClick={openAuxClick}
                 onClick={(e) => openPathAtTarget(data, e)}
                 onContextMenu={(e) => handleRightClick(e)}
@@ -297,6 +270,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                 space={data.space}
                                 editable={true}
                                 useColorMenu={isTagSpace || pathState.type == "file" || (pathState.type == "space" && pathState.path == '/')}
+                                keepBackgoundColor={pathState.type == "file"}
                                 color={color}
                                 ariaLabel={stickerLabel}
                             />

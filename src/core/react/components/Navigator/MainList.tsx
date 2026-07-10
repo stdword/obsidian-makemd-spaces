@@ -4,7 +4,6 @@ import i18n from "shared/i18n";
 import React, { useEffect } from "react";
 import { ErrorBoundary, useErrorBoundary } from "react-error-boundary";
 import { FocusSelector } from "./Focuses/FocusSelector";
-import { MainMenu } from "./MainMenu";
 
 export const MainList = (props: { superstate: Superstate }) => {
     const [indexing, setIndexing] = React.useState(false);
@@ -27,7 +26,6 @@ export const MainList = (props: { superstate: Superstate }) => {
         <>
             <ErrorBoundary FallbackComponent={ErrorFallback}>
                 <div className="mk-progress-bar">{indexing && <div className="mk-progress-bar-value"></div>}</div>
-                <MainMenu superstate={props.superstate}></MainMenu>
                 <FocusSelector superstate={props.superstate}></FocusSelector>
 
                 <SpaceTreeComponent superstate={props.superstate} />

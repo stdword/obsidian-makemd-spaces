@@ -17,6 +17,7 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
     const [activeId, setActiveId] = useState(null);
     const [overId, setOverId] = useState(null);
     const dragCounter = useRef(0);
+    const menuRef = useRef<HTMLDivElement>();
     const [offset, setOffset] = useState(0);
     const [projected, setProjected] = useState<DragProjection>(null);
     useEffect(() => {
@@ -152,19 +153,18 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                             ghost={activeId === i}
                         ></SortablePinnedSpaceItem>
                     ))}
-                    <div
-                        className="mk-waypoint-new"
-                        onClick={() => {
-                            const newFocuses = [...focuses, { sticker: "ui//spaces", name: "", paths: [] }];
-                            props.superstate.settings.currentWaypoint = newFocuses.length - 1;
-                            setFocuses(newFocuses);
-                        }}
-                        dangerouslySetInnerHTML={{
-                            __html: props.superstate.ui.getSticker("ui//plus"),
-                        }}
-                    ></div>
                     {overId != null && activeId === null && <SortablePinnedSpaceItem id={focuses.length} superstate={props.superstate} highlighted={false} index={focuses.length} pin={null}></SortablePinnedSpaceItem>}
                 </div>
+                <div
+                    className="mk-focuses-menu"
+                    ref={menuRef}
+                    onClick={() => {
+                        props.superstate.ui.mainMenu(menuRef.current, props.superstate);
+                    }}
+                    dangerouslySetInnerHTML={{
+                        __html: props.superstate.ui.getSticker("lucide//more-vertical"),
+                    }}
+                ></div>
                 {createPortal(
                     <DragOverlay dropAnimation={null} modifiers={[adjustTranslate]} zIndex={1600}>
                         {activeId !== null ? <SortablePinnedSpaceItem id={-1} superstate={props.superstate} highlighted={false} clone index={activeId} indicator={false} pin={focuses[activeId]}></SortablePinnedSpaceItem> : null}

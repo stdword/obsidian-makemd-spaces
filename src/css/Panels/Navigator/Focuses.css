@@ -31,20 +31,30 @@
     opacity: 1;
 }
 
-.mk-waypoint-menu {
+
+.mk-focuses-menu {
     display: flex;
     align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+
     color: var(--mk-ui-text-secondary);
     opacity: 0.5;
-    margin-left: auto;
     cursor: pointer;
+
+    height: 12px;
+    min-width: 20px;
+
+    transform: rotate(90deg);
+    margin-left: auto;
+    margin-top: 10px;
 }
 
-.mk-waypoint-menu:hover {
+.mk-focuses-menu:hover {
     opacity: 1;
 }
 
-.mk-waypoint-menu svg {
+.mk-focuses-menu svg {
     width: var(--icon-size);
     height: var(--icon-size);
 }
@@ -55,6 +65,7 @@
 }
 .mk-focuses {
     display: flex;
+    align-items: flex-start;
     overflow: auto;
     padding: 4px;
 }
@@ -63,7 +74,9 @@
     flex-wrap: wrap;
     gap: 4px;
     display: flex;
+    flex: 1 1 auto;
     justify-content: center;
+    min-width: 0;
 }
 
 .mk-sidebar-expanded {

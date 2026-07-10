@@ -52,10 +52,17 @@ export const savePathColor = async (superstate: ISuperstate, path: string, color
 
     if (isFolderPathState(pathState)) {
         if (spaceState) {
-            await superstate.updateSpaceMetadata(path, {
+            const nextMetadata = {
                 ...spaceState.metadata,
                 color,
-            });
+            };
+            await superstate.updateSpaceMetadata(path, nextMetadata);
+            if (spaceState.type != "tag") {
+                await superstate.spaceManager.saveSpace(path, (oldMetadata) => ({
+                    ...oldMetadata,
+                    color,
+                }));
+            }
         } else {
             superstate.pathsIndex.set(path, {
                 ...pathState,

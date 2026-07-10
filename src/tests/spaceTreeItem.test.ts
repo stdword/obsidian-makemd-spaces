@@ -168,6 +168,10 @@ describe("navigator file label color CSS", () => {
         expect(navigatorCss).toMatch(/\.mk-tree-item\s*{[^}]*position:\s*relative/);
         expect(navigatorCss).toMatch(/\.mk-linked-item-icon\s*{[^}]*pointer-events:\s*none/);
     });
+
+    it("prevents Obsidian folder hover backgrounds from showing in the spaces tree", () => {
+        expect(navigatorCss).toMatch(/\.mk-tree-wrapper\s+\.mk-tree-item\.nav-folder-title:hover\s*{[^}]*background:\s*none\s*!important/);
+    });
 });
 
 describe("treeItemColorVariables", () => {
@@ -233,6 +237,14 @@ describe("treeItemDisplayName", () => {
                 new Map([["/", { name: "Home" }]]),
             ),
         ).toBe("Vault");
+    });
+});
+
+describe("tree item modifier hover behavior", () => {
+    const treeItemSource = fs.readFileSync(path.join(__dirname, "../core/react/components/Navigator/SpaceTree/SpaceTreeItem.tsx"), "utf8");
+
+    it("does not open hover previews when Cmd or Ctrl is pressed over a tree item", () => {
+        expect(treeItemSource).not.toContain('"hover"');
     });
 });
 

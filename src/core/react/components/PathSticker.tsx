@@ -18,11 +18,13 @@ export const PathStickerView = (props: {
     color?: string;
     ariaLabel?: string;
     useColorMenu?: boolean;
+    keepBackgoundColor?: boolean;
 }) => {
     const { superstate, pathState } = props;
     const sticker = pathState.sticker;
     const ariaLabel = props.ariaLabel ?? pathState.name;
     const editable = props.editable ?? false;
+    const keepBackgoundColor = props.keepBackgoundColor ?? true;
 
     const triggerMenu = (e: React.MouseEvent) => {
         e.stopPropagation()
@@ -50,17 +52,18 @@ export const PathStickerView = (props: {
     }
     const color = props.color ?? "var(--mk-ui-text-secondary)"
     const defaultStyle = ({ "--icon-color": color } as React.CSSProperties)
+    const backgroundColorStyle = ({
+        "--label-color": color,
+        "--icon-color": "#ffffff",
+    } as React.CSSProperties)
 
     return (
         <div className={`mk-path-icon ${sticker ? "" : "mk-path-icon-placeholder"}`}>
             {editable ? (
                 <button
                     onClick={triggerMenu}
-                    style={ !props.useColorMenu && props.color
-                            ? ({
-                                "--label-color": color,
-                                "--icon-color": "#ffffff",
-                              } as React.CSSProperties)
+                    style={ !props.keepBackgoundColor && props.color
+                            ? backgroundColorStyle
                             : defaultStyle
                     }
                     aria-label={ariaLabel}

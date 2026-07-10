@@ -316,6 +316,10 @@ body .mk-tree-new {
     padding-bottom: 1px;
 }
 
+.mk-tree-node > [data-depth="0"] .mk-tree-text {
+    padding-left: 3px;
+}
+
 
 body .mk-tree-wrapper .mk-drag-handle {
     visibility: hidden;

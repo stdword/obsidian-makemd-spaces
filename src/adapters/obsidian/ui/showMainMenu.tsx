@@ -25,6 +25,18 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
     const menuOptions: SelectOption[] = [];
 
     menuOptions.push({
+        name: "New Focus",
+        icon: "ui//plus",
+        onClick: () => {
+            const newFocuses = [...superstate.focuses, { sticker: "ui//spaces", name: "", paths: [] }];
+            superstate.settings.currentWaypoint = newFocuses.length - 1;
+            superstate.spaceManager.saveFocuses(newFocuses);
+        },
+    });
+
+    menuOptions.push(menuSeparator);
+
+    menuOptions.push({
         name: i18n.menu.collapseAllSections,
         icon: "ui//chevrons-down-up",
         onClick: () => {
