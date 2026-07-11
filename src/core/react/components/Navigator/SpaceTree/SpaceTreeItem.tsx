@@ -205,6 +205,8 @@ export const TreeItem = (props: TreeItemProps) => {
     const isSpace = pathState?.type == "space";
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
 
+    const hasFolderNote = isSpace && !isTagSpace && data.folderNotePath != null;
+
     const displayInfo = pathDisplayInfo(pathState.path);
     const displayName = isSpace ? treeItemDisplayName(pathState, data, superstate.spacesIndex) : displayInfo.title;
     const stickerLabel = data.sort && isSpace ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
@@ -245,6 +247,7 @@ export const TreeItem = (props: TreeItemProps) => {
                             "mk-tree-item",
                             "tree-item-self",
                             isSpace ? "nav-folder-title" : "nav-file-title",
+                            hasFolderNote ? "has-folder-note" : "",
                             active ? "is-active" : "",
                             selected ? "is-selected" : "",
 

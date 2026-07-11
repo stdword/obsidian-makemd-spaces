@@ -1,4 +1,4 @@
-import { hideFolderNoteFileFromItems } from "integrations/folderNotesPluginIntegration";
+import { processFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
 import { PathStateWithRank } from "shared/types/superstate";
 
 const item = (path: string, type = "file"): PathStateWithRank =>
@@ -50,9 +50,9 @@ describe("FolderNotesPluginIntegration", () => {
     it("returns all folder items when the folder-notes plugin is not installed", () => {
         const items = [item("Projects/Alpha/Alpha.md"), item("Projects/Alpha/Notes.md")];
 
-        const filtered = hideFolderNoteFileFromItems(superstateWithFolderNotes(), "Projects/Alpha", items);
+        const result = processFolderNoteChildren(superstateWithFolderNotes(), "Projects/Alpha", items);
 
-        expect(filtered).toEqual(items);
+        expect(result).toEqual({ children: items, folderNotePath: null });
     });
 
     it("hides only the first matching folder note using supported file type order", () => {
@@ -62,9 +62,10 @@ describe("FolderNotesPluginIntegration", () => {
             supportedFileTypes: ["canvas", "md"],
         });
 
-        const filtered = hideFolderNoteFileFromItems(superstate, "Projects/Alpha", items);
+        const result = processFolderNoteChildren(superstate, "Projects/Alpha", items);
 
-        expect(filtered.map((i) => i.path)).toEqual(["Projects/Alpha/Alpha.md", "Projects/Alpha/Notes.md"]);
+        expect(result.children.map((i) => i.path)).toEqual(["Projects/Alpha/Alpha.canvas", "Projects/Alpha/Notes.md"]);
+        expect(result.folderNotePath).toBe("Projects/Alpha/Alpha.md");
     });
 
     it("reads folder-notes settings from the Obsidian UI main frame plugin", () => {
@@ -74,8 +75,9 @@ describe("FolderNotesPluginIntegration", () => {
             supportedFileTypes: ["md", "canvas", "base"],
         });
 
-        const filtered = hideFolderNoteFileFromItems(superstate, "Projects/Content", items);
+        const result = processFolderNoteChildren(superstate, "Projects/Content", items);
 
-        expect(filtered.map((i) => i.path)).toEqual(["Projects/Content/Ideas.canvas"]);
+        expect(result.children.map((i) => i.path)).toEqual(["Projects/Content/Ideas.canvas"]);
+        expect(result.folderNotePath).toBe("Projects/Content/Content.canvas");
     });
 });

@@ -6,7 +6,7 @@ import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSp
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
-import { hideFolderNoteFileFromItems } from "integrations/folderNotesPluginIntegration";
+import { processFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -35,8 +35,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const parentSort = effectiveSpaceSort(sort, superstate.settings);
     const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
     const childrenSortable = isSpaceSortable(space, superstate.settings);
-    let children = superstate.getSpaceItems(space.path) ?? [];
-    children = hideFolderNoteFileFromItems(superstate, space.path, children);
+    const { children, folderNotePath } = processFolderNoteChildren(superstate, space.path, superstate.getSpaceItems(space.path) ?? []);
     if (!spaceCollapsed || root) {
         pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
             const _parentId = parentId ? parentId + "/" + space.path : space.path;
@@ -50,7 +49,10 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
             }
         });
     }
-    if (!root) tree.splice(0, 0, spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length, spaceSort, pinned));
+    if (!root) tree.splice(0, 0, {
+        ...spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length, spaceSort, pinned),
+        folderNotePath,
+    });
     return tree;
 };
 
@@ -60,8 +62,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
     const pathIndex = superstate.pathStateForPath(space.path);
     const spaceSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
     const childrenSortable = isSpaceSortable(space, superstate.settings);
-    let children = superstate.getSpaceItems(space.path) ?? [];
-    children = hideFolderNoteFileFromItems(superstate, space.path, children);
+    const { children, folderNotePath } = processFolderNoteChildren(superstate, space.path, superstate.getSpaceItems(space.path) ?? []);
     if (pathIndex)
         tree.push({
             id: space.path,
@@ -77,6 +78,7 @@ const treeForRoot = (superstate: Superstate, space: SpaceState, active: TreeNode
             childrenCount: children.length,
             type: "group",
             sort: spaceSort,
+            folderNotePath,
         });
 
     if (!expandedSpaces.includes(space.path) || (active && !active.parentId)) {
@@ -314,6 +316,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const changeActivePath = (path: string) => {
         setActivePath(path);
     };
+
+    console.log("TRACE Tree", flattenedTree.length);
 
     const overIndex = useMemo(() => flattenedTree.findIndex((f) => f.id == overId), [overId, flattenedTree]);
     const activeIndex = useMemo(() => (active?.id ? flattenedTree.findIndex((f) => f.id == active.id) : -1), [active, flattenedTree]);

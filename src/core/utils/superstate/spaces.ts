@@ -111,6 +111,7 @@ export interface TreeNode {
     rank: number;
     sort?: SpaceSort;
     pinned?: boolean;
+    folderNotePath?: string | null;
 }
 export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sortable: boolean, depth: number, parentId: string, parentPath: string, childrenCount: number, sort?: SpaceSort, pinned?: boolean): TreeNode => {
     return {

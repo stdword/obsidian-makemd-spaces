@@ -1,42 +1,58 @@
+import { isTagSpacePath } from "schemas/builtin";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 
 type FolderNotesSettings = {
-    folderNoteName?: string;
-    supportedFileTypes?: string[];
+    folderNoteName: string;
+    supportedFileTypes: string[];
+    hideFolderNote: boolean;
 };
 
-type FolderNotesPlugin = {
-    settings?: FolderNotesSettings;
-};
-
-const folderNameForPath = (folderPath: string) => {
-    const normalizedPath = folderPath.replace(/\/+$/, "");
-    return normalizedPath.split("/").filter(Boolean).pop() ?? normalizedPath;
-};
-
-const normalizeExtension = (extension: string) => extension.replace(/^\./, "");
-
-const getFolderNotesSettings = (superstate: ISuperstate): FolderNotesSettings | null => {
+const getApp = (superstate: ISuperstate) => {
     const ui = (superstate as any)?.ui;
-    const app = ui?.mainFrame?.plugin?.app ?? ui?.plugin?.app;
-    const plugin = app?.plugins?.getPlugin?.("folder-notes") as FolderNotesPlugin | null | undefined;
+    return ui?.mainFrame?.plugin?.app ?? ui?.plugin?.app;
+};
+
+const getSettings = (superstate: ISuperstate): FolderNotesSettings | null => {
+    const app = getApp(superstate);
+    const plugin = app?.plugins?.getPlugin?.("folder-notes");
     return plugin?.settings ?? null;
 };
 
-export const hideFolderNoteFileFromItems = (superstate: ISuperstate, folderPath: string, items: PathStateWithRank[]): PathStateWithRank[] => {
-    const settings = getFolderNotesSettings(superstate);
-    if (!settings?.folderNoteName || !Array.isArray(settings.supportedFileTypes) || settings.supportedFileTypes.length == 0)
-        return items;
+const folderNoteNameForPath = (settings: FolderNotesSettings, folderPath: string) => {
+    const folderName = folderPath.split("/").filter(Boolean).pop() ?? folderPath;
+    return settings.folderNoteName.replace(/\{\{folder_name\}\}/g, folderName);
+};
 
-    const folderNoteBaseName = settings.folderNoteName.replace(/\{\{folder_name\}\}/g, folderNameForPath(folderPath));
-    const matchingItem = settings.supportedFileTypes
-        .map(normalizeExtension)
-        .filter((extension) => extension.length > 0)
-        .map((extension) => `${folderPath}/${folderNoteBaseName}.${extension}`)
-        .map((folderNotePath) => items.find((item) => item.type != "space" && item.path == folderNotePath))
+export type FolderNoteChildren = {
+    children: PathStateWithRank[];
+    folderNotePath: string | null;
+};
+
+export const processFolderNoteChildren = (superstate: ISuperstate, folderPath: string, items: PathStateWithRank[]): FolderNoteChildren => {
+    if (isTagSpacePath(folderPath))
+        return { children: items, folderNotePath: null };
+
+    const settings = getSettings(superstate);
+    if (!settings?.folderNoteName || !Array.isArray(settings.supportedFileTypes) || settings.supportedFileTypes.length == 0)
+        return { children: items, folderNotePath: null };
+
+    const folderNoteName = folderNoteNameForPath(settings, folderPath);
+    const fileTypesPriority = ['md', 'canvas', 'excalidraw', 'base'];
+    const possibleFolderNotesNames = settings.supportedFileTypes
+        .sort((a, b) => fileTypesPriority.indexOf(a) > fileTypesPriority.indexOf(b) ? 1 : -1)
+        .map((extension) => `${folderPath}/${folderNoteName}.${extension}`);
+
+    const matchingItem = possibleFolderNotesNames
+        .map((path) => items.find((item) => item.type == "file" && item.path == path))
         .find((item) => item);
 
     if (!matchingItem)
-        return items;
-    return items.filter((item) => item !== matchingItem);
+        return { children: items, folderNotePath: null };
+
+    console.log("TRACE integration", matchingItem.path);
+
+    return {
+        children: settings.hideFolderNote ? items.filter((item) => item !== matchingItem) : items,
+        folderNotePath: matchingItem.path,
+    };
 };
