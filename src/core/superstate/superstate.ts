@@ -153,6 +153,7 @@ const replacePathInFileColors = (fileColors: Record<string, string> = {}, oldPat
     }, {});
 
 export class Superstate implements ISuperstate {
+    private initializing = false;
     public static create(indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager): Superstate {
         return new Superstate(indexVersion, onChange, spaceManager, uiManager);
     }
@@ -225,16 +226,20 @@ export class Superstate implements ISuperstate {
             return;
         }
         const start = Date.now();
+        this.initializing = true;
+        try {
+            this.initializeFocuses();
+            await this.initializeSpaces();
+            await this.initializeTags();
+            await this.initializePaths();
 
-        this.initializeFocuses();
-        await this.initializeSpaces();
-        await this.initializeTags();
-        await this.initializePaths();
-
-        this.dispatchEvent("superstateUpdated", null);
-        this.ui.notify(`Spaces :: Superstate Loaded in ${(Date.now() - start) / 1000} seconds`, "console");
-        this.persister.cleanType("space");
-        this.persister.cleanType("path");
+            this.dispatchEvent("superstateUpdated", null);
+            this.ui.notify(`Spaces :: Superstate Loaded in ${(Date.now() - start) / 1000} seconds`, "console");
+            this.persister.cleanType("space");
+            this.persister.cleanType("path");
+        } finally {
+            this.initializing = false;
+        }
     }
 
     public async initializeSpaces() {
@@ -265,6 +270,7 @@ export class Superstate implements ISuperstate {
     private syncSpaceRankOrder(spacePath: string, items: string[]): string[] {
         const spaceState = this.spacesIndex.get(spacePath);
         const currentOrder = ensureArray(spaceState?.metadata?.["rank-order"]);
+        if (this.initializing) return currentOrder;
         if (!spaceState || !["tag", "folder", "vault"].includes(spaceState.type)) return currentOrder;
         if (spaceState.type != "tag" && effectiveSpaceSort(spaceState.metadata?.sort, this.settings).field != "rank") return currentOrder;
         if (spaceState.type != "tag" && currentOrder.length == 0) return currentOrder;
@@ -450,7 +456,10 @@ export class Superstate implements ISuperstate {
         this.ui.notify(`Make.md - ${allFiles.length} Paths Cached in ${(Date.now() - start) / 1000} seconds`, "console");
 
         const allPaths = uniq([...this.spacesIndex.keys(), ...allFiles]);
-        await Promise.all([...this.pathsIndex.keys()].filter((f) => !allPaths.some((g) => g == f)).map((f) => this.onPathDeleted(f)));
+        const stalePaths = [...this.pathsIndex.keys()].filter((f) => !allPaths.some((g) => g == f));
+        for (const path of stalePaths) {
+            await this.onPathDeleted(path);
+        }
 
         this.dispatchEvent("superstateUpdated", null);
     }
@@ -612,19 +621,21 @@ export class Superstate implements ISuperstate {
             return;
         }
 
-        (fileCache.spaces ?? [])
+        const affectedSpaces = (fileCache.spaces ?? [])
             .map((f) => this.spacesIndex.get(f))
-            .filter((f) => f)
-            .forEach((space) => {
+            .filter((f) => f);
+        await Promise.all(
+            affectedSpaces.map((space) => {
                 const { [path]: _removedColor, ...fileColors } = space.metadata?.["file-colors"] ?? {};
-                saveSpaceCache(this, space, {
+                return saveSpaceCache(this, space, {
                     ...space.metadata,
                     links: ensureArray(space.metadata?.links).filter((f) => f != path),
                     "rank-order": ensureArray(space.metadata?.["rank-order"]).filter((f) => f != path),
                     pinned: ensureArray(space.metadata?.pinned).filter((f) => f != path),
                     "file-colors": fileColors,
                 });
-            });
+            }),
+        );
 
         (fileCache.spaces ?? []).forEach((f) => {
             this.dispatchEvent("spaceStateUpdated", { path: f });

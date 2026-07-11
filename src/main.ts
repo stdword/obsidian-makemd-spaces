@@ -56,8 +56,9 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     loadSuperState() {
         this.app.workspace.onLayoutReady(async () => {
             await this.superstate.initializeIndex();
-            this.obsidianAdapter.loadFilesFromObsidian();
-            this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
+            await this.obsidianAdapter.loadFilesFromObsidian();
+            await this.superstate.initialize();
+            await this.openFileTreeLeaf(this.superstate.settings.openSpacesOnLaunch);
 
             this.registerEvent(this.app.vault.on("delete", this.onDelete));
             this.registerEvent(this.app.vault.on("rename", this.onRename));

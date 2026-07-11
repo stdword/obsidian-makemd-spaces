@@ -111,6 +111,33 @@ describe("Superstate tag initialization", () => {
         expect(superstate.spacesIndex.get("RankedSpace").metadata["rank-order"]).toEqual(["RankedSpace/ChildA", "RankedSpace/ChildB"]);
     });
 
+    it("does not trim folder rank-order while path indexes are being initialized", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const rankedSpace = {
+            type: "folder",
+            name: "Atlas",
+            path: "Atlas",
+            metadata: {},
+            space: { folderPath: "Atlas", defPath: "Atlas/.space/context.json", notePath: "" },
+        } as any;
+        spaceManager.allSpaces = jest.fn(() => [rankedSpace]);
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "folder");
+        spaceManager.spaceDefinitionForPath = jest.fn().mockResolvedValue({
+            sort: { field: "rank", asc: true },
+            "rank-order": ["Atlas/First", "Atlas/Second"],
+        });
+        superstate.persister.cleanType = jest.fn();
+        (superstate as any).initializePaths = jest.fn(async () => {
+            expect(superstate.getSpaceItems("Atlas")).toEqual([]);
+            expect(superstate.spacesIndex.get("Atlas").metadata["rank-order"]).toEqual(["Atlas/First", "Atlas/Second"]);
+        });
+
+        await superstate.initialize();
+
+        expect(superstate.spacesIndex.get("Atlas").metadata["rank-order"]).toEqual(["Atlas/First", "Atlas/Second"]);
+    });
+
     it("does not create space states for Obsidian tags during initialization", async () => {
         const { superstate, spaceManager } = createSuperstate();
         spaceManager.readTags = jest.fn(() => ["#project"]);
@@ -134,6 +161,49 @@ describe("Superstate tag initialization", () => {
 
         expect(spaceManager.allSpaces).toHaveBeenCalledWith(true);
         expect(spaceManager.allPaths).toHaveBeenCalledWith(undefined, true);
+    });
+
+    it("waits for space metadata persistence before completing path deletion", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        let finishSave: () => void;
+        spaceManager.saveSpace = jest.fn(() => new Promise<void>((resolve) => {
+            finishSave = resolve;
+        }));
+        superstate.spacesIndex.set("Atlas", {
+            type: "folder",
+            name: "Atlas",
+            path: "Atlas",
+            metadata: {
+                "rank-order": ["Atlas/Removed.md", "Atlas/Kept.md"],
+                links: [],
+                pinned: [],
+                "file-colors": {},
+            },
+            space: { folderPath: "Atlas", defPath: "Atlas/.space/context.json", notePath: "" },
+        });
+        superstate.pathsIndex.set("Atlas/Removed.md", {
+            path: "Atlas/Removed.md",
+            name: "Removed",
+            type: "file",
+            subtype: "md",
+            parent: "Atlas",
+            metadata: {},
+            tags: [],
+            spaces: ["Atlas"],
+            hidden: false,
+        });
+
+        let completed = false;
+        const deletion = superstate.onPathDeleted("Atlas/Removed.md").then(() => {
+            completed = true;
+        });
+        await Promise.resolve();
+
+        expect(completed).toBe(false);
+        finishSave();
+        await deletion;
+        expect(completed).toBe(true);
+        expect(superstate.spacesIndex.get("Atlas").metadata["rank-order"]).toEqual(["Atlas/Kept.md"]);
     });
 
     it("adds new tag spaces to the live space index", async () => {

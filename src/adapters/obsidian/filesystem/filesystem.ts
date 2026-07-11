@@ -129,7 +129,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.plugin.registerEvent(this.plugin.app.vault.on("delete", this.onDelete));
         this.plugin.registerEvent(this.plugin.app.vault.on("rename", this.onRename));
         this.plugin.registerEvent(this.plugin.app.vault.on("raw", this.onRaw));
-        this.plugin.superstate.initialize();
     }
     public onRaw = async (path: string) => {
         const spaceUpdate = this.spaceUpdateForInternalPath(path);

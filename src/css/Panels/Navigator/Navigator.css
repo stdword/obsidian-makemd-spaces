@@ -316,7 +316,7 @@ body .mk-tree-new {
 .mk-tree-text.nav-folder-title-content {
     padding-bottom: 1px;
 
-    flex-grow: unset;  // AnuPuccin theme fix for Folder Notes integration
+    flex-grow: unset;  /* AnuPuccin theme fix for Folder Notes integration */
 }
 
 .mk-tree-node > [data-depth="0"] .mk-tree-text {
