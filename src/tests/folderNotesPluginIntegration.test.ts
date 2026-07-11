@@ -60,6 +60,7 @@ describe("FolderNotesPluginIntegration", () => {
         const superstate = superstateWithFolderNotes({
             folderNoteName: "{{folder_name}}",
             supportedFileTypes: ["canvas", "md"],
+            hideFolderNote: true,
         });
 
         const result = processFolderNoteChildren(superstate, "Projects/Alpha", items);
@@ -73,6 +74,7 @@ describe("FolderNotesPluginIntegration", () => {
         const superstate = superstateWithFolderNotesInMainFrame({
             folderNoteName: "{{folder_name}}",
             supportedFileTypes: ["md", "canvas", "base"],
+            hideFolderNote: true,
         });
 
         const result = processFolderNoteChildren(superstate, "Projects/Content", items);
