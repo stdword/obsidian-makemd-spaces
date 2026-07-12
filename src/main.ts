@@ -190,7 +190,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
         this.superstate.spaceManager.addSpaceAdapter(filesystemCosmoform, true);
 
-        this.superstate.saveSettings = () => this.saveSettings();
+        this.superstate.saveSettings = (refresh = true) => this.saveSettings(refresh);
         this.loadViews();
 
         const cachePersister: LocalCachePersister = new LocalStorageCache(`${SPACE_FOLDER}/${ObsidianFileSystem.stateFileName}`, new LocalSqliteStorage(this, this.files), ["path", "space"]);
@@ -261,10 +261,15 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
         this.superstate.settings.newFileLocation = userConfig.newFileLocation;
         this.saveSettings();
     }
+
+    // @param refresh: `false` persists settings only; `true` also broadcasts `settingsChanged`
+    //     so subscribers can rebuild state derived from global plugin settings.
     async saveSettings(refresh = true) {
         await this.saveData(this.superstate.settings);
         this.obsidianAdapter.setSettingsLastUpdatedDate();
-        if (refresh) this.superstate.dispatchEvent("settingsChanged", null);
+
+        if (refresh)
+            this.superstate.dispatchEvent("settingsChanged", null);
     }
 
     async onunload() {

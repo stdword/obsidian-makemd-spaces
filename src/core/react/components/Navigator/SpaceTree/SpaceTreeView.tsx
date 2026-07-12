@@ -234,8 +234,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             });
 
             superstate.settings.expandedSpaces = newOpenFolders;
+            setExpandedSpaces(newOpenFolders);
             nextTreeScrollPath.current = newScrollToSpace;
-            superstate.saveSettings();
+            superstate.saveSettings(false);
         },
         [expandedSpaces, activeViewSpaces],
     );
@@ -507,7 +508,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             const newOpenFolders: string[] = !folderOpen || open ? ([...expandedSpaces, folder.id] as string[]) : (expandedSpaces.filter((openFolder) => folder.id !== openFolder) as string[]);
             setExpandedSpaces(newOpenFolders);
             superstate.settings.expandedSpaces = newOpenFolders;
-            superstate.saveSettings();
+            superstate.saveSettings(false);
         },
         [superstate, expandedSpaces],
     );

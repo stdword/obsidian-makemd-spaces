@@ -161,7 +161,7 @@ export class Superstate implements ISuperstate {
     public eventsDispatcher: EventDispatcher<SuperstateEvent>;
     public spaceManager: SpaceManager;
     public settings: MakeMDSettings;
-    public saveSettings: () => Promise<void>;
+    public saveSettings: (refresh?: boolean) => Promise<void>;
     public api: API;
 
     public ui: UIManager;
