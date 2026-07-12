@@ -1,6 +1,5 @@
 //Superstate
 export { SpaceManager } from "core/spaceManager/spaceManager";
-export type { IAPI as API } from "shared/types/api";
 export { ISuperstate as Superstate } from "shared/types/superstate";
 
 //Filesystem

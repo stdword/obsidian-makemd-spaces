@@ -1,16 +1,10 @@
 import { Superstate } from "makemd-core";
+
 import { tagSpacePathFromTag } from "schemas/builtin";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
-import { ensureTag } from "utils/tags";
 import { ensureArray } from "core/utils/schema";
+import { ensureTag } from "utils/tags";
 
-export const addTagToPath = (superstate: Superstate, path: string, tag: string) => {
-    console.log('TRACE addTagToPath', {path, tag})
-    // if (superstate.spacesIndex.has(path)) {
-    //     return superstate.spaceManager.addTag(metadataPathForSpace(superstate, superstate.spacesIndex.get(path).space), tag);
-    // }
-    // return superstate.spaceManager.addTag(path, tag);
-};
 
 export const addTag = (superstate: Superstate, tag: string, initialized = true) => {
     const normalizedTag = ensureTag(tag);

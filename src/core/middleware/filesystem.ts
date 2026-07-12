@@ -19,10 +19,7 @@ export abstract class FileSystemAdapter {
     public initiate: (middleware: FilesystemMiddleware) => void;
     public middleware: FilesystemMiddleware;
     public getRoot: () => Promise<AFile>;
-    public keysForCacheType: (cacheType: string) => string[];
     public allFiles: (hidden?: boolean) => AFile[];
-    public allContent: () => any[];
-    public resourcePathForPath: (path: string) => string;
     public copyFile: (folder: string, path: string, newName?: string) => Promise<string>;
     public parentPathForPath: (path: string) => string;
     public updateFileCache: (path: string, cache: FileTypeCache, refresh: boolean) => void;
@@ -68,10 +65,6 @@ export class FilesystemMiddleware {
         return this.primary.resolvePath(path, source);
     }
 
-    public keysForCacheType(cacheType: string) {
-        return this.primary.keysForCacheType(cacheType);
-    }
-
     public allTags() {
         return this.primary.readAllTags();
     }
@@ -101,9 +94,7 @@ export class FilesystemMiddleware {
     public allFiles(hidden?: boolean) {
         return this.primary.allFiles(hidden);
     }
-    public resourcePathForPath(path: string) {
-        return this.adapterForPath(path).resourcePathForPath(path);
-    }
+
     public parentPathForPath(path: string) {
         return this.adapterForPath(path).parentPathForPath(path);
     }

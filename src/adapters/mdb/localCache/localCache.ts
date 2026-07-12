@@ -1,4 +1,3 @@
-
 import { dbResultsToDBTables, deleteFromDB, dropTable, getZippedDB, insertIntoDB, replaceDB, saveZippedDBFile, selectDB } from "adapters/mdb/db/db";
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
@@ -15,7 +14,7 @@ export class LocalStorageCache implements LocalCachePersister {
     private dirty = false;
     public indexVersion = Date.now().toString();
     private defaultTables : DBTables;
-    public constructor( public storageDBPath: string, private storage: ZippedSqliteStorage, types: string[]) {
+    public constructor(public storageDBPath: string, private storage: ZippedSqliteStorage, types: string[]) {
         this.defaultTables = types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {})
     }
 

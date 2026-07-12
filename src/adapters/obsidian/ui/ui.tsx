@@ -67,20 +67,13 @@ export class ObsidianUI implements UIAdapter {
     public createRoot: typeof createRoot;
     public getRoot: (container: Container) => Root;
 
-    public availableViews = () => {
-        //@ts-ignore
-        return Object.keys(this.plugin.app.viewRegistry.typeByExtension);
-    };
-
     public mainMenu = (el: HTMLElement, superstate: Superstate) => {
         showMainMenu(el, superstate, this.plugin);
     };
     public onMetadataRefresh = () => {
         modifyTabSticker(this.plugin);
     };
-    public navigationHistory = () => {
-        return this.plugin.app.workspace.getLastOpenFiles();
-    };
+
     public isPluginEnabled = (id: string) => Boolean(this.plugin.app.plugins.getPlugin(id));
     public createExcalidrawDrawing = async (folder?: string) => {
         const excalidraw = this.plugin.app.plugins.getPlugin("obsidian-excalidraw-plugin");
@@ -269,7 +262,6 @@ export class ObsidianUI implements UIAdapter {
     };
     public openPath = async (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => {
         if (newLeaf == "system") {
-            // @ts-ignore
             this.plugin.app.showInFolder(path);
             return;
         }
@@ -303,7 +295,7 @@ export class ObsidianUI implements UIAdapter {
                             }
                         }
                     } else {
-                        await this.plugin.openPath(leaf, path, true);
+                        await this.plugin.openPath(leaf, path);
                     }
                 },
             );

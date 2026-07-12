@@ -55,9 +55,6 @@ export class UIManager implements IUIManager {
     public quickOpen(mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void) {
         console.log("TRACE quickOpen", {mode, offset, win})
     }
-    public availableViews() {
-        return this.mainFrame.availableViews();
-    }
 
     public activeState: Record<string, any> = {};
     public setActiveState(state: Record<string, any>) {
@@ -80,12 +77,6 @@ export class UIManager implements IUIManager {
         this.mainFrame.mainMenu(el, superstate);
     }
 
-    public navigationHistory() {
-        return this.mainFrame.navigationHistory();
-    }
-    public allViews(): ViewAdapter[] {
-        return [];
-    }
     public viewsByPath(path: string): ViewAdapter[] {
         return this.mainFrame.viewsByPath(path);
     }

@@ -1,4 +1,3 @@
-import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
 import { PathCache } from "./PathState";
@@ -10,7 +9,6 @@ export interface ISpaceManager {
     primarySpaceAdapter: SpaceAdapter;
     spaceAdapters: SpaceAdapter[];
     superstate: ISuperstate;
-    api: IAPI;
     getPathState: (path: string) => PathState;
     getPathsIndexMap: () => Map<string, PathState>;
     loadPath: (path: string) => Promise<PathCache | void>;
@@ -27,7 +25,6 @@ export interface ISpaceManager {
     uriByString(uri: string, source?: string): URI;
     spaceTypeByString(uri: URI): SpaceType;
     allCaches(): Promise<Map<string, PathCache>>;
-    keysForCacheType(type: string): string[];
     pathExists(path: string): Promise<boolean>;
     addSpaceAdapter(spaceAdapter: SpaceAdapter, primary?: boolean): void;
     adapterForPath(path: string): SpaceAdapter;
@@ -75,7 +72,6 @@ export abstract class SpaceAdapter {
     public deleteSpace: (path: string) => void;
     public childrenForSpace: (path: string) => string[];
     public allPaths: (type?: string[], hidden?: boolean) => string[];
-    public keysForCacheType: (type: string) => string[];
     public spaceInitiated: (path: string) => Promise<boolean>;
 
     //Space Features

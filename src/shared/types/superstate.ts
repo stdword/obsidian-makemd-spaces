@@ -2,7 +2,6 @@ import { LocalCachePersister } from "shared/types/persister";
 
 import { MakeMDSettings } from "shared/types/settings";
 import { EventDispatcher } from "utils/dispatcher";
-import { IAPI } from "./api";
 import { Focus } from "./focus";
 import { IndexMap } from "./indexMap";
 import { PathState, SpaceState, SuperstateEvent } from "./PathState";
@@ -19,7 +18,6 @@ export abstract class ISuperstate {
     settings: MakeMDSettings;
     onSpaceDefinitionChanged: (space: SpaceState, metadata?: SpaceDefinition) => Promise<void>;
     saveSettings: (refresh?: boolean) => Promise<void>;
-    api: IAPI;
     ui: IUIManager;
     pathsIndex: Map<string, PathState>;
     spacesIndex: Map<string, SpaceState>;

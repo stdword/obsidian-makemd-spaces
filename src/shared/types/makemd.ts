@@ -4,5 +4,5 @@ import { ISuperstate } from "shared/types/superstate";
 export interface IMakeMDPlugin {
     app: App;
     superstate: ISuperstate;
-    openPath: (leaf: WorkspaceLeaf, path: string, flow?: boolean) => Promise<void>;
+    openPath: (leaf: WorkspaceLeaf, path: string) => Promise<void>;
 }

@@ -3,7 +3,7 @@ import { App, MarkdownView, Plugin, TAbstractFile, TFile, WorkspaceLeaf } from "
 import { MakeMDPluginSettingsTab } from "./adapters/obsidian/settings";
 import { FILE_TREE_VIEW_TYPE, FileTreeView } from "./adapters/obsidian/ui/navigator/NavigatorView";
 
-import { defaultConfigFile, fileExtensionForFile, fileNameForFile, getAbstractFileAtPath, openTFile } from "adapters/obsidian/utils/file";
+import { defaultConfigFile, getAbstractFileAtPath, openTFile } from "adapters/obsidian/utils/file";
 import { FilesystemMiddleware, FilesystemSpaceAdapter, SpaceManager, UIManager } from "makemd-core";
 
 import { patchFilesPlugin } from "adapters/obsidian/utils/patches";
@@ -26,7 +26,7 @@ import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 
 import { attachCommands } from "commands";
 import { Superstate } from "core/superstate/superstate";
-import { defaultSpace, newPathInSpace } from "core/utils/superstate/spaces";
+import { IMakeMDPlugin } from "shared/types/makemd";
 import "css/DefaultVibe.css";
 import "css/Menus/ColorPicker.css";
 import "css/Menus/MainMenu.css";
@@ -37,11 +37,7 @@ import "css/Modal/Modal.css";
 import "css/Panels/Navigator/FileTree.css";
 import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
-// import "css/System/Settings.css";
 import "css/UI/Buttons.css";
-import { IMakeMDPlugin } from "shared/types/makemd";
-import { removeTrailingSlashFromFolder } from "utils/paths";
-import { getParentPathFromString } from "utils/path";
 
 export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     app: App;
@@ -114,7 +110,7 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     public basics: unknown;
     private debouncedRefresh: () => void = () => null;
 
-    openPath = async (leaf: WorkspaceLeaf, path: string, _flow?: boolean) => {
+    openPath = async (leaf: WorkspaceLeaf, path: string) => {
         const uri = this.superstate.spaceManager.uriByString(path);
         if (!uri)
             return;
@@ -147,20 +143,24 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
         const f = await this.files.getFile(path);
         if (f) {
-            if (f.isFolder)
+            if (f.isFolder) {
+                // clicking to the folder in the tree or breadcrumbs
                 return;
+            }
 
             await openTFile(leaf, getAbstractFileAtPath(this.app, f.path) as TFile, this.app);
         } else {
-            if (path.contains("/")) {
-                const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
-                const spaceFolder = this.superstate.spacesIndex.get(folder);
-                if (spaceFolder)
-                    await newPathInSpace(this.superstate, spaceFolder, fileExtensionForFile(path), fileNameForFile(path));
-            } else {
-                const f = await defaultSpace(this.superstate, this.superstate.pathsIndex.get(this.superstate.ui.activePath));
-                if (f) await newPathInSpace(this.superstate, f, fileExtensionForFile(path), fileNameForFile(path));
-            }
+            // cannot find this case
+
+            // if (path.contains("/")) {
+            //     const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
+            //     const spaceFolder = this.superstate.spacesIndex.get(folder);
+            //     if (spaceFolder)
+            //         await newPathInSpace(this.superstate, spaceFolder, fileExtensionForFile(path), fileNameForFile(path));
+            // } else {
+            //     const f = await defaultSpace(this.superstate, this.superstate.pathsIndex.get(this.superstate.ui.activePath));
+            //     if (f) await newPathInSpace(this.superstate, f, fileExtensionForFile(path), fileNameForFile(path));
+            // }
         }
     };
 
@@ -239,9 +239,11 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     };
     closeDuplicateFileTreeLeaves = () => {
         try {
-            //@ts-ignore
+            // @ts-expect-error .children
             this.app.workspace.leftSplit.children[0].children.filter((f, i, a) => i != a.findIndex((g) => g.view.getViewType() == f.view.getViewType())).forEach((g) => this.app.workspace.leftSplit.children[0].removeChild(g));
-        } catch {}
+        } catch {
+            // empty
+        }
     };
     detachFileTreeLeaves = () => {
         const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);

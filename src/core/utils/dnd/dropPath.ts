@@ -1,14 +1,13 @@
 import { UniqueIdentifier } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { TreeNode, isPathPinnedInSpace } from "core/utils/superstate/spaces";
+import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
 import { nodeIsAncestorOfTarget } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
-import { PathState, SpaceState } from "shared/types/PathState";
+import { PathState } from "shared/types/PathState";
 
-import { arrayMove } from "@dnd-kit/sortable";
-import { movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
-import { addTagToPath } from "core/utils/superstate/tags";
 import { DragProjection } from "./dragPath";
 
 const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath: string, parentId: UniqueIdentifier, overIndex: number, rank: number, flattenedTree: TreeNode[]) => {
@@ -62,7 +61,6 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
     }
 };
-
 export const dropPathInTree = async (superstate: Superstate, path: string, active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (projected) {
         const targetId = projected.overId ?? over;
@@ -93,7 +91,7 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
     }
 };
 
-export const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
+const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
     const newWaypoint = superstate.focuses[superstate.settings.currentFocus] ?? { sticker: "", name: i18n.labels.waypoint, paths: [] as string[] };
     const currentIndex = newWaypoint.paths.findIndex((f) => f == path);
     if (currentIndex == -1) {
@@ -114,6 +112,7 @@ export const reorderOpenSpace = (superstate: Superstate, path: string, index: nu
     const newFocuses = superstate.focuses.map((f, i) => (i == superstate.settings.currentFocus ? newWaypoint : f));
     superstate.spaceManager.saveFocuses(newFocuses);
 };
+
 export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: string, oldSpacePath: string | null, newSpacePath: string, index: number, modifier?: DropModifiers) => {
     const cache: PathState = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
     if (!cache) return false;
@@ -160,9 +159,5 @@ export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: str
                 return movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
             }
         }));
-    }
-
-    if (newSpaceCache.type == "tag" && modifier == "link" && index == -1) {
-        await Promise.all(paths.map((path) => addTagToPath(superstate, path, newSpaceCache.name)));
     }
 };

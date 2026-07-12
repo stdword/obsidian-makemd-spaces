@@ -47,6 +47,7 @@ declare module "obsidian" {
             config: Record<string, boolean>;
             plugins: any;
         };
+        showInFolder(path: string);
     }
 
     interface FileManager {

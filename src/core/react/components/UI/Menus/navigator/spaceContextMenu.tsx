@@ -1,6 +1,6 @@
 import { savePathColor } from "core/utils/superstate/label";
 import { hidePath, isPathDirectlyHidden, renamePathByName, unhidePath } from "core/utils/superstate/path";
-import { addPathToSpaceAtIndex, effectiveSpaceSort, isPathPinnedInSpace, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
 import { openStickerPalette } from "core/react/components/PathSticker";
@@ -201,7 +201,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                     (link) => {
                         const spaceCache = superstate.spacesIndex.get(link);
                         if (spaceCache)
-                            addPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
+                            linkPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
                     },
                     e.shiftKey,
                 );

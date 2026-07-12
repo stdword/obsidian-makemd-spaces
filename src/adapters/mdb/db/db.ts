@@ -35,7 +35,9 @@ export const getZippedDBFile = async (storage: ZippedSqliteStorage, path: string
     let buffer;
     try {
         buffer = await zip.loadAsync(file).then(() => zip.file("data.mdb").async("arraybuffer"));
-    } catch (e) {}
+    } catch (e) {
+        // empty
+    }
     return buffer;
 };
 
@@ -94,7 +96,9 @@ export const insertIntoDB = (db: Database, tables: DBTables, replace?: boolean) 
     );
     try {
         db.exec(`${sqlstr}`);
-    } catch (e) {}
+    } catch (e) {
+        // empty
+    }
 };
 
 export const deleteFromDB = (db: Database, table: string, condition: string) => {
@@ -102,7 +106,9 @@ export const deleteFromDB = (db: Database, table: string, condition: string) => 
     // Run the query without returning anything
     try {
         db.exec(sqlstr);
-    } catch (e) {}
+    } catch (e) {
+        // empty
+    }
 };
 
 export const dropTable = (db: Database, table: string) => {
@@ -110,7 +116,9 @@ export const dropTable = (db: Database, table: string) => {
     // Run the query without returning anything
     try {
         db.exec(sqlstr);
-    } catch (e) {}
+    } catch (e) {
+        // empty
+    }
 };
 
 export const replaceDB = (db: Database, tables: DBTables) => {

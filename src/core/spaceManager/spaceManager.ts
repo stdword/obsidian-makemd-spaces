@@ -1,5 +1,4 @@
 import { resolvePath } from "core/utils/superstate/path";
-import { IAPI } from "shared/types/api";
 import { Focus } from "shared/types/focus";
 import { URI } from "shared/types/path";
 import { SpaceDefinition } from "shared/types/spaceDef";
@@ -13,7 +12,6 @@ export class SpaceManager implements ISpaceManager {
     public primarySpaceAdapter: SpaceAdapter;
     public spaceAdapters: SpaceAdapter[] = [];
     public superstate: ISuperstate;
-    public api: IAPI;
 
     public onSpaceUpdated(_path: string, _type: string) {
         return;
@@ -99,9 +97,7 @@ export class SpaceManager implements ISpaceManager {
         }
         return caches;
     }
-    public keysForCacheType(type: string) {
-        return this.primarySpaceAdapter.keysForCacheType(type);
-    }
+
     public pathExists(path: string) {
         return this.primarySpaceAdapter.pathExists(path);
     }

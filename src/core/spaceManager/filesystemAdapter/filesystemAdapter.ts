@@ -139,10 +139,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return file as Record<string, any>;
     }
 
-    public keysForCacheType(path: string) {
-        return this.fileSystem.keysForCacheType(path);
-    }
-
     public async readPathCache(path: string): Promise<PathCache> {
         const uri = this.uriByPath(path);
         if (uri.scheme == "spaces") {

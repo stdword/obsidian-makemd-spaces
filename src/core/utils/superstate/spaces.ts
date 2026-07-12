@@ -1,15 +1,18 @@
-import { ensureArray, ensureBoolean, ensureString } from "core/utils/schema";
-import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
+
+import { ensureArray, ensureBoolean, ensureString } from "core/utils/schema";
+import { compareByField, compareByFieldCaseInsensitive, compareByFieldDeep } from "core/utils/tree";
+
 import { TargetLocation } from "shared/types/path";
 import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { PathStateWithRank } from "shared/types/superstate";
+
 import { movePath } from "utils/uri";
 import { deletePath } from "./path";
-import { addTagToPath } from "./tags";
+
 
 const hasOwn = (value: Record<string, any>, key: string) => value != null && Object.prototype.hasOwnProperty.call(value, key);
 
@@ -184,13 +187,6 @@ export const pinnedItemsFirst = <T extends RankedItem>(items: T[], space: SpaceS
 export const spaceRowHeight = (_superstate: Superstate, preset: number, section: boolean) => {
     const spaceHeight = preset ?? 29;
     return spaceHeight;
-};
-
-export const defaultSpaceSort = {
-    field: "name",
-    asc: true,
-    group: true,
-    recursive: false,
 };
 
 export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
@@ -399,10 +395,6 @@ export const saveSpaceMetadataValue = async (superstate: Superstate, space: stri
     await superstate.updateSpaceMetadata(space, { ...spaceCache.metadata, [key]: value });
 };
 
-export const saveSpaceProperties = async (_superstate: Superstate, _space: string, _properties: Record<string, any>) => {
-    return;
-};
-
 export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceState, metadata: SpaceDefinition) => {
     const spaceCache = superstate.spacesIndex.get(spaceInfo.path);
     const nextMetadata = { ...(spaceCache?.metadata ?? {}), ...metadata };
@@ -411,22 +403,6 @@ export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceSta
     }
 
     return superstate.updateSpaceMetadata(spaceInfo.path, nextMetadata);
-};
-
-export const addPathToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
-    if (space.type == "tag") {
-        return addTagToPath(superstate, path, space.name);
-    } else {
-        return linkPathToSpaceAtIndex(superstate, space, path, rank);
-    }
-};
-
-export const addPathsToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
-    if (space.type == "tag") {
-        return addTagToPath(superstate, path, space.name);
-    } else {
-        return linkPathToSpaceAtIndex(superstate, space, path, rank);
-    }
 };
 
 export const defaultSpace = async (superstate: Superstate, activeFile: PathState): Promise<SpaceState> => {
@@ -446,7 +422,7 @@ export const defaultSpace = async (superstate: Superstate, activeFile: PathState
 
 export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
     if (path == space.path) {
-        // superstate.ui.notify('Pinning space to itself not currently allowed')
+        superstate.ui.notify('Linking space to itself not allowed')
         return;
     }
     if (pathIsAlreadyInFolderSpace(superstate, path, space)) {
@@ -542,10 +518,6 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
     });
 };
 
-export const metadataPathForSpace = (_superstate: Superstate, space: SpaceState) => {
-    return space.space.defPath;
-};
-
 export const removePathsFromSpace = async (superstate: Superstate, spacePath: string, paths: string[]) => {
     const space = superstate.spacesIndex.get(spacePath);
     if (!space) return;
@@ -571,23 +543,12 @@ export const removePathsFromSpace = async (superstate: Superstate, spacePath: st
 export const newPathInSpace = async (superstate: Superstate, space: SpaceState, type: string, name: string, dontOpen?: boolean, content?: string, location?: TargetLocation) => {
     let newPath;
     if (space.type == "tag") {
-        newPath = await superstate.spaceManager.createItemAtPath("/", type, name, content);
-        await addTagToPath(superstate, newPath, space.name);
-    } else {
+        // not supported
+    } else
         newPath = await superstate.spaceManager.createItemAtPath(space.path, type, name, content);
-    }
-    if (!dontOpen) {
+
+    if (!dontOpen)
         superstate.ui.openPath(newPath, location);
-    }
+
     return newPath;
-};
-
-
-export const saveProperties = (superstate: Superstate, path: string, properties: Record<string, any>) => {
-    console.log('TRACE saveProperties', {path, properties})
-    // if (superstate.spacesIndex.has(path)) {
-    //     return saveSpaceProperties(superstate, path, properties);
-    // } else {
-    //     return superstate.spaceManager.saveProperties(path, properties);
-    // }
 };

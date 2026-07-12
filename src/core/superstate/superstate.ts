@@ -18,7 +18,6 @@ import { orderArrayByArrayWithKey, uniq } from "utils/array";
 import { EventDispatcher } from "utils/dispatcher";
 import { safelyParseJSON } from "utils/json";
 import { excludePathPredicate, isSpaceInternalPath } from "utils/hide";
-import { API } from "./api";
 
 import { Indexer } from "./workers/indexer/indexer";
 
@@ -163,7 +162,6 @@ export class Superstate implements ISuperstate {
     public spaceManager: SpaceManager;
     public settings: MakeMDSettings;
     public saveSettings: (refresh?: boolean) => Promise<void>;
-    public api: API;
 
     public ui: UIManager;
 
@@ -187,6 +185,7 @@ export class Superstate implements ISuperstate {
         uiManager: UIManager,
     ) {
         this.eventsDispatcher = new EventDispatcher<SuperstateEvent>();
+
         //Initialize
         this.initialized = false;
         this.spaceManager = spaceManager;
@@ -194,14 +193,11 @@ export class Superstate implements ISuperstate {
         this.ui = uiManager;
         this.ui.superstate = this;
 
-        this.api = new API(this);
-        // Initialize SpaceManager's API reference
-        spaceManager.api = new API(this, spaceManager);
-
         //Initiate Indexes
         this.pathsIndex = new Map();
         this.spacesIndex = new Map();
         this.focuses = [];
+
         //Initiate Maps
         this.spacesMap = new IndexMap();
         this.tagsMap = new IndexMap();
@@ -210,8 +206,6 @@ export class Superstate implements ISuperstate {
         //Intiate Workers
         this.indexer = new Indexer(2, this);
         this.metadataChanges = new Map();
-
-        // window['make'] = this;
     }
 
     public async initializeIndex() {

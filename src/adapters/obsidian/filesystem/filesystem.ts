@@ -1,5 +1,4 @@
 import { getAllFilesForTag, loadTags } from "adapters/obsidian/utils/tags";
-// import { addTagToProperties, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
 import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileSystemAdapter, FileTypeCache, FilesystemMiddleware } from "makemd-core";
@@ -13,7 +12,6 @@ import { removeTrailingSlashFromFolder } from "utils/paths";
 import { parseURI } from "utils/uri";
 import { excludePathPredicate } from "utils/hide";
 import { getParentPathFromString, pathToString } from "utils/path";
-import { urlRegex } from "utils/regex";
 import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
 import { SPACE_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE } from "schemas/constants";
 
@@ -57,27 +55,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
     public readAllTags() {
         return loadTags(this.plugin.app, this.plugin.superstate.settings);
-    }
-    public async addTagToFile(path: string, tag: string) {
-        const file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
-        if (!file) return;
-        if (file.extension == "md") {
-            addTagToProperties(this.plugin.superstate.spaceManager, tag, file.path);
-            return;
-        }
-        const vaultItem = this.cache.get(path);
-        if (!vaultItem) return;
-        this.updateFileCache(path, { tags: [...vaultItem.tags, tag] }, true);
-    }
-    public async renameTagForFile(path: string, oldTag: string, newTag: string) {
-        const file = this.plugin.app.vault.getAbstractFileByPath(path) as TFile;
-        if (file.extension == "md") {
-            renameTagInMarkdownFile(this.plugin, oldTag, newTag, file);
-            return;
-        }
-        const vaultItem = this.cache.get(path);
-        if (!vaultItem) return;
-        this.updateFileCache(path, { tags: [...vaultItem.tags.filter((t) => t.toLowerCase() != oldTag.toLowerCase()), newTag] }, true);
     }
     public async loadFilesFromObsidian() {
         this.vaultDBCache = getAllAbstractFilesInVault(this.plugin.app)
@@ -184,12 +161,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.middleware.onSpaceUpdated(update.spacePath, update.type);
     }
 
-    public keysForCacheType(_type: string): string[] {
-        return [];
-    }
-    public allContent() {
-        return [...this.cache.values()].flatMap((f) => f);
-    }
     public allFiles(_hidden?: boolean) {
         return getAllAbstractFilesInVault(this.plugin.app).map((f) => tFileToAFile(f));
     }
@@ -215,18 +186,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
 
     public initiate(middleware: FilesystemMiddleware) {
         this.middleware = middleware;
-    }
-
-    public resourcePathForPath(path: string) {
-        if (!path) return path;
-        const file = this.plugin.app.vault.getAbstractFileByPath(path);
-        if (file instanceof TFile) {
-            return this.plugin.app.vault.getResourcePath(file);
-        } else if (path.match(urlRegex)) {
-            return path;
-        }
-        const returnPath = this.parentPathForPath(this.plugin.app.vault.getResourcePath(this.plugin.app.vault.getRoot() as any));
-        return `${returnPath}/${path}`;
     }
 
     onCreate = async (file: TAbstractFile) => {
@@ -400,7 +359,6 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         await this.plugin.app.vault.adapter.writeBinary(path, buffer);
         this.pathLastUpdated.set(path, Date.now());
     }
-
     public async readBinaryToFile(path: string) {
         return (this.plugin.app.vault.adapter as ObsidianFileSystemAdapter).readBinary(path);
     }

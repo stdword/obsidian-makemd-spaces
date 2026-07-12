@@ -7,12 +7,3 @@ export type DBTable = {
 };
 
 export type DBTables = Record<string, DBTable>;
-
-export type SpaceProperty = {
-    name: string;
-    type: string;
-    //metadata for field
-    value?: string;
-    //styling for field
-    attrs?: string;
-};

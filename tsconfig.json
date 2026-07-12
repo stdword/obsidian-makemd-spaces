@@ -17,11 +17,11 @@
     "allowSyntheticDefaultImports": true,
     "lib": ["dom", "es5", "scripthost", "es2020", "es2022"],
     "skipLibCheck": true,
+    "noEmit": true
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    // "src/adapters/obsidian/ui/navigator/NavigatorView.tsx",
   ],
   "exclude": [],
 }

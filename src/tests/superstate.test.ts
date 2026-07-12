@@ -1,7 +1,3 @@
-jest.mock("core/superstate/api", () => ({
-    API: jest.fn().mockImplementation(() => ({})),
-}));
-
 jest.mock("core/superstate/workers/indexer/indexer", () => ({
     Indexer: jest.fn().mockImplementation(() => ({
         reload: jest.fn(() => Promise.resolve({})),

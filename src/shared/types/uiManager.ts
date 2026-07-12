@@ -19,15 +19,12 @@ export interface IUIManager {
     resetSelection: (id: string) => void;
     eventsDispatch: EventDispatcher<UIManagerEventTypes>;
     quickOpen: (mode?: number, offset?: Rect, win?: Window, onSelect?: (link: string) => void, source?: string) => void;
-    availableViews: () => string[];
     activeState: Record<string, any>;
     setActiveState: (state: Record<string, any>) => void;
     activePath: string;
     setActivePath: (path: string) => void;
     setActiveSelection: (path: string, content: any) => void;
     mainMenu: (el: HTMLElement, superstate: ISuperstate) => void;
-    navigationHistory: () => string[];
-    allViews: () => ViewAdapter[];
     viewsByPath: (path: string) => ViewAdapter[];
     adapters: UIAdapter[];
     createRoot: (container: Element | DocumentFragment, options?: RootOptions) => Root;
@@ -55,7 +52,6 @@ export interface IUIManager {
 
 export interface UIAdapter {
     manager: IUIManager;
-    availableViews: () => string[];
     viewsByPath: (path: string) => ViewAdapter[];
     createRoot: (container: Element | DocumentFragment, options?: RootOptions) => Root;
     openToast: (content: string) => void;
@@ -70,7 +66,6 @@ export interface UIAdapter {
     dragStarted: (e: React.DragEvent<HTMLDivElement>, paths: string[]) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>) => void;
     setDragLabel: (label: string) => void;
-    navigationHistory: () => string[];
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
     isPluginEnabled: (id: string) => boolean;
