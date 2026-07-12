@@ -18,6 +18,7 @@ import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
 import { isTagSpacePath } from "schemas/builtin";
+import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 
 function isLinkedFileMenuItem(item: any, space?: string) {
     return (
@@ -339,6 +340,14 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     });
 
     menuOptions.push(menuSeparator);
+
+    if (isTagSpacePath(space) || isLinkedFileMenuItem(cache, space)) {
+        menuOptions.push({
+            name: i18n.menu.revealInSpaces,
+            icon: "ui//arrow-up-right",
+            onClick: () => revealPathInSpaces(superstate, path),
+        });
+    }
 
     // reveal in OS
     menuOptions.push({

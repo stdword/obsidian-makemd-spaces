@@ -17,7 +17,7 @@ export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): 
         path,
         space: {
             folderPath,
-            defPath: pathInSpaceFolder(folderPath, SPACE_CONFIG_FILE),
+            defPath: "",
             notePath: "",
         },
         metadata: {},

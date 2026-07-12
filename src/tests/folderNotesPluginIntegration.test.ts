@@ -1,4 +1,4 @@
-import { filterFolderNoteChildren, getFolderNotePath } from "integrations/folderNotesPluginIntegration";
+import { filterFolderNoteChildren, folderPathForHiddenFolderNote, getFolderNotePath } from "integrations/folderNotesPluginIntegration";
 import { PathStateWithRank } from "shared/types/superstate";
 
 const item = (path: string, type = "file"): PathStateWithRank =>
@@ -85,5 +85,34 @@ describe("FolderNotesPluginIntegration", () => {
 
         expect(children.map((i) => i.path)).toEqual(["Projects/Content/Ideas.canvas"]);
         expect(folderNotePath).toBe("Projects/Content/Content.canvas");
+    });
+
+    it("resolves a hidden folder note through its parent space notePath", () => {
+        const notePath = "Projects/Alpha/Alpha.md";
+        const superstate = Object.assign(superstateWithFolderNotes({ hideFolderNote: true }), {
+            pathStateForPath: jest.fn(() => item(notePath)),
+            spacesIndex: new Map([["Projects/Alpha", {
+                path: "Projects/Alpha",
+                type: "folder",
+                space: { notePath },
+            }]]),
+        });
+
+        expect(folderPathForHiddenFolderNote(superstate, notePath)).toBe("Projects/Alpha");
+        expect(superstate.pathStateForPath).toHaveBeenCalledWith(notePath);
+    });
+
+    it("keeps a visible folder note as the reveal target", () => {
+        const notePath = "Projects/Alpha/Alpha.md";
+        const superstate = Object.assign(superstateWithFolderNotes({ hideFolderNote: false }), {
+            pathStateForPath: jest.fn(() => item(notePath)),
+            spacesIndex: new Map([["Projects/Alpha", {
+                path: "Projects/Alpha",
+                type: "folder",
+                space: { notePath },
+            }]]),
+        });
+
+        expect(folderPathForHiddenFolderNote(superstate, notePath)).toBeNull();
     });
 });

@@ -89,7 +89,6 @@ const treeForSection = (superstate: Superstate, space: SpaceState, path: PathSta
 };
 
 const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[]) => {
-    console.log("TRACE retrieveData");
     const tree: TreeNode[] = [];
     activeViewSpaces
         .filter((f) => f)
@@ -146,6 +145,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const [treeVersion, setTreeVersion] = useState(0);
     const treeRef = useRef<HTMLDivElement>(null);
     const nextTreeScrollPath = useRef(null);
+    const nextRevealResult = useRef<((found: boolean) => void) | null>(null);
     const [presetRowHeight, setPresetRowHeight] = useState<number>(props.superstate.settings.spaceRowHeight);
 
     const overIdRef = useRef<string>(null);
@@ -218,7 +218,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     parentSpaces = [rootSpace];
                 }
             }
-            if (!path || parentSpaces.length == 0) return;
+            if (!path || parentSpaces.length == 0) return false;
 
             let newOpenFolders = expandedSpaces;
             let newScrollToSpace = null;
@@ -239,13 +239,20 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             setExpandedSpaces(newOpenFolders);
             nextTreeScrollPath.current = newScrollToSpace;
             superstate.saveSettings(false);
+            return true;
         },
         [expandedSpaces, activeViewSpaces],
     );
 
     useEffect(() => {
         const handleRevealPathEvent = (evt: CustomVaultChangeEvent) => {
-            if (evt.detail.path) revealPath(evt.detail.path);
+            if (!evt.detail.path) return;
+            nextRevealResult.current = evt.detail.onResult ?? null;
+            const revealStarted = revealPath(evt.detail.path);
+            if (!revealStarted) {
+                nextRevealResult.current?.(false);
+                nextRevealResult.current = null;
+            }
         };
         window.addEventListener(eventTypes.revealPath, handleRevealPathEvent);
         return () => {
@@ -262,6 +269,12 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 setActivePath(node.item.path);
                 setSelectedPaths([node]);
                 nextTreeScrollPath.current = null;
+                nextRevealResult.current?.(true);
+                nextRevealResult.current = null;
+            } else {
+                nextTreeScrollPath.current = null;
+                nextRevealResult.current?.(false);
+                nextRevealResult.current = null;
             }
         }
     }, [flattenedTree, setActivePath, setSelectedPaths]);
@@ -303,8 +316,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const changeActivePath = (path: string) => {
         setActivePath(path);
     };
-
-    console.log("TRACE Tree Render", flattenedTree.length);
 
     const overIndex = useMemo(() => flattenedTree.findIndex((f) => f.id == overId), [overId, flattenedTree]);
     const activeIndex = useMemo(() => (active?.id ? flattenedTree.findIndex((f) => f.id == active.id) : -1), [active, flattenedTree]);

@@ -29,13 +29,10 @@ export const resolvePath = (path: string, source: string, isSpace?: (path: strin
 };
 
 export const renamePathByName = async (superstate: Superstate, oldPath: string, newName: string): Promise<string> => {
-    console.log('TRACE renamePathByName', {oldPath, newName})
     if (superstate.spacesIndex.has(oldPath)) {
         const spaceState = superstate.spacesIndex.get(oldPath);
-        console.log('TRACE renamePathByName', spaceState.type)
-        if (spaceState.type == "tag") {
+        if (spaceState.type == "tag")
             // return renameTag(superstate, spaceState.name, newName);
-        }
         return superstate.spaceManager.renameSpace(oldPath, renamePathWithoutExtension(oldPath, newName));
     } else {
         return superstate.spaceManager.renamePath(oldPath, renamePathWithExtension(oldPath, newName));

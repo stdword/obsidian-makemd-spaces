@@ -18,10 +18,15 @@ jest.mock("core/react/components/UI/Menus/modals/selectSpaceMenu", () => ({
     showFoldersMenu: jest.fn(),
 }));
 
+jest.mock("core/utils/revealPathInSpaces", () => ({
+    revealPathInSpaces: jest.fn(),
+}));
+
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 import { showFoldersMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
 import i18n from "shared/i18n";
+import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 
 beforeEach(() => {
     jest.clearAllMocks();
@@ -249,6 +254,37 @@ describe("showPathContextMenu", () => {
 
         const rootOptions = openMenu.mock.calls[0][1].options;
         expect(rootOptions.some((option: any) => option.icon === "ui//palette")).toBe(true);
+    });
+
+    it("reveals a linked file using the selected path", () => {
+        const openMenu = jest.fn();
+        const pathState = { path: "Folder/Note.md", name: "Note", parent: "Folder", type: "file", subtype: "md" };
+        const superstate = {
+            pathsIndex: new Map([[pathState.path, pathState]]),
+            spacesIndex: new Map(),
+            spaceManager: { copyPath: jest.fn() },
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
+        };
+
+        showPathContextMenu(superstate as any, pathState.path, "Dashboard", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+        openMenu.mock.calls[0][1].options.find((option: any) => option.name === i18n.menu.revealInSpaces).onClick();
+
+        expect(revealPathInSpaces).toHaveBeenCalledWith(superstate, pathState.path);
+    });
+
+    it("shows Reveal in Spaces for an item in a tag space", () => {
+        const openMenu = jest.fn();
+        const pathState = { path: "Notes/Tagged.md", name: "Tagged", parent: "Notes", type: "file", subtype: "md" };
+        const superstate = {
+            pathsIndex: new Map([[pathState.path, pathState]]),
+            spacesIndex: new Map(),
+            spaceManager: { copyPath: jest.fn() },
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
+        };
+
+        showPathContextMenu(superstate as any, pathState.path, "spaces://#work", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        expect(openMenu.mock.calls[0][1].options.some((option: any) => option.name === i18n.menu.revealInSpaces)).toBe(true);
     });
 
     it("opens Link to with hidden folders when shift-clicked", () => {
@@ -785,6 +821,30 @@ describe("showSpaceContextMenu", () => {
         expect(rootOptions.some((option: any) => option.name === "Rename")).toBe(false);
         expect(rootOptions.some((option: any) => option.name === "Reveal in Finder")).toBe(false);
         expect(rootOptions.some((option: any) => option.name === "More options")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === i18n.menu.revealInSpaces)).toBe(false);
+    });
+
+    it("reveals a linked folder using the selected folder path", () => {
+        const openMenu = jest.fn();
+        const pathState = { path: "Projects/Archive", parent: "Projects", type: "space", subtype: "folder", spaces: [] as string[] };
+        const space = {
+            path: pathState.path,
+            name: "Archive",
+            type: "folder",
+            metadata: {},
+            space: { folderPath: pathState.path },
+        };
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map([[space.path, space]]),
+            spaceManager: {},
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, "Dashboard");
+        openMenu.mock.calls[0][1].options.find((option: any) => option.name === i18n.menu.revealInSpaces).onClick();
+
+        expect(revealPathInSpaces).toHaveBeenCalledWith(superstate, pathState.path);
     });
 
     it("hides folder-only sort options for tag spaces", () => {

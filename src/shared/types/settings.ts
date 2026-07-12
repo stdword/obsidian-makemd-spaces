@@ -2,7 +2,7 @@ import { SpaceSort } from "./spaceDef";
 
 export interface MakeMDSettings {
     // state, not settings
-    currentWaypoint: number;
+    currentFocus: number;
     expandedSpaces: string[];
 
     hiddenExtensions: string[];

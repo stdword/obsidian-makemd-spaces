@@ -97,7 +97,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             ref={innerRef}
             className="mk-waypoint"
             onClick={() => {
-                superstate.settings.currentWaypoint = index;
+                superstate.settings.currentFocus = index;
                 superstate.saveSettings();
             }}
             onDragOver={(e) => {
@@ -115,7 +115,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             <div
                 ref={ref}
                 aria-label={pin.name}
-                className={classNames("mk-focuses-item", "clickable-icon", "nav-action-button", (superstate.settings.currentWaypoint == index || highlighted) && "mk-active", indicator && "mk-indicator", clone && "mk-clone", ghost && "mk-ghost")}
+                className={classNames("mk-focuses-item", "clickable-icon", "nav-action-button", (superstate.settings.currentFocus == index || highlighted) && "mk-active", indicator && "mk-indicator", clone && "mk-clone", ghost && "mk-ghost")}
                 style={{
                     ...style,
                 }}

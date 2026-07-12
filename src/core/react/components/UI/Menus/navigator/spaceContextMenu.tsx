@@ -19,6 +19,7 @@ import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
 import { isTagSpacePath } from "schemas/builtin";
+import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
     const space = superstate.spacesIndex.get(path.path);
@@ -209,6 +210,14 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     if (!isTagSpace) {
         menuOptions.push(menuSeparator);
+
+        if (parentSpace && parentSpace !== path.parent) {
+            menuOptions.push({
+                name: i18n.menu.revealInSpaces,
+                icon: "ui//arrow-up-right",
+                onClick: () => revealPathInSpaces(superstate, space.path),
+            });
+        }
 
         // reveal in OS
         menuOptions.push({

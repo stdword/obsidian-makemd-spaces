@@ -81,10 +81,10 @@ export class SpaceManager implements ISpaceManager {
     }
 
     public spaceTypeByString = (uri: URI): SpaceType => {
-        if (uri.path == "/")
-            return "vault";
         if (uri.authority?.charAt(0) == "#")
             return "tag";
+        if (uri.path == "/")
+            return "vault";
         if (uri.path.charAt(uri.path.length - 1) == "/")
             return "folder";
         return "folder";

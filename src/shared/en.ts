@@ -65,6 +65,7 @@ export const en = {
 
         openFilePane: "Open File Pane",
         openNativeMenu: "More options",
+        revealInSpaces: "Reveal in Spaces",
         revealInDefault: "Reveal in Finder",
         revealInExplorer: "Reveal in Explorer",
     },
@@ -147,6 +148,7 @@ export const en = {
     },
 
     notice: {
+        notFound: "Not found",
         fileExists: "File Already Exists",
         copyError: "Copy Error",
         reload: "Reload",

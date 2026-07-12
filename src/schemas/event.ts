@@ -6,8 +6,9 @@ export type VaultChange = "create" | "delete" | "rename" | "modify" | "collapse"
 
 export class CustomVaultChangeEvent extends Event {
     detail: {
-        type: VaultChange;
         path: string;
+        type?: VaultChange;
         oldPath?: string;
+        onResult?: (found: boolean) => void;
     };
 }

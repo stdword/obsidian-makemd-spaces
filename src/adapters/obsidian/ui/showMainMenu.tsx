@@ -16,7 +16,7 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
     }
 
     const toggleSections = (collapse: boolean) => {
-        const spaces = superstate.focuses[superstate.settings.currentWaypoint].paths;
+        const spaces = superstate.focuses[superstate.settings.currentFocus].paths;
         const newSections = collapse ? [] : spaces;
         superstate.settings.expandedSpaces = newSections;
         superstate.saveSettings();
@@ -29,7 +29,7 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
         icon: "ui//plus",
         onClick: () => {
             const newFocuses = [...superstate.focuses, { sticker: "ui//spaces", name: "", paths: [] }];
-            superstate.settings.currentWaypoint = newFocuses.length - 1;
+            superstate.settings.currentFocus = newFocuses.length - 1;
             superstate.spaceManager.saveFocuses(newFocuses);
         },
     });

@@ -36,7 +36,6 @@ export const getFolderNotePath = (superstate: ISuperstate, folderPath: string, c
         .sort((a, b) => fileTypesPriority.indexOf(a) > fileTypesPriority.indexOf(b) ? 1 : -1)
         .map((extension) => `${folderPath}/${folderNoteName}.${extension}`);
 
-    console.log("TRACE integration", possibleFolderNotesNames.find((path) => childPaths.includes(path)));
     return possibleFolderNotesNames.find((path) => childPaths.includes(path)) ?? "";
 };
 
@@ -44,4 +43,16 @@ export const filterFolderNoteChildren = (superstate: ISuperstate, folderNotePath
     if (!folderNotePath || getSettings(superstate)?.hideFolderNote != true)
         return items;
     return items.filter((item) => item.path != folderNotePath);
+};
+
+export const folderPathForHiddenFolderNote = (superstate: ISuperstate, path: string): string | null => {
+    if (!path || getSettings(superstate)?.hideFolderNote != true)
+        return null;
+
+    const parentPath = superstate.pathStateForPath(path)?.parent;
+    if (!parentPath)
+        return null;
+
+    const parentSpace = superstate.spacesIndex.get(parentPath);
+    return parentSpace?.type == "folder" && parentSpace.space?.notePath == path ? parentSpace.path : null;
 };

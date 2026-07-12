@@ -99,7 +99,7 @@ describe("dropPathInSpaceAtIndex", () => {
         const saveFocuses = jest.fn();
         const superstate = {
             settings: {
-                currentWaypoint: 0,
+                currentFocus: 0,
             },
             focuses: [
                 {
@@ -564,7 +564,7 @@ describe("dropPathInSpaceAtIndex", () => {
         const saveFocuses = jest.fn();
         const superstate = {
             settings: {
-                currentWaypoint: 0,
+                currentFocus: 0,
             },
             focuses: [
                 {
