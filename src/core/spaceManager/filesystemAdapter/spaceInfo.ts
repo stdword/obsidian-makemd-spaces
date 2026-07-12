@@ -1,6 +1,6 @@
 import { pathInSpaceFolder } from "core/utils/superstate/space";
 import { FilesystemSpaceInfo, SpaceState } from "shared/types/PathState";
-import { encodeSpaceName, tagToTagPath } from "utils/tags";
+import { tagToTagPath } from "utils/tags";
 
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE, SPACE_CONFIG_PATH } from "schemas/constants";
@@ -18,7 +18,7 @@ export const fileSystemSpaceInfoFromTag = (manager: SpaceManager, tag: string): 
         space: {
             folderPath,
             defPath: pathInSpaceFolder(folderPath, SPACE_CONFIG_FILE),
-            notePath: `${folderPath}/${encodeSpaceName(tag)}.md`,
+            notePath: "",
         },
         metadata: {},
     };
@@ -66,7 +66,7 @@ export const fileSystemSpaceInfoFromFolder = (manager: SpaceManager, folder: str
         space: {
             folderPath: folder,
             defPath: folder + `/${SPACE_CONFIG_PATH}`,
-            notePath: folder + "/" + folderName + ".md",
+            notePath: "",
         },
         metadata: {},
     };

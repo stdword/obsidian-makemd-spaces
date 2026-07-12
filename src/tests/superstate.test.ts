@@ -26,6 +26,7 @@ const createSuperstate = () => {
         pathExists: jest.fn((_path: string) => false),
         loadPath: jest.fn(),
         createSpace: jest.fn(() => Promise.resolve()),
+        childrenForSpace: jest.fn((): string[] => []),
         saveSpace: jest.fn(() => Promise.resolve()),
         spaceDefinitionForPath: jest.fn(() => Promise.resolve({})),
         spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.replace("spaces://#", "") })),
@@ -109,6 +110,37 @@ describe("Superstate tag initialization", () => {
 
         expect(spaceManager.spaceDefinitionForPath).toHaveBeenCalledTimes(1);
         expect(superstate.spacesIndex.get("RankedSpace").metadata["rank-order"]).toEqual(["RankedSpace/ChildA", "RankedSpace/ChildB"]);
+    });
+
+    it("stores the detected folder note path when a folder space is cached", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        (superstate.ui as any).plugin = {
+            app: {
+                plugins: {
+                    getPlugin: jest.fn(() => ({
+                        settings: {
+                            folderNoteName: "{{folder_name}}",
+                            supportedFileTypes: ["md"],
+                            hideFolderNote: true,
+                        },
+                    })),
+                },
+            },
+        };
+        spaceManager.childrenForSpace = jest.fn(() => ["Atlas/Atlas.md", "Atlas/Notes.md"]);
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "folder");
+
+        const cached = await superstate.reloadSpace({
+            type: "folder",
+            name: "Atlas",
+            path: "Atlas",
+            metadata: {},
+            space: { folderPath: "Atlas", defPath: "Atlas/.space/context.json", notePath: "" },
+        }, {});
+
+        expect(cached.space.notePath).toBe("Atlas/Atlas.md");
+        expect(superstate.spacesIndex.get("Atlas").space.notePath).toBe("Atlas/Atlas.md");
     });
 
     it("does not trim folder rank-order while path indexes are being initialized", async () => {

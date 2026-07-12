@@ -110,7 +110,7 @@ describe("FilesystemSpaceAdapter", () => {
         const space = fileSystemSpaceInfoFromFolder(manager as any, "Projects/Alpha");
 
         expect(space.space.defPath).toBe("Projects/Alpha/.space/context.json");
-        expect(space.space.notePath).toBe("Projects/Alpha/Alpha.md");
+        expect(space.space.notePath).toBe("");
     });
 
     it("creates context.json default content without sort until sort is explicitly changed", () => {

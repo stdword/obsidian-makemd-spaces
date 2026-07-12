@@ -1,4 +1,4 @@
-import { processFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
+import { filterFolderNoteChildren, getFolderNotePath } from "integrations/folderNotesPluginIntegration";
 import { PathStateWithRank } from "shared/types/superstate";
 
 const item = (path: string, type = "file"): PathStateWithRank =>
@@ -50,9 +50,11 @@ describe("FolderNotesPluginIntegration", () => {
     it("returns all folder items when the folder-notes plugin is not installed", () => {
         const items = [item("Projects/Alpha/Alpha.md"), item("Projects/Alpha/Notes.md")];
 
-        const result = processFolderNoteChildren(superstateWithFolderNotes(), "Projects/Alpha", items);
+        const superstate = superstateWithFolderNotes();
+        const folderNotePath = getFolderNotePath(superstate, "Projects/Alpha", items.map((item) => item.path));
 
-        expect(result).toEqual({ children: items, folderNotePath: null });
+        expect(folderNotePath).toBe("");
+        expect(filterFolderNoteChildren(superstate, folderNotePath, items)).toBe(items);
     });
 
     it("hides only the first matching folder note using supported file type order", () => {
@@ -63,10 +65,11 @@ describe("FolderNotesPluginIntegration", () => {
             hideFolderNote: true,
         });
 
-        const result = processFolderNoteChildren(superstate, "Projects/Alpha", items);
+        const folderNotePath = getFolderNotePath(superstate, "Projects/Alpha", items.map((item) => item.path));
+        const children = filterFolderNoteChildren(superstate, folderNotePath, items);
 
-        expect(result.children.map((i) => i.path)).toEqual(["Projects/Alpha/Alpha.canvas", "Projects/Alpha/Notes.md"]);
-        expect(result.folderNotePath).toBe("Projects/Alpha/Alpha.md");
+        expect(children.map((i) => i.path)).toEqual(["Projects/Alpha/Alpha.canvas", "Projects/Alpha/Notes.md"]);
+        expect(folderNotePath).toBe("Projects/Alpha/Alpha.md");
     });
 
     it("reads folder-notes settings from the Obsidian UI main frame plugin", () => {
@@ -77,9 +80,10 @@ describe("FolderNotesPluginIntegration", () => {
             hideFolderNote: true,
         });
 
-        const result = processFolderNoteChildren(superstate, "Projects/Content", items);
+        const folderNotePath = getFolderNotePath(superstate, "Projects/Content", items.map((item) => item.path));
+        const children = filterFolderNoteChildren(superstate, folderNotePath, items);
 
-        expect(result.children.map((i) => i.path)).toEqual(["Projects/Content/Ideas.canvas"]);
-        expect(result.folderNotePath).toBe("Projects/Content/Content.canvas");
+        expect(children.map((i) => i.path)).toEqual(["Projects/Content/Ideas.canvas"]);
+        expect(folderNotePath).toBe("Projects/Content/Content.canvas");
     });
 });

@@ -26,6 +26,7 @@ import { SuperstateEvent, SpaceType } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { ensureArray } from "core/utils/schema";
 import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { getFolderNotePath } from "integrations/folderNotesPluginIntegration";
 
 
 const spaceDisplayMetadata = (metadata?: SpaceDefinition | null) => {
@@ -545,10 +546,33 @@ export class Superstate implements ISuperstate {
         return this.reloadSpace(this.spaceManager.spaceInfoForPath(path), metadata);
     }
 
+    private folderNotePathForSpace(spacePath: string): string {
+        return getFolderNotePath(this, spacePath, this.spaceManager.childrenForSpace(spacePath) ?? []);
+    }
+
+    private async refreshFolderNoteForSpace(spacePath: string) {
+        const space = this.spacesIndex.get(spacePath);
+        if (!space || space.type == "tag") return;
+        const notePath = this.folderNotePathForSpace(spacePath);
+        if ((space.space?.notePath ?? "") == notePath) return;
+
+        const nextSpace = {
+            ...space,
+            space: {
+                ...space.space,
+                notePath,
+            },
+        };
+        this.spacesIndex.set(spacePath, nextSpace);
+        await this.persister.store(spacePath, JSON.stringify(folderSpaceStateForStore(nextSpace)), "space");
+        this.dispatchEvent("spaceStateUpdated", { path: spacePath });
+    }
+
     public async onPathRename(oldPath: string, newPath: string) {
         //assume that space indexer has updated all records properly
         const newFilePath = newPath;
         const oldPathState = this.pathsIndex.get(oldPath);
+        const oldParent = oldPathState?.parent;
         const oldSpaces = oldPathState?.spaces ?? [];
         if (oldPathState) {
             this.spacesMap.delete(oldPath);
@@ -583,6 +607,8 @@ export class Superstate implements ISuperstate {
         }
 
         await this.reloadPath(newPath, true);
+        const newParent = this.pathsIndex.get(newPath)?.parent;
+        await Promise.all(uniq([oldParent, newParent].filter((path) => path)).map((path) => this.refreshFolderNoteForSpace(path)));
         this.persister.remove(oldPath, "path");
 
         const changedSpaces = uniq([...(this.spacesMap.get(newPath) ?? []), ...oldSpaces]);
@@ -597,6 +623,8 @@ export class Superstate implements ISuperstate {
 
     public async onPathCreated(path: string) {
         await this.reloadPath(path, true);
+        const parent = this.pathsIndex.get(path)?.parent;
+        if (parent) await this.refreshFolderNoteForSpace(parent);
         this.dispatchEvent("pathCreated", { path });
     }
 
@@ -641,6 +669,7 @@ export class Superstate implements ISuperstate {
             this.dispatchEvent("spaceStateUpdated", { path: f });
         });
         this.pathsIndex.delete(path);
+        if (fileCache.parent) await this.refreshFolderNoteForSpace(fileCache.parent);
         this.dispatchEvent("pathDeleted", { path });
     }
 
@@ -758,7 +787,10 @@ export class Superstate implements ISuperstate {
 
         const cache: SpaceState = {
             name: space.name,
-            space: space.space,
+            space: {
+                ...space.space,
+                notePath: this.folderNotePathForSpace(space.path),
+            },
             path: space.path,
             type,
             metadata,

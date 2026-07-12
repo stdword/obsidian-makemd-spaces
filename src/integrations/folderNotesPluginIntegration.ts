@@ -18,41 +18,30 @@ const getSettings = (superstate: ISuperstate): FolderNotesSettings | null => {
     return plugin?.settings ?? null;
 };
 
-const folderNoteNameForPath = (settings: FolderNotesSettings, folderPath: string) => {
+const getFolderNoteName = (settings: FolderNotesSettings, folderPath: string) => {
     const folderName = folderPath.split("/").filter(Boolean).pop() ?? folderPath;
     return settings.folderNoteName.replace(/\{\{folder_name\}\}/g, folderName);
 };
 
-export type FolderNoteChildren = {
-    children: PathStateWithRank[];
-    folderNotePath: string | null;
-};
-
-export const processFolderNoteChildren = (superstate: ISuperstate, folderPath: string, items: PathStateWithRank[]): FolderNoteChildren => {
-    if (isTagSpacePath(folderPath))
-        return { children: items, folderNotePath: null };
+export const getFolderNotePath = (superstate: ISuperstate, folderPath: string, childPaths: string[]): string => {
+    if (isTagSpacePath(folderPath)) return "";
 
     const settings = getSettings(superstate);
     if (!settings?.folderNoteName || !Array.isArray(settings.supportedFileTypes) || settings.supportedFileTypes.length == 0)
-        return { children: items, folderNotePath: null };
+        return "";
 
-    const folderNoteName = folderNoteNameForPath(settings, folderPath);
+    const folderNoteName = getFolderNoteName(settings, folderPath);
     const fileTypesPriority = ['md', 'canvas', 'excalidraw', 'base'];
     const possibleFolderNotesNames = settings.supportedFileTypes
         .sort((a, b) => fileTypesPriority.indexOf(a) > fileTypesPriority.indexOf(b) ? 1 : -1)
         .map((extension) => `${folderPath}/${folderNoteName}.${extension}`);
 
-    const matchingItem = possibleFolderNotesNames
-        .map((path) => items.find((item) => item.type == "file" && item.path == path))
-        .find((item) => item);
+    console.log("TRACE integration", possibleFolderNotesNames.find((path) => childPaths.includes(path)));
+    return possibleFolderNotesNames.find((path) => childPaths.includes(path)) ?? "";
+};
 
-    if (!matchingItem)
-        return { children: items, folderNotePath: null };
-
-    console.log("TRACE integration", matchingItem.path);
-
-    return {
-        children: settings.hideFolderNote ? items.filter((item) => item !== matchingItem) : items,
-        folderNotePath: matchingItem.path,
-    };
+export const filterFolderNoteChildren = (superstate: ISuperstate, folderNotePath: string, items: PathStateWithRank[]): PathStateWithRank[] => {
+    if (!folderNotePath || getSettings(superstate)?.hideFolderNote != true)
+        return items;
+    return items.filter((item) => item.path != folderNotePath);
 };

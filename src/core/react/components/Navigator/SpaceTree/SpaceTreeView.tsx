@@ -6,7 +6,7 @@ import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSp
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
-import { processFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
+import { filterFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
@@ -35,7 +35,8 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const parentSort = effectiveSpaceSort(sort, superstate.settings);
     const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
     const childrenSortable = isSpaceSortable(space, superstate.settings);
-    const { children, folderNotePath } = processFolderNoteChildren(superstate, space.path, superstate.getSpaceItems(space.path) ?? []);
+    const folderNotePath = space.space?.notePath || null;
+    const children = filterFolderNoteChildren(superstate, folderNotePath, superstate.getSpaceItems(space.path) ?? []);
 
     if (section) {
         const pathIndex = superstate.pathStateForPath(space.path);
