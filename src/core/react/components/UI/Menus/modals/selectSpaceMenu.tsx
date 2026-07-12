@@ -56,3 +56,26 @@ export const showFoldersMenu = (
         includeUnindexedFolders: true,
     });
 };
+
+export const showTagsMenu = (
+    offset: Rect,
+    win: Window,
+    superstate: Superstate,
+    saveLink: (link: string, isNew?: boolean, type?: string) => void,
+) => {
+    return showSearchMenu({
+        offset,
+        win,
+        superstate,
+        tabs: ["tags"],
+        placeholder: i18n.labels.openItemInputPlaceholder,
+        saveOptions: (_: string[], value: string[], isNew?: boolean, section?: string) => {
+            saveLink(value[0], isNew, section);
+        },
+        selectProps: {
+            addKeyword: "Create",
+            editable: true,
+            showSections: false,
+        },
+    });
+};

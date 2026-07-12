@@ -490,10 +490,34 @@ export class Superstate implements ISuperstate {
     }
 
     public async onTagDeleted(tag: string) {
-        this.tagsMap.getInverse(tag).forEach((path) => {
-            this.deleteTagInPath(tag, path);
-        });
-        this.onSpaceDeleted(tagSpacePathFromTag(tag));
+        const tagPath = tagSpacePathFromTag(tag);
+        const referencingSpaces = [...this.spacesIndex.values()].filter((space) =>
+            space.path != tagPath && (
+                ensureArray(space.metadata.links).includes(tagPath) ||
+                ensureArray(space.metadata.pinned).includes(tagPath) ||
+                ensureArray(space.metadata["rank-order"]).includes(tagPath) ||
+                Object.prototype.hasOwnProperty.call(space.metadata["file-colors"] ?? {}, tagPath)
+            )
+        );
+        for (const space of referencingSpaces) {
+            const { [tagPath]: _removedColor, ...fileColors } = space.metadata["file-colors"] ?? {};
+            await saveSpaceCache(this, space, {
+                ...space.metadata,
+                links: ensureArray(space.metadata.links).filter((path) => path != tagPath),
+                pinned: ensureArray(space.metadata.pinned).filter((path) => path != tagPath),
+                "rank-order": ensureArray(space.metadata["rank-order"]).filter((path) => path != tagPath),
+                "file-colors": fileColors,
+            });
+        }
+
+        const nextFocuses = this.focuses.map((focus) => ({
+            ...focus,
+            paths: focus.paths.filter((path) => path != tagPath),
+        }));
+        if (!_.isEqual(nextFocuses, this.focuses))
+            await this.spaceManager.saveFocuses(nextFocuses);
+
+        this.onSpaceDeleted(tagPath);
     }
 
     public async deleteTagInPath(tag: string, path: string) {

@@ -114,7 +114,7 @@ const searchMenuOptions = (superstate: Superstate, tabs: SearchMenuTab[], visibl
         const spaces = spacesForSearch(superstate, true, hidden, includeUnindexedFolders)
             .filter((s) => hidden || !isHiddenForSearch(superstate, s.path));
 
-        if (tabs.includes('folders'))
+        if (tabs.includes('folders')) {
             suggestions.push(...spaces
                 .filter((s) => s.type == 'vault')
                 .map<SelectOption>((s) => ({
@@ -135,6 +135,7 @@ const searchMenuOptions = (superstate: Superstate, tabs: SearchMenuTab[], visibl
                     value: s.path,
                 }))
             )
+        }
 
         if (tabs.includes('tags'))
             suggestions.push(...spaces

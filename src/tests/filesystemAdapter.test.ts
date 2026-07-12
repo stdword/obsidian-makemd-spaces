@@ -97,7 +97,11 @@ describe("FilesystemSpaceAdapter", () => {
 
         expect(tagSpace.name).toBe("books/psy");
         expect(tagSpace.path).toBe("spaces://#books/psy");
-        expect(tagSpace.space.folderPath).toBe("#books+psy");
+        expect(tagSpace.space).toEqual({
+            folderPath: "",
+            defPath: "",
+            notePath: "",
+        });
     });
 
     it("uses the folder name for folder note paths without reading folder-note settings", () => {

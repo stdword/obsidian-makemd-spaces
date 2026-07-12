@@ -86,6 +86,7 @@ export const en = {
         addIntoSpace: "Link Item",
 
         delete: "Delete",
+        merge: "Merge",
         addToSpace: "Link to...",
 
         addFile: "Add File",
@@ -129,8 +130,10 @@ export const en = {
         archiveFocus: "Archive \"${1}\" Focus?",
 
         deleteFolder: "Delete Folder",
-        deleteFiles: "Delete Files",
-        deleteFile: "Delete File/Folder",
+        deleteTag: "Delete Tag",
+        mergeTag: "Merge Tag",
+        deleteFiles: "Delete ${1} Files/Folders/Tags",
+        deleteFile: "Delete File",
         addTo: "Add to",
         moveTo: "Move to",
         linkTo: "Link to",
@@ -141,9 +144,12 @@ export const en = {
     },
 
     descriptions: {
-        deleteFolder: "Deleting the folder will also delete its contents.",
-        deleteFiles: "Delete ${1} files/folders and their contents?",
-        deleteFile: "Delete file/folder and its contents?",
+        deleteFolder: "Deleting the folder ${1} will also delete its contents.",
+        deleteTag: "Deleting the tag ${1} will also delete its metadata (color, sorting options, etc.). It won’t remove any Obsidian tags from files.",
+        mergeTag: "Merging ${1} into ${2} will combine their metadata, with ${1} taking precedence, and then delete the ${1} tag-space. It won’t remove any Obsidian tags from files.",
+        deleteFiles: "Deleting the folders will also delete their contents.",
+        deleteTags: "Deleting the tags will also delete their metadata (color, sorting options, etc.). It won’t remove any Obsidian tags from files.",
+        deleteFile: "Delete the file ${1} from the vault?",
 
         hiddenFileOptions: "Hidden File Options",
     },

@@ -11,15 +11,16 @@ import { SpaceSort } from "shared/types/spaceDef";
 import { savePathSticker } from "utils/sticker";
 import { movePath } from "utils/uri";
 import { stringFromTag } from "utils/tags";
-import { ConfirmationModal } from "../../Modals/ConfirmationModal";
+import { ConfirmationModal, formatMessage } from "../../Modals/ConfirmationModal";
 import { InputModal } from "../../Modals/InputModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
-import { showFoldersMenu } from "../modals/selectSpaceMenu";
+import { showFoldersMenu, showTagsMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
 import { showSpaceAddMenu } from "./showSpaceAddMenu";
 import { isTagSpacePath } from "schemas/builtin";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
+import { addTag, mergeTagSpaceMetadata } from "core/utils/superstate/tags";
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
     const space = superstate.spacesIndex.get(path.path);
@@ -208,6 +209,37 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
+    if (isTagSpace) {
+        menuOptions.push(menuSeparator);
+        menuOptions.push({
+            name: "Merge into...",
+            icon: "lucide//merge",
+            closeParentImmediately: true,
+            onClick: (e) => {
+                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+                showTagsMenu(offset, win, superstate, async (link, isNew) => {
+                    const target = isNew ? await addTag(superstate, link) : superstate.spacesIndex.get(link);
+                    if (!target) return;
+                    if (target.path == space.path) {
+                        superstate.ui.notify("The same tag-space: nothing changed");
+                        return;
+                    }
+                    const sourceTag = `#${stringFromTag(space.name)}`;
+                    const targetTag = `#${stringFromTag(target.name)}`;
+                    superstate.ui.openModal(
+                        i18n.labels.mergeTag,
+                        <ConfirmationModal
+                            confirmAction={() => mergeTagSpaceMetadata(superstate, space.path, target.path)}
+                            confirmLabel={i18n.buttons.merge}
+                            message={formatMessage(i18n.descriptions.mergeTag, [<i>{sourceTag}</i>, <i>{targetTag}</i>])}
+                        />,
+                        win,
+                    );
+                });
+            },
+        });
+    }
+
     if (!isTagSpace) {
         menuOptions.push(menuSeparator);
 
@@ -285,12 +317,16 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     }
 
     // delete item
-    if (space.type == "folder" || space.type == "tag")
+    if (space.type == "folder" || isTagSpace)
         menuOptions.push({
             name: i18n.menu.delete,
             icon: "ui//trash",
             onClick: () => {
-                superstate.ui.openModal(i18n.labels.deleteFolder, <ConfirmationModal confirmAction={() => removeSpace(superstate, space.path)} confirmLabel={i18n.buttons.delete} message={i18n.descriptions.deleteFolder}></ConfirmationModal>, win);
+                const title = isTagSpace ? i18n.labels.deleteTag : i18n.labels.deleteFolder;
+                const message = isTagSpace
+                    ? formatMessage(i18n.descriptions.deleteTag, [<i>#{stringFromTag(space.name)}</i>])
+                    : formatMessage(i18n.descriptions.deleteFolder, [<i>{space.name}</i>]);
+                superstate.ui.openModal(title, <ConfirmationModal confirmAction={() => removeSpace(superstate, space.path)} confirmLabel={i18n.buttons.delete} message={message}></ConfirmationModal>, win);
             },
         });
 

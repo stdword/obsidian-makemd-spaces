@@ -14,7 +14,7 @@ import { MenuObject } from "shared/types/menu";
 import { openPathInElement } from "adapters/obsidian/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
-import { ConfirmationModal } from "core/react/components/UI/Modals/ConfirmationModal";
+import { ConfirmationModal, formatMessage } from "core/react/components/UI/Modals/ConfirmationModal";
 import { removeSpace } from "core/utils/superstate/spaces";
 import { getLineRangeFromRef } from "utils/obsidian";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
@@ -334,7 +334,7 @@ export class ObsidianUI implements UIAdapter {
                                 removeSpace(this.manager.superstate, path);
                             }}
                             confirmLabel={i18n.buttons.delete}
-                            message={i18n.descriptions.deleteFolder}
+                            message={formatMessage(i18n.descriptions.deleteFolder, [<i>{file.name}</i>])}
                         ></ConfirmationModal>,
                         window,
                     );

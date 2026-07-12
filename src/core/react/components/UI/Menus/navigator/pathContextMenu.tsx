@@ -12,7 +12,7 @@ import { deletePath, movePathToSpace } from "core/utils/superstate/path";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import { Anchors, Rect } from "shared/types/Pos";
 import { windowFromDocument } from "utils/dom";
-import { ConfirmationModal } from "../../Modals/ConfirmationModal";
+import { ConfirmationModal, formatMessage } from "../../Modals/ConfirmationModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
@@ -137,7 +137,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         icon: "ui//trash",
         onClick: (e) => {
             superstate.ui.openModal(
-                i18n.labels.deleteFiles,
+                i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
                 <ConfirmationModal
                     confirmAction={() => {
                         paths.forEach((f) => {
@@ -145,7 +145,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
                         });
                     }}
                     confirmLabel={i18n.buttons.delete}
-                    message={i18n.descriptions.deleteFiles.replace("${1}", paths.length.toString())}
+                    message={<><div>{i18n.descriptions.deleteFiles}</div><div>{i18n.descriptions.deleteTags}</div></>}
                 ></ConfirmationModal>,
                 windowFromDocument(e.view.document),
             );
@@ -230,7 +230,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
         icon: "ui//trash",
         onClick: (e) => {
             superstate.ui.openModal(
-                i18n.labels.deleteFiles,
+                i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
                 <ConfirmationModal
                     confirmAction={() => {
                         paths.forEach((f) => {
@@ -238,7 +238,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
                         });
                     }}
                     confirmLabel={i18n.buttons.delete}
-                    message={i18n.descriptions.deleteFiles.replace("${1}", paths.length.toString())}
+                    message={<><div>{i18n.descriptions.deleteFiles}</div><div>{i18n.descriptions.deleteTags}</div></>}
                 ></ConfirmationModal>,
                 windowFromDocument(e.view.document),
             );
@@ -416,7 +416,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
                         deletePath(superstate, path);
                     }}
                     confirmLabel={i18n.buttons.delete}
-                    message={i18n.descriptions.deleteFile}
+                    message={formatMessage(i18n.descriptions.deleteFile, [<i>{path.split("/").pop()}</i>])}
                 ></ConfirmationModal>,
                 windowFromDocument(e.view.document),
             );

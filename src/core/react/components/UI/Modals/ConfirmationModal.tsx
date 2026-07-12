@@ -1,10 +1,17 @@
 import React, { useEffect } from "react";
 import i18n from "shared/i18n";
 
+export const formatMessage = (template: string, values: React.ReactNode[]) => <>
+    {template.split(/(\$\{\d+\})/g).map((part, index) => {
+        const match = part.match(/^\$\{(\d+)\}$/);
+        return <React.Fragment key={index}>{match ? values[Number(match[1]) - 1] : part}</React.Fragment>;
+    })}
+</>;
+
 export const ConfirmationModal = (props: {
   hide?: () => void;
   confirmAction: () => void;
-  message: string;
+  message: React.ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
 }) => {

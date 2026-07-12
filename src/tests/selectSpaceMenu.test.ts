@@ -1,4 +1,4 @@
-import { showOpenMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
+import { showOpenMenu, showTagsMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
 
 describe("showOpenMenu", () => {
     it("includes tag spaces that are visible in Obsidian even though their paths use the spaces protocol", async () => {
@@ -135,6 +135,33 @@ describe("showOpenMenu", () => {
         menuConfig.saveOptions([], ["sample"], true, "tags");
 
         expect(saveLink).toHaveBeenCalledWith("sample", true, "tags");
+    });
+
+    it("opens a tag-only selector that can create tags", async () => {
+        const openMenu = jest.fn();
+        const saveLink = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn((): any[] => [
+                { name: "Folder", path: "Folder", type: "folder" },
+                { name: "Tag", path: "spaces://#tag", type: "tag" },
+            ]),
+            spaceManager: { readTags: jest.fn((): string[] => ["#tag"]) },
+            spacesIndex: new Map([
+                ["spaces://#tag", { name: "Tag", path: "spaces://#tag", type: "tag" }],
+            ]),
+            pathsIndex: new Map(),
+            settings: {},
+            ui: { openMenu },
+        } as any;
+
+        await showTagsMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink);
+
+        const menuConfig = openMenu.mock.calls[0][1];
+        expect(menuConfig.sections.map((section: any) => section.name)).toEqual(["tags"]);
+        expect(menuConfig.options.map((option: any) => option.value)).toEqual(["spaces://#tag"]);
+        expect(menuConfig.allowNewBySection).toEqual({ tags: true });
+        menuConfig.saveOptions([], ["fresh"], true, "tags");
+        expect(saveLink).toHaveBeenCalledWith("fresh", true, "tags");
     });
 
     it("includes hidden items when opened in hidden mode", async () => {

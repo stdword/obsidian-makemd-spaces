@@ -1,4 +1,5 @@
-import { addTagToProperties, getAllFilesForTag, loadTags, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
+import { getAllFilesForTag, loadTags } from "adapters/obsidian/utils/tags";
+// import { addTagToProperties, renameTagInMarkdownFile } from "adapters/obsidian/utils/tags";
 import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileSystemAdapter, FileTypeCache, FilesystemMiddleware } from "makemd-core";

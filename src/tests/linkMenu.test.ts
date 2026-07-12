@@ -11,6 +11,7 @@ describe("showLinkMenu", () => {
             spaceManager: {
                 readTags: jest.fn((): string[] => []),
             },
+            spacesIndex: new Map(),
             pathsIndex: new Map([
                 ["/", { name: "Home", path: "/", type: "space", subtype: "vault", hidden: false }],
                 ["Folder", { name: "Folder", path: "Folder", type: "space", subtype: "folder", hidden: false }],
@@ -46,6 +47,7 @@ describe("showLinkMenu", () => {
             spaceManager: {
                 readTags: jest.fn((): string[] => []),
             },
+            spacesIndex: new Map(),
             pathsIndex: new Map(),
             settings: {},
             ui: {
@@ -73,6 +75,7 @@ describe("showLinkMenu", () => {
             spaceManager: {
                 readTags: jest.fn((): string[] => []),
             },
+            spacesIndex: new Map(),
             pathsIndex: new Map([
                 ["Visible.md", { name: "Visible", path: "Visible.md", type: "file", hidden: false }],
                 ["Hidden.md", { name: "Hidden", path: "Hidden.md", type: "file", hidden: true }],

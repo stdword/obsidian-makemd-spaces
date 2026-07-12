@@ -12,7 +12,7 @@ import { Superstate } from "core/superstate/superstate";
 import { savePathColor } from "core/utils/superstate/label";
 import { isSpaceSortable, spaceSortFn } from "core/utils/superstate/spaces";
 import { saveColorForPaths } from "core/utils/emoji";
-import { addTag, syncTagSpacesFromObsidian } from "core/utils/superstate/tags";
+import { addTag, mergeTagSpaceMetadata, syncTagSpacesFromObsidian } from "core/utils/superstate/tags";
 import { tagSpacePathFromTag } from "schemas/builtin";
 
 const createSuperstate = () => {
@@ -390,6 +390,102 @@ describe("Superstate tag initialization", () => {
         expect(visibleTagPaths).toEqual(new Set([tagSpacePathFromTag("#project")]));
         expect(spaceManager.createSpace).not.toHaveBeenCalled();
         expect(superstate.spacesIndex.has(tagSpacePathFromTag("#project"))).toBe(true);
+    });
+
+    it("keeps virtual tags without Obsidian records visible during tag sync", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.readTags = jest.fn((): string[] => []);
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+        await addTag(superstate, "empty-tag");
+
+        const visibleTagPaths = await syncTagSpacesFromObsidian(superstate);
+
+        expect(visibleTagPaths).toContain(tagSpacePathFromTag("#empty-tag"));
+        expect(superstate.spacesIndex.has(tagSpacePathFromTag("#empty-tag"))).toBe(true);
+    });
+
+    it("merges source tag metadata into the target tag", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+        const source = await addTag(superstate, "source");
+        const target = await addTag(superstate, "target");
+        await superstate.updateSpaceMetadata(source.path, {
+            color: "red",
+            sort: { field: "mtime", asc: false },
+            pinned: ["Shared.md", "Source.md"],
+            "rank-order": ["Source.md", "Shared.md"],
+            "file-colors": { "Shared.md": "red", "Source.md": "orange" },
+        });
+        await superstate.updateSpaceMetadata(target.path, {
+            color: "blue",
+            sort: { field: "name", asc: true },
+            pinned: ["Target.md", "Shared.md"],
+            "rank-order": ["Target.md", "Shared.md"],
+            "file-colors": { "Shared.md": "blue", "Target.md": "green" },
+        });
+        superstate.focuses = [
+            { id: "main", name: "Main", paths: ["Before", source.path, "After"] },
+            { id: "existing", name: "Existing target", paths: [source.path, "Middle", target.path] },
+        ] as any;
+        const parent = {
+            type: "folder",
+            path: "Parent",
+            name: "Parent",
+            metadata: {
+                links: ["Before.md", source.path],
+                pinned: [source.path],
+                "rank-order": [source.path, "Before.md"],
+                "file-colors": { [source.path]: "purple" },
+            },
+            space: {},
+        } as any;
+        superstate.spacesIndex.set(parent.path, parent);
+        superstate.spacesMap.set(source.path, new Set([parent.path]));
+        const dispatchEvent = jest.spyOn(superstate, "dispatchEvent");
+
+        await mergeTagSpaceMetadata(superstate, source.path, target.path);
+
+        expect(superstate.spacesIndex.get(target.path).metadata).toEqual(expect.objectContaining({
+            color: "red",
+            sort: { field: "mtime", asc: false },
+            pinned: ["Shared.md", "Source.md", "Target.md"],
+            "rank-order": ["Source.md", "Shared.md", "Target.md"],
+            "file-colors": { "Shared.md": "red", "Source.md": "orange", "Target.md": "green" },
+        }));
+        expect(superstate.spacesIndex.has(source.path)).toBe(false);
+        expect(superstate.persister.remove).toHaveBeenCalledWith(source.path, "space");
+        expect(superstate.spacesMap.get(source.path).size).toBe(0);
+        expect(superstate.spacesIndex.get(parent.path).metadata).toEqual(expect.objectContaining({
+            links: ["Before.md", target.path],
+            pinned: [target.path],
+            "rank-order": [target.path, "Before.md"],
+            "file-colors": { [target.path]: "purple" },
+        }));
+        expect(spaceManager.saveSpace).toHaveBeenCalledWith(parent.path, expect.any(Function));
+        expect(superstate.focuses[0].paths).toEqual(["Before", target.path, "After"]);
+        expect(superstate.focuses[1].paths).toEqual(["Middle", target.path]);
+        expect(spaceManager.saveFocuses).toHaveBeenCalledWith(superstate.focuses);
+        expect(dispatchEvent).toHaveBeenCalledWith("spaceDeleted", { path: source.path });
+    });
+
+    it("deletes tag-space metadata without removing Obsidian tags from file indexes", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+        const tagSpace = await addTag(superstate, "obsolete");
+        superstate.focuses = [{ id: "main", name: "Main", paths: [tagSpace.path, "Folder"] }] as any;
+        superstate.tagsMap.set("Note.md", new Set(["#obsolete"]));
+
+        await superstate.onTagDeleted("obsolete");
+
+        expect(superstate.spacesIndex.has(tagSpace.path)).toBe(false);
+        expect(spaceManager.saveFocuses).toHaveBeenCalledWith(expect.arrayContaining([
+            expect.objectContaining({ paths: ["Folder"] }),
+        ]));
+        expect(superstate.tagsMap.get("Note.md")).toEqual(new Set(["#obsolete"]));
+        expect(superstate.persister.remove).toHaveBeenCalledWith(tagSpace.path, "space");
     });
 
     it("stores tag spaces only in compact space cache", async () => {

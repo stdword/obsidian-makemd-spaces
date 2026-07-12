@@ -421,7 +421,6 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         } else {
             await this.deleteEmptySpaceDefinition(spaceInfo);
         }
-        // await this.spaceManager.onSpaceCreated(path);
         return;
     }
 

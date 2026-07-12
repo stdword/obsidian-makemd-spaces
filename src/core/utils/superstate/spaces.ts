@@ -479,7 +479,7 @@ export const removeSpace = async (superstate: Superstate, space: string) => {
     const spaceCache = superstate.spacesIndex.get(space);
     if (!spaceCache) return;
     if (spaceCache.type == "tag") {
-        superstate.onTagDeleted(spaceCache.name);
+        await superstate.onTagDeleted(spaceCache.name);
     } else if (spaceCache.type == "folder") {
         await deletePath(superstate, spaceCache.path);
     }
