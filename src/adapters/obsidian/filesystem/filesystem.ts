@@ -129,6 +129,8 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         this.plugin.registerEvent(this.plugin.app.vault.on("delete", this.onDelete));
         this.plugin.registerEvent(this.plugin.app.vault.on("rename", this.onRename));
         this.plugin.registerEvent(this.plugin.app.vault.on("raw", this.onRaw));
+        this.plugin.registerEvent(this.plugin.app.metadataCache.on("changed", this.onMetadataChanged));
+        this.plugin.registerEvent(this.plugin.app.metadataCache.on("deleted", this.onMetadataDeleted));
     }
     public onRaw = async (path: string) => {
         const spaceUpdate = this.spaceUpdateForInternalPath(path);
@@ -255,10 +257,23 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         if (excludePathPredicate(this.plugin.superstate.settings, file.path)) return;
         this.middleware.onModify(tFileToAFile(file));
     };
+    onMetadataChanged = async (file: TFile, _data: any, cache: any) => {
+        if (!file || !this.cache.has(file.path))
+            return;
+        const afile = tFileToAFile(file);
+        for (const adapter of this.middleware.filetypeAdaptersForFile(afile)) {
+            if (adapter.parseCache) await adapter.parseCache(afile, true);
+        }
+    };
     onDelete = async (file: TAbstractFile) => {
         if (!file) return;
-
-        this.middleware.onDelete(tFileToAFile(file));
+        const cachedFile = this.cache.get(file.path)?.file;
+        if (!cachedFile) return;
+        this.cache.delete(file.path);
+        this.middleware.onDelete(cachedFile);
+    };
+    onMetadataDeleted = async (file: TFile) => {
+        await this.onDelete(file);
     };
     onRename = async (file: TAbstractFile, oldPath: string) => {
         if (!file) return;

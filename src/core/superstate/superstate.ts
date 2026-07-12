@@ -533,12 +533,18 @@ export class Superstate implements ISuperstate {
         if (!this.pathsIndex.has(path)) {
             return;
         }
+        const oldPathState = this.pathsIndex.get(path);
+        const oldTagSpaces = this.loadedTagSpacesForPath(oldPathState);
         await this.reloadPath(path);
+        const newTagSpaces = this.loadedTagSpacesForPath(this.pathsIndex.get(path));
         const spaceState = this.spacesIndex.get(path);
         if (spaceState) {
             const nextSpaceState = await this.reloadSpace(spaceState);
             await this.onSpaceDefinitionChanged(nextSpaceState, spaceState.metadata);
         }
+        uniq([...oldTagSpaces, ...newTagSpaces]).forEach((spacePath) => {
+            this.dispatchEvent("spaceStateUpdated", { path: spacePath });
+        });
         this.dispatchEvent("pathStateUpdated", { path: path });
     }
 
@@ -568,12 +574,24 @@ export class Superstate implements ISuperstate {
         this.dispatchEvent("spaceStateUpdated", { path: spacePath });
     }
 
+    private loadedTagSpacesForPath(pathState?: PathState): string[] {
+        return uniq(
+            (pathState?.tags ?? [])
+                .flatMap((tag) => {
+                    const parts = tag.replace(/^#/, "").split("/");
+                    return parts.map((_, index) => tagSpacePathFromTag("#" + parts.slice(0, index + 1).join("/")));
+                })
+                .filter((spacePath) => this.spacesIndex.get(spacePath)?.type == "tag"),
+        );
+    }
+
     public async onPathRename(oldPath: string, newPath: string) {
         //assume that space indexer has updated all records properly
         const newFilePath = newPath;
         const oldPathState = this.pathsIndex.get(oldPath);
         const oldParent = oldPathState?.parent;
         const oldSpaces = oldPathState?.spaces ?? [];
+        const oldTagSpaces = this.loadedTagSpacesForPath(oldPathState);
         if (oldPathState) {
             this.spacesMap.delete(oldPath);
             this.spacesMap.deleteInverse(oldPath);
@@ -611,7 +629,7 @@ export class Superstate implements ISuperstate {
         await Promise.all(uniq([oldParent, newParent].filter((path) => path)).map((path) => this.refreshFolderNoteForSpace(path)));
         this.persister.remove(oldPath, "path");
 
-        const changedSpaces = uniq([...(this.spacesMap.get(newPath) ?? []), ...oldSpaces]);
+        const changedSpaces = uniq([...(this.spacesMap.get(newPath) ?? []), ...oldSpaces, ...oldTagSpaces]);
 
         changedSpaces.forEach((f) => this.dispatchEvent("spaceStateUpdated", { path: f }));
         this.dispatchEvent("pathChanged", { path: oldPath, newPath: newPath });
@@ -649,6 +667,9 @@ export class Superstate implements ISuperstate {
             return;
         }
 
+        const affectedTagSpaces = this.loadedTagSpacesForPath(fileCache);
+        this.tagsMap.delete(path);
+
         const affectedSpaces = (fileCache.spaces ?? [])
             .map((f) => this.spacesIndex.get(f))
             .filter((f) => f);
@@ -665,7 +686,7 @@ export class Superstate implements ISuperstate {
             }),
         );
 
-        (fileCache.spaces ?? []).forEach((f) => {
+        uniq([...(fileCache.spaces ?? []), ...affectedTagSpaces]).forEach((f) => {
             this.dispatchEvent("spaceStateUpdated", { path: f });
         });
         this.pathsIndex.delete(path);

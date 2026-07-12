@@ -67,6 +67,126 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
+    it("refreshes the old loaded tag space when metadata removes a file tag", async () => {
+        const { superstate } = createSuperstate();
+        const path = "Notes/Untagged.md";
+        const tagSpace = tagSpacePathFromTag("#active");
+        superstate.spacesIndex.set(tagSpace, { type: "tag", path: tagSpace, name: "active", metadata: {}, space: {} } as any);
+        superstate.pathsIndex.set(path, {
+            path,
+            name: "Untagged",
+            type: "file",
+            subtype: "md",
+            parent: "Notes",
+            tags: ["#active"],
+            spaces: ["Notes", tagSpace],
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            hidden: false,
+            metadata: {},
+        } as any);
+        (superstate as any).reloadPath = jest.fn(async () => {
+            superstate.pathsIndex.set(path, {
+                ...superstate.pathsIndex.get(path),
+                tags: [],
+                spaces: ["Notes"],
+            });
+            return true;
+        });
+        superstate.dispatchEvent = jest.fn();
+
+        await superstate.onMetadataChange(path);
+
+        expect(superstate.dispatchEvent).toHaveBeenCalledWith("spaceStateUpdated", { path: tagSpace });
+    });
+
+    it("refreshes loaded tag spaces and clears the tag index when a tagged file is deleted", async () => {
+        const { superstate } = createSuperstate();
+        const path = "Notes/Archived.md";
+        const tagSpace = tagSpacePathFromTag("#archive");
+        superstate.spacesIndex.set(tagSpace, { type: "tag", path: tagSpace, name: "archive", metadata: {}, space: {} } as any);
+        superstate.pathsIndex.set(path, {
+            path,
+            name: "Archived",
+            type: "file",
+            subtype: "md",
+            parent: "Notes",
+            tags: ["#archive"],
+            spaces: ["Notes"],
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            hidden: false,
+            metadata: {},
+        } as any);
+        superstate.tagsMap.set(path, new Set(["#archive"]));
+        superstate.dispatchEvent = jest.fn();
+
+        await superstate.onPathDeleted(path);
+
+        expect(superstate.tagsMap.get(path).size).toBe(0);
+        expect(superstate.dispatchEvent).toHaveBeenCalledWith("spaceStateUpdated", { path: tagSpace });
+    });
+
+    it("refreshes loaded parent tag spaces when a file with a nested tag is deleted", async () => {
+        const { superstate } = createSuperstate();
+        const path = "Notes/Nested.md";
+        const parentTagSpace = tagSpacePathFromTag("#topic");
+        superstate.spacesIndex.set(parentTagSpace, { type: "tag", path: parentTagSpace, name: "topic", metadata: {}, space: {} } as any);
+        superstate.pathsIndex.set(path, {
+            path,
+            name: "Nested",
+            type: "file",
+            subtype: "md",
+            parent: "Notes",
+            tags: ["#topic/child"],
+            spaces: ["Notes"],
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            hidden: false,
+            metadata: {},
+        } as any);
+        superstate.dispatchEvent = jest.fn();
+
+        await superstate.onPathDeleted(path);
+
+        expect(superstate.dispatchEvent).toHaveBeenCalledWith("spaceStateUpdated", { path: parentTagSpace });
+    });
+
+    it("refreshes a loaded old tag space when a tagged file is renamed", async () => {
+        const { superstate } = createSuperstate();
+        const oldPath = "Inbox/Draft.md";
+        const newPath = "Notes/Draft.md";
+        const tagSpace = tagSpacePathFromTag("#writing");
+        superstate.spacesIndex.set(tagSpace, { type: "tag", path: tagSpace, name: "writing", metadata: {}, space: {} } as any);
+        superstate.pathsIndex.set(oldPath, {
+            path: oldPath,
+            name: "Draft",
+            type: "file",
+            subtype: "md",
+            parent: "Inbox",
+            tags: ["#writing"],
+            spaces: ["Inbox"],
+            linkedSpaces: [],
+            pinnedSpaces: [],
+            hidden: false,
+            metadata: {},
+        } as any);
+        (superstate as any).reloadPath = jest.fn(async () => {
+            superstate.pathsIndex.set(newPath, {
+                ...superstate.pathsIndex.get(oldPath),
+                path: newPath,
+                parent: "Notes",
+                spaces: ["Notes"],
+            });
+            return true;
+        });
+        superstate.dispatchEvent = jest.fn();
+
+        await superstate.onPathRename(oldPath, newPath);
+
+        expect(superstate.dispatchEvent).toHaveBeenCalledWith("spaceStateUpdated", { path: tagSpace });
+    });
+
     it("handles a newly created root-level space without previous metadata", async () => {
         const { superstate } = createSuperstate();
         const space = {

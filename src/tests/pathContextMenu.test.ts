@@ -18,7 +18,7 @@ jest.mock("core/react/components/UI/Menus/modals/selectSpaceMenu", () => ({
     showFoldersMenu: jest.fn(),
 }));
 
-jest.mock("core/utils/revealPathInSpaces", () => ({
+jest.mock("core/commands/revealPathInSpaces", () => ({
     revealPathInSpaces: jest.fn(),
 }));
 
