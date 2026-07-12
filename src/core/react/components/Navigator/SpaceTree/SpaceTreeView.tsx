@@ -89,6 +89,7 @@ const treeForSection = (superstate: Superstate, space: SpaceState, path: PathSta
 };
 
 const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[]) => {
+    console.log("TRACE retrieveData");
     const tree: TreeNode[] = [];
     activeViewSpaces
         .filter((f) => f)
@@ -147,10 +148,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const nextTreeScrollPath = useRef(null);
     const [presetRowHeight, setPresetRowHeight] = useState<number>(props.superstate.settings.spaceRowHeight);
 
-    const [offset, setOffset] = useState<{
-        x: number;
-        y: number;
-    }>({ x: 0, y: 0 });
     const overIdRef = useRef<string>(null);
     const offsetRef = useRef({ x: 0, y: 0 });
     const modifierRef = useRef<DropModifiers>(null);
@@ -307,7 +304,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         setActivePath(path);
     };
 
-    console.log("TRACE Tree", flattenedTree.length);
+    console.log("TRACE Tree Render", flattenedTree.length);
 
     const overIndex = useMemo(() => flattenedTree.findIndex((f) => f.id == overId), [overId, flattenedTree]);
     const activeIndex = useMemo(() => (active?.id ? flattenedTree.findIndex((f) => f.id == active.id) : -1), [active, flattenedTree]);
@@ -436,10 +433,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             }
             if (x != newX || y != newY) {
                 offsetRef.current = { x: newX, y: newY };
-                setOffset({
-                    x: newX,
-                    y: newY,
-                });
             }
             return;
         }
@@ -449,10 +442,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         }
         if (x != newX || y != newY) {
             offsetRef.current = { x: newX, y: newY };
-            setOffset({
-                x: newX,
-                y: newY,
-            });
         }
     };
     useEffect(() => {
@@ -505,7 +494,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         setDragPaths([]);
         setOverId(null);
         setActive(null);
-        setOffset({ x: 0, y: 0 });
         setModifier(null);
         setDragAction(null);
         activeRef.current = null;
@@ -514,29 +502,20 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         overIdRef.current = null;
         offsetRef.current = { x: 0, y: 0 };
         modifierRef.current = null;
-        dragCounter.current = 0;
         document.body.style.setProperty("cursor", "");
     }
 
-    const dragCounter = useRef(0);
     const isDropping = useRef(false);
     const pendingReset = useRef(false);
     const pendingDropReload = useRef(false);
 
-    const dragEnter = () => {
-        dragCounter.current++;
-    };
-    const dragLeave = () => {
-        dragCounter.current--;
-        if (dragCounter.current == 0) {
-            setOverId(null);
-            setOffset({ x: 0, y: 0 });
-            setDragAction(null);
-            dragActionRef.current = null;
-            overIdRef.current = null;
-            offsetRef.current = { x: 0, y: 0 };
-            dragCounter.current = 0;
-        }
+    const dragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+        if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+        setOverId(null);
+        setDragAction(null);
+        dragActionRef.current = null;
+        overIdRef.current = null;
+        offsetRef.current = { x: 0, y: 0 };
     };
     const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group" && !isTagTreeItemPath(f.item))), [flattenedTree]);
 
@@ -544,8 +523,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         <div
             ref={treeRef}
             className="mk-path-tree"
-            onDragEnter={() => dragEnter()}
-            onDragLeave={() => dragLeave()}
+            onDragLeave={dragLeave}
             onDragOver={(e) => e.preventDefault()}
             style={
                 {
