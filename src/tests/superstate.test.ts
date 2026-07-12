@@ -856,6 +856,69 @@ describe("Superstate tag initialization", () => {
         expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#project");
     });
 
+    it("shows a folder in a tag space when its Markdown folder note has the tag", () => {
+        const { superstate } = createSuperstate();
+        const folderPath = "Projects/Atlas";
+        const notePath = `${folderPath}/Atlas.md`;
+        superstate.pathsIndex.set(folderPath, {
+            path: folderPath,
+            name: "Atlas",
+            type: "space",
+            subtype: "folder",
+            parent: "Projects",
+            tags: [],
+            spaces: ["Projects"],
+            hidden: false,
+        });
+        superstate.pathsIndex.set(notePath, {
+            path: notePath,
+            name: "Atlas",
+            type: "file",
+            subtype: "md",
+            parent: folderPath,
+            tags: ["#project"],
+            spaces: [folderPath],
+            hidden: false,
+        });
+        superstate.spacesIndex.set(folderPath, {
+            type: "folder",
+            path: folderPath,
+            name: "Atlas",
+            metadata: {},
+            space: { notePath },
+        });
+        superstate.tagsMap.set(notePath, new Set(["#project"]));
+        superstate.spaceManager.pathsForTag.mockReturnValue([notePath]);
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual([folderPath]);
+    });
+
+    it("keeps a tagged non-Markdown folder note as a file in a tag space", () => {
+        const { superstate } = createSuperstate();
+        const folderPath = "Projects/Board";
+        const notePath = `${folderPath}/Board.canvas`;
+        superstate.pathsIndex.set(notePath, {
+            path: notePath,
+            name: "Board",
+            type: "file",
+            subtype: "canvas",
+            parent: folderPath,
+            tags: ["#project"],
+            spaces: [folderPath],
+            hidden: false,
+        });
+        superstate.spacesIndex.set(folderPath, {
+            type: "folder",
+            path: folderPath,
+            name: "Board",
+            metadata: {},
+            space: { notePath },
+        });
+        superstate.tagsMap.set(notePath, new Set(["#project"]));
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual([notePath]);
+    });
+
     it("reads child tag items from parent tag spaces", () => {
         const { superstate, spaceManager } = createSuperstate();
         superstate.pathsIndex.set("Tagged.md", {

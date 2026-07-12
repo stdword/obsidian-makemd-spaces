@@ -259,7 +259,16 @@ export class Superstate implements ISuperstate {
         ]);
         const indexedPaths = tags.flatMap((indexedTag) => [...this.tagsMap.getInverse(indexedTag)]);
         const adapterPaths = tags.flatMap((indexedTag) => this.spaceManager.pathsForTag?.(indexedTag) ?? []);
-        return uniq([...indexedPaths, ...adapterPaths]);
+        return uniq([...indexedPaths, ...adapterPaths].map((path) => this.folderPathForTaggedFolderNote(path) ?? path));
+    }
+
+    private folderPathForTaggedFolderNote(path: string): string | null {
+        const pathState = this.pathStateForPath(path);
+        if (pathState?.type != "file" || pathState.subtype?.toLowerCase() != "md" || !pathState.parent)
+            return null;
+
+        const parentSpace = this.spacesIndex.get(pathState.parent);
+        return parentSpace?.type == "folder" && parentSpace.space?.notePath == path ? parentSpace.path : null;
     }
 
     private syncSpaceRankOrder(spacePath: string, items: string[]): string[] {
