@@ -142,7 +142,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const [active, setActive] = useState<TreeNode>(null);
     const [overId, setOverId] = useState<string>(null);
     const [modifier, setModifier] = useState<DropModifiers>(null);
-    const [flattenedTree, setFlattenedTree] = useState<TreeNode[]>([]);
+    const [treeVersion, setTreeVersion] = useState(0);
     const treeRef = useRef<HTMLDivElement>(null);
     const nextTreeScrollPath = useRef(null);
     const [presetRowHeight, setPresetRowHeight] = useState<number>(props.superstate.settings.spaceRowHeight);
@@ -158,12 +158,16 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const dragPathsRef = useRef<string[]>([]);
     const dragActionRef = useRef<DragActionModel | null>(null);
     const hideSectionChildren = active != null && active.parentId == null;
+    const flattenedTree = useMemo(
+        () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces),
+        [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, treeVersion],
+    );
     const listRef = useRef<{
         scrollToIndex: (index: number, options: { align: "start" | "center" | "end" | "auto" }) => void;
     }>(null);
     const reloadData = useCallback(() => {
-        setFlattenedTree(retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces));
-    }, [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces]);
+        setTreeVersion((version) => version + 1);
+    }, []);
 
     const refreshableSpaces = useMemo(() => [...activeViewSpaces.filter((f) => f).map((f) => f.path), ...flattenedTree.filter((f) => f.type == "space").map((f) => f.path)].filter((f) => f), [activeViewSpaces, flattenedTree]);
 
@@ -298,11 +302,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             props.superstate.eventsDispatcher.removeListener("superstateUpdated", reloadData);
         };
     }, [reloadData]);
-
-    useEffect(() => {
-        const tree = retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces);
-        setFlattenedTree(tree);
-    }, [expandedSpaces, activeViewSpaces, hideSectionChildren]);
 
     const changeActivePath = (path: string) => {
         setActivePath(path);
