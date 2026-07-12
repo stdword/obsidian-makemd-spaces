@@ -64,16 +64,25 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                 },
             },
             {
-                name: i18n.buttons.close,
-                icon: "ui//close",
-                value: "close",
+                name: i18n.menu.duplicate,
+                icon: "lucide//copy",
+                value: "duplicate",
+                onClick: () => {
+                    const duplicate = { ...pin, paths: [...pin.paths] };
+                    setFocuses([...focuses.slice(0, index + 1), duplicate, ...focuses.slice(index + 1)]);
+                },
+            },
+            {
+                name: i18n.menu.archive,
+                icon: "lucide//archive",
+                value: "archive",
                 onClick: () => {
                     const focusName = pin.name || i18n.labels.waypoint;
                     superstate.ui.openModal(
-                        i18n.labels.closeFocus.replace("${1}", focusName),
+                        i18n.labels.archiveFocus.replace("${1}", focusName),
                         <ConfirmationModal
                             confirmAction={() => {
-                                setFocuses(focuses.filter((_f, i) => i != index));
+                                setFocuses(focuses.map((focus, i) => (i == index ? { ...focus, archived: true } : focus)));
                                 superstate.saveSettings();
                             }}
                             confirmLabel={i18n.menu.yes}

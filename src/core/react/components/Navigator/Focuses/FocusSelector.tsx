@@ -130,7 +130,8 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
         <>
             <div className="mk-focuses" onDragEnter={() => dragEnter()} onDragLeave={() => dragLeave()} onDragOver={(e) => e.preventDefault()}>
                 <div className="mk-focuses-inner">
-                    {focuses.map((pin, i) => (
+                    {focuses.map((pin, i) =>
+                        pin.archived ? null : (
                         <SortablePinnedSpaceItem
                             id={i}
                             superstate={props.superstate}

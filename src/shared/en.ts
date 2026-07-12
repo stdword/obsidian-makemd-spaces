@@ -37,6 +37,7 @@ export const en = {
         pinToTop: "Pin to Top",
         unpin: "Unpin",
         duplicate: "Duplicate",
+        archive: "Archive",
 
         delete: "Delete",
         collapseAllSections: "Collapse All Spaces",
@@ -125,7 +126,7 @@ export const en = {
         saveView: "Save View",
         reorderIn: "Reorder in",
 
-        closeFocus: "Close \"${1}\" Focus?",
+        archiveFocus: "Archive \"${1}\" Focus?",
 
         deleteFolder: "Delete Folder",
         deleteFiles: "Delete Files",
