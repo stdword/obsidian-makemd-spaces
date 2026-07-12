@@ -69,7 +69,7 @@ export interface TreeItemProps {
 
 export const TreeItem = (props: TreeItemProps) => {
     const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
-    const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, setDragPaths, closeActiveSpace } = useContext(NavigatorContext);
+    const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace } = useContext(NavigatorContext);
 
     const innerRef = useRef(null);
     const [dropHighlighted, setDropHighlighted] = useState(false);
@@ -112,7 +112,6 @@ export const TreeItem = (props: TreeItemProps) => {
     const onDragStarted = (e: React.DragEvent<HTMLDivElement>) => {
         if (selectedPaths.length > 1) {
             const paths = selectedPaths.map((f) => f.path);
-            setDragPaths(paths);
             if (enableObsidianDragGhost) {
                 superstate.ui.dragStarted(e, paths);
             }
@@ -120,7 +119,6 @@ export const TreeItem = (props: TreeItemProps) => {
 
             return;
         }
-        setDragPaths([data.path]);
         if (enableObsidianDragGhost) {
             superstate.ui.dragStarted(e, [data.path]);
         }

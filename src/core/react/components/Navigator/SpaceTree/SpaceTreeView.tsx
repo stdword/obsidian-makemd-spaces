@@ -26,7 +26,7 @@ interface SpaceTreeComponentProps {
 const ENABLE_OBSIDIAN_DRAG_GHOST = true;
 const ENABLE_DRAG_ACTION_LABEL = true;
 
-const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, active: TreeNode, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], pinned?: boolean) => {
+const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], pinned?: boolean) => {
     const tree: TreeNode[] = [];
     const id = parentId ? parentId + "/" + space.path : space.path;
     // Only check expandedSpaces - don't force collapse based on activeId
@@ -65,7 +65,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
         });
     }
 
-    const showChildren = !spaceCollapsed && (!section || !active || active.parentId != null);
+    const showChildren = !spaceCollapsed && (!section || !hideSectionChildren);
     if (showChildren) {
         pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
             const _parentId = parentId ? parentId + "/" + space.path : space.path;
@@ -75,7 +75,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
                 tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
             } else {
                 if (superstate.spacesIndex.has(item.path)) {
-                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, active, childrenSortable, false, space.path, spaceSort, expandedSpaces, pinned));
+                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, pinned));
                 }
             }
         });
@@ -83,18 +83,18 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     return tree;
 };
 
-const treeForSection = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, active: TreeNode, expandedSpaces: string[]) => {
+const treeForSection = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, hideSectionChildren: boolean, expandedSpaces: string[]) => {
     const spaceSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
-    return treeForSpace(superstate, space, path, 0, null, active, false, true, space.path, spaceSort, expandedSpaces);
+    return treeForSpace(superstate, space, path, 0, null, hideSectionChildren, false, true, space.path, spaceSort, expandedSpaces);
 };
 
-const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], active: TreeNode, expandedSpaces: string[]) => {
+const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[]) => {
     const tree: TreeNode[] = [];
     activeViewSpaces
         .filter((f) => f)
         .forEach((item) => {
             if (superstate.spacesIndex.has(item.path)) {
-                tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, active, expandedSpaces));
+                tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, hideSectionChildren, expandedSpaces));
             } else {
                 tree.push({
                     ...pathStateToTreeNode(superstate, item, null, item.path, 0, 0, false, false, 0, null),
@@ -135,14 +135,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         setFocuses: setFocuses,
         dragPaths,
         setDragPaths,
-        modifier,
-        setModifier,
         editFocus: editFocus,
         setEditFocus: setEditFocus,
     } = useContext(NavigatorContext);
 
     const [active, setActive] = useState<TreeNode>(null);
     const [overId, setOverId] = useState<string>(null);
+    const [modifier, setModifier] = useState<DropModifiers>(null);
     const [flattenedTree, setFlattenedTree] = useState<TreeNode[]>([]);
     const treeRef = useRef<HTMLDivElement>(null);
     const nextTreeScrollPath = useRef(null);
@@ -158,12 +157,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const activeRef = useRef<TreeNode>(null);
     const dragPathsRef = useRef<string[]>([]);
     const dragActionRef = useRef<DragActionModel | null>(null);
+    const hideSectionChildren = active != null && active.parentId == null;
     const listRef = useRef<{
         scrollToIndex: (index: number, options: { align: "start" | "center" | "end" | "auto" }) => void;
     }>(null);
     const reloadData = useCallback(() => {
-        setFlattenedTree(retrieveData(superstate, activeViewSpaces, active, expandedSpaces));
-    }, [superstate, activeViewSpaces, active, expandedSpaces]);
+        setFlattenedTree(retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces));
+    }, [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces]);
 
     const refreshableSpaces = useMemo(() => [...activeViewSpaces.filter((f) => f).map((f) => f.path), ...flattenedTree.filter((f) => f.type == "space").map((f) => f.path)].filter((f) => f), [activeViewSpaces, flattenedTree]);
 
@@ -300,9 +300,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     }, [reloadData]);
 
     useEffect(() => {
-        const tree = retrieveData(superstate, activeViewSpaces, active, expandedSpaces);
+        const tree = retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces);
         setFlattenedTree(tree);
-    }, [expandedSpaces, activeViewSpaces, active]);
+    }, [expandedSpaces, activeViewSpaces, hideSectionChildren]);
 
     const changeActivePath = (path: string) => {
         setActivePath(path);
@@ -457,21 +457,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         }
     };
     useEffect(() => {
-        if (dragPaths.length == 0) {
-            setOverId(null);
-            setActive(null);
-            setOffset({ x: 0, y: 0 });
-            setModifier(null);
-            setDragAction(null);
-            activeRef.current = null;
-            dragPathsRef.current = [];
-            dragActionRef.current = null;
-            overIdRef.current = null;
-            offsetRef.current = { x: 0, y: 0 };
-            modifierRef.current = null;
-            dragCounter.current = 0;
-            document.body.style.setProperty("cursor", "");
-        }
+        // `resetState` clears the ref synchronously before its `setDragPaths([])`
+        // causes this effect, so normal drag completion is not reset twice.
+        if (dragPaths.length == 0 && dragPathsRef.current.length > 0) resetState();
     }, [dragPaths]);
 
     const dragEnded = async (e: React.DragEvent<HTMLDivElement>, overId: string) => {
