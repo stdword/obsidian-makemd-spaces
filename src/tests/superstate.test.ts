@@ -1494,6 +1494,46 @@ describe("Superstate tag initialization", () => {
         expect(superstate.spacesIndex.get("VaultRoot/ParentFolder/PinnedFolder").metadata.pinned).toEqual([]);
         expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("VaultRoot/ParentFolder/PinnedFolder", expect.any(Function));
     });
+
+    it("keeps a renamed folder at the same manual-sort position", async () => {
+        const { superstate } = createSuperstate();
+        const oldPath = "Projects/Second";
+        const newPath = "Projects/Renamed";
+        const parent = {
+            type: "folder",
+            name: "Projects",
+            path: "Projects",
+            metadata: {
+                sort: { field: "rank", asc: true },
+                links: [],
+                "rank-order": ["Projects/First", oldPath, "Projects/Third"],
+                pinned: [],
+                "file-colors": {},
+            },
+            space: { path: "Projects", name: "Projects", defPath: "Projects/.space/context.json", notePath: "", folderPath: "Projects" },
+        } as any;
+        const renamed = {
+            type: "folder",
+            name: "Second",
+            path: oldPath,
+            metadata: {},
+            space: { path: oldPath, name: "Second", defPath: `${oldPath}/.space/context.json`, notePath: "", folderPath: oldPath },
+        } as any;
+        superstate.spacesIndex.set(parent.path, parent);
+        superstate.spacesIndex.set(oldPath, renamed);
+        superstate.reloadSpace = jest.fn(async (space: any) => space);
+        superstate.onSpaceDefinitionChanged = jest.fn(() => Promise.resolve());
+
+        await superstate.onSpaceRenamed(oldPath, {
+            ...renamed,
+            name: "Renamed",
+            path: newPath,
+            space: { ...renamed.space, path: newPath, folderPath: newPath },
+        });
+
+        expect(superstate.spacesIndex.get(parent.path).metadata["rank-order"]).toEqual(["Projects/First", newPath, "Projects/Third"]);
+        expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith(parent.path, expect.any(Function));
+    });
 });
 
 describe("Superstate SVG handling", () => {

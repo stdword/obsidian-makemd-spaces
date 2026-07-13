@@ -1,6 +1,6 @@
 import { savePathColor } from "core/utils/superstate/label";
 import { hidePath, isPathDirectlyHidden, renamePathByName, unhidePath } from "core/utils/superstate/path";
-import { effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
 import { openStickerPalette } from "core/react/components/PathSticker";
@@ -161,7 +161,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             name: i18n.menu.duplicate,
             icon: "ui//documents",
             onClick: () => {
-                superstate.spaceManager.copyPath(path.path, `${path.parent}`);
+                duplicatePathNextToOriginal(superstate, path.path, `${path.parent}`, undefined, parentSpace ?? path.parent);
             },
         });
 
@@ -169,6 +169,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         menuOptions.push({
             name: i18n.menu.rename,
             icon: "ui//edit",
+            closeParentImmediately: true,
             onClick: () => {
                 superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={space.type == "tag" ? stringFromTag(space.name) : space.name} saveValue={(v) => renamePathByName(superstate, space.path, v)}></InputModal>, win);
             },

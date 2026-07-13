@@ -272,6 +272,24 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
     }
 };
 
+export const duplicatePathNextToOriginal = async (superstate: Superstate, path: string, destinationParent: string, newName?: string, rankSpace = destinationParent) => {
+    const newPath = await superstate.spaceManager.copyPath(path, destinationParent, newName);
+    if (!newPath) return newPath;
+
+    const spaceState = superstate.spacesIndex.get(rankSpace);
+    if (!spaceState || effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings).field != "rank") return newPath;
+
+    const currentOrder = ensureArray(spaceState.metadata?.["rank-order"]);
+    const displayedOrder = currentOrder.length > 0
+        ? currentOrder
+        : pinnedItemsFirst(superstate.getSpaceItems(rankSpace), spaceState, effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings)).map((item) => item.path);
+    const nextOrder = displayedOrder.filter((itemPath) => itemPath != newPath);
+    const originalIndex = nextOrder.indexOf(path);
+    nextOrder.splice(originalIndex >= 0 ? originalIndex + 1 : nextOrder.length, 0, newPath);
+    await saveSpaceMetadataValue(superstate, rankSpace, "rank-order", [...new Set(nextOrder)]);
+    return newPath;
+};
+
 const rankOrderWithPathAtIndex = (superstate: Superstate, spaceState: SpaceState, path: string, previousPath: string, rank: number) => {
     const currentOrder = ensureArray(spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(spaceState.path).map((item) => item.path));
     const nextOrder = currentOrder.filter((itemPath) => itemPath != previousPath && itemPath != path);

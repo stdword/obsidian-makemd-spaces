@@ -1,4 +1,4 @@
-import { childSpaceSort, saveSpaceMetadataValue, spaceSortFn, updateSpaceSort } from "core/utils/superstate/spaces";
+import { childSpaceSort, duplicatePathNextToOriginal, saveSpaceMetadataValue, spaceSortFn, updateSpaceSort } from "core/utils/superstate/spaces";
 
 const settings = {
     defaultSpaceSort: {
@@ -120,6 +120,46 @@ describe("space metadata persistence", () => {
         expect(updateSpaceMetadata).toHaveBeenCalledWith("Workspace", {
             "rank-order": ["Workspace/First.md"],
         });
+    });
+});
+
+describe("duplicate manual sorting", () => {
+    const createSuperstate = (sort: any) => ({
+        settings,
+        spacesIndex: new Map([["Projects", {
+            path: "Projects",
+            type: "folder",
+            metadata: {
+                sort,
+                "rank-order": ["Projects/First.md", "Projects/Source.md", "Projects/Third.md"],
+            },
+        }]]),
+        spaceManager: {
+            copyPath: jest.fn(() => Promise.resolve("Projects/Source 1.md")),
+            saveSpace: jest.fn(() => Promise.resolve()),
+        },
+        getSpaceItems: jest.fn((): any[] => []),
+        updateSpaceMetadata: jest.fn(() => Promise.resolve()),
+    } as any);
+
+    it("places a duplicate immediately after its source in manual sort", async () => {
+        const superstate = createSuperstate({ field: "rank", asc: true });
+
+        await duplicatePathNextToOriginal(superstate, "Projects/Source.md", "Projects", "Source");
+
+        expect(superstate.updateSpaceMetadata).toHaveBeenCalledWith("Projects", expect.objectContaining({
+            "rank-order": ["Projects/First.md", "Projects/Source.md", "Projects/Source 1.md", "Projects/Third.md"],
+        }));
+    });
+
+    it("does not write rank-order for non-manual sorting", async () => {
+        const superstate = createSuperstate({ field: "name", asc: true });
+
+        await duplicatePathNextToOriginal(superstate, "Projects/Source.md", "Projects", "Source");
+
+        expect(superstate.spaceManager.copyPath).toHaveBeenCalledWith("Projects/Source.md", "Projects", "Source");
+        expect(superstate.spaceManager.saveSpace).not.toHaveBeenCalled();
+        expect(superstate.updateSpaceMetadata).not.toHaveBeenCalled();
     });
 });
 

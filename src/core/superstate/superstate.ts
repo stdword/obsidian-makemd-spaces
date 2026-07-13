@@ -740,6 +740,23 @@ export class Superstate implements ISuperstate {
 
     public async onSpaceRenamed(oldPath: string, newSpaceInfo: SpaceState) {
         if (this.spacesIndex.has(oldPath)) {
+            const referencingSpaces = [...this.spacesIndex.values()].filter((space) =>
+                space.path != oldPath && (
+                    ensureArray(space.metadata?.links).includes(oldPath) ||
+                    ensureArray(space.metadata?.["rank-order"]).includes(oldPath) ||
+                    ensureArray(space.metadata?.pinned).includes(oldPath) ||
+                    Object.prototype.hasOwnProperty.call(space.metadata?.["file-colors"] ?? {}, oldPath)
+                )
+            );
+            for (const space of referencingSpaces) {
+                await saveSpaceCache(this, space, {
+                    ...space.metadata,
+                    links: replacePathInList(space.metadata?.links, oldPath, newSpaceInfo.path),
+                    "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newSpaceInfo.path),
+                    pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newSpaceInfo.path, space.path),
+                    "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newSpaceInfo.path),
+                });
+            }
             const oldmetadata = this.spacesIndex.get(oldPath).metadata;
             this.spacesIndex.set(newSpaceInfo.path, {
                 ...this.spacesIndex.get(oldPath),
