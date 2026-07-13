@@ -71,8 +71,7 @@ export const HiddenPaths = (props: {
 
     return (
         <div className="mk-modal-contents">
-            <div className="mk-modal-heading">{i18n.labels.hiddenFilePattern}</div>
-            <div className="mk-modal-description">{i18n.descriptions.hiddenFileOptions}</div>
+            <div className="mk-modal-description">{i18n.labels.hiddenPatterns}</div>
             <div className="mk-modal-items">
                 {hiddenExtensions.map((f, index) => (
                     <div key={index} className="mk-modal-item">
@@ -93,8 +92,7 @@ export const HiddenPaths = (props: {
                 <button onClick={() => addExtension()}>{i18n.buttons.add}</button>
             </div>
 
-            <div className="mk-modal-heading">{i18n.labels.filesAndFolders}</div>
-            <div className="mk-modal-description">{i18n.labels.hiddenFileSpecific}</div>
+            <div className="mk-modal-description">{i18n.labels.hiddenPaths}</div>
             <div className="mk-modal-items">
                 {hiddenPaths.map((f, index) => (
                     <div key={index} className="mk-modal-item">
@@ -111,7 +109,7 @@ export const HiddenPaths = (props: {
                 ))}
             </div>
             <div className="mk-modal-item">
-                <button onClick={(e) => addMenu(e)}>+ {i18n.buttons.addFile}</button>
+                <button onClick={(e) => addMenu(e)}>+ {i18n.buttons.addItem}</button>
             </div>
         </div>
     );

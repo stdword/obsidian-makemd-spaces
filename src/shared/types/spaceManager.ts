@@ -6,6 +6,7 @@ import { SpaceState, SpaceType } from "./PathState";
 import { ISuperstate, PathState } from "./superstate";
 
 export interface ISpaceManager {
+    readonly isRenaming?: boolean;
     primarySpaceAdapter: SpaceAdapter;
     spaceAdapters: SpaceAdapter[];
     superstate: ISuperstate;

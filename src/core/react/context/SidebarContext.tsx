@@ -133,11 +133,13 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
     };
 
     const refreshSpaces = (payload: { path: string }) => {
+        if (props.superstate.spaceManager.isRenaming) return;
         if (props.superstate.focuses[props.superstate.settings.currentFocus]?.paths?.includes(payload.path)) {
             setActiveViewSpaces((props.superstate.focuses[props.superstate.settings.currentFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
         }
     };
     const reloadPaths = () => {
+        if (props.superstate.spaceManager.isRenaming) return;
         setFocuses(props.superstate.focuses);
         const _activeFocus = props.superstate.settings.currentFocus;
         setActiveFocus(_activeFocus);

@@ -8,7 +8,8 @@ import { Focus } from "shared/types/focus";
 import { Rect } from "shared/types/Pos";
 import { windowFromDocument } from "utils/dom";
 import { ConfirmationModal } from "../../UI/Modals/ConfirmationModal";
-import { defaultMenu } from "../../UI/Menus/menu/SelectionMenu";
+import { ExcludedFiles } from "../../UI/Modals/ExcludedFiles";
+import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
 
 export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {
@@ -70,6 +71,18 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                 onClick: () => {
                     const duplicate = { ...pin, paths: [...pin.paths] };
                     setFocuses([...focuses.slice(0, index + 1), duplicate, ...focuses.slice(index + 1)]);
+                },
+            },
+            menuSeparator,
+            {
+                name: i18n.labels.manageExcludedFiles,
+                icon: "ui//eye-off",
+                onClick: () => {
+                    superstate.ui.openModal(
+                        i18n.labels.excludedItems.replace("${1}", focuses[index].name),
+                        <ExcludedFiles superstate={superstate} focusIndex={index} />,
+                        windowFromDocument(innerRef.current.ownerDocument),
+                    );
                 },
             },
             {

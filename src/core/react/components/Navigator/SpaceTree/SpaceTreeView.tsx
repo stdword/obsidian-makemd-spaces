@@ -18,6 +18,7 @@ import { FocusEditor } from "./NavigatorFocusEditor";
 import { DropModifiers, eventToModifier } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 import { isTagTreeItemPath } from "schemas/builtin";
+import { isPathExcludedFromFocus } from "core/utils/superstate/focus";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
@@ -26,7 +27,7 @@ interface SpaceTreeComponentProps {
 const ENABLE_OBSIDIAN_DRAG_GHOST = true;
 const ENABLE_DRAG_ACTION_LABEL = true;
 
-const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], pinned?: boolean) => {
+const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], excludedPaths: string[], pinned?: boolean) => {
     const tree: TreeNode[] = [];
     const id = parentId ? parentId + "/" + space.path : space.path;
     // Only check expandedSpaces - don't force collapse based on activeId
@@ -36,7 +37,8 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
     const childrenSortable = isSpaceSortable(space, superstate.settings);
     const folderNotePath = space.space?.notePath || null;
-    const children = filterFolderNoteChildren(superstate, folderNotePath, superstate.getSpaceItems(space.path) ?? []);
+    const children = filterFolderNoteChildren(superstate, folderNotePath, superstate.getSpaceItems(space.path) ?? [])
+        .filter((item) => !isPathExcludedFromFocus(item.path, excludedPaths));
 
     if (section) {
         const pathIndex = superstate.pathStateForPath(space.path);
@@ -75,7 +77,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
                 tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
             } else {
                 if (superstate.spacesIndex.has(item.path)) {
-                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, pinned));
+                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, excludedPaths, pinned));
                 }
             }
         });
@@ -83,18 +85,18 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     return tree;
 };
 
-const treeForSection = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, hideSectionChildren: boolean, expandedSpaces: string[]) => {
+const treeForSection = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, hideSectionChildren: boolean, expandedSpaces: string[], excludedPaths: string[]) => {
     const spaceSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
-    return treeForSpace(superstate, space, path, 0, null, hideSectionChildren, false, true, space.path, spaceSort, expandedSpaces);
+    return treeForSpace(superstate, space, path, 0, null, hideSectionChildren, false, true, space.path, spaceSort, expandedSpaces, excludedPaths);
 };
 
-const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[]) => {
+export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[], excludedPaths: string[]) => {
     const tree: TreeNode[] = [];
     activeViewSpaces
         .filter((f) => f)
         .forEach((item) => {
             if (superstate.spacesIndex.has(item.path)) {
-                tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, hideSectionChildren, expandedSpaces));
+                tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, hideSectionChildren, expandedSpaces, excludedPaths));
             } else {
                 tree.push({
                     ...pathStateToTreeNode(superstate, item, null, item.path, 0, 0, false, false, 0, null),
@@ -155,10 +157,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const dragPathsRef = useRef<string[]>([]);
     const dragActionRef = useRef<DragActionModel | null>(null);
     const hideSectionChildren = active != null && active.parentId == null;
-    const flattenedTree = useMemo(
-        () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces),
-        [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, treeVersion],
+    const excludedPaths = focuses[activeFocus]?.["excluded-paths"] ?? [];
+    const computedFlattenedTree = useMemo(
+        () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths),
+        [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths, treeVersion],
     );
+    const stableFlattenedTree = useRef<TreeNode[]>(computedFlattenedTree);
+    if (!superstate.spaceManager.isRenaming) stableFlattenedTree.current = computedFlattenedTree;
+    const flattenedTree = superstate.spaceManager.isRenaming ? stableFlattenedTree.current : computedFlattenedTree;
     const listRef = useRef<{
         scrollToIndex: (index: number, options: { align: "start" | "center" | "end" | "auto" }) => void;
     }>(null);
@@ -280,6 +286,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     }, [flattenedTree, setActivePath, setSelectedPaths]);
     useEffect(() => {
         const spaceUpdated = (payload: { path: string }) => {
+            if (props.superstate.spaceManager.isRenaming) return;
             if (refreshableSpaces.some((f) => f == payload.path)) {
                 if (isDropping.current) {
                     pendingDropReload.current = true;
@@ -306,10 +313,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         };
     }, [refreshableSpaces, reloadData]);
     useEffect(() => {
-        props.superstate.eventsDispatcher.addListener("superstateUpdated", reloadData);
+        const superstateUpdated = () => {
+            if (!props.superstate.spaceManager.isRenaming) reloadData();
+        };
+        props.superstate.eventsDispatcher.addListener("superstateUpdated", superstateUpdated);
 
         return () => {
-            props.superstate.eventsDispatcher.removeListener("superstateUpdated", reloadData);
+            props.superstate.eventsDispatcher.removeListener("superstateUpdated", superstateUpdated);
         };
     }, [reloadData]);
 

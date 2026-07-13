@@ -409,8 +409,9 @@ describe("showPathContextMenu", () => {
         }));
     });
 
-    it("shows Unhide only for a folder space directly listed in hidden files", () => {
+    it("shows Exclude from Focus below level zero and no Hide command", async () => {
         const openMenu = jest.fn();
+        const saveFocuses = jest.fn();
         const pathState = {
             path: "Atlas/Obsidian",
             parent: "Atlas",
@@ -429,13 +430,15 @@ describe("showPathContextMenu", () => {
         };
         const superstate = {
             settings: {
-                hiddenFiles: ["Atlas/Obsidian"],
+                currentFocus: 0,
             },
+            focuses: [{ name: "Work", sticker: "", paths: ["Atlas"] }],
             pathsIndex: new Map([["Atlas/Obsidian", pathState]]),
             spacesIndex: new Map([["Atlas/Obsidian", space]]),
             spaceManager: {
                 copyPath: jest.fn(),
                 renameSpace: jest.fn(),
+                saveFocuses,
             },
             ui: {
                 openMenu,
@@ -444,14 +447,22 @@ describe("showPathContextMenu", () => {
             },
         };
 
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, "Atlas", undefined, 1);
+
+        const nestedOptions = openMenu.mock.calls[0][1].options;
+        expect(nestedOptions).toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.excludeFromFocus })]));
+        expect(nestedOptions).not.toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.hide })]));
+        expect(nestedOptions).not.toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.unhide })]));
+
         showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+        const rootOptions = openMenu.mock.calls[1][1].options;
+        expect(rootOptions).not.toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.excludeFromFocus })]));
 
-        expect(openMenu.mock.calls[0][1].options).toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.unhide })]));
-
-        superstate.settings.hiddenFiles = ["Atlas"];
-        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
-
-        expect(openMenu.mock.calls[1][1].options).toEqual(expect.arrayContaining([expect.objectContaining({ name: i18n.menu.hide })]));
+        nestedOptions.find((option: any) => option.name == i18n.menu.excludeFromFocus).onClick();
+        await Promise.resolve();
+        expect(saveFocuses).toHaveBeenCalledWith([
+            expect.objectContaining({ "excluded-paths": ["Atlas/Obsidian"] }),
+        ]);
     });
 });
 

@@ -8,7 +8,41 @@ import { ISuperstate } from "shared/types/superstate";
 import { parseURI } from "utils/uri";
 import { PathCache } from "shared/types/PathState";
 
+type RenameQueueState = {
+    queue: Promise<void>;
+    pending: number;
+    settleTimer?: ReturnType<typeof setTimeout>;
+};
+
+const renameQueues = new WeakMap<SpaceManager, RenameQueueState>();
+const enqueueRename = (manager: SpaceManager, task: () => Promise<void>): Promise<void> => {
+    const state = renameQueues.get(manager) ?? { queue: Promise.resolve(), pending: 0 };
+    if (state.settleTimer) clearTimeout(state.settleTimer);
+    state.settleTimer = undefined;
+    state.pending += 1;
+    manager.isRenaming = true;
+
+    const queued = state.queue.then(task, task);
+    state.queue = queued.catch((): void => undefined);
+    renameQueues.set(manager, state);
+    void queued.finally(() => {
+        state.pending -= 1;
+        if (state.pending != 0) return;
+
+        // Obsidian reports a folder rename as a burst containing the folder and
+        // every descendant. Keep the old tree mounted until that burst settles.
+        state.settleTimer = setTimeout(() => {
+            if (state.pending != 0) return;
+            manager.isRenaming = false;
+            state.settleTimer = undefined;
+            manager.superstate.dispatchEvent("superstateUpdated", null);
+        }, 150);
+    }).catch((): void => undefined);
+    return queued;
+};
+
 export class SpaceManager implements ISpaceManager {
+    public isRenaming?: boolean = false;
     public primarySpaceAdapter: SpaceAdapter;
     public spaceAdapters: SpaceAdapter[] = [];
     public superstate: ISuperstate;
@@ -39,7 +73,7 @@ export class SpaceManager implements ISpaceManager {
     };
 
     public onPathChanged = async (path: string, oldPath: string) => {
-        this.superstate.onPathRename(oldPath, path);
+        return enqueueRename(this, () => this.superstate.onPathRename(oldPath, path));
     };
 
     public onSpaceCreated = async (path: string) => {
@@ -49,8 +83,10 @@ export class SpaceManager implements ISpaceManager {
         await this.superstate.onPathCreated(path);
     };
     public onSpaceRenamed = async (path: string, oldPath: string) => {
-        await this.superstate.onSpaceRenamed(oldPath, this.spaceInfoForPath(path));
-        await this.superstate.onPathRename(oldPath, path);
+        return enqueueRename(this, async () => {
+            await this.superstate.onSpaceRenamed(oldPath, this.spaceInfoForPath(path));
+            await this.superstate.onPathRename(oldPath, path);
+        });
     };
 
     public onSpaceDeleted = async (path: string) => {

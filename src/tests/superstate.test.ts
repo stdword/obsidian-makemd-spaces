@@ -1472,6 +1472,7 @@ describe("Superstate tag initialization", () => {
             parent: "VaultRoot/ParentFolder/PinnedFolder",
         });
         superstate.spacesMap.set(oldPath, new Set(["VaultRoot/ParentFolder/PinnedFolder"]));
+        superstate.spaceManager.pathExists.mockResolvedValue(true);
         superstate.reloadPath = jest.fn(async (path: string) => {
             if (path == newPath) {
                 superstate.pathsIndex.set(newPath, {
@@ -1521,6 +1522,7 @@ describe("Superstate tag initialization", () => {
         } as any;
         superstate.spacesIndex.set(parent.path, parent);
         superstate.spacesIndex.set(oldPath, renamed);
+        superstate.spaceManager.pathExists.mockResolvedValue(true);
         superstate.reloadSpace = jest.fn(async (space: any) => space);
         superstate.onSpaceDefinitionChanged = jest.fn(() => Promise.resolve());
 
@@ -1533,6 +1535,46 @@ describe("Superstate tag initialization", () => {
 
         expect(superstate.spacesIndex.get(parent.path).metadata["rank-order"]).toEqual(["Projects/First", newPath, "Projects/Third"]);
         expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith(parent.path, expect.any(Function));
+    });
+
+    it("does not recreate a moved parent while processing descendant folder rename events", async () => {
+        const { superstate } = createSuperstate();
+        const oldPath = "Projects/Area/Notes";
+        const newPath = "Projects/Renamed/Notes";
+        const staleParent = {
+            type: "folder",
+            name: "Area",
+            path: "Projects/Area",
+            metadata: {
+                links: [],
+                "rank-order": [oldPath],
+                pinned: [],
+                "file-colors": {},
+            },
+            space: { folderPath: "Projects/Area" },
+        } as any;
+        const renamed = {
+            type: "folder",
+            name: "Notes",
+            path: oldPath,
+            metadata: {},
+            space: { folderPath: oldPath },
+        } as any;
+        superstate.spacesIndex.set(staleParent.path, staleParent);
+        superstate.spacesIndex.set(oldPath, renamed);
+        superstate.spaceManager.pathExists.mockResolvedValue(false);
+        superstate.reloadSpace = jest.fn(async (space: any) => space);
+        superstate.onSpaceDefinitionChanged = jest.fn(() => Promise.resolve());
+
+        await superstate.onSpaceRenamed(oldPath, {
+            ...renamed,
+            name: "Notes",
+            path: newPath,
+            space: { folderPath: newPath },
+        });
+
+        expect(superstate.spaceManager.saveSpace).not.toHaveBeenCalledWith(staleParent.path, expect.any(Function));
+        expect(superstate.spacesIndex.get(staleParent.path).metadata["rank-order"]).toEqual([newPath]);
     });
 });
 

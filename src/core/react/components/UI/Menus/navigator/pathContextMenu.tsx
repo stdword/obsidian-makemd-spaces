@@ -1,6 +1,7 @@
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { savePathColor } from "core/utils/superstate/label";
-import { hidePath, hidePaths, renamePathByName } from "core/utils/superstate/path";
+import { renamePathByName } from "core/utils/superstate/path";
+import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
 import { TreeNode, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
@@ -122,14 +123,18 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
-    // hide item
-    menuOptions.push({
-        name: i18n.menu.hide,
-        icon: "ui//eye-off",
-        onClick: () => {
-            hidePaths(superstate, paths);
-        },
-    });
+    // Previous global Hide command (disabled in favor of per-focus exclusions).
+    // menuOptions.push({
+    //     name: i18n.menu.hide,
+    //     icon: "ui//eye-off",
+    //     onClick: () => hidePaths(superstate, paths),
+    // });
+    if (selectedPaths.every((item) => item.depth > 0))
+        menuOptions.push({
+            name: i18n.menu.excludeFromFocus,
+            icon: "ui//eye-off",
+            onClick: () => excludePathsFromCurrentFocus(superstate, paths),
+        });
 
     // Delete Item
     menuOptions.push({
@@ -215,14 +220,18 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
 
     menuOptions.push(menuSeparator);
 
-    // hide item
-    menuOptions.push({
-        name: i18n.menu.hide,
-        icon: "ui//eye-off",
-        onClick: () => {
-            hidePaths(superstate, paths);
-        },
-    });
+    // Previous global Hide command (disabled in favor of per-focus exclusions).
+    // menuOptions.push({
+    //     name: i18n.menu.hide,
+    //     icon: "ui//eye-off",
+    //     onClick: () => hidePaths(superstate, paths),
+    // });
+    if (selectedPaths.every((item) => item.depth > 0))
+        menuOptions.push({
+            name: i18n.menu.excludeFromFocus,
+            icon: "ui//eye-off",
+            onClick: () => excludePathsFromCurrentFocus(superstate, paths),
+        });
 
     // Delete Item
     menuOptions.push({
@@ -396,14 +405,18 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         }
     }
 
-    // hide item
-    menuOptions.push({
-        name: i18n.menu.hide,
-        icon: "ui//eye-off",
-        onClick: () => {
-            hidePath(superstate, path);
-        },
-    });
+    // Previous global Hide command (disabled in favor of per-focus exclusions).
+    // menuOptions.push({
+    //     name: i18n.menu.hide,
+    //     icon: "ui//eye-off",
+    //     onClick: () => hidePath(superstate, path),
+    // });
+    if (depth > 0)
+        menuOptions.push({
+            name: i18n.menu.excludeFromFocus,
+            icon: "ui//eye-off",
+            onClick: () => excludePathsFromCurrentFocus(superstate, [path]),
+        });
 
     // delete item
     menuOptions.push({

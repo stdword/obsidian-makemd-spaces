@@ -4,6 +4,7 @@ import { tagSpacePathFromTag } from "schemas/builtin";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { ensureArray } from "core/utils/schema";
 import { ensureTag } from "utils/tags";
+import { renameFocusExcludedPaths } from "shared/types/focus";
 
 
 export const addTag = (superstate: Superstate, tag: string, initialized = true) => {
@@ -79,11 +80,17 @@ export const mergeTagSpaceMetadata = async (superstate: Superstate, sourcePath: 
 
     let focusesChanged = false;
     superstate.focuses.forEach((focus) => {
-        if (!focus.paths.includes(sourcePath)) return;
-        focus.paths = focus.paths.includes(targetPath)
-            ? focus.paths.filter((path) => path != sourcePath)
-            : focus.paths.map((path) => path == sourcePath ? targetPath : path);
-        focusesChanged = true;
+        if (focus.paths.includes(sourcePath)) {
+            focus.paths = focus.paths.includes(targetPath)
+                ? focus.paths.filter((path) => path != sourcePath)
+                : focus.paths.map((path) => path == sourcePath ? targetPath : path);
+            focusesChanged = true;
+        }
+        const excludedPaths = renameFocusExcludedPaths(focus["excluded-paths"], sourcePath, targetPath);
+        if (excludedPaths !== focus["excluded-paths"]) {
+            focus["excluded-paths"] = excludedPaths;
+            focusesChanged = true;
+        }
     });
     if (focusesChanged)
         await superstate.spaceManager.saveFocuses(superstate.focuses);

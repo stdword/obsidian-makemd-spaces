@@ -8,11 +8,11 @@ import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
 import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
-import { Focus } from "shared/types/focus";
+import { Focus, renameFocusExcludedPaths } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { FilesystemSpaceInfo, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
-import { MakeMDSettings } from "shared/types/settings";
+import { MakeMDSettings, renameExpandedSpacePaths } from "shared/types/settings";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { orderArrayByArrayWithKey, uniq } from "utils/array";
 import { EventDispatcher } from "utils/dispatcher";
@@ -164,6 +164,14 @@ export class Superstate implements ISuperstate {
     public saveSettings: (refresh?: boolean) => Promise<void>;
 
     public ui: UIManager;
+
+    private renameExpandedSpaces(oldPath: string, newPath: string) {
+        if (!this.settings) return false;
+        const expandedSpaces = renameExpandedSpacePaths(this.settings.expandedSpaces ?? [], oldPath, newPath);
+        if (expandedSpaces === this.settings.expandedSpaces) return false;
+        this.settings.expandedSpaces = expandedSpaces;
+        return true;
+    }
 
     //Index
     public pathsIndex: Map<string, PathState>;
@@ -502,10 +510,17 @@ export class Superstate implements ISuperstate {
                 focus.paths = focus.paths.map((f) => (f == oldPath ? newSpaceInfo.path : f));
                 focusChanged = true;
             }
+            const excludedPaths = renameFocusExcludedPaths(focus["excluded-paths"], oldPath, newSpaceInfo.path);
+            if (excludedPaths !== focus["excluded-paths"]) {
+                focus["excluded-paths"] = excludedPaths;
+                focusChanged = true;
+            }
         });
-        if (focusChanged) {
-            await this.spaceManager.saveFocuses(this.focuses);
-        }
+        const expandedSpacesChanged = this.renameExpandedSpaces(oldPath, newSpaceInfo.path);
+        const focusesSave = focusChanged ? this.spaceManager.saveFocuses(this.focuses) : Promise.resolve();
+        const settingsSave = expandedSpacesChanged && this.saveSettings ? this.saveSettings(false) : Promise.resolve();
+        if (expandedSpacesChanged) this.dispatchEvent("settingsChanged", null);
+        await Promise.all([focusesSave, settingsSave]);
         this.dispatchEvent("spaceChanged", { path: oldPath, newPath: newSpaceInfo.path });
     }
 
@@ -646,13 +661,18 @@ export class Superstate implements ISuperstate {
             await this.reloadPath(newFilePath, true);
 
             for (const space of oldSpaces.map((f) => this.spacesIndex.get(f)).filter((f) => f)) {
-                await saveSpaceCache(this, space, {
+                const metadata = {
                     ...space.metadata,
                     links: replacePathInList(space.metadata?.links, oldPath, newPath),
                     "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newPath),
                     pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newPath, space.path),
                     "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newPath),
-                });
+                };
+                const folderPath = space.space?.folderPath ?? space.path;
+                if (space.type == "tag" || await this.spaceManager.pathExists(folderPath))
+                    await saveSpaceCache(this, space, metadata);
+                else
+                    await this.updateSpaceMetadata(space.path, metadata);
             }
         }
 
@@ -662,11 +682,17 @@ export class Superstate implements ISuperstate {
                 focus.paths = focus.paths.map((f) => (f == oldPath ? newPath : f));
                 focusChanged = true;
             }
+            const excludedPaths = renameFocusExcludedPaths(focus["excluded-paths"], oldPath, newPath);
+            if (excludedPaths !== focus["excluded-paths"]) {
+                focus["excluded-paths"] = excludedPaths;
+                focusChanged = true;
+            }
         });
-        if (focusChanged) {
-            await this.spaceManager.saveFocuses(this.focuses);
-            this.dispatchEvent("focusesChanged", null);
-        }
+        const expandedSpacesChanged = this.renameExpandedSpaces(oldPath, newPath);
+        const focusesSave = focusChanged ? this.spaceManager.saveFocuses(this.focuses) : Promise.resolve();
+        const settingsSave = expandedSpacesChanged && this.saveSettings ? this.saveSettings(false) : Promise.resolve();
+        if (expandedSpacesChanged) this.dispatchEvent("settingsChanged", null);
+        await Promise.all([focusesSave, settingsSave]);
 
         await this.reloadPath(newPath, true);
         const newParent = this.pathsIndex.get(newPath)?.parent;
@@ -749,13 +775,18 @@ export class Superstate implements ISuperstate {
                 )
             );
             for (const space of referencingSpaces) {
-                await saveSpaceCache(this, space, {
+                const metadata = {
                     ...space.metadata,
                     links: replacePathInList(space.metadata?.links, oldPath, newSpaceInfo.path),
                     "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newSpaceInfo.path),
                     pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newSpaceInfo.path, space.path),
                     "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newSpaceInfo.path),
-                });
+                };
+                const folderPath = space.space?.folderPath ?? space.path;
+                if (space.type == "tag" || await this.spaceManager.pathExists(folderPath))
+                    await saveSpaceCache(this, space, metadata);
+                else
+                    await this.updateSpaceMetadata(space.path, metadata);
             }
             const oldmetadata = this.spacesIndex.get(oldPath).metadata;
             this.spacesIndex.set(newSpaceInfo.path, {

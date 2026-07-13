@@ -47,6 +47,7 @@ export const en = {
         sortBy: "Sort",
 
         hide: "Hide",
+        excludeFromFocus: "Exclude from Focus",
         unhide: "Unhide",
 
         removeFromSpace: 'Unlink from "${1}"',
@@ -91,7 +92,7 @@ export const en = {
         merge: "Merge",
         addToSpace: "Link to...",
 
-        addFile: "Add File",
+        addItem: "Add Item",
 
         save: "Save",
     },
@@ -104,7 +105,6 @@ export const en = {
         refs: "refs",
 
         filesCount: "{$1} Files",
-        filesAndFolders: "Files and Folders",
         waypoint: "Waypoint",
         home: "Home",
 
@@ -115,12 +115,17 @@ export const en = {
         findStickers: "Enter sticker keyword",
         findStickersButton: "Find",
 
-        hiddenFiles: "Hidden Files",
-        manageHiddenFiles: "Manage Hidden Files",
-        hiddenFilePattern: "Name, Suffixes and Extension",
-        hiddenFileSpecific: "Exclude specific files and folders",
+        manageHiddenFiles: "Manage Hidden Items",
+        hiddenItems: "Hidden Items",
+        hiddenPatterns: "Hide specific names, suffixes and extensions",
+        hiddenPaths: "Hide specific paths",
         hideItemInputPlaceholder: "Enter search text here…",
+        excludeItemInputPlaceholder: "Select files and folders to exclude…",
         addExtension: "Add Rule",
+
+        manageExcludedFiles: "Manage Excluded Items",
+        excludedItems: "Excluded from \"${1}\" Focus",
+        excludedPaths: "Exclude specific paths",
 
         openItemInputPlaceholder: "Enter search text here…",
         linkItemInputPlaceholder: "Enter search text here…",
@@ -152,8 +157,6 @@ export const en = {
         deleteFiles: "Deleting the folders will also delete their contents.",
         deleteTags: "Deleting the tags will also delete their metadata (color, sorting options, etc.). It won’t remove any Obsidian tags from files.",
         deleteFile: "Delete the file ${1} from the vault?",
-
-        hiddenFileOptions: "Hidden File Options",
     },
 
     notice: {

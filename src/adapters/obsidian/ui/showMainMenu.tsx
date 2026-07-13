@@ -58,7 +58,7 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
         name: i18n.labels.manageHiddenFiles,
         icon: "ui//eye-off",
         onClick: (e) => {
-            superstate.ui.openModal(i18n.labels.hiddenFiles, <HiddenPaths superstate={superstate}></HiddenPaths>, windowFromDocument(e.view.document));
+            superstate.ui.openModal(i18n.labels.hiddenItems, <HiddenPaths superstate={superstate}></HiddenPaths>, windowFromDocument(e.view.document));
         },
     });
 

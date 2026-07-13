@@ -1,6 +1,7 @@
 import React from "react";
 
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
+import { ExcludedFiles } from "core/react/components/UI/Modals/ExcludedFiles";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "utils/dom";
 import MakeMDPlugin from "main";
@@ -12,7 +13,23 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
         id: "mk-open-hidden",
         name: i18n.labels.manageHiddenFiles,
         callback: () => {
-            plugin.superstate.ui.openModal(i18n.labels.hiddenFiles, <HiddenPaths superstate={plugin.superstate}></HiddenPaths>, windowFromDocument(plugin.app.workspace.getLeaf()?.containerEl.ownerDocument));
+            plugin.superstate.ui.openModal(i18n.labels.hiddenItems, <HiddenPaths superstate={plugin.superstate}></HiddenPaths>, windowFromDocument(plugin.app.workspace.getLeaf()?.containerEl.ownerDocument));
+        },
+    });
+
+    plugin.addCommand({
+        id: "mk-open-excluded",
+        name: i18n.labels.manageExcludedFiles,
+        callback: () => {
+            const focusIndex = plugin.superstate.settings.currentFocus;
+            const focus = plugin.superstate.focuses[focusIndex];
+            if (!focus) return;
+
+            plugin.superstate.ui.openModal(
+                i18n.labels.excludedItems.replace("${1}", focus.name),
+                <ExcludedFiles superstate={plugin.superstate} focusIndex={focusIndex} />,
+                windowFromDocument(plugin.app.workspace.getLeaf()?.containerEl.ownerDocument),
+            );
         },
     });
 

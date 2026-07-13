@@ -179,9 +179,11 @@ export const TreeItem = (props: TreeItemProps) => {
         showPathContextMenu(superstate, data.path, data.type == "group" ? null : data.space, (e.target as HTMLElement).getBoundingClientRect(), windowFromDocument(e.view.document), "right", data.type == "group" ? () => closeActiveSpace(data.path) : null, data.depth);
     };
     const pathStateUpdated = (payload: { path: string }) => {
+        if (superstate.spaceManager.isRenaming) return;
         if (payload.path == data.item.path) refreshPathState((version) => version + 1);
     };
     const spaceStateUpdated = (payload: { path: string }) => {
+        if (superstate.spaceManager.isRenaming) return;
         if (payload.path == data.space) refreshPathState((version) => version + 1);
     };
     useEffect(() => {

@@ -1,5 +1,6 @@
 import { savePathColor } from "core/utils/superstate/label";
-import { hidePath, isPathDirectlyHidden, renamePathByName, unhidePath } from "core/utils/superstate/path";
+import { renamePathByName } from "core/utils/superstate/path";
+import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
 import { duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import React from "react";
@@ -306,21 +307,21 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    // hide item
-    if (space.type == "folder") {
-        const directlyHidden = isPathDirectlyHidden(superstate, space.path);
+    // Previous global Hide/Unhide command (disabled in favor of per-focus exclusions).
+    // if (space.type == "folder") {
+    //     const directlyHidden = isPathDirectlyHidden(superstate, space.path);
+    //     menuOptions.push({
+    //         name: directlyHidden ? i18n.menu.unhide : i18n.menu.hide,
+    //         icon: directlyHidden ? "ui//eye" : "ui//eye-off",
+    //         onClick: () => directlyHidden ? unhidePath(superstate, space.path) : hidePath(superstate, space.path),
+    //     });
+    // }
+    if (depth > 0)
         menuOptions.push({
-            name: directlyHidden ? i18n.menu.unhide : i18n.menu.hide,
-            icon: directlyHidden ? "ui//eye" : "ui//eye-off",
-            onClick: () => {
-                if (directlyHidden) {
-                    unhidePath(superstate, space.path);
-                } else {
-                    hidePath(superstate, space.path);
-                }
-            },
+            name: i18n.menu.excludeFromFocus,
+            icon: "ui//eye-off",
+            onClick: () => excludePathsFromCurrentFocus(superstate, [space.path]),
         });
-    }
 
     // delete item
     if (space.type == "folder" || isTagSpace)
