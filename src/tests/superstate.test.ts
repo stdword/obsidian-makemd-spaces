@@ -936,7 +936,7 @@ describe("Superstate tag initialization", () => {
         expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#sample/group");
     });
 
-    it("shows hidden tagged files inside tag spaces", () => {
+    it("hides hidden tagged files inside tag spaces", () => {
         const { superstate } = createSuperstate();
         superstate.pathsIndex.set("Tagged.md", {
             path: "Tagged.md",
@@ -949,7 +949,43 @@ describe("Superstate tag initialization", () => {
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#project"]));
 
-        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual([]);
+    });
+
+    it("hides a hidden folder whose Markdown folder note has the tag", () => {
+        const { superstate } = createSuperstate();
+        const folderPath = "Projects/Hidden";
+        const notePath = `${folderPath}/Hidden.md`;
+        superstate.pathsIndex.set(folderPath, {
+            path: folderPath,
+            name: "Hidden",
+            type: "space",
+            subtype: "folder",
+            parent: "Projects",
+            tags: [],
+            spaces: ["Projects"],
+            hidden: true,
+        });
+        superstate.pathsIndex.set(notePath, {
+            path: notePath,
+            name: "Hidden",
+            type: "file",
+            subtype: "md",
+            parent: folderPath,
+            tags: ["#project"],
+            spaces: [folderPath],
+            hidden: false,
+        });
+        superstate.spacesIndex.set(folderPath, {
+            type: "folder",
+            path: folderPath,
+            name: "Hidden",
+            metadata: {},
+            space: { notePath },
+        });
+        superstate.tagsMap.set(notePath, new Set(["#project"]));
+
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual([]);
     });
 
     it("syncs tag space rank-order from the same item lookup used by the tree", () => {

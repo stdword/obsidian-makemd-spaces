@@ -192,7 +192,7 @@ export const spaceRowHeight = (_superstate: Superstate, preset: number, section:
 export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
     const fieldLabel = sort.field == "name" ? "AZ" : sort.field == "ctime" ? "+" : sort.field == "mtime" ? "~" : sort.field == "rank" ? "#" : sort.field;
     const directionLabel = fieldLabel == "#" ? "" : (sort.asc ? "↓" : "↑");
-    const groupLabel = (!tagSpace && sort.group) ? ":" : "";
+    const groupLabel = sort.group ? ":" : "";
     const recursiveLabel = (!tagSpace && sort.recursive) ? "*" : "";
     return `${groupLabel}${fieldLabel}${directionLabel}${recursiveLabel}`;
 };
@@ -493,7 +493,7 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
     const nextStoredSort = mergedStoredSpaceSort(currentStoredSort, sort);
     const currentSort = effectiveSpaceSort(currentStoredSort, superstate.settings);
     const nextSort = effectiveSpaceSort(nextStoredSort, superstate.settings);
-    const shouldGroupCurrentRankOrder = space.type != "tag" && currentSort.field == "rank" && nextSort.field == "rank" && currentSort.group != true && nextSort.group == true;
+    const shouldGroupCurrentRankOrder = currentSort.field == "rank" && nextSort.field == "rank" && currentSort.group != true && nextSort.group == true;
     const nextRankOrder = shouldGroupCurrentRankOrder ? rankOrderWithFoldersFirst(superstate, space) : undefined;
     if (JSON.stringify(currentStoredSort) == JSON.stringify(nextStoredSort) && nextRankOrder == undefined)
         return;
@@ -502,6 +502,7 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
         await superstate.updateSpaceMetadata(path, {
             ...space.metadata,
             sort: nextStoredSort,
+            ...(nextRankOrder != undefined ? { "rank-order": nextRankOrder } : {}),
         });
         return;
     }

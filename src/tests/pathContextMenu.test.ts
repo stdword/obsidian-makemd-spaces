@@ -847,7 +847,7 @@ describe("showSpaceContextMenu", () => {
         expect(revealPathInSpaces).toHaveBeenCalledWith(superstate, pathState.path);
     });
 
-    it("hides folder-only sort options for tag spaces", () => {
+    it("shows folder grouping but hides recursive sorting for tag spaces", () => {
         const openMenu = jest.fn();
         const pathState = {
             path: "spaces://#art",
@@ -889,7 +889,7 @@ describe("showSpaceContextMenu", () => {
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
         const sortOptions = openMenu.mock.calls[1][1].options;
-        expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(false);
+        expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(true);
         expect(sortOptions.some((option: any) => option.name === "Apply to Subfolders")).toBe(false);
         expect(sortOptions.some((option: any) => option.name === "File Name (A to Z)")).toBe(true);
     });

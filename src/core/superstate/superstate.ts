@@ -329,7 +329,7 @@ export class Superstate implements ISuperstate {
                     rank: ranks.indexOf(f),
                 } as PathStateWithRank;
             })
-            .filter((f) => f && (f.hidden != true || isTagSpace || this.isPathExplicitlyShownInSpace(f.path, spacePath) || hiddenSpaceRoot) && f.path != spacePath);
+            .filter((f) => f && (f.hidden != true || this.isPathExplicitlyShownInSpace(f.path, spacePath) || hiddenSpaceRoot) && f.path != spacePath);
     }
     public async loadFromCache() {
         this.dispatchEvent("superstateReindex", null);

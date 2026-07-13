@@ -81,16 +81,14 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 { name: i18n.menu.modifiedTimeSortAsc, sort: { field: "mtime", asc: false } },
                 { name: i18n.menu.modifiedTimeSortDesc, sort: { field: "mtime", asc: true } },
             ];
-            if (!isTagSpace) {
-                sortOptions.push({
-                    name: i18n.menu.groupSpaces,
-                    icon: "lucide//folder-up",
-                    value: sort.group == true,
-                    type: SelectOptionType.Radio,
-                    onClick: () => saveSort({ group: !sort.group }),
-                });
-                sortOptions.push(menuSeparator);
-            }
+            sortOptions.push({
+                name: i18n.menu.groupSpaces,
+                icon: "lucide//folder-up",
+                value: sort.group == true,
+                type: SelectOptionType.Radio,
+                onClick: () => saveSort({ group: !sort.group }),
+            });
+            sortOptions.push(menuSeparator);
             sortFieldOptions.forEach((option, index) => {
                 if ([1, 3, 5, 7].includes(index)) sortOptions.push(menuSeparator);
                 sortOptions.push({

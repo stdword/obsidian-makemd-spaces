@@ -191,6 +191,24 @@ describe("updateSpaceSort", () => {
         }));
     });
 
+    it("moves folders to the top in a tag space custom rank-order", async () => {
+        const superstate = createSuperstate({ field: "rank", asc: true, group: false }, ["Projects/Beta.md", "Projects/Folder B", "Projects/Alpha.md", "Projects/Folder A"]);
+        const space = superstate.spacesIndex.get("Projects");
+        space.type = "tag";
+
+        await updateSpaceSort(superstate, "Projects", { group: true });
+
+        expect(superstate.spaceManager.saveSpace).not.toHaveBeenCalled();
+        expect(superstate.updateSpaceMetadata).toHaveBeenCalledWith("Projects", expect.objectContaining({
+            sort: {
+                field: "rank",
+                asc: true,
+                group: true,
+            },
+            "rank-order": ["Projects/Folder B", "Projects/Folder A", "Projects/Beta.md", "Projects/Alpha.md"],
+        }));
+    });
+
     it("keeps existing rank-order when switching to custom sort with folder grouping already enabled", async () => {
         const rankOrder = ["Projects/Beta.md", "Projects/Folder B", "Projects/Alpha.md", "Projects/Folder A"];
         const superstate = createSuperstate({ field: "name", asc: true, group: true }, rankOrder);
