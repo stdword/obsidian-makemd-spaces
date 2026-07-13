@@ -90,7 +90,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                 icon: "lucide//archive",
                 value: "archive",
                 onClick: () => {
-                    const focusName = pin.name || i18n.labels.waypoint;
+                    const focusName = pin.name || i18n.labels.focus;
                     superstate.ui.openModal(
                         i18n.labels.archiveFocus.replace("${1}", focusName),
                         <ConfirmationModal
@@ -117,13 +117,17 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                 openContextMenu(rect);
             }}
             ref={innerRef}
-            className="mk-waypoint"
+            className="mk-focus"
             onClick={() => {
                 superstate.settings.currentFocus = index;
                 superstate.saveSettings();
             }}
             onDragOver={(e) => {
                 e.preventDefault();
+                // Dropping a path on a focus links it into that focus, but the
+                // native copy/link badges are misleading here: no filesystem
+                // item is copied or moved. Keep the cursor visually neutral.
+                e.dataTransfer.dropEffect = "move";
                 setModifier(eventToModifier(e));
                 if (!innerRef.current) return;
                 const rect = innerRef.current.getBoundingClientRect();
@@ -147,11 +151,11 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             ></div>
         </div>
     ) : (
-        <div ref={innerRef} className="mk-waypoint">
+        <div ref={innerRef} className="mk-focus">
             <div
                 ref={ref}
                 onClick={() => {
-                    setFocuses([...focuses, { sticker: "ui//spaces", name: i18n.labels.waypoint, paths: [] }]);
+                    setFocuses([...focuses, { sticker: "ui//spaces", name: i18n.labels.focus, paths: [] }]);
                     superstate.saveSettings();
                 }}
                 className={classNames("mk-focuses-item", "clickable-icon", "nav-action-button", highlighted && "mk-active", indicator && "mk-indicator", clone && "mk-clone", ghost && "mk-ghost")}

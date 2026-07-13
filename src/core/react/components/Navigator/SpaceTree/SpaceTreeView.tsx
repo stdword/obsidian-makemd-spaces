@@ -154,6 +154,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const offsetRef = useRef({ x: 0, y: 0 });
     const modifierRef = useRef<DropModifiers>(null);
     const activeRef = useRef<TreeNode>(null);
+    const compensatedDragSource = useRef<HTMLElement | null>(null);
     const dragPathsRef = useRef<string[]>([]);
     const dragActionRef = useRef<DragActionModel | null>(null);
     const hideSectionChildren = active != null && active.parentId == null;
@@ -349,11 +350,27 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const [dragAction, setDragAction] = useState<DragActionModel | null>(null);
 
-    const dragStarted = (activeId: string) => {
+    const dragStarted = (activeId: string, source: HTMLElement) => {
         const activeItem = flattenedTree.find(({ id }) => id === activeId);
         //Dont drag vault
         activeRef.current = activeItem;
-        setActive(activeItem);
+        if (activeItem?.parentId == null) {
+            // Keep the source at its pre-collapse screen position until Chromium
+            // establishes the native drag. The rest of the tree can still switch
+            // immediately to the sections-only layout.
+            const sourceNode = source.closest<HTMLElement>(".mk-tree-node");
+            const sourceTop = sourceNode?.getBoundingClientRect().top;
+            flushSync(() => setActive(activeItem));
+            if (sourceNode && sourceTop != null) {
+                const offset = sourceTop - sourceNode.getBoundingClientRect().top;
+                if (offset != 0) {
+                    sourceNode.style.transform = `translateY(calc(var(--node-offset) + ${offset}px))`;
+                    compensatedDragSource.current = sourceNode;
+                }
+            }
+        } else {
+            setActive(activeItem);
+        }
         overIdRef.current = activeId;
         setOverId(activeId);
 
@@ -419,6 +436,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     };
 
     const dragOver = (e: React.DragEvent<HTMLElement>, _overId: string, position: Pos) => {
+        if (compensatedDragSource.current) {
+            compensatedDragSource.current.style.removeProperty("transform");
+            compensatedDragSource.current = null;
+        }
         const currentActive = activeRef.current ?? active;
         const requestedModifier = currentActive?.parentId == null ? "move" : eventToModifier(e);
         const x = offsetRef.current.x;
@@ -512,6 +533,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     );
 
     function resetState() {
+        if (compensatedDragSource.current) {
+            compensatedDragSource.current.style.removeProperty("transform");
+            compensatedDragSource.current = null;
+        }
         setDragPaths([]);
         setOverId(null);
         setActive(null);
@@ -540,12 +565,30 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     };
     const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group" && !isTagTreeItemPath(f.item))), [flattenedTree]);
 
+    const dragOverTree = (e: React.DragEvent<HTMLDivElement>) => {
+        e.preventDefault();
+
+        const currentActive = activeRef.current ?? active;
+        if (currentActive?.parentId != null) return;
+        if ((e.target as HTMLElement).closest('.mk-tree-wrapper[draggable="true"]')) return;
+
+        // Treat the Open row and the empty area below it as the end of the root
+        // section list. Without a concrete TreeItem handling this dragover,
+        // Obsidian clears the action label and falls back to its green copy badge.
+        const lastSection = [...flattenedTree].reverse().find((node) => node.type != "new" && node.parentId == null);
+        if (!lastSection) return;
+        dragOver(e, lastSection.id, {
+            x: 0,
+            y: spaceRowHeight(superstate, presetRowHeight, false),
+        });
+    };
+
     return (
         <div
             ref={treeRef}
             className="mk-path-tree"
             onDragLeave={dragLeave}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={dragOverTree}
             style={
                 {
                     "--spaceRowHeight": spaceRowHeight(superstate, presetRowHeight, false) + "px",

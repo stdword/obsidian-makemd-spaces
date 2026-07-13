@@ -101,30 +101,30 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
     const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>((props.superstate.focuses[activeFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
 
     const setActiveViewSpaceByPath = (path: string) => {
-        const newWaypoint = props.superstate.focuses[activeFocus] ?? {
+        const newFocus = props.superstate.focuses[activeFocus] ?? {
             sticker: "",
-            name: i18n.labels.waypoint,
+            name: i18n.labels.focus,
             paths: [] as string[],
         };
-        newWaypoint.paths = [...newWaypoint.paths.filter((f) => f != path), path];
+        newFocus.paths = [...newFocus.paths.filter((f) => f != path), path];
         if (activeFocus > props.superstate.focuses.length) {
-            props.superstate.spaceManager.saveFocuses([...props.superstate.focuses, newWaypoint]);
+            props.superstate.spaceManager.saveFocuses([...props.superstate.focuses, newFocus]);
         }
-        const newFocuses = props.superstate.focuses.map((f, i) => (i == activeFocus ? newWaypoint : f));
+        const newFocuses = props.superstate.focuses.map((f, i) => (i == activeFocus ? newFocus : f));
         props.superstate.spaceManager.saveFocuses(newFocuses.filter((f) => f));
     };
 
     const closeActiveViewSpace = (path: string) => {
-        const newWaypoint = props.superstate.focuses[activeFocus] ?? {
+        const newFocus = props.superstate.focuses[activeFocus] ?? {
             sticker: "",
-            name: i18n.labels.waypoint,
+            name: i18n.labels.focus,
             paths: [] as string[],
         };
-        newWaypoint.paths = [...newWaypoint.paths.filter((f) => f != path)];
+        newFocus.paths = [...newFocus.paths.filter((f) => f != path)];
         if (activeFocus > props.superstate.focuses.length) {
-            props.superstate.spaceManager.saveFocuses([...props.superstate.focuses, newWaypoint]);
+            props.superstate.spaceManager.saveFocuses([...props.superstate.focuses, newFocus]);
         }
-        const newFocuses = props.superstate.focuses.map((f, i) => (i == activeFocus ? newWaypoint : f));
+        const newFocuses = props.superstate.focuses.map((f, i) => (i == activeFocus ? newFocus : f));
         props.superstate.spaceManager.saveFocuses(newFocuses.filter((f) => f));
     };
 

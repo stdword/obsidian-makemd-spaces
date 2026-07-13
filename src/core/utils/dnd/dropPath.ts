@@ -92,24 +92,24 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
 };
 
 const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
-    const newWaypoint = superstate.focuses[superstate.settings.currentFocus] ?? { sticker: "", name: i18n.labels.waypoint, paths: [] as string[] };
-    const currentIndex = newWaypoint.paths.findIndex((f) => f == path);
+    const newFocus = superstate.focuses[superstate.settings.currentFocus] ?? { sticker: "", name: i18n.labels.focus, paths: [] as string[] };
+    const currentIndex = newFocus.paths.findIndex((f) => f == path);
     if (currentIndex == -1) {
-        const nextPaths = [...newWaypoint.paths];
+        const nextPaths = [...newFocus.paths];
         nextPaths.splice(Math.max(0, index ?? nextPaths.length), 0, path);
-        newWaypoint.paths = nextPaths;
+        newFocus.paths = nextPaths;
     } else {
         const newIndex = currentIndex < index ? Math.max(0, index - 1) : index;
-        newWaypoint.paths = arrayMove(
-            newWaypoint.paths,
-            newWaypoint.paths.findIndex((f) => f == path),
+        newFocus.paths = arrayMove(
+            newFocus.paths,
+            newFocus.paths.findIndex((f) => f == path),
             newIndex,
         );
     }
     if (superstate.settings.currentFocus > superstate.focuses.length) {
-        superstate.spaceManager.saveFocuses([...superstate.focuses, newWaypoint]);
+        superstate.spaceManager.saveFocuses([...superstate.focuses, newFocus]);
     }
-    const newFocuses = superstate.focuses.map((f, i) => (i == superstate.settings.currentFocus ? newWaypoint : f));
+    const newFocuses = superstate.focuses.map((f, i) => (i == superstate.settings.currentFocus ? newFocus : f));
     superstate.spaceManager.saveFocuses(newFocuses);
 };
 

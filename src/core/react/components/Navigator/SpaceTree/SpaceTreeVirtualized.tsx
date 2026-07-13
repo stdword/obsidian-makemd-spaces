@@ -93,7 +93,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
     overIndex: number;
     activeIndex: number;
     enableObsidianDragGhost: boolean;
-    dragStarted: (activeId: string) => void;
+    dragStarted: (activeId: string, source: HTMLElement) => void;
     dragOver: (e: React.DragEvent<HTMLElement>, overId: string, position: Pos) => void;
     dragEnded: (e: React.DragEvent<HTMLElement>, overId: string) => void;
 }) {

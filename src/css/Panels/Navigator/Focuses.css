@@ -18,16 +18,16 @@
     height: 16px;
 }
 
-.mk-waypoint {
+.mk-focus {
     display: flex;
 }
-.mk-waypoint-new {
+.mk-focus-new {
     display: flex;
     align-items: center;
     color: var(--mk-ui-text-secondary);
     opacity: 0.5;
 }
-.mk-waypoint-new:hover {
+.mk-focus-new:hover {
     opacity: 1;
 }
 
@@ -83,7 +83,7 @@
     flex-grow: 1;
 }
 
-.mk-waypoint:hover .mk-focuses-item:not(.mk-active) {
+.mk-focus:hover .mk-focuses-item:not(.mk-active) {
     background: var(--nav-item-background-hover);
 }
 .mk-focuses-item {
@@ -101,7 +101,7 @@
     transition: transform 250ms ease;
 }
 .mk-focuses-item svg,
-.mk-waypoint-new svg {
+.mk-focus-new svg {
     width: var(--icon-size);
     height: var(--icon-size);
 }

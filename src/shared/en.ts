@@ -105,7 +105,7 @@ export const en = {
         refs: "refs",
 
         filesCount: "{$1} Files",
-        waypoint: "Waypoint",
+        focus: "Focus",
         home: "Home",
 
         rename: "Rename",

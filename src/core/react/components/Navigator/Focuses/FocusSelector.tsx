@@ -154,7 +154,6 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                             ghost={activeId === i}
                         ></SortablePinnedSpaceItem>
                     ))}
-                    {overId != null && activeId === null && <SortablePinnedSpaceItem id={focuses.length} superstate={props.superstate} highlighted={false} index={focuses.length} pin={null}></SortablePinnedSpaceItem>}
                 </div>
                 <div
                     className="mk-focuses-menu"

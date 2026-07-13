@@ -61,7 +61,7 @@ export interface TreeItemProps {
     style: CSSProperties;
     onCollapse?(node: TreeNode, open: boolean): void;
     enableObsidianDragGhost: boolean;
-    dragStarted: (activeId: string) => void;
+    dragStarted: (activeId: string, source: HTMLElement) => void;
     dragOver: (e: React.DragEvent<HTMLElement>, overId: string, position: Pos) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>, overId: string) => void;
     dragActive: boolean;
@@ -115,14 +115,14 @@ export const TreeItem = (props: TreeItemProps) => {
             if (enableObsidianDragGhost) {
                 superstate.ui.dragStarted(e, paths);
             }
-            dragStarted(data.id);
+            dragStarted(data.id, e.currentTarget);
 
             return;
         }
         if (enableObsidianDragGhost) {
             superstate.ui.dragStarted(e, [data.path]);
         }
-        dragStarted(data.id);
+        dragStarted(data.id, e.currentTarget);
     };
     const onDragOver = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
