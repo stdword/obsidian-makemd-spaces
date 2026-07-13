@@ -95,6 +95,11 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     type: "boolean",
                 },
                 {
+                    name: "defaultGroupBySubtags",
+                    category: "appearance",
+                    type: "boolean",
+                },
+                {
                     name: "searchMenuTagsLimit",
                     category: "system",
                     type: "optional-number",

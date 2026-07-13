@@ -919,7 +919,7 @@ describe("Superstate tag initialization", () => {
         expect(superstate.getSpaceItems(tagSpacePathFromTag("#project")).map((item: any) => item.path)).toEqual([notePath]);
     });
 
-    it("reads child tag items from parent tag spaces", () => {
+    it("shows hierarchical tags under their parent instead of their tagged files", () => {
         const { superstate, spaceManager } = createSuperstate();
         superstate.pathsIndex.set("Tagged.md", {
             path: "Tagged.md",
@@ -932,8 +932,37 @@ describe("Superstate tag initialization", () => {
         });
         superstate.tagsMap.set("Tagged.md", new Set(["#sample/group/item"]));
 
-        expect(superstate.getSpaceItems(tagSpacePathFromTag("#sample/group")).map((item: any) => item.path)).toEqual(["Tagged.md"]);
+        const childTagPath = tagSpacePathFromTag("#sample/group/item");
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#sample/group")).map((item: any) => item.path)).toEqual([childTagPath]);
+        expect(superstate.getSpaceItems(tagSpacePathFromTag("#sample/group"))[0].name).toBe("item");
+        expect(superstate.getSpaceItems(childTagPath).map((item: any) => item.path)).toEqual(["Tagged.md"]);
         expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#sample/group");
+        expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#sample/group/item");
+    });
+
+    it("shows descendant-tagged files directly when grouping by sub-tags is disabled", () => {
+        const { superstate } = createSuperstate();
+        const parentTagPath = tagSpacePathFromTag("#topic");
+        superstate.spacesIndex.set(parentTagPath, {
+            type: "tag",
+            name: "topic",
+            path: parentTagPath,
+            metadata: { sort: { subtags: false } },
+            space: {},
+        });
+        superstate.pathsIndex.set("Nested.md", {
+            path: "Nested.md",
+            name: "Nested",
+            type: "file",
+            subtype: "md",
+            tags: ["#topic/child"],
+            spaces: [],
+            hidden: false,
+        });
+        superstate.tagsMap.set("Nested.md", new Set(["#topic/child"]));
+
+        expect(superstate.getSpaceItems(parentTagPath).map((item: any) => item.path)).toEqual(["Nested.md"]);
+        expect(superstate.getSpaceItems(parentTagPath).some((item: any) => item.subtype == "tag")).toBe(false);
     });
 
     it("hides hidden tagged files inside tag spaces", () => {

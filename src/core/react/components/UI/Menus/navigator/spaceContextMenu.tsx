@@ -88,6 +88,15 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 type: SelectOptionType.Radio,
                 onClick: () => saveSort({ group: !sort.group }),
             });
+            if (isTagSpace) {
+                sortOptions.push({
+                    name: i18n.menu.groupSubtags,
+                    icon: "lucide//tags",
+                    value: sort.subtags == true,
+                    type: SelectOptionType.Radio,
+                    onClick: () => saveSort({ subtags: !sort.subtags }),
+                });
+            }
             sortOptions.push(menuSeparator);
             sortFieldOptions.forEach((option, index) => {
                 if ([1, 3, 5, 7].includes(index)) sortOptions.push(menuSeparator);
@@ -101,15 +110,13 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             });
 
             sortOptions.push(menuSeparator);
-            if (!isTagSpace) {
-                sortOptions.push({
-                    name: i18n.menu.recursiveSort,
-                    icon: "lucide//folder-tree",
-                    value: sort.recursive == true,
-                    type: SelectOptionType.Radio,
-                    onClick: () => saveSort({ recursive: !sort.recursive }),
-                });
-            }
+            sortOptions.push({
+                name: isTagSpace ? i18n.menu.recursiveTagSort : i18n.menu.recursiveSort,
+                icon: isTagSpace ? "lucide//git-branch" : "lucide//folder-tree",
+                value: sort.recursive == true,
+                type: SelectOptionType.Radio,
+                onClick: () => saveSort({ recursive: !sort.recursive }),
+            });
 
             sortOptions.push({
                 name: i18n.menu.clearSort,
@@ -133,9 +140,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    if (space.type != "vault" && !isTagSpace) {
-        menuOptions.push(menuSeparator);
-
+    menuOptions.push(menuSeparator);
+    if (space.type != "vault") {
         const displaySpace = superstate.spacesIndex.get(parentSpace);
         if (displaySpace && depth > 0) {
             const pinned = isPathPinnedInSpace(displaySpace, space.path);
@@ -147,7 +153,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 },
             });
         }
+    }
 
+    if (space.type != "vault" && !isTagSpace) {
         // duplicate
         menuOptions.push({
             name: i18n.menu.duplicate,
@@ -208,7 +216,6 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     }
 
     if (isTagSpace) {
-        menuOptions.push(menuSeparator);
         menuOptions.push({
             name: "Merge into...",
             icon: "lucide//merge",

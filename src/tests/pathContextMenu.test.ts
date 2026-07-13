@@ -890,8 +890,33 @@ describe("showSpaceContextMenu", () => {
 
         const sortOptions = openMenu.mock.calls[1][1].options;
         expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(true);
+        expect(sortOptions.some((option: any) => option.name === "Group by Sub-tags")).toBe(true);
+        expect(sortOptions.some((option: any) => option.name === "Apply to Sub-tags")).toBe(true);
         expect(sortOptions.some((option: any) => option.name === "Apply to Subfolders")).toBe(false);
         expect(sortOptions.some((option: any) => option.name === "File Name (A to Z)")).toBe(true);
+    });
+
+    it("shows Pin to Top for a sub-tag inside its parent tag space", () => {
+        const openMenu = jest.fn();
+        const parentPath = "spaces://#topic";
+        const childPath = "spaces://#topic/child";
+        const pathState = { path: childPath, type: "space", subtype: "tag", parent: "" };
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map([
+                [parentPath, { path: parentPath, type: "tag", metadata: { pinned: [] } }],
+                [childPath, { path: childPath, type: "tag", metadata: {} }],
+            ]),
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, parentPath, undefined, 1);
+
+        expect(openMenu.mock.calls[0][1].options.some((option: any) => option.name === "Pin to Top")).toBe(true);
     });
 
     it("opens Link to with hidden folders when shift-clicked", () => {

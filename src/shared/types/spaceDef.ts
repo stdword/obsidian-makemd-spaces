@@ -2,6 +2,7 @@ export type SpaceSort = {
     field: string;
     asc: boolean;
     group?: boolean;
+    subtags?: boolean;
     recursive?: boolean;
 };
 

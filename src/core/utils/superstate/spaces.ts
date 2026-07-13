@@ -26,6 +26,7 @@ export const defaultSortForSettings = (settings: MakeMDSettings): SpaceSort => (
     field: settings?.defaultSpaceSort?.field ?? "name",
     asc: hasOwn(settings?.defaultSpaceSort as Record<string, any>, "asc") ? ensureBoolean(settings.defaultSpaceSort.asc) : true,
     group: settings?.defaultFoldersAtTop ?? true,
+    subtags: settings?.defaultGroupBySubtags ?? true,
     recursive: false,
 });
 
@@ -35,6 +36,7 @@ export const effectiveSpaceSort = (value: Partial<SpaceSort>, settings: MakeMDSe
         field: ensureString(value?.["field"] ?? fallback.field),
         asc: hasOwn(value as Record<string, any>, "asc") ? ensureBoolean(value.asc) : fallback.asc,
         group: hasOwn(value as Record<string, any>, "group") ? ensureBoolean(value.group) : fallback.group,
+        ...(hasOwn(value as Record<string, any>, "subtags") ? { subtags: ensureBoolean(value.subtags) } : fallback.subtags ? { subtags: true } : {}),
         recursive: hasOwn(value as Record<string, any>, "recursive") ? ensureBoolean(value.recursive) : fallback.recursive,
     };
 };
@@ -53,6 +55,7 @@ export const storedSpaceSort = (value: any): Partial<SpaceSort> | undefined => {
     if (hasOwn(value, "field")) sort.field = ensureString(value.field);
     if (hasOwn(value, "asc")) sort.asc = ensureBoolean(value.asc);
     if (hasOwn(value, "group")) sort.group = ensureBoolean(value.group);
+    if (hasOwn(value, "subtags")) sort.subtags = ensureBoolean(value.subtags);
     if (hasOwn(value, "recursive")) sort.recursive = ensureBoolean(value.recursive);
     return Object.keys(sort).length > 0 ? sort : undefined;
 };
@@ -70,7 +73,7 @@ const rankOrderForSort = (superstate: Superstate, path: string, sort: SpaceSort)
     return [...(superstate.getSpaceItems(path) ?? [])].sort(spaceSortFn(sort)).map((item) => item.path);
 };
 
-const rankOrderWithFoldersFirst = (superstate: Superstate, space: SpaceState): string[] => {
+const rankOrderWithGroupedItemsFirst = (superstate: Superstate, space: SpaceState, sort: SpaceSort): string[] => {
     const items = superstate.getSpaceItems(space.path) ?? [];
     const itemsByPath = new Map(items.map((item) => [item.path, item]));
     const currentOrder = [
@@ -78,10 +81,16 @@ const rankOrderWithFoldersFirst = (superstate: Superstate, space: SpaceState): s
         ...items.map((item) => item.path).filter((itemPath) => !ensureArray(space.metadata?.["rank-order"]).includes(itemPath)),
     ];
 
-    return [
-        ...currentOrder.filter((itemPath) => itemsByPath.get(itemPath)?.type == "space"),
-        ...currentOrder.filter((itemPath) => itemsByPath.get(itemPath)?.type != "space"),
-    ];
+    const priority = (itemPath: string) => {
+        const item = itemsByPath.get(itemPath);
+        if (!sort.group) return 0;
+        if (item?.subtype == "tag") return 0;
+        if (item?.type == "space") return 1;
+        return 2;
+    };
+    return currentOrder.map((itemPath, index) => ({ itemPath, index }))
+        .sort((a, b) => priority(a.itemPath) - priority(b.itemPath) || a.index - b.index)
+        .map(({ itemPath }) => itemPath);
 };
 
 export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: MakeMDSettings): SpaceDefinition => {
@@ -193,12 +202,19 @@ export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
     const fieldLabel = sort.field == "name" ? "AZ" : sort.field == "ctime" ? "+" : sort.field == "mtime" ? "~" : sort.field == "rank" ? "#" : sort.field;
     const directionLabel = fieldLabel == "#" ? "" : (sort.asc ? "↓" : "↑");
     const groupLabel = sort.group ? ":" : "";
+    const subtagLabel = tagSpace && sort.subtags ? "/" : "";
     const recursiveLabel = (!tagSpace && sort.recursive) ? "*" : "";
-    return `${groupLabel}${fieldLabel}${directionLabel}${recursiveLabel}`;
+    return `${subtagLabel}${groupLabel}${fieldLabel}${directionLabel}${recursiveLabel}`;
 };
 
 export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: RankedItem) => {
     if (sortStrategy.field == "rank") {
+        if (sortStrategy.group) {
+            const subtagOrder = Number(b?.subtype == "tag") - Number(a?.subtype == "tag");
+            if (subtagOrder != 0) return subtagOrder;
+            const folderOrder = compareByField("type", false)(a, b);
+            if (folderOrder != 0) return folderOrder;
+        }
         const aRanked = typeof a.rank == "number" && a.rank >= 0;
         const bRanked = typeof b.rank == "number" && b.rank >= 0;
         if (aRanked && bRanked && a.rank != b.rank) {
@@ -206,9 +222,6 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: Ranke
         }
         if (aRanked != bRanked) return aRanked ? -1 : 1;
         const fallbackFns = [];
-        if (sortStrategy.group) {
-            fallbackFns.push(compareByField("type", false));
-        }
         fallbackFns.push(compareByFieldCaseInsensitive("name", true));
         return fallbackFns.reduce((p, c) => {
             return p == 0 ? c(a, b) : p;
@@ -216,6 +229,7 @@ export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: Ranke
     }
     const sortFns = [];
     if (sortStrategy.group) {
+        sortFns.push((a: RankedItem, b: RankedItem) => Number(b?.subtype == "tag") - Number(a?.subtype == "tag"));
         sortFns.push(compareByField("type", false));
     }
     if (sortStrategy.field == "name") {
@@ -494,7 +508,7 @@ export const updateSpaceSort = async (superstate: Superstate, path: string, sort
     const currentSort = effectiveSpaceSort(currentStoredSort, superstate.settings);
     const nextSort = effectiveSpaceSort(nextStoredSort, superstate.settings);
     const shouldGroupCurrentRankOrder = currentSort.field == "rank" && nextSort.field == "rank" && currentSort.group != true && nextSort.group == true;
-    const nextRankOrder = shouldGroupCurrentRankOrder ? rankOrderWithFoldersFirst(superstate, space) : undefined;
+    const nextRankOrder = shouldGroupCurrentRankOrder ? rankOrderWithGroupedItemsFirst(superstate, space, nextSort) : undefined;
     if (JSON.stringify(currentStoredSort) == JSON.stringify(nextStoredSort) && nextRankOrder == undefined)
         return;
 

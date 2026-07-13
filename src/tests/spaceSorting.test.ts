@@ -6,9 +6,38 @@ const settings = {
         asc: true,
     },
     defaultFoldersAtTop: true,
+    defaultGroupBySubtags: false,
 } as any;
 
 describe("space tree sorting", () => {
+    it("places sub-tags before folders and files when both grouping options are enabled", () => {
+        const rows: any[] = [
+            { path: "Note.md", name: "Note", type: "file", subtype: "md" },
+            { path: "Folder", name: "Folder", type: "space", subtype: "folder" },
+            { path: "spaces://#topic/child", name: "child", type: "space", subtype: "tag" },
+        ];
+
+        expect([...rows].sort(spaceSortFn({ field: "name", asc: true, group: true, subtags: true })).map((row) => row.path)).toEqual([
+            "spaces://#topic/child",
+            "Folder",
+            "Note.md",
+        ]);
+    });
+
+    it("keeps sub-tags before folders in custom sort even when their ranks are lower", () => {
+        const rows: any[] = [
+            { path: "Note.md", name: "Note", type: "file", subtype: "md", rank: 0 },
+            { path: "Folder", name: "Folder", type: "space", subtype: "folder", rank: 1 },
+            { path: "spaces://#topic/child", name: "child", type: "space", subtype: "tag", rank: 2 },
+        ];
+
+        expect([...rows].sort(spaceSortFn({ field: "rank", asc: true, group: true, subtags: true })).map((row) => row.path)).toEqual([
+            "spaces://#topic/child",
+            "Folder",
+            "Note.md",
+        ]);
+    });
+
     it("uses plugin default sort for a child space without its own sort when parent sort is not recursive", () => {
         expect(childSpaceSort(undefined, { field: "rank", asc: true, recursive: false }, settings)).toEqual({
             field: "name",
@@ -23,6 +52,20 @@ describe("space tree sorting", () => {
             field: "rank",
             asc: true,
             group: true,
+            recursive: true,
+        });
+    });
+
+    it("inherits tag grouping and ordering settings for sub-tags when recursive sorting is enabled", () => {
+        expect(childSpaceSort(
+            { field: "name", asc: true, group: false, subtags: false },
+            { field: "rank", asc: true, group: true, subtags: true, recursive: true },
+            settings,
+        )).toEqual({
+            field: "rank",
+            asc: true,
+            group: true,
+            subtags: true,
             recursive: true,
         });
     });

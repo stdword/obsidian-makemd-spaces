@@ -15,6 +15,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
     // settings
     deleteFileOption: "system-trash",
     defaultFoldersAtTop: true,
+    defaultGroupBySubtags: true,
     defaultSpaceSort: {
         field: "name",
         asc: true,

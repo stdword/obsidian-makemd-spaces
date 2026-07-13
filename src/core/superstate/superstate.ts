@@ -252,14 +252,30 @@ export class Superstate implements ISuperstate {
 
         const tag = '#' + tagSpaceNameFromPath(spacePath).toLowerCase();
         const childTagPrefix = tag + "/";
-        const tags = uniq([
-            tag,
+        const descendantTags = uniq([
             ...[...this.tagsMap.invMap.keys()].filter((indexedTag) => indexedTag.startsWith(childTagPrefix)),
             ...(this.spaceManager.readTags?.() ?? []).map((indexedTag) => indexedTag.toLowerCase()).filter((indexedTag) => indexedTag.startsWith(childTagPrefix)),
         ]);
-        const indexedPaths = tags.flatMap((indexedTag) => [...this.tagsMap.getInverse(indexedTag)]);
-        const adapterPaths = tags.flatMap((indexedTag) => this.spaceManager.pathsForTag?.(indexedTag) ?? []);
-        return uniq([...indexedPaths, ...adapterPaths].map((path) => this.folderPathForTaggedFolderNote(path) ?? path));
+        const groupBySubtags = effectiveSpaceSort(this.spacesIndex.get(spacePath)?.metadata?.sort, this.settings).subtags == true;
+        if (!groupBySubtags) {
+            const tags = [tag, ...descendantTags];
+            const indexedPaths = tags.flatMap((indexedTag) => [...this.tagsMap.getInverse(indexedTag)]);
+            const adapterPaths = tags.flatMap((indexedTag) => this.spaceManager.pathsForTag?.(indexedTag) ?? []);
+            return uniq([...indexedPaths, ...adapterPaths].map((path) => this.folderPathForTaggedFolderNote(path) ?? path));
+        }
+        const childTagPaths = uniq(descendantTags.map((descendantTag) => childTagPrefix + descendantTag.slice(childTagPrefix.length).split("/")[0]))
+            .map((childTag) => {
+                const childPath = tagSpacePathFromTag(childTag);
+                if (!this.spacesIndex.has(childPath))
+                    this.spacesIndex.set(childPath, tagSpaceState(fileSystemSpaceInfoFromTag(this.spaceManager, childTag)));
+                return childPath;
+            });
+        const indexedPaths = [...this.tagsMap.getInverse(tag)];
+        const adapterPaths = this.spaceManager.pathsForTag?.(tag) ?? [];
+        return uniq([
+            ...childTagPaths,
+            ...[...indexedPaths, ...adapterPaths].map((path) => this.folderPathForTaggedFolderNote(path) ?? path),
+        ]);
     }
 
     private folderPathForTaggedFolderNote(path: string): string | null {
@@ -326,6 +342,7 @@ export class Superstate implements ISuperstate {
 
                 return {
                     ...pathStateWithEffectiveDisplay(pathCache, this.spacesIndex, spacePath),
+                    ...(isTagSpace && pathCache.subtype == "tag" ? { name: pathCache.name.split("/").pop() ?? pathCache.name } : {}),
                     rank: ranks.indexOf(f),
                 } as PathStateWithRank;
             })

@@ -18,6 +18,7 @@ export interface MakeMDSettings {
     folderIndentationLines: boolean;
     pinnedSeparatorLine: boolean;
     defaultFoldersAtTop: boolean;
+    defaultGroupBySubtags: boolean;
     defaultSpaceSort: SpaceSort;
     openSpacesOnLaunch: boolean;
     overrideNativeMenu: boolean;

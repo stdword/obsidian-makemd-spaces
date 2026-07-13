@@ -53,7 +53,9 @@ export const en = {
 
         customSort: "Custom Sort",
         groupSpaces: "Folders at the Top",
+        groupSubtags: "Group by Sub-tags",
         recursiveSort: "Apply to Subfolders",
+        recursiveTagSort: "Apply to Sub-tags",
         fileNameSortAlphaAsc: "File Name (A to Z)",
         fileNameSortAlphaDesc: "File Name (Z to A)",
         createdTimeSortAsc: "Created Time (new to old)",
@@ -210,6 +212,10 @@ export const en = {
         defaultFoldersAtTop: {
             name: "Show Folders at the Top (by default)",
             desc: "Place folders before files when a space does not define its own setting",
+        },
+        defaultGroupBySubtags: {
+            name: "Group Tag-Spaces by Subtags (by default)",
+            desc: "Show hierarchical tags as nested tag spaces unless a tag space overrides this setting",
         },
         openSpacesOnLaunch: {
             name: "Open Spaces as Default Tab",
