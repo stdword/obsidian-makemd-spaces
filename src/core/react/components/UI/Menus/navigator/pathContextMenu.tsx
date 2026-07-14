@@ -1,25 +1,26 @@
+import React from "react";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
+import { openStickerPalette } from "core/react/components/PathSticker";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
-import { TreeNode, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
+import { TreeNode, createSpace, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
-import React from "react";
-import { openStickerPalette } from "core/react/components/PathSticker";
-import { default as i18n } from "shared/i18n";
-
 import { deletePath, movePathToSpace } from "core/utils/superstate/path";
+import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
+import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import { default as i18n } from "shared/i18n";
 import { Anchors, Rect } from "shared/types/Pos";
 import { windowFromDocument } from "utils/dom";
+import { isTagSpacePath } from "schemas/builtin";
 import { ConfirmationModal, formatMessage } from "../../Modals/ConfirmationModal";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
-import { isTagSpacePath } from "schemas/builtin";
-import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 
 function isLinkedFileMenuItem(item: any, space?: string) {
     return (
@@ -283,17 +284,38 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
 
     menuOptions.push(menuSeparator);
 
-    const displaySpace = superstate.spacesIndex.get(space);
-    if (displaySpace && depth > 0) {
-        const pinned = isPathPinnedInSpace(displaySpace, path);
+    const displaySpaceCache = superstate.spacesIndex.get(space);
+    if (displaySpaceCache && depth > 0) {
+        const pinned = isPathPinnedInSpace(displaySpaceCache, path);
         menuOptions.push({
             name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
             icon: pinned ? "ui//pin-off" : "ui//pin",
             onClick: () => {
-                setPathPinnedInSpace(superstate, displaySpace.path, path, !pinned);
+                setPathPinnedInSpace(superstate, displaySpaceCache.path, path, !pinned);
             },
         });
     }
+
+    // link to
+    menuOptions.push({
+        name: i18n.buttons.addToSpace,
+        icon: "ui//link",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showFoldersMenu(
+                offset,
+                windowFromDocument(e.view.document),
+                superstate,
+                (link) => {
+                    dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
+                },
+                e.shiftKey,
+            );
+        },
+    });
+
+    menuOptions.push(menuSeparator);
 
     // duplicate
     menuOptions.push({
@@ -330,21 +352,40 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             },
         });
 
-    // link to
     menuOptions.push({
-        name: i18n.buttons.addToSpace,
-        icon: "ui//link",
+        name: i18n.menu.wrapToFolder,
+        icon: "lucide//folder-symlink",
         closeParentImmediately: true,
         onClick: (e) => {
-            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showFoldersMenu(
-                offset,
+            const parentPath = cache.parent && cache.parent != "/" ? cache.parent : "";
+            const folderPathForName = (value: string) => {
+                const folderName = value.replace(/\//g, "").trim();
+                return {
+                    folderName,
+                    folderPath: parentPath ? `${parentPath}/${folderName}` : folderName,
+                };
+            };
+            superstate.ui.openModal(
+                i18n.menu.wrapToFolder,
+                <InputModal
+                    saveLabel={i18n.buttons.wrap}
+                    value={pathDisplayInfo(path).title}
+                    saveValue={async (value) => {
+                        const { folderPath } = folderPathForName(value);
+                        if (await superstate.spaceManager.pathExists(folderPath)) {
+                            superstate.ui.notify(i18n.notice.fileExists);
+                            return;
+                        }
+                        await createSpace(superstate, folderPath);
+                        await superstate.spaceManager.renamePath(path, `${folderPath}/${path.split("/").pop()}`);
+                    }}
+                    validateValue={(value) => {
+                        const { folderName, folderPath } = folderPathForName(value);
+                        if (!folderName) return i18n.notice.emptyfolderName;
+                        if (superstate.spacesIndex.has(folderPath)) return i18n.notice.duplicateFolderName;
+                    }}
+                />,
                 windowFromDocument(e.view.document),
-                superstate,
-                (link) => {
-                    dropPathsInSpaceAtIndex(superstate, [path], link, -1, "link");
-                },
-                e.shiftKey,
             );
         },
     });
@@ -392,18 +433,15 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     }
 
     // unlink item
-    if (space && space != cache.parent && !isTagSpacePath(space)) {
-        const spaceCache = superstate.spacesIndex.get(space);
-        if (spaceCache) {
+    if (space && space != cache.parent && !isTagSpacePath(space))
+        if (displaySpaceCache)
             menuOptions.push({
-                name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
+                name: i18n.menu.removeFromSpace.replace("${1}", displaySpaceCache.name),
                 icon: "ui//pin-off",
                 onClick: () => {
-                    removePathsFromSpace(superstate, spaceCache.path, [path]);
+                    removePathsFromSpace(superstate, displaySpaceCache.path, [path]);
                 },
             });
-        }
-    }
 
     // Previous global Hide command (disabled in favor of per-focus exclusions).
     // menuOptions.push({
@@ -411,6 +449,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     //     icon: "ui//eye-off",
     //     onClick: () => hidePath(superstate, path),
     // });
+
     if (depth > 0)
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,

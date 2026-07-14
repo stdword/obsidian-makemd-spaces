@@ -120,6 +120,27 @@ export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState
     return tree;
 };
 
+export const revealTreePath = (path: string, sectionPaths: string[]) => {
+    const sectionPath = sectionPaths
+        .filter((candidate) => candidate == "/" || path === candidate || path.startsWith(`${candidate}/`))
+        .sort((a, b) => b.length - a.length)[0];
+    if (!path || !sectionPath) return;
+
+    const folders = path.split("/");
+    const pathLevel = sectionPath.split("/").filter((part) => part.length > 0).length;
+    const openPaths = folders.reduce(
+        (paths, _part, index) => [
+            ...paths,
+            ...(index < pathLevel
+                ? []
+                : [index == 0 ? `//${folders[0]}` : `${paths[paths.length - 1]}/${folders.slice(0, index + 1).join("/")}`]),
+        ],
+        [sectionPath],
+    );
+
+    return { openPaths, targetId: openPaths[openPaths.length - 1] };
+};
+
 export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const { superstate } = props;
     const indentationWidth = 16;
@@ -215,36 +236,17 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const revealPath = useCallback(
         (path: string) => {
-            let parentSpaces = activeViewSpaces?.filter((f) => path?.startsWith(f?.path) || f?.path == "/") ?? [];
+            const route = revealTreePath(path, activeViewSpaces.map((space) => space.path));
+            if (!route) return false;
 
-            // If file not in current focus's spaces, check if "/" space is available
-            // and add it to allow revealing files from any focus
-            if (parentSpaces.length == 0) {
-                const rootSpace = superstate.pathsIndex.get("/");
-                if (rootSpace) {
-                    parentSpaces = [rootSpace];
-                }
-            }
-            if (!path || parentSpaces.length == 0) return false;
-
-            let newOpenFolders = expandedSpaces;
-            let newScrollToSpace = null;
-            parentSpaces.forEach((space) => {
-                const folders = path.split("/");
-                const pathLevel = space.path.split("/").filter((f) => f.length > 0).length;
-                const openPaths = folders.reduce(
-                    (p, c, index) => {
-                        return [...p, ...(index < pathLevel ? [] : [index == 0 ? "//" + c : p[p.length - 1] + "/" + folders.slice(0, index + 1).join("/")])];
-                    },
-                    [space.path],
-                );
-                newScrollToSpace = openPaths[openPaths.length - 1];
-                newOpenFolders = [...(newOpenFolders.filter((f) => !openPaths.find((g) => g == f)) ?? []), ...openPaths.slice(0, -1)];
-            });
+            const newOpenFolders = [
+                ...expandedSpaces.filter((expandedPath) => !route.openPaths.includes(expandedPath)),
+                ...route.openPaths.slice(0, -1),
+            ];
 
             superstate.settings.expandedSpaces = newOpenFolders;
             setExpandedSpaces(newOpenFolders);
-            nextTreeScrollPath.current = newScrollToSpace;
+            nextTreeScrollPath.current = route.targetId;
             superstate.saveSettings(false);
             return true;
         },

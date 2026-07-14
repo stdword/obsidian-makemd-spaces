@@ -1,13 +1,16 @@
+import React from "react";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
 import { duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
-import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
-import React from "react";
 import { openStickerPalette } from "core/react/components/PathSticker";
+import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
+import { addTag, mergeTagSpaceMetadata } from "core/utils/superstate/tags";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import { default as i18n } from "shared/i18n";
 import { PathState, FilesystemSpaceInfo } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
+import { isTagSpacePath } from "schemas/builtin";
 import { SpaceSort } from "shared/types/spaceDef";
 import { savePathSticker } from "utils/sticker";
 import { movePath } from "utils/uri";
@@ -18,10 +21,8 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu, showTagsMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
-import { showSpaceAddMenu } from "./showSpaceAddMenu";
-import { isTagSpacePath } from "schemas/builtin";
-import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
-import { addTag, mergeTagSpaceMetadata } from "core/utils/superstate/tags";
+import { newFolderMenuOption, newNoteMenuOption, showSpaceAddMenu } from "./showSpaceAddMenu";
+
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
     const space = superstate.spacesIndex.get(path.path);
@@ -30,6 +31,10 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     const menuOptions: SelectOption[] = [];
 
     if (!isTagSpace) {
+        menuOptions.push(newNoteMenuOption(superstate, space));
+        if (space.type == "folder") {
+            menuOptions.push(newFolderMenuOption(superstate, space));
+        }
         menuOptions.push({
             name: i18n.menu.new,
             icon: "ui//plus",
@@ -64,6 +69,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     menuOptions.push(menuSeparator);
 
+    // sort
     menuOptions.push({
         name: i18n.menu.sortBy,
         icon: "ui//sort-desc",
@@ -142,19 +148,42 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     }
 
     menuOptions.push(menuSeparator);
-    if (space.type != "vault") {
-        const displaySpace = superstate.spacesIndex.get(parentSpace);
-        if (displaySpace && depth > 0) {
-            const pinned = isPathPinnedInSpace(displaySpace, space.path);
-            menuOptions.push({
-                name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
-                icon: pinned ? "ui//pin-off" : "ui//pin",
-                onClick: () => {
-                    setPathPinnedInSpace(superstate, displaySpace.path, space.path, !pinned);
-                },
-            });
-        }
+
+    // pin / unpin
+    const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
+    if (parentSpaceCache && depth > 0) {
+        const pinned = isPathPinnedInSpace(parentSpaceCache, space.path);
+        menuOptions.push({
+            name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
+            icon: pinned ? "ui//pin-off" : "ui//pin",
+            onClick: () => {
+                setPathPinnedInSpace(superstate, parentSpaceCache.path, space.path, !pinned);
+            },
+        });
     }
+
+    // link to
+    menuOptions.push({
+        name: i18n.buttons.addToSpace,
+        icon: "ui//link",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showFoldersMenu(
+                offset,
+                win,
+                superstate,
+                (link) => {
+                    const spaceCache = superstate.spacesIndex.get(link);
+                    if (spaceCache)
+                        linkPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
+                },
+                e.shiftKey,
+            );
+        },
+    });
+
+    menuOptions.push(menuSeparator);
 
     if (space.type != "vault" && !isTagSpace) {
         // duplicate
@@ -175,12 +204,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={space.type == "tag" ? stringFromTag(space.name) : space.name} saveValue={(v) => renamePathByName(superstate, space.path, v)}></InputModal>, win);
             },
         });
-    }
 
-    const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
-
-    // move to
-    if (space.type == "folder") {
+        // move to
         menuOptions.push({
             name: i18n.menu.moveFile,
             icon: "ui//paper-plane",
@@ -194,32 +219,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    // link to
-    if (space.type == "folder" || isTagSpace) {
-        menuOptions.push({
-            name: i18n.buttons.addToSpace,
-            icon: "ui//link",
-            closeParentImmediately: true,
-            onClick: (e) => {
-                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-                showFoldersMenu(
-                    offset,
-                    win,
-                    superstate,
-                    (link) => {
-                        const spaceCache = superstate.spacesIndex.get(link);
-                        if (spaceCache)
-                            linkPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
-                    },
-                    e.shiftKey,
-                );
-            },
-        });
-    }
-
     if (isTagSpace) {
-        menuOptions.push({
-            name: "Merge into...",
+        menuOptions.push({  // merge into
+            name: i18n.buttons.mergeInto,
             icon: "lucide//merge",
             closeParentImmediately: true,
             onClick: (e) => {
@@ -316,8 +318,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     //         onClick: () => directlyHidden ? unhidePath(superstate, space.path) : hidePath(superstate, space.path),
     //     });
     // }
+
     if (depth > 0)
-        menuOptions.push({
+        menuOptions.push({  // exclude from
             name: i18n.menu.excludeFromFocus,
             icon: "ui//eye-off",
             onClick: () => excludePathsFromCurrentFocus(superstate, [space.path]),

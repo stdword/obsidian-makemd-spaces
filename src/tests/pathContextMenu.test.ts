@@ -409,6 +409,61 @@ describe("showPathContextMenu", () => {
         }));
     });
 
+    it("shows Wrap to Folder after Move to and defaults to the file name without its extension", async () => {
+        const openMenu = jest.fn();
+        const openModal = jest.fn();
+        const renamePath = jest.fn(() => Promise.resolve());
+        const createFolder = jest.fn(() => Promise.resolve());
+        const pathState = {
+            path: "Drafts/Sample Article.md",
+            name: "Sample Article",
+            parent: "Drafts",
+            type: "file",
+            subtype: "md",
+        };
+        const superstate = {
+            settings: {},
+            pathsIndex: new Map([[pathState.path, pathState]]),
+            pathStateForPath: jest.fn(() => pathState),
+            spacesIndex: new Map(),
+            spaceManager: {
+                pathExists: jest.fn(() => Promise.resolve(false)),
+                spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.split("/").pop() })),
+                parentPathForPath: jest.fn(() => "Drafts"),
+                createSpace: createFolder,
+                renamePath,
+            },
+            reloadSpace: jest.fn((space: any) => Promise.resolve({ ...space, metadata: {} })),
+            onSpaceDefinitionChanged: jest.fn(),
+            ui: {
+                openMenu,
+                openModal,
+                notify: jest.fn(),
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+            },
+        } as any;
+        const event = { view: { document: { defaultView: {} } } } as any;
+
+        showPathContextMenu(superstate, pathState.path, "Drafts", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const options = openMenu.mock.calls[0][1].options;
+        const moveIndex = options.findIndex((option: any) => option.name === i18n.menu.moveFile);
+        const wrapIndex = options.findIndex((option: any) => option.name === i18n.menu.wrapToFolder);
+        expect(wrapIndex).toBe(moveIndex + 1);
+
+        options[wrapIndex].onClick(event);
+        const modal = openModal.mock.calls[0][1];
+        expect(modal.props.value).toBe("Sample Article");
+
+        await modal.props.saveValue("Published Article");
+        expect(createFolder).toHaveBeenCalledWith("Published Article", "Drafts", undefined);
+        expect(renamePath).toHaveBeenCalledWith(
+            "Drafts/Sample Article.md",
+            "Drafts/Published Article/Sample Article.md",
+        );
+    });
+
     it("shows Exclude from Focus below level zero and no Hide command", async () => {
         const openMenu = jest.fn();
         const saveFocuses = jest.fn();
@@ -467,6 +522,43 @@ describe("showPathContextMenu", () => {
 });
 
 describe("showSpaceContextMenu", () => {
+    it("shows New Note and New Folder before New and removes them from its submenu", () => {
+        const openMenu = jest.fn();
+        const pathState = { path: "Projects", parent: "/", type: "space", subtype: "folder", spaces: [] as string[] };
+        const space = {
+            path: pathState.path,
+            name: "Projects",
+            type: "folder",
+            metadata: {},
+            space: { folderPath: pathState.path },
+        };
+        const superstate = {
+            settings: {},
+            pathsIndex: new Map([[pathState.path, pathState]]),
+            spacesIndex: new Map([[space.path, space]]),
+            ui: {
+                openMenu,
+                getOS: jest.fn(() => "mac"),
+                hasNativePathMenu: jest.fn(() => false),
+                isPluginEnabled: jest.fn(() => false),
+            },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        expect(rootOptions.slice(0, 3).map((option: any) => option.name)).toEqual([
+            i18n.labels.createNote,
+            i18n.labels.createFolder,
+            i18n.menu.new,
+        ]);
+
+        rootOptions[2].onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+        const newSubmenuOptions = openMenu.mock.calls[1][1].options;
+        expect(newSubmenuOptions.some((option: any) => option.name === i18n.labels.createNote)).toBe(false);
+        expect(newSubmenuOptions.some((option: any) => option.name === i18n.labels.createFolder)).toBe(false);
+    });
+
     it("updates the home space display color when a color is selected", async () => {
         const dispatchEvent = jest.fn();
         const saveSpace = jest.fn();
@@ -927,7 +1019,11 @@ describe("showSpaceContextMenu", () => {
 
         showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, parentPath, undefined, 1);
 
-        expect(openMenu.mock.calls[0][1].options.some((option: any) => option.name === "Pin to Top")).toBe(true);
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        const pinIndex = rootOptions.findIndex((option: any) => option.name === "Pin to Top");
+        const sortIndex = rootOptions.findIndex((option: any) => option.name === i18n.menu.sortBy);
+        expect(pinIndex).toBeGreaterThan(-1);
+        expect(pinIndex).toBeLessThan(sortIndex);
     });
 
     it("opens Link to with hidden folders when shift-clicked", () => {

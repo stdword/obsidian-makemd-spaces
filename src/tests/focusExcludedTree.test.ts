@@ -1,4 +1,4 @@
-import { retrieveData } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
+import { retrieveData, revealTreePath } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 
 describe("focus-excluded navigator items", () => {
     it("hides an excluded folder and its branch, but keeps a linked child shown from another space", () => {
@@ -63,5 +63,19 @@ describe("focus-excluded navigator items", () => {
             expect.objectContaining({ path: sectionPath.path, depth: 0, type: "group" }),
             expect.objectContaining({ path: child.path, space: sectionPath.path }),
         ]));
+    });
+
+    it("reveals from the most specific physical section without using linked or tag sections", () => {
+        const route = revealTreePath("Archive/Novels/Example Book.md", [
+            "Archive/Novels",
+            "Archive",
+            "Dashboard",
+            "spaces://#reading",
+        ]);
+
+        expect(route).toEqual({
+            openPaths: ["Archive/Novels", "Archive/Novels/Archive/Novels/Example Book.md"],
+            targetId: "Archive/Novels/Archive/Novels/Example Book.md",
+        });
     });
 });

@@ -22,7 +22,7 @@ export const en = {
         toggle: "Toggle",
         setDefaultColor: "Color",
         setDefaultSticker: "Sticker",
-        new: "New",
+        new: "New...",
         noColor: "No Color",
         thisElementWillHaveNoColorApplied: "This Element Will Have No Color Applied",
         yes: "Yes",
@@ -34,6 +34,7 @@ export const en = {
         applyItems: "Apply to Items in Folder",
         rename: "Rename",
         moveFile: "Move to...",
+        wrapToFolder: "Wrap to Folder",
         pinToTop: "Pin to Top",
         unpin: "Unpin",
         duplicate: "Duplicate",
@@ -90,7 +91,9 @@ export const en = {
 
         delete: "Delete",
         merge: "Merge",
+        mergeInto: "Merge into...",
         addToSpace: "Link to...",
+        wrap: "Wrap",
 
         addItem: "Add Item",
 
