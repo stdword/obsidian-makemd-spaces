@@ -68,7 +68,7 @@ export const en = {
 
         changeColor: "Color",
 
-        openFilePane: "Open File Pane",
+        openInATab: "Open in Tabs",
         openNativeMenu: "More options",
         revealInSpaces: "Reveal in Spaces",
         revealInDefault: "Reveal in Finder",

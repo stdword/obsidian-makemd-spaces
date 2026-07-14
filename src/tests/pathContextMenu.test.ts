@@ -189,6 +189,68 @@ describe("triggerMultiPathMenu", () => {
             "Projects/Beta.md": "#123456",
         });
     });
+
+    it("pins every selected path in their shared tree space", async () => {
+        const openMenu = jest.fn();
+        const space = { path: "Projects", type: "folder", metadata: { pinned: [] as string[] } };
+        const superstate = {
+            spacesIndex: new Map([[space.path, space]]),
+            spaceManager: { saveSpace: jest.fn(() => Promise.resolve()) },
+            updateSpaceMetadata: jest.fn((_path: string, metadata: any) => {
+                space.metadata = metadata;
+                return Promise.resolve();
+            }),
+            ui: { openMenu },
+        };
+        const selectedPaths = [
+            { item: { path: "Projects/Alpha.md", parent: "Projects", type: "file" }, path: "Projects/Alpha.md", space: "Projects", depth: 1 },
+            { item: { path: "Projects/Beta.md", parent: "Projects", type: "file" }, path: "Projects/Beta.md", space: "Projects", depth: 1 },
+        ];
+        const event = { target: { getBoundingClientRect: jest.fn(() => ({})) }, view: { document: { defaultView: {} } } };
+
+        triggerMultiPathMenu(superstate as any, selectedPaths as any, event as any);
+        const pin = openMenu.mock.calls[0][1].options.find((option: any) => option.name === i18n.menu.pinToTop);
+        await pin.onClick();
+
+        expect(space.metadata.pinned).toEqual(["Projects/Alpha.md", "Projects/Beta.md"]);
+    });
+
+    it("wraps selected sibling paths into one new folder", async () => {
+        const openMenu = jest.fn();
+        const openModal = jest.fn();
+        const renamePath = jest.fn(() => Promise.resolve());
+        const createFolder = jest.fn(() => Promise.resolve());
+        const superstate = {
+            spacesIndex: new Map(),
+            pathsIndex: new Map(),
+            spaceManager: {
+                pathExists: jest.fn(() => Promise.resolve(false)),
+                spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.split("/").pop() })),
+                parentPathForPath: jest.fn(() => "Projects"),
+                createSpace: createFolder,
+                renamePath,
+            },
+            reloadSpace: jest.fn((space: any) => Promise.resolve({ ...space, metadata: {} })),
+            onSpaceDefinitionChanged: jest.fn(),
+            ui: { openMenu, openModal, notify: jest.fn() },
+        };
+        const selectedPaths = [
+            { item: { path: "Projects/Alpha.md", parent: "Projects", type: "file" }, path: "Projects/Alpha.md", space: "Projects", depth: 1 },
+            { item: { path: "Projects/Beta.md", parent: "Projects", type: "file" }, path: "Projects/Beta.md", space: "Projects", depth: 1 },
+        ];
+        const event = { target: { getBoundingClientRect: jest.fn(() => ({})) }, view: { document: { defaultView: {} } } };
+
+        triggerMultiPathMenu(superstate as any, selectedPaths as any, event as any);
+        const wrap = openMenu.mock.calls[0][1].options.find((option: any) => option.name === i18n.menu.wrapToFolder);
+        wrap.onClick(event as any);
+        await openModal.mock.calls[0][1].props.saveValue("Bundle");
+
+        expect(createFolder).toHaveBeenCalledWith("Bundle", "Projects", undefined);
+        expect(renamePath.mock.calls).toEqual([
+            ["Projects/Alpha.md", "Projects/Bundle/Alpha.md"],
+            ["Projects/Beta.md", "Projects/Bundle/Beta.md"],
+        ]);
+    });
 });
 
 describe("showPathContextMenu", () => {

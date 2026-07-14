@@ -39,14 +39,13 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     const menuOptions: SelectOption[] = [];
 
-    // Open in a New Pane
+    // Open in a New Tab
     menuOptions.push({
-        name: i18n.menu.openFilePane,
+        name: i18n.menu.openInATab,
         icon: "ui//go-to-file",
         onClick: async () => {
-            for (const path of paths) {
+            for (const path of paths)
                 await superstate.ui.openPath(path, "tab");
-            }
         },
     });
 
@@ -82,20 +81,22 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
-    // Move Item
-    menuOptions.push({
-        name: i18n.menu.moveFile,
-        icon: "ui//paper-plane",
-        closeParentImmediately: true,
-        onClick: (e) => {
-            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                paths.forEach((f) => {
-                    movePathToSpace(superstate, f, link);
-                });
-            }, e.shiftKey);
-        },
-    });
+    // pin / unpin
+    const displaySpace = selectedPaths[0]?.space;
+    const displaySpaceCache = displaySpace && selectedPaths.every((item) => item.space == displaySpace && item.depth > 0)
+        ? superstate.spacesIndex.get(displaySpace)
+        : null;
+    if (displaySpaceCache) {
+        const pinned = selectedPaths.every((item) => isPathPinnedInSpace(displaySpaceCache, item.path));
+        menuOptions.push({
+            name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
+            icon: pinned ? "ui//pin-off" : "ui//pin",
+            onClick: async () => {
+                for (const path of paths)
+                    await setPathPinnedInSpace(superstate, displaySpaceCache.path, path, !pinned);
+            },
+        });
+    }
 
     // link to...
     menuOptions.push({
@@ -124,12 +125,71 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
+    // move to
+    menuOptions.push({
+        name: i18n.menu.moveFile,
+        icon: "ui//paper-plane",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                paths.forEach((f) => {
+                    movePathToSpace(superstate, f, link);
+                });
+            }, e.shiftKey);
+        },
+    });
+
+    const parentPath = selectedPaths[0]?.item?.parent;
+    if (parentPath != null && selectedPaths.every((item) => item.item?.parent == parentPath))
+        menuOptions.push({
+            name: i18n.menu.wrapToFolder,
+            icon: "lucide//folder-symlink",
+            closeParentImmediately: true,
+            onClick: (e) => {
+                const normalizedParentPath = parentPath != "/" ? parentPath : "";
+                const folderPathForName = (value: string) => {
+                    const folderName = value.replace(/\//g, "").trim();
+                    return {
+                        folderName,
+                        folderPath: normalizedParentPath ? `${normalizedParentPath}/${folderName}` : folderName,
+                    };
+                };
+                superstate.ui.openModal(
+                    i18n.menu.wrapToFolder,
+                    <InputModal
+                        saveLabel={i18n.buttons.wrap}
+                        value=""
+                        saveValue={async (value) => {
+                            const { folderPath } = folderPathForName(value);
+                            if (await superstate.spaceManager.pathExists(folderPath)) {
+                                superstate.ui.notify(i18n.notice.fileExists);
+                                return;
+                            }
+                            await createSpace(superstate, folderPath);
+                            for (const path of paths)
+                                await superstate.spaceManager.renamePath(path, `${folderPath}/${path.split("/").pop()}`);
+                        }}
+                        validateValue={(value) => {
+                            const { folderName, folderPath } = folderPathForName(value);
+                            if (!folderName) return i18n.notice.emptyfolderName;
+                            if (superstate.spacesIndex.has(folderPath)) return i18n.notice.duplicateFolderName;
+                        }}
+                    />,
+                    windowFromDocument(e.view.document),
+                );
+            },
+        });
+
+    menuOptions.push(menuSeparator);
+
     // Previous global Hide command (disabled in favor of per-focus exclusions).
     // menuOptions.push({
     //     name: i18n.menu.hide,
     //     icon: "ui//eye-off",
     //     onClick: () => hidePaths(superstate, paths),
     // });
+
     if (selectedPaths.every((item) => item.depth > 0))
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,
@@ -137,7 +197,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
             onClick: () => excludePathsFromCurrentFocus(superstate, paths),
         });
 
-    // Delete Item
+    // Delete
     menuOptions.push({
         name: i18n.menu.delete,
         icon: "ui//trash",
@@ -170,7 +230,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
 
     // Open in a New Pane
     menuOptions.push({
-        name: i18n.menu.openFilePane,
+        name: i18n.menu.openInATab,
         icon: "ui//go-to-file",
         onClick: async () => {
             for (const path of paths) {
@@ -284,6 +344,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
 
     menuOptions.push(menuSeparator);
 
+    // pin / unpin
     const displaySpaceCache = superstate.spacesIndex.get(space);
     if (displaySpaceCache && depth > 0) {
         const pinned = isPathPinnedInSpace(displaySpaceCache, path);
