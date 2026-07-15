@@ -30,12 +30,13 @@ export const tagSpaceParentPath = (path: string) => {
 export const isFilter = (path: string, parentSpace: SpaceState) => {
     if (!isTagSpacePath(path))
         return false;
+    const canonicalPath = canonicalTagSpacePath(path);
     const links = ensureArray(parentSpace.metadata.links) as string[]
     const currentLink = links.find((link) => {
-        if (!link.startsWith(path))  // pre-check, can be not strong: #tag & #tags
+        if (!link.startsWith(canonicalPath))  // pre-check, can be not strong: #tag & #tags
             return false;
         const parsed = parseTagSpaceLink(link)
-        return parsed.path == path && parsed.params.has("filter");
+        return parsed.path == canonicalPath && parsed.params.has("filter");
     })
     return !!currentLink;
 }

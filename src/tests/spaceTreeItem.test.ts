@@ -1,7 +1,7 @@
 import { linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { filterLinkedTagSpaceItems } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
-import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
+import { canOpenTreeItemPath, isFilter, isTagTreeItemPath } from "schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
 import fs from "fs";
 import path from "path";
@@ -142,6 +142,13 @@ describe("linked item icon", () => {
 });
 
 describe("linked tag space filter", () => {
+    it("recognizes a filtered link when the queried path already contains filter params", () => {
+        const parentSpace = { metadata: { links: ["spaces://#topic?filter"] } } as any;
+
+        expect(isFilter("spaces://#topic?filter", parentSpace)).toBe(true);
+        expect(isFilter("spaces://#topic", parentSpace)).toBe(true);
+    });
+
     it("keeps only recursive descendants of the containing folder", () => {
         const items = [
             { path: "Folder/Sub/Item.md" },
@@ -161,6 +168,19 @@ describe("linked tag space filter", () => {
             { path: "Folder/Sub/Item.md", type: "file" },
         ] as any;
         expect(filterLinkedTagSpaceItems(items, "Folder").map((item) => item.path)).toEqual(["Folder/Sub/Item.md"]);
+    });
+
+    it("keeps hierarchical tag spaces while filtering physical paths", () => {
+        const items = [
+            { path: "spaces://#topic/done", type: "space", subtype: "tag" },
+            { path: "Folder/Included.md", type: "file" },
+            { path: "Outside/Untitled.md", type: "file" },
+        ] as any;
+
+        expect(filterLinkedTagSpaceItems(items, "Folder").map((item) => item.path)).toEqual([
+            "spaces://#topic/done",
+            "Folder/Included.md",
+        ]);
     });
 });
 

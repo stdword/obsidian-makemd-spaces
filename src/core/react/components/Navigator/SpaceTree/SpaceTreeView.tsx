@@ -53,7 +53,7 @@ export const constrainSeparatorProjection = (activeItem: TreeNode | null, projec
 
 export const filterLinkedTagSpaceItems = (items: PathStateWithRank[], parentFolderPath: string) => {
     const prefix = parentFolderPath == "/" ? "" : `${parentFolderPath}/`;
-    return items.filter((item) => item.path != parentFolderPath && (prefix == "" || item.path.startsWith(prefix)));
+    return items.filter((item) => isTagTreeItemPath(item) || (item.path != parentFolderPath && (prefix == "" || item.path.startsWith(prefix))));
 };
 
 export const constrainTagSpaceProjection = (activeItem: TreeNode | null, projection: DragProjection | null, flattenedTree: TreeNode[]): DragProjection | null => {
@@ -87,7 +87,7 @@ export const separatorDropRank = (projection: DragProjection, target: TreeNode |
     return Math.max(0, baseRank + (projection.linePosition == "bottom" ? 1 : 0));
 };
 
-const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], excludedPaths: string[], pinned?: boolean) => {
+const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], excludedPaths: string[], pinned?: boolean, inheritedFilterFolderPath?: string) => {
     const tree: TreeNode[] = [];
     const id = parentId ? parentId + "/" + space.path : space.path;
     // Only check expandedSpaces - don't force collapse based on activeId
@@ -99,9 +99,11 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const folderNotePath = space.space?.notePath || null;
     const parentSpace = superstate.spacesIndex.get(parentPath);
     const linkedTagUri = space.type == "tag" && parentSpace ? linkedTagSpaceUri(parentSpace, space.path) : null;
-    const filtered = Boolean(linkedTagUri && isFilter(linkedTagUri, parentSpace));
+    const ownFilterFolderPath = linkedTagUri && isFilter(linkedTagUri, parentSpace) ? parentPath : undefined;
+    const filterFolderPath = ownFilterFolderPath ?? inheritedFilterFolderPath;
+    const filtered = Boolean(filterFolderPath);
     const spaceItems = filtered
-        ? filterLinkedTagSpaceItems(superstate.getSpaceItems(space.path) ?? [], parentPath)
+        ? filterLinkedTagSpaceItems(superstate.getSpaceItems(space.path) ?? [], filterFolderPath)
         : superstate.getSpaceItems(space.path) ?? [];
     const children = filterFolderNoteChildren(superstate, folderNotePath, spaceItems)
         .filter((item) => !isPathExcludedFromFocus(item.path, excludedPaths));
@@ -186,7 +188,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
                 tree.push(pathStateToTreeNode(superstate, rankedItem, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
             } else {
                 if (superstate.spacesIndex.has(item.path)) {
-                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), rankedItem, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, excludedPaths, pinned));
+                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), rankedItem, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, excludedPaths, pinned, filterFolderPath));
                 }
             }
         });
