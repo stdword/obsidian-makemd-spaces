@@ -70,6 +70,58 @@ describe("focus-excluded navigator items", () => {
         )).toBe(4);
     });
 
+    it("uses the stored target rank for a separator drop when hidden items shift visual ranks", () => {
+        const separatorPath = SPACE_SEPARATOR_PATH;
+        const order = [
+            "Board/PinnedOne.md",
+            "Board/PinnedTwo.md",
+            "Board/First.md",
+            "Board/Second.md",
+            "Board/Third.md",
+            "Board/Overview.canvas",
+            separatorPath,
+            "Board/Fourth.md",
+            "Board/Fifth.md",
+        ];
+        const parent = { id: "Board", parentId: null, type: "group", item: { path: "Board" } } as any;
+        const target = {
+            id: "Board/Board/Fifth.md",
+            parentId: parent.id,
+            type: "file",
+            path: "Board/Fifth.md",
+            item: { path: "Board/Fifth.md" },
+            rank: 7,
+        } as any;
+
+        expect(separatorDropRank(
+            { parentId: parent.id, insert: false, linePosition: "top" } as any,
+            target,
+            [parent, target],
+            order.length,
+            order,
+        )).toBe(8);
+    });
+
+    it("keeps bottom-line separator drops relative to the stored target", () => {
+        const order = ["Board/Overview.canvas", SPACE_SEPARATOR_PATH, "Board/Alpha.md", "Board/Beta.md"];
+        const target = {
+            id: "Board/Board/Alpha.md",
+            parentId: "Board",
+            type: "file",
+            path: "Board/Alpha.md",
+            item: { path: "Board/Alpha.md" },
+            rank: 1,
+        } as any;
+
+        expect(separatorDropRank(
+            { parentId: "Board", insert: false, linePosition: "bottom" } as any,
+            target,
+            [target],
+            order.length,
+            order,
+        )).toBe(3);
+    });
+
     it("only allows separator projections within its original container", () => {
         const separator = { type: "separator", parentId: "Source" } as any;
         const sameContainer = { parentId: "Source", sortable: true, insert: false } as any;

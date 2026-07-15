@@ -194,6 +194,44 @@ describe("space metadata persistence", () => {
         expect(superstate.spacesIndex.get(source.path).metadata["rank-order"]).toEqual(["Source/A.md", "Source/B.md"]);
     });
 
+    it("moves a separator down and back up using stored insertion ranks", async () => {
+        const space = {
+            path: "Board",
+            type: "folder",
+            metadata: {
+                sort: { field: "rank" },
+                "rank-order": ["Board/Overview.canvas", "Board/Alpha.md", SPACE_SEPARATOR_PATH, "Board/Beta.md", "Board/Gamma.md"],
+            },
+        } as any;
+        const superstate = {
+            settings,
+            spacesIndex: new Map([[space.path, space]]),
+            spaceManager: { saveSpace: jest.fn(() => Promise.resolve()) },
+            updateSpaceMetadata: jest.fn((path, metadata) => {
+                superstate.spacesIndex.set(path, { ...superstate.spacesIndex.get(path), metadata });
+                return Promise.resolve(superstate.spacesIndex.get(path));
+            }),
+        } as any;
+
+        await moveSpaceSeparator(superstate, space.path, 2, space.path, 4);
+        expect(superstate.spacesIndex.get(space.path).metadata["rank-order"]).toEqual([
+            "Board/Overview.canvas",
+            "Board/Alpha.md",
+            "Board/Beta.md",
+            SPACE_SEPARATOR_PATH,
+            "Board/Gamma.md",
+        ]);
+
+        await moveSpaceSeparator(superstate, space.path, 3, space.path, 2);
+        expect(superstate.spacesIndex.get(space.path).metadata["rank-order"]).toEqual([
+            "Board/Overview.canvas",
+            "Board/Alpha.md",
+            SPACE_SEPARATOR_PATH,
+            "Board/Beta.md",
+            "Board/Gamma.md",
+        ]);
+    });
+
     it("waits for the context file write before updating in-memory metadata", async () => {
         let finishWrite: () => void = (): void => undefined;
         const saveSpace = jest.fn(() => new Promise<void>((resolve) => {

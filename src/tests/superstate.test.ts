@@ -9,7 +9,7 @@ import { savePathColor } from "core/utils/superstate/label";
 import { isSpaceSortable, spaceSortFn } from "core/utils/superstate/spaces";
 import { saveColorForPaths } from "core/utils/emoji";
 import { addTag, mergeTagSpaceMetadata, syncTagSpacesFromObsidian } from "core/utils/superstate/tags";
-import { tagSpacePathFromTag } from "schemas/builtin";
+import { SPACE_SEPARATOR_PATH, tagSpacePathFromTag } from "schemas/builtin";
 
 const createSuperstate = () => {
     const spaceManager = {
@@ -1619,6 +1619,75 @@ describe("Superstate tag initialization", () => {
         expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith("VaultRoot/ParentFolder/PinnedFolder", expect.any(Function));
     });
 
+    it("preserves repeated separators when renaming a file in a manually sorted folder", async () => {
+        const { superstate } = createSuperstate();
+        const folderPath = "Reading";
+        const oldPath = "Reading/Draft.md";
+        const newPath = "Reading/Published.md";
+        const folder = {
+            type: "folder",
+            name: "Reading",
+            path: folderPath,
+            metadata: {
+                sort: { field: "rank", asc: true },
+                links: [],
+                "rank-order": [
+                    "Reading/First.md",
+                    SPACE_SEPARATOR_PATH,
+                    oldPath,
+                    SPACE_SEPARATOR_PATH,
+                    "Reading/Last.md",
+                ],
+                pinned: [],
+                "file-colors": {},
+            },
+            space: { folderPath },
+        } as any;
+        superstate.spacesIndex.set(folderPath, folder);
+        superstate.pathsIndex.set(oldPath, {
+            path: oldPath,
+            name: "Draft",
+            type: "file",
+            subtype: "md",
+            tags: [],
+            spaces: [folderPath],
+            hidden: false,
+            parent: folderPath,
+        });
+        superstate.spacesMap.set(oldPath, new Set([folderPath]));
+        superstate.spaceManager.pathExists.mockResolvedValue(true);
+        superstate.reloadPath = jest.fn(async (path: string) => {
+            if (path == newPath) {
+                superstate.pathsIndex.set(newPath, {
+                    path: newPath,
+                    name: "Published",
+                    type: "file",
+                    subtype: "md",
+                    tags: [],
+                    spaces: [folderPath],
+                    hidden: false,
+                    parent: folderPath,
+                });
+                superstate.spacesMap.set(newPath, new Set([folderPath]));
+            }
+            return true;
+        });
+        superstate.updateSpaceMetadata = jest.fn(async (path: string, metadata: any) => {
+            superstate.spacesIndex.set(path, { ...superstate.spacesIndex.get(path), metadata });
+            return superstate.spacesIndex.get(path);
+        });
+
+        await superstate.onPathRename(oldPath, newPath);
+
+        expect(superstate.spacesIndex.get(folderPath).metadata["rank-order"]).toEqual([
+            "Reading/First.md",
+            SPACE_SEPARATOR_PATH,
+            newPath,
+            SPACE_SEPARATOR_PATH,
+            "Reading/Last.md",
+        ]);
+    });
+
     it("keeps a renamed folder at the same manual-sort position", async () => {
         const { superstate } = createSuperstate();
         const oldPath = "Projects/Second";
@@ -1630,7 +1699,7 @@ describe("Superstate tag initialization", () => {
             metadata: {
                 sort: { field: "rank", asc: true },
                 links: [],
-                "rank-order": ["Projects/First", oldPath, "Projects/Third"],
+                "rank-order": ["Projects/First", SPACE_SEPARATOR_PATH, oldPath, SPACE_SEPARATOR_PATH, "Projects/Third"],
                 pinned: [],
                 "file-colors": {},
             },
@@ -1657,7 +1726,7 @@ describe("Superstate tag initialization", () => {
             space: { ...renamed.space, path: newPath, folderPath: newPath },
         });
 
-        expect(superstate.spacesIndex.get(parent.path).metadata["rank-order"]).toEqual(["Projects/First", newPath, "Projects/Third"]);
+        expect(superstate.spacesIndex.get(parent.path).metadata["rank-order"]).toEqual(["Projects/First", SPACE_SEPARATOR_PATH, newPath, SPACE_SEPARATOR_PATH, "Projects/Third"]);
         expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith(parent.path, expect.any(Function));
         expect(superstate.spaceManager.saveFocuses).toHaveBeenCalledWith([
             expect.objectContaining({ paths: ["Before", newPath, "After"] }),

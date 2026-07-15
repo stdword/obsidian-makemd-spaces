@@ -29,6 +29,27 @@ export const rankForDropLinePosition = (rank: number, projected: DragProjection,
 
 const focusNodePath = (node?: TreeNode | null) => node?.item?.path ?? node?.path ?? node?.id?.toString();
 
+export const rankForDropPositionInSpace = (superstate: Superstate, path: string, spacePath: string, target: TreeNode, position: "top" | "bottom" = "top") => {
+    const space = superstate.spacesIndex.get(spacePath);
+    if (!space || !target) return null;
+
+    const storedOrder: string[] = space.metadata?.["rank-order"] ?? [];
+    const displayedPaths = superstate.getSpaceItems?.(spacePath)?.map((item) => item.path) ?? [];
+    const currentOrder = [
+        ...storedOrder,
+        ...displayedPaths.filter((itemPath) => !storedOrder.includes(itemPath)),
+    ];
+    const targetPath = focusNodePath(target);
+    const storedSeparatorRank = target.type == "separator" && currentOrder[target.rank] == targetPath ? target.rank : -1;
+    const targetRank = storedSeparatorRank >= 0 ? storedSeparatorRank : currentOrder.indexOf(targetPath);
+    if (targetRank < 0) return null;
+
+    let insertionRank = targetRank + (position == "bottom" ? 1 : 0);
+    const activeRank = currentOrder.indexOf(path);
+    if (activeRank >= 0 && activeRank < insertionRank) insertionRank--;
+    return insertionRank;
+};
+
 const nodeContainsTarget = (nodeId: UniqueIdentifier, targetId: UniqueIdentifier) => {
     if (!nodeId || !targetId) return false;
     const node = nodeId.toString();
@@ -78,10 +99,23 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
         const activeItem = activeIndex == -1 ? null : clonedItems[activeIndex];
         const oldSpace = activeItem?.parentId == null ? null : clonedItems.find(({ id }) => id === activeItem.parentId)?.item.path;
 
-        let newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == focusNodePath(overItem)) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
-        newRank = rankForDropLinePosition(newRank, projected, activeItem, oldSpace, newSpace);
-        if (projected.sortable && newSpace) {
-            newRank = rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, clonedItems);
+        let newRank: number;
+        const sameSpaceReorder = projected.sortable && !projected.insert && oldSpace != null && oldSpace == newSpace;
+        if (sameSpaceReorder) {
+            const space = superstate.spacesIndex.get(newSpace);
+            const firstNonPinnedIndex = clonedItems.findIndex((node) => node.parentId == parentId && !node.pinned && node.type != "new");
+            const activePinned = isPathPinnedInSpace(space, path);
+            const clampToFirstNonPinned = !activePinned && firstNonPinnedIndex >= 0 && overIndex < firstNonPinnedIndex;
+            const rankTarget = clampToFirstNonPinned ? clonedItems[firstNonPinnedIndex] : overItem;
+            const rankPosition = clampToFirstNonPinned ? "top" : (projected.linePosition ?? "top");
+            const storedRank = rankForDropPositionInSpace(superstate, path, newSpace, rankTarget, rankPosition);
+            newRank = storedRank ?? overItem.rank ?? -1;
+        } else {
+            newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == focusNodePath(overItem)) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
+            newRank = rankForDropLinePosition(newRank, projected, activeItem, oldSpace, newSpace);
+            if (projected.sortable && newSpace) {
+                newRank = rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, clonedItems);
+            }
         }
         if (!active) {
             await dropPathInSpaceAtIndex(superstate, path, null, newSpace, projected.sortable && newRank, modifier);

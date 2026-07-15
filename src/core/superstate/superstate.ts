@@ -1,7 +1,7 @@
 import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
-import { effectiveSpaceSort, saveSpaceCache } from "core/utils/superstate/spaces";
+import { effectiveSpaceSort, saveSpaceCache, uniqueRankOrder } from "core/utils/superstate/spaces";
 import { canonicalTagSpacePath, isSpaceSeparatorPath, replaceTagSpaceLinkPath, sameTagSpaceLink, tagSpaceParentPath, tagSpacePathFromTag } from "schemas/builtin";
 import { pathIsSpace } from "core/utils/superstate/space";
 import { parsePathState } from "core/utils/superstate/parser";
@@ -131,6 +131,9 @@ const pathStateWithEffectiveDisplay = <T extends PathState>(pathState: T, spaces
 });
 
 const replacePathInList = (items: unknown, oldPath: string, newPath: string): string[] => uniq(ensureArray(items).map((path) => (path == oldPath ? newPath : path)));
+
+const replacePathInRankOrder = (items: unknown, oldPath: string, newPath: string): string[] =>
+    uniqueRankOrder(ensureArray(items).map((path) => (path == oldPath ? newPath : path)));
 
 const parentPathForPath = (path: string): string => {
     const index = path.lastIndexOf("/");
@@ -683,7 +686,7 @@ export class Superstate implements ISuperstate {
                 const metadata = {
                     ...space.metadata,
                     links: replacePathInList(space.metadata?.links, oldPath, newPath),
-                    "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newPath),
+                    "rank-order": replacePathInRankOrder(space.metadata?.["rank-order"], oldPath, newPath),
                     pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newPath, space.path),
                     "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newPath),
                 };
@@ -797,7 +800,7 @@ export class Superstate implements ISuperstate {
                 const metadata = {
                     ...space.metadata,
                     links: ensureArray(space.metadata?.links).map((link) => sameTagSpaceLink(link, oldPath) ? replaceTagSpaceLinkPath(link, newSpaceInfo.path) : link),
-                    "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newSpaceInfo.path),
+                    "rank-order": replacePathInRankOrder(space.metadata?.["rank-order"], oldPath, newSpaceInfo.path),
                     pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newSpaceInfo.path, space.path),
                     "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newSpaceInfo.path),
                 };

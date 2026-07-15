@@ -78,11 +78,13 @@ export const constrainLinkedItemProjection = (activeItem: TreeNode | null, proje
     return targetContainer?.item?.type == "space" ? projection : null;
 };
 
-export const separatorDropRank = (projection: DragProjection, target: TreeNode | undefined, flattenedTree: TreeNode[], destinationLength: number) => {
+export const separatorDropRank = (projection: DragProjection, target: TreeNode | undefined, flattenedTree: TreeNode[], destinationLength: number, destinationOrder?: string[]) => {
     if (projection.insert) return destinationLength;
+    const targetPath = target?.item?.path ?? target?.path;
+    const storedTargetRank = target?.type != "separator" && targetPath ? destinationOrder?.indexOf(targetPath) : -1;
     const targetRank = projection.parentId == null
         ? flattenedTree.filter((node) => node.parentId == null && node.type != "new").findIndex((node) => node.id == target?.id)
-        : target?.rank;
+        : typeof storedTargetRank == "number" && storedTargetRank >= 0 ? storedTargetRank : target?.rank;
     const baseRank = typeof targetRank == "number" && targetRank >= 0 ? targetRank : destinationLength;
     return Math.max(0, baseRank + (projection.linePosition == "bottom" ? 1 : 0));
 };
@@ -715,7 +717,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             const newSpacePath = projection.insert ? target?.item?.path : targetContainer?.item?.path;
             const destinationSpace = newSpacePath ? superstate.spacesIndex.get(newSpacePath) : null;
             const destinationLength = destinationSpace?.metadata?.["rank-order"]?.length ?? 0;
-            const newRank = separatorDropRank(projection, target, flattenedTree, destinationLength);
+            const newRank = separatorDropRank(projection, target, flattenedTree, destinationLength, destinationSpace?.metadata?.["rank-order"]);
             if (currentActive.space && newSpacePath) {
                 await moveSpaceSeparator(superstate, currentActive.space, currentActive.rank, newSpacePath, newRank, actionModifier == "copy");
             } else if (!currentActive.space && newSpacePath) {

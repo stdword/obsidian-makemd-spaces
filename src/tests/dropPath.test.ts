@@ -10,7 +10,7 @@ jest.mock(
     { virtual: true },
 );
 
-import { dropPathInSpaceAtIndex, dropPathInTree, dropPathsInSpaceAtIndex, rankForDropLinePosition } from "core/utils/dnd/dropPath";
+import { dropPathInSpaceAtIndex, dropPathInTree, dropPathsInSpaceAtIndex, rankForDropLinePosition, rankForDropPositionInSpace } from "core/utils/dnd/dropPath";
 import { linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
 import i18n from "shared/i18n";
 
@@ -31,6 +31,130 @@ describe("rankForDropLinePosition", () => {
 
     it("leaves focus-level compensation to focus reordering", () => {
         expect(rankForDropLinePosition(2, { linePosition: "top" } as any, active, null, null)).toBe(2);
+    });
+});
+
+describe("rankForDropPositionInSpace", () => {
+    const order = ["Board/Overview.canvas", "Board/Alpha.md", "Board/Beta.md", "Board/Gamma.md", "Board/Pinned.md"];
+    const superstate = {
+        spacesIndex: new Map([["Board", { path: "Board", metadata: { "rank-order": order } }]]),
+        getSpaceItems: jest.fn(() => order.map((path, rank) => ({ path, rank }))),
+    } as any;
+    const node = (path: string): any => ({ id: `Board/${path}`, path, item: { path }, type: "file" });
+
+    it.each([
+        ["moves up before a target", "Board/Gamma.md", "Board/Alpha.md", "top", 1],
+        ["moves up after a target", "Board/Gamma.md", "Board/Alpha.md", "bottom", 2],
+        ["moves down before a target", "Board/Alpha.md", "Board/Gamma.md", "top", 2],
+        ["moves down after a target", "Board/Alpha.md", "Board/Gamma.md", "bottom", 3],
+        ["keeps an item already before its target in place", "Board/Beta.md", "Board/Gamma.md", "top", 2],
+        ["keeps an item already after its target in place", "Board/Beta.md", "Board/Alpha.md", "bottom", 2],
+    ])("%s", (_name, path, targetPath, position, expectedRank) => {
+        expect(rankForDropPositionInSpace(superstate, path, "Board", node(targetPath), position as "top" | "bottom")).toBe(expectedRank);
+    });
+});
+
+describe("same-space tree reorder with hidden and pinned items", () => {
+    const spacePath = "Board";
+    const hidden = "Board/Overview.canvas";
+    const alpha = "Board/Alpha.md";
+    const beta = "Board/Beta.md";
+    const gamma = "Board/Gamma.md";
+    const pinnedOne = "Board/PinnedOne.md";
+    const pinnedTwo = "Board/PinnedTwo.md";
+    const initialOrder = [hidden, alpha, beta, gamma, pinnedOne, pinnedTwo];
+
+    const runReorder = async (activePath: string, targetPath: string, linePosition: "top" | "bottom") => {
+        const space: any = {
+            path: spacePath,
+            type: "folder",
+            metadata: {
+                sort: { field: "rank", asc: true },
+                "rank-order": [...initialOrder],
+                pinned: [pinnedOne, pinnedTwo],
+            },
+        };
+        const pathStates = new Map(initialOrder.map((path) => [path, { path, parent: spacePath, type: "file" }]));
+        const updateSpaceMetadata = jest.fn((_path: string, metadata: any) => {
+            space.metadata = metadata;
+            return Promise.resolve();
+        });
+        const superstate = {
+            settings: {},
+            pathsIndex: pathStates,
+            pathStateForPath: jest.fn((path: string) => pathStates.get(path)),
+            spacesIndex: new Map([[spacePath, space]]),
+            getSpaceItems: jest.fn(() => initialOrder.map((path, rank) => ({ ...pathStates.get(path), rank }))),
+            spaceManager: {
+                saveSpace: jest.fn((_path: string, update: (metadata: any) => any) => {
+                    space.metadata = update(space.metadata);
+                    return Promise.resolve();
+                }),
+            },
+            updateSpaceMetadata,
+        } as any;
+        const parent: any = {
+            id: spacePath,
+            parentId: null,
+            depth: 0,
+            type: "group",
+            path: spacePath,
+            item: { path: spacePath, type: "space" },
+        };
+        const visiblePaths = [pinnedOne, pinnedTwo, alpha, beta, gamma];
+        const nodes = visiblePaths.map((path, rank): any => ({
+            id: `${spacePath}/${path}`,
+            parentId: spacePath,
+            depth: 1,
+            type: "file",
+            path,
+            item: pathStates.get(path),
+            rank,
+            pinned: path == pinnedOne || path == pinnedTwo,
+            sortable: true,
+        }));
+        const activeNode = nodes.find((node) => node.path == activePath);
+        const targetNode = nodes.find((node) => node.path == targetPath);
+
+        await dropPathInTree(
+            superstate,
+            activePath,
+            activeNode.id,
+            targetNode.id,
+            {
+                depth: 1,
+                overId: targetNode.id,
+                parentId: spacePath,
+                sortable: true,
+                insert: false,
+                droppable: true,
+                copy: false,
+                reorder: true,
+                linePosition,
+            },
+            [parent, ...nodes],
+            [] as any,
+            "move",
+        );
+
+        return { order: space.metadata["rank-order"], updateSpaceMetadata };
+    };
+
+    it.each([
+        ["moves the last item above the first", gamma, alpha, "top", [hidden, gamma, alpha, beta, pinnedOne, pinnedTwo]],
+        ["moves the first item below the last", alpha, gamma, "bottom", [hidden, beta, gamma, alpha, pinnedOne, pinnedTwo]],
+        ["moves a middle item upward", beta, alpha, "top", [hidden, beta, alpha, gamma, pinnedOne, pinnedTwo]],
+        ["moves a middle item downward", beta, gamma, "bottom", [hidden, alpha, gamma, beta, pinnedOne, pinnedTwo]],
+        ["clamps an unpinned item to the start of the unpinned zone", gamma, pinnedOne, "top", [hidden, gamma, alpha, beta, pinnedOne, pinnedTwo]],
+    ])("%s", async (_name, activePath, targetPath, linePosition, expectedOrder) => {
+        const result = await runReorder(activePath as string, targetPath as string, linePosition as "top" | "bottom");
+        expect(result.order).toEqual(expectedOrder);
+    });
+
+    it("does not save when the item is already immediately before the target", async () => {
+        const result = await runReorder(beta, gamma, "top");
+        expect(result.order).toEqual(initialOrder);
+        expect(result.updateSpaceMetadata).not.toHaveBeenCalled();
     });
 });
 
