@@ -10,9 +10,29 @@ jest.mock(
     { virtual: true },
 );
 
-import { dropPathInSpaceAtIndex, dropPathInTree, dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
+import { dropPathInSpaceAtIndex, dropPathInTree, dropPathsInSpaceAtIndex, rankForDropLinePosition } from "core/utils/dnd/dropPath";
 import { linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
 import i18n from "shared/i18n";
+
+describe("rankForDropLinePosition", () => {
+    const active = { rank: 0 } as any;
+
+    it("compensates a downward reorder before the target", () => {
+        expect(rankForDropLinePosition(2, { linePosition: "top" } as any, active, "space", "space")).toBe(1);
+    });
+
+    it("compensates a downward reorder after the target", () => {
+        expect(rankForDropLinePosition(2, { linePosition: "bottom" } as any, active, "space", "space")).toBe(2);
+    });
+
+    it("does not compensate moves between spaces", () => {
+        expect(rankForDropLinePosition(2, { linePosition: "top" } as any, active, "source", "target")).toBe(2);
+    });
+
+    it("leaves focus-level compensation to focus reordering", () => {
+        expect(rankForDropLinePosition(2, { linePosition: "top" } as any, active, null, null)).toBe(2);
+    });
+});
 
 describe("dropPathInSpaceAtIndex", () => {
     it("awaits tag space rank-order updates when reordering inside the same custom-sorted tag space", async () => {

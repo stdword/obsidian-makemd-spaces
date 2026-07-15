@@ -21,10 +21,10 @@ const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath:
     return flattenedTree[firstNonPinnedSiblingIndex].rank ?? 0;
 };
 
-const rankForDropLinePosition = (rank: number, projected: DragProjection, activeItem?: TreeNode | null, oldSpace?: string | null, newSpace?: string | null) => {
-    if (projected.linePosition != "bottom") return rank;
-    if (activeItem && oldSpace == newSpace && typeof activeItem.rank == "number" && activeItem.rank < rank) return rank;
-    return rank + 1;
+export const rankForDropLinePosition = (rank: number, projected: DragProjection, activeItem?: TreeNode | null, oldSpace?: string | null, newSpace?: string | null) => {
+    const insertionRank = rank + (projected.linePosition == "bottom" ? 1 : 0);
+    if (activeItem && newSpace != null && oldSpace == newSpace && typeof activeItem.rank == "number" && activeItem.rank < rank) return insertionRank - 1;
+    return insertionRank;
 };
 
 const focusNodePath = (node?: TreeNode | null) => node?.item?.path ?? node?.path ?? node?.id?.toString();
@@ -113,10 +113,11 @@ const reorderOpenSpace = (superstate: Superstate, path: string, index: number) =
     superstate.spaceManager.saveFocuses(newFocuses);
 };
 
-export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: string, oldSpacePath: string | null, newSpacePath: string, index: number, modifier?: DropModifiers) => {
+export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: string, oldSpacePath: string | null, newSpacePath: string, index: number | false, modifier?: DropModifiers) => {
     const cache: PathState = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
     if (!cache) return false;
     if (!newSpacePath) {
+        if (index === false) return false;
         reorderOpenSpace(superstate, path, index);
         return;
     }
@@ -127,17 +128,26 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
     const newSpaceCache = superstate.spacesIndex.get(newSpacePath);
     if (!newSpaceCache) return;
 
+    // Dropping an item onto the folder it already physically belongs to has no
+    // positional intent (`false` comes from a non-sortable projection). Do not
+    // turn that no-op into a rank write and a tree reload.
+    if (modifier != "link" && index === false && cache.parent == newSpacePath) return false;
+    if (modifier != "link" && index === false && oldSpacePath == newSpacePath) return false;
+    const targetIndex = index === false ? undefined : index;
+
     if (oldSpacePath == newSpacePath && modifier != "link") {
-        await updatePathRankInSpace(superstate, path, index, newSpacePath);
+        const currentRank = superstate.getSpaceItems?.(newSpacePath)?.find((item) => item.path == path)?.rank;
+        if (currentRank == targetIndex) return false;
+        await updatePathRankInSpace(superstate, path, targetIndex, newSpacePath);
         return;
     }
 
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
         if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
-            await linkPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
+            await linkPathToSpaceAtIndex(superstate, newSpaceCache, path, targetIndex);
         } else {
             if (cache.parent == newSpaceCache.path) return;
-            await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
+            await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, targetIndex, modifier == "copy");
         }
     }
     if (oldSpacePath && oldSpacePath != newSpacePath) {

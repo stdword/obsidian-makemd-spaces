@@ -61,7 +61,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
                 name: "Edit Focus",
                 icon: "ui//edit",
                 onClick: () => {
-                    setEditFocus(true);
+                    setEditFocus(index);
                 },
             },
             {

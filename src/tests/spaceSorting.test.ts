@@ -1,4 +1,5 @@
-import { childSpaceSort, duplicatePathNextToOriginal, saveSpaceMetadataValue, spaceSortFn, updateSpaceSort } from "core/utils/superstate/spaces";
+import { addSpaceSeparator, childSpaceSort, duplicatePathNextToOriginal, moveSpaceSeparator, removeSpaceSeparator, saveSpaceMetadataValue, setSpaceSeparatorVisible, spaceSortFn, uniqueRankOrder, updatePathRankInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 const settings = {
     defaultSpaceSort: {
@@ -92,6 +93,102 @@ describe("space tree sorting", () => {
 });
 
 describe("space metadata persistence", () => {
+    it("deduplicates paths without collapsing separator occurrences", () => {
+        expect(uniqueRankOrder(["A.md", SPACE_SEPARATOR_PATH, "A.md", SPACE_HIDDEN_SEPARATOR_PATH])).toEqual([
+            "A.md",
+            SPACE_SEPARATOR_PATH,
+            SPACE_HIDDEN_SEPARATOR_PATH,
+        ]);
+    });
+
+    it("persists separator visibility at its rank-order occurrence", async () => {
+        const space = { path: "Workspace", type: "tag", metadata: { "rank-order": ["A.md", SPACE_SEPARATOR_PATH] } } as any;
+        const superstate = {
+            spacesIndex: new Map([[space.path, space]]),
+            updateSpaceMetadata: jest.fn((path, metadata) => {
+                superstate.spacesIndex.set(path, { ...space, metadata });
+                return Promise.resolve();
+            }),
+        } as any;
+
+        await setSpaceSeparatorVisible(superstate, space.path, 1, false);
+
+        expect(superstate.spacesIndex.get(space.path).metadata["rank-order"]).toEqual(["A.md", SPACE_HIDDEN_SEPARATOR_PATH]);
+    });
+
+    it("preserves two separators while reordering a regular item", async () => {
+        const space = {
+            path: "spaces://#fixture",
+            type: "tag",
+            metadata: { sort: { field: "rank" }, "rank-order": ["A.md", SPACE_SEPARATOR_PATH, "B.md", SPACE_SEPARATOR_PATH] },
+        } as any;
+        const superstate = {
+            settings,
+            spacesIndex: new Map([[space.path, space]]),
+            updateSpaceMetadata: jest.fn((path, metadata) => {
+                superstate.spacesIndex.set(path, { ...space, metadata });
+                return Promise.resolve();
+            }),
+        } as any;
+
+        await updatePathRankInSpace(superstate, "B.md", 0, space.path);
+
+        expect(superstate.spacesIndex.get(space.path).metadata["rank-order"]).toEqual([
+            "B.md",
+            "A.md",
+            SPACE_SEPARATOR_PATH,
+            SPACE_SEPARATOR_PATH,
+        ]);
+    });
+
+    it("adds a separator and switches the space to manual sorting", async () => {
+        const items = [
+            { path: "Workspace/Alpha.md", name: "Alpha", type: "file" },
+            { path: "Workspace/Beta.md", name: "Beta", type: "file" },
+        ] as any[];
+        const space = {
+            path: "Workspace",
+            type: "folder",
+            metadata: { sort: { field: "name", asc: true }, "rank-order": [] },
+        } as any;
+        const updateSpaceMetadata = jest.fn(() => Promise.resolve());
+        const superstate = {
+            settings,
+            spacesIndex: new Map([[space.path, space]]),
+            getSpaceItems: jest.fn(() => items),
+            spaceManager: { saveSpace: jest.fn((_path, update) => Promise.resolve(update(space.metadata))) },
+            updateSpaceMetadata,
+        } as any;
+
+        await addSpaceSeparator(superstate, space.path);
+
+        expect(updateSpaceMetadata).toHaveBeenCalledWith(space.path, expect.objectContaining({
+            sort: expect.objectContaining({ field: "rank", asc: true }),
+            "rank-order": [items[0].path, items[1].path, SPACE_SEPARATOR_PATH],
+        }));
+    });
+
+    it("moves, copies, and removes separators by their rank-order occurrence", async () => {
+        const source = { path: "Source", type: "folder", metadata: { sort: { field: "rank" }, "rank-order": ["Source/A.md", SPACE_SEPARATOR_PATH, "Source/B.md"] } } as any;
+        const target = { path: "spaces://#target", type: "tag", metadata: { sort: { field: "rank" }, "rank-order": ["Target/C.md"] } } as any;
+        const superstate = {
+            settings,
+            spacesIndex: new Map([[source.path, source], [target.path, target]]),
+            spaceManager: { saveSpace: jest.fn(() => Promise.resolve()) },
+            updateSpaceMetadata: jest.fn((path, metadata) => {
+                superstate.spacesIndex.set(path, { ...superstate.spacesIndex.get(path), metadata });
+                return Promise.resolve(superstate.spacesIndex.get(path));
+            }),
+        } as any;
+
+        await moveSpaceSeparator(superstate, source.path, 1, target.path, 1, true);
+        expect(superstate.spacesIndex.get(source.path).metadata["rank-order"]).toEqual(["Source/A.md", SPACE_SEPARATOR_PATH, "Source/B.md"]);
+        expect(superstate.spacesIndex.get(target.path).metadata["rank-order"]).toEqual(["Target/C.md", SPACE_SEPARATOR_PATH]);
+
+        await removeSpaceSeparator(superstate, source.path, 1);
+        expect(superstate.spacesIndex.get(source.path).metadata["rank-order"]).toEqual(["Source/A.md", "Source/B.md"]);
+    });
+
     it("waits for the context file write before updating in-memory metadata", async () => {
         let finishWrite: () => void = (): void => undefined;
         const saveSpace = jest.fn(() => new Promise<void>((resolve) => {

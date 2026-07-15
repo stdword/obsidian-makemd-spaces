@@ -2,7 +2,7 @@ import React from "react";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
-import { duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { addSpaceSeparator, duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { openStickerPalette } from "core/react/components/PathSticker";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 import { addTag, mergeTagSpaceMetadata } from "core/utils/superstate/tags";
@@ -21,7 +21,7 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu, showTagsMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
-import { newFolderMenuOption, newNoteMenuOption, showSpaceAddMenu } from "./showSpaceAddMenu";
+import { newNoteMenuOption, showSpaceAddMenu } from "./showSpaceAddMenu";
 
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
@@ -32,9 +32,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     if (!isTagSpace) {
         menuOptions.push(newNoteMenuOption(superstate, space));
-        if (space.type == "folder") {
-            menuOptions.push(newFolderMenuOption(superstate, space));
-        }
+
         menuOptions.push({
             name: i18n.menu.new,
             icon: "ui//plus",
@@ -43,11 +41,18 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 return showSpaceAddMenu(superstate, offset, win, space, false, true, onHide);
             },
         });
-
-        menuOptions.push(menuSeparator);
+    }
+    else {
+        menuOptions.push({
+            name: i18n.buttons.createSeparator,
+            icon: "lucide//separator-horizontal",
+            onClick: () => addSpaceSeparator(superstate, space.path),
+        });
     }
 
-    menuOptions.push({
+    menuOptions.push(menuSeparator);
+
+    menuOptions.push({  // color
         name: i18n.menu.changeColor,
         icon: "ui//palette",
         type: SelectOptionType.Submenu,
@@ -56,8 +61,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             return showColorPickerMenu(superstate, offset, win, "", (value) => savePathColor(superstate, space.path, value), false, true);
         },
     });
+
     if (space.path !== "/" && !isTagSpace) {
-        menuOptions.push({
+        menuOptions.push({  // sticker
             name: i18n.buttons.changeIcon,
             icon: "ui//sticker",
             showChevron: true,
@@ -69,8 +75,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     menuOptions.push(menuSeparator);
 
-    // sort
-    menuOptions.push({
+    menuOptions.push({  // sort
         name: i18n.menu.sortBy,
         icon: "ui//sort-desc",
         type: SelectOptionType.Submenu,
@@ -136,9 +141,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         },
     });
 
-    // apply to all sub-items
     if (!isTagSpace) {
-        menuOptions.push({
+        menuOptions.push({  // apply to all sub-items
             name: i18n.menu.applyItems,
             icon: "ui//apply-items",
             value: "apply-all",
@@ -162,30 +166,42 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    // link to
-    menuOptions.push({
-        name: i18n.buttons.addToSpace,
-        icon: "ui//link",
-        closeParentImmediately: true,
-        onClick: (e) => {
-            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showFoldersMenu(
-                offset,
-                win,
-                superstate,
-                (link) => {
-                    const spaceCache = superstate.spacesIndex.get(link);
-                    if (spaceCache)
-                        linkPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
-                },
-                e.shiftKey,
-            );
-        },
-    });
+    if (isTagSpace) {
+        // merge into
+        menuOptions.push({
+            name: i18n.buttons.mergeInto,
+            icon: "lucide//merge",
+            closeParentImmediately: true,
+            onClick: (e) => {
+                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+                showTagsMenu(offset, win, superstate, async (link, isNew) => {
+                    const target = isNew ? await addTag(superstate, link) : superstate.spacesIndex.get(link);
+                    if (!target) return;
+                    if (target.path == space.path) {
+                        superstate.ui.notify("The same tag-space: nothing changed");
+                        return;
+                    }
+                    const sourceTag = `#${stringFromTag(space.name)}`;
+                    const targetTag = `#${stringFromTag(target.name)}`;
+                    superstate.ui.openModal(
+                        i18n.labels.mergeTag,
+                        <ConfirmationModal
+                            confirmAction={() => mergeTagSpaceMetadata(superstate, space.path, target.path)}
+                            confirmLabel={i18n.buttons.merge}
+                            message={formatMessage(i18n.descriptions.mergeTag, [<i>{sourceTag}</i>, <i>{targetTag}</i>])}
+                        />,
+                        win,
+                    );
+                });
+            },
+        });
+    }
 
     menuOptions.push(menuSeparator);
 
     if (space.type != "vault" && !isTagSpace) {
+        menuOptions.push(menuSeparator);
+
         // duplicate
         menuOptions.push({
             name: i18n.menu.duplicate,
@@ -219,40 +235,31 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    if (isTagSpace) {
-        menuOptions.push({  // merge into
-            name: i18n.buttons.mergeInto,
-            icon: "lucide//merge",
-            closeParentImmediately: true,
-            onClick: (e) => {
-                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-                showTagsMenu(offset, win, superstate, async (link, isNew) => {
-                    const target = isNew ? await addTag(superstate, link) : superstate.spacesIndex.get(link);
-                    if (!target) return;
-                    if (target.path == space.path) {
-                        superstate.ui.notify("The same tag-space: nothing changed");
-                        return;
-                    }
-                    const sourceTag = `#${stringFromTag(space.name)}`;
-                    const targetTag = `#${stringFromTag(target.name)}`;
-                    superstate.ui.openModal(
-                        i18n.labels.mergeTag,
-                        <ConfirmationModal
-                            confirmAction={() => mergeTagSpaceMetadata(superstate, space.path, target.path)}
-                            confirmLabel={i18n.buttons.merge}
-                            message={formatMessage(i18n.descriptions.mergeTag, [<i>{sourceTag}</i>, <i>{targetTag}</i>])}
-                        />,
-                        win,
-                    );
-                });
-            },
-        });
-    }
+    menuOptions.push({  // link to
+        name: i18n.buttons.addToSpace,
+        icon: "ui//link",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showFoldersMenu(
+                offset,
+                win,
+                superstate,
+                (link) => {
+                    const spaceCache = superstate.spacesIndex.get(link);
+                    if (spaceCache)
+                        linkPathToSpaceAtIndex(superstate, spaceCache, space.path, -1);
+                },
+                e.shiftKey,
+            );
+        },
+    });
 
     if (!isTagSpace) {
         menuOptions.push(menuSeparator);
 
-        if (parentSpace && parentSpace !== path.parent) {
+        // reveal
+        if (space.type != "vault" && parentSpace && parentSpace !== path.parent) {
             menuOptions.push({
                 name: i18n.menu.revealInSpaces,
                 icon: "ui//arrow-up-right",
@@ -283,22 +290,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     menuOptions.push(menuSeparator);
 
-    // unlink item
-    if (parentSpaceCache && (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")) {
-        if (parentSpace != path.parent) {
-            const spaceCache = superstate.spacesIndex.get(parentSpace);
-            if (spaceCache) {
-                menuOptions.push({
-                    name: i18n.menu.removeFromSpace.replace("${1}", spaceCache.name),
-                    icon: "ui//pin-off",
-                    onClick: () => {
-                        removePathsFromSpace(superstate, spaceCache.path, [space.path]);
-                    },
-                });
-            }
-        }
-    }
-
+    // remove from focus
     if (onClose) {
         menuOptions.push({
             name: i18n.menu.closeSpace,
@@ -309,7 +301,23 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    // Previous global Hide/Unhide command (disabled in favor of per-focus exclusions).
+    // unlink
+    if (parentSpaceCache && (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")) {
+        if (parentSpace != path.parent) {
+            const spaceCache = superstate.spacesIndex.get(parentSpace);
+            if (spaceCache) {
+                menuOptions.push({
+                    name: i18n.menu.removeFromSpace,
+                    icon: "ui//pin-off",
+                    onClick: () => {
+                        removePathsFromSpace(superstate, spaceCache.path, [space.path]);
+                    },
+                });
+            }
+        }
+    }
+
+    // Hide/Unhide (disabled in favor of per-focus exclusions).
     // if (space.type == "folder") {
     //     const directlyHidden = isPathDirectlyHidden(superstate, space.path);
     //     menuOptions.push({
@@ -319,14 +327,15 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     //     });
     // }
 
+    // exclude from focus
     if (depth > 0)
-        menuOptions.push({  // exclude from
+        menuOptions.push({
             name: i18n.menu.excludeFromFocus,
             icon: "ui//eye-off",
             onClick: () => excludePathsFromCurrentFocus(superstate, [space.path]),
         });
 
-    // delete item
+    // delete
     if (space.type == "folder" || isTagSpace)
         menuOptions.push({
             name: i18n.menu.delete,

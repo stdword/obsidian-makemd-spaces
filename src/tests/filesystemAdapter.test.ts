@@ -64,6 +64,8 @@ describe("FilesystemSpaceAdapter", () => {
             onPathPropertyChanged: jest.fn(),
             onPathDeleted: jest.fn(),
             onSpaceDeleted: jest.fn(),
+            onSpaceCreated: jest.fn(),
+            onSpaceRenamed: jest.fn(),
             superstate: {
                 settings: {
                     defaultFoldersAtTop: true,
@@ -343,6 +345,28 @@ describe("FilesystemSpaceAdapter", () => {
         expect(adapter.spaceManager.onPathPropertyChanged).toHaveBeenCalledWith("Projects");
         expect(adapter.spaceManager.onPathDeleted).not.toHaveBeenCalled();
         expect(adapter.spaceManager.onSpaceDeleted).not.toHaveBeenCalled();
+    });
+
+    it("treats an external create-delete pair for a focused folder as a rename", () => {
+        const { adapter } = createAdapter();
+        adapter.spaceManager.superstate.focuses = [{ name: "Main", paths: ["Projects/Old"] }];
+
+        adapter.onCreate({ file: { path: "Projects/New", extension: "", isFolder: true } });
+        adapter.onDelete({ file: { path: "Projects/Old", extension: "", isFolder: true } });
+
+        expect(adapter.spaceManager.onSpaceRenamed).toHaveBeenCalledWith("Projects/New", "Projects/Old");
+        expect(adapter.spaceManager.onSpaceDeleted).not.toHaveBeenCalledWith("Projects/Old");
+    });
+
+    it("does not infer a rename when the deleted folder is not a focus section", () => {
+        const { adapter } = createAdapter();
+        adapter.spaceManager.superstate.focuses = [{ name: "Main", paths: [] }];
+
+        adapter.onCreate({ file: { path: "Projects/New", extension: "", isFolder: true } });
+        adapter.onDelete({ file: { path: "Projects/Old", extension: "", isFolder: true } });
+
+        expect(adapter.spaceManager.onSpaceDeleted).toHaveBeenCalledWith("Projects/Old");
+        expect(adapter.spaceManager.onSpaceRenamed).not.toHaveBeenCalled();
     });
 
     it("returns hidden paths when requested so the index can restore them after unhide", () => {

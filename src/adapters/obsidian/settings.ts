@@ -128,13 +128,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     },
                 },
                 {
-                    name: "pinnedSeparatorLine",
-                    category: "appearance",
-                    type: "boolean",
-                },
-
-
-                {
                     name: "expandFolderOnClick",
                     category: "system",
                     type: "boolean",

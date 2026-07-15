@@ -1,4 +1,5 @@
 import { showOpenMenu, showTagsMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
+import { SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 describe("showOpenMenu", () => {
     it("includes tag spaces that are visible in Obsidian even though their paths use the spaces protocol", async () => {
@@ -91,7 +92,13 @@ describe("showOpenMenu", () => {
         await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, jest.fn());
 
         const menuConfig = openMenu.mock.calls[0][1];
-        expect(menuConfig.options[0].value).toBe("/");
+        expect(menuConfig.options[0]).toEqual(expect.objectContaining({
+            name: "Separator",
+            value: SPACE_SEPARATOR_PATH,
+            icon: "lucide//minus",
+            section: "",
+        }));
+        expect(menuConfig.options[1].value).toBe("/");
         expect(menuConfig.sections.map((section: any) => section.value)).toEqual(["tags", "folders", "files"]);
         expect(menuConfig.allowNewBySection).toEqual({ tags: true });
         expect(menuConfig.editable).toBe(true);

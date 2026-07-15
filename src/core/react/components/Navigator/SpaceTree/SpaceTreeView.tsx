@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, pathStateToTreeNode, pinnedItemsFirst, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
+import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
@@ -15,17 +15,72 @@ import { Pos } from "shared/types/Pos";
 import { SpaceSort } from "shared/types/spaceDef";
 import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
-import { DropModifiers, eventToModifier } from "./SpaceTreeItem";
+import { DropModifiers, shouldShowLinkedItemIcon } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
-import { isTagTreeItemPath } from "schemas/builtin";
+import { isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 import { isPathExcludedFromFocus } from "core/utils/superstate/focus";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
 }
 
+export const isLinkedTreeItem = (item: TreeNode | null) => Boolean(item && !isTagTreeItemPath(item.item) && shouldShowLinkedItemIcon(item));
+export const isParentDropNoOp = (activeItem: TreeNode | null, overId: string) => Boolean(activeItem && activeItem.parentId == overId);
+
+export const dragModifierForActiveItem = (activeItem: TreeNode | null, event: Pick<React.DragEvent, "altKey" | "shiftKey">): DropModifiers => {
+    if (activeItem?.type == "separator") return event.altKey ? "copy" : "move";
+    if (isTagTreeItemPath(activeItem?.item)) return "link";
+    if (isLinkedTreeItem(activeItem)) return "link";
+    if (activeItem?.parentId == null) return "move";
+    return event.altKey ? "copy" : event.shiftKey ? "link" : "move";
+};
+
+export const resolveDragModifier = (activeItem: TreeNode | null, projection: DragProjection | null, requestedModifier: DropModifiers): DropModifiers => {
+    if (isTagTreeItemPath(activeItem?.item)) return projection?.reorder ? "move" : "link";
+    if (isLinkedTreeItem(activeItem)) return projection?.reorder ? "move" : "link";
+    if (projection?.droppable && projection.parentId == null && activeItem?.parentId != null) return "link";
+    return requestedModifier;
+};
+
 const ENABLE_OBSIDIAN_DRAG_GHOST = true;
 const ENABLE_DRAG_ACTION_LABEL = true;
+
+export const constrainSeparatorProjection = (activeItem: TreeNode | null, projection: DragProjection | null): DragProjection | null => {
+    if (activeItem?.type != "separator") return projection;
+    if (!projection || projection.insert || !projection.sortable || projection.parentId != activeItem.parentId) return null;
+    return projection;
+};
+
+export const constrainTagSpaceProjection = (activeItem: TreeNode | null, projection: DragProjection | null, flattenedTree: TreeNode[]): DragProjection | null => {
+    if (!projection || !isTagTreeItemPath(activeItem?.item)) return projection;
+    // A line projection in the current container is a reorder, even when that
+    // container is the tag space's parent. Only reject dropping into the parent.
+    if (projection.reorder) return projection;
+    const targetContainerId = projection.insert ? projection.overId : projection.parentId;
+    const targetContainer = flattenedTree.find((node) => node.id == targetContainerId);
+    if (!isTagTreeItemPath(targetContainer?.item)) return projection;
+    return null;
+};
+
+export const constrainLinkedItemProjection = (activeItem: TreeNode | null, projection: DragProjection | null, flattenedTree: TreeNode[]): DragProjection | null => {
+    if (!projection || !isLinkedTreeItem(activeItem)) return projection;
+    if (projection.reorder && projection.parentId == activeItem.parentId) return projection;
+    const targetContainerId = projection.insert ? projection.overId : projection.parentId;
+    // Root is the current focus: linking there adds the item as a section.
+    if (targetContainerId == null && !projection.insert) return projection;
+    if (!targetContainerId || targetContainerId == activeItem.parentId) return null;
+    const targetContainer = flattenedTree.find((node) => node.id == targetContainerId);
+    return targetContainer?.item?.type == "space" ? projection : null;
+};
+
+export const separatorDropRank = (projection: DragProjection, target: TreeNode | undefined, flattenedTree: TreeNode[], destinationLength: number) => {
+    if (projection.insert) return destinationLength;
+    const targetRank = projection.parentId == null
+        ? flattenedTree.filter((node) => node.parentId == null && node.type != "new").findIndex((node) => node.id == target?.id)
+        : target?.rank;
+    const baseRank = typeof targetRank == "number" && targetRank >= 0 ? targetRank : destinationLength;
+    return Math.max(0, baseRank + (projection.linePosition == "bottom" ? 1 : 0));
+};
 
 const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], excludedPaths: string[], pinned?: boolean) => {
     const tree: TreeNode[] = [];
@@ -69,8 +124,43 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
 
     const showChildren = !spaceCollapsed && (!section || !hideSectionChildren);
     if (showChildren) {
-        pinnedItemsFirst(children, space, spaceSort).forEach((item) => {
+        const sortedChildren = pinnedItemsFirst(children, space, spaceSort);
+        const childrenByPath = new Map(sortedChildren.map((item) => [item.path, item]));
+        const rankOrder = space.metadata?.["rank-order"] ?? [];
+        const rankedChildren: (PathStateWithRank | string)[] = spaceSort.field == "rank"
+            ? rankOrder.reduce<(PathStateWithRank | string)[]>((items, itemPath) => {
+                if (isSpaceSeparatorPath(itemPath)) items.push(itemPath);
+                else if (childrenByPath.has(itemPath)) items.push(childrenByPath.get(itemPath));
+                return items;
+            }, []).concat(sortedChildren.filter((item) => !rankOrder.includes(item.path)))
+            : sortedChildren;
+        const separatorRanks = rankOrder.reduce<number[]>((ranks, itemPath, index) => {
+            if (isSpaceSeparatorPath(itemPath)) ranks.push(index);
+            return ranks;
+        }, []);
+        let separatorOccurrence = 0;
+
+        rankedChildren.forEach((item, rankIndex) => {
             const _parentId = parentId ? parentId + "/" + space.path : space.path;
+            if (typeof item == "string") {
+                if (!isSpaceSeparatorPath(item)) return;
+                const separatorRank = separatorRanks[separatorOccurrence++] ?? rankIndex;
+                tree.push({
+                    id: `${_parentId}/${SPACE_SEPARATOR_PATH}/${separatorRank}`,
+                    parentId: _parentId,
+                    depth: depth + 1,
+                    index: separatorRank,
+                    space: space.path,
+                    path: item,
+                    rank: separatorRank,
+                    collapsed: true,
+                    sortable: false,
+                    childrenCount: 0,
+                    type: "separator",
+                    sort: spaceSort,
+                });
+                return;
+            }
             const pinned = isPathPinnedInSpace(space, item.path);
             if (item.type != "space") {
                 const itemCollapsed = section ? !expandedSpaces.includes(_parentId + "/" + item.path) : true;
@@ -94,8 +184,22 @@ export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState
     const tree: TreeNode[] = [];
     activeViewSpaces
         .filter((f) => f)
-        .forEach((item) => {
-            if (superstate.spacesIndex.has(item.path)) {
+        .forEach((item, index) => {
+            if (isSpaceSeparatorPath(item.path)) {
+                tree.push({
+                    id: `focus/${SPACE_SEPARATOR_PATH}/${index}`,
+                    parentId: null,
+                    depth: 0,
+                    index,
+                    space: null,
+                    path: item.path,
+                    rank: index,
+                    collapsed: true,
+                    sortable: true,
+                    childrenCount: 0,
+                    type: "separator",
+                });
+            } else if (superstate.spacesIndex.has(item.path)) {
                 tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, hideSectionChildren, expandedSpaces, excludedPaths));
             } else {
                 tree.push({
@@ -210,8 +314,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     useEffect(() => {
         const handleDragEnd = () => {
-            // Don't reset if we're in the middle of a drop operation
-            if (!isDropping.current) {
+            const hasActiveDrag = activeRef.current != null || dragPathsRef.current.length > 0 || overIdRef.current != null || dragActionRef.current != null;
+            // A handled drop clears these refs synchronously. Avoid a second
+            // full tree reset when its trailing native dragend arrives.
+            if (!isDropping.current && hasActiveDrag) {
                 resetState();
             }
         };
@@ -393,7 +499,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const focusName = focuses?.[activeFocus]?.name || "Spaces";
     const containerName = (containerId: string | null) => (containerId ? flattenedTree.find((f) => f.id == containerId)?.item?.name : null) ?? focusName;
-    const isFocusLevelAdd = (projection: DragProjection | null, activeItem: TreeNode | null) => projection?.droppable && projection.parentId == null && activeItem?.parentId != null;
     const dragActionLabel = (action: DragAction) => {
         if (action.type == "reorder") return `${i18n.labels.reorderIn} ${containerName(action.containerId)}`;
         if (action.type == "link" && action.containerId == null) return `${i18n.labels.addTo} ${containerName(null)}`;
@@ -433,7 +538,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         return {
             action,
             visual,
-            label: ENABLE_OBSIDIAN_DRAG_GHOST && ENABLE_DRAG_ACTION_LABEL ? dragActionLabel(action) : null,
+            label: currentActive?.type != "separator" && ENABLE_OBSIDIAN_DRAG_GHOST && ENABLE_DRAG_ACTION_LABEL ? dragActionLabel(action) : null,
         };
     };
 
@@ -443,25 +548,42 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             compensatedDragSource.current = null;
         }
         const currentActive = activeRef.current ?? active;
-        const requestedModifier = currentActive?.parentId == null ? "move" : eventToModifier(e);
+        const requestedModifier = dragModifierForActiveItem(currentActive, e);
         const x = offsetRef.current.x;
         const y = offsetRef.current.y;
-        const rowHeight = spaceRowHeight(superstate, presetRowHeight, false);
-        const newY = position.y <= rowHeight / 3 ? 0 : position.y >= (rowHeight * 2) / 3 ? rowHeight : 13;
         const nextOverId = _overId ?? overIdRef.current;
         const currentDragPaths = dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths;
         const nextOverIndex = flattenedTree.findIndex((f) => f.id == nextOverId);
         const overItem = nextOverIndex == -1 ? null : flattenedTree[nextOverIndex];
+        const rowHeight = overItem?.type == "separator" ? 10 : spaceRowHeight(superstate, presetRowHeight, false);
+        const newY = position.y <= rowHeight / 3 ? 0 : position.y >= (rowHeight * 2) / 3 ? rowHeight : 13;
         const nextDepth = overItem?.depth ?? 0;
         const newX = nextDepth * indentationWidth;
         const nextActiveIndex = currentActive?.id ? flattenedTree.findIndex((f) => f.id == currentActive.id) : -1;
-        const nextProjection = currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, requestedModifier, currentActive.space) : null;
-        const modifier = isFocusLevelAdd(nextProjection, currentActive) ? "link" : requestedModifier;
+        const nextProjection = constrainLinkedItemProjection(
+            currentActive,
+            constrainTagSpaceProjection(
+                currentActive,
+                constrainSeparatorProjection(
+                    currentActive,
+                    currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, requestedModifier, currentActive.space) : null,
+                ),
+                flattenedTree,
+            ),
+            flattenedTree,
+        );
+        const modifier = resolveDragModifier(currentActive, nextProjection, requestedModifier);
         if (modifierRef.current != modifier) {
             modifierRef.current = modifier;
             setModifier(modifier);
         }
-        e.dataTransfer.dropEffect = modifier;
+        const isSelfDrop = currentActive?.id == overItem?.id;
+        const isParentNoOpDrop = currentActive?.parentId == overItem?.id;
+        const acceptRejectedSeparatorDrop = currentActive?.type == "separator";
+        const acceptRejectedTagSpaceDrop = isTagTreeItemPath(currentActive?.item);
+        // Accept self/parent no-ops at the native DnD layer. Using `none` makes
+        // Chromium animate the ghost back to its origin for ~400 ms.
+        e.dataTransfer.dropEffect = nextProjection || isSelfDrop || isParentNoOpDrop || acceptRejectedSeparatorDrop || acceptRejectedTagSpaceDrop ? modifier : "none";
         const nextDragAction = dragActionForProjection(nextProjection, modifier);
         if (!isEqual(dragActionRef.current, nextDragAction)) {
             dragActionRef.current = nextDragAction;
@@ -494,13 +616,97 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         if (dragPaths.length == 0 && dragPathsRef.current.length > 0) resetState();
     }, [dragPaths]);
 
+    const finishNoOpDrop = (e: React.DragEvent<HTMLDivElement>) => {
+        // The tree state and Obsidian's native drag ghost are separate. A no-op
+        // must synchronously finish both instead of waiting for a later dragend.
+        superstate.ui.dragEnded(e);
+        resetState();
+    };
+
     const dragEnded = async (e: React.DragEvent<HTMLDivElement>, overId: string) => {
+        // The source row also receives dragend after a successful target drop.
+        // In that case the target handler already owns completion.
+        if (isDropping.current) return;
+        const currentActive = activeRef.current ?? active;
+        if (currentActive && overId == currentActive.id) {
+            finishNoOpDrop(e);
+            return;
+        }
+        // A direct drop on the item's own parent is always a no-op. Positional
+        // projections around that row must not trigger persistence or reload.
+        if (isParentDropNoOp(currentActive, overId)) {
+            finishNoOpDrop(e);
+            return;
+        }
+        const actionModifier = dragActionRef.current?.action.type == "link" ? "link" : dragActionRef.current?.action.type == "copy" ? "copy" : "move";
+        const fallbackOverIndex = flattenedTree.findIndex((node) => node.id == overId);
+        const fallbackOverItem = fallbackOverIndex == -1 ? null : flattenedTree[fallbackOverIndex];
+        const projection = constrainLinkedItemProjection(
+            currentActive,
+            constrainTagSpaceProjection(
+                currentActive,
+                constrainSeparatorProjection(currentActive, dragActionRef.current?.action.projection ?? (
+                    currentActive && fallbackOverItem
+                        ? getProjection(
+                            currentActive,
+                            flattenedTree,
+                            dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths,
+                            fallbackOverIndex,
+                            fallbackOverItem.depth,
+                            offsetRef.current.y,
+                            activeIndex < fallbackOverIndex,
+                            modifierRef.current ?? "move",
+                            currentActive.space,
+                        )
+                        : null
+                )),
+                flattenedTree,
+            ),
+            flattenedTree,
+        );
+        if (!currentActive || !projection) {
+            finishNoOpDrop(e);
+            return;
+        }
         isDropping.current = true;
         pendingReset.current = true;
         treeRef.current?.classList.add("mk-dropping");
-        const currentActive = activeRef.current ?? active;
-        const actionModifier = dragActionRef.current?.action.type == "link" ? "link" : dragActionRef.current?.action.type == "copy" ? "copy" : "move";
-        await dropPathsInTree(superstate, dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths, currentActive?.id, dragActionRef.current?.action.projection.overId ?? overId, dragActionRef.current?.action.projection, flattenedTree, activeViewSpaces, actionModifier);
+        if (currentActive.type == "separator") {
+            const separatorPath = currentActive.path;
+            const target = flattenedTree.find((node) => node.id == (projection.overId ?? overId));
+            const targetContainer = flattenedTree.find((node) => node.id == (projection.insert ? projection.overId : projection.parentId));
+            const newSpacePath = projection.insert ? target?.item?.path : targetContainer?.item?.path;
+            const destinationSpace = newSpacePath ? superstate.spacesIndex.get(newSpacePath) : null;
+            const destinationLength = destinationSpace?.metadata?.["rank-order"]?.length ?? 0;
+            const newRank = separatorDropRank(projection, target, flattenedTree, destinationLength);
+            if (currentActive.space && newSpacePath) {
+                await moveSpaceSeparator(superstate, currentActive.space, currentActive.rank, newSpacePath, newRank, actionModifier == "copy");
+            } else if (!currentActive.space && newSpacePath) {
+                await addSpaceSeparator(superstate, newSpacePath, newRank);
+                if (actionModifier != "copy") {
+                    setFocuses(focuses.map((focus, index) => index == activeFocus ? { ...focus, paths: focus.paths.filter((_path, pathIndex) => pathIndex != currentActive.rank) } : focus));
+                }
+            } else if (currentActive.space && projection.parentId == null) {
+                setFocuses(focuses.map((focus, index) => {
+                    if (index != activeFocus) return focus;
+                    const paths = [...focus.paths];
+                    paths.splice(Math.max(0, Math.min(newRank, paths.length)), 0, separatorPath);
+                    return { ...focus, paths };
+                }));
+                if (actionModifier != "copy") await removeSpaceSeparator(superstate, currentActive.space, currentActive.rank);
+            } else if (projection.parentId == null) {
+                setFocuses(focuses.map((focus, index) => {
+                    if (index != activeFocus) return focus;
+                    const paths = [...focus.paths];
+                    if (actionModifier != "copy") paths.splice(currentActive.rank, 1);
+                    const adjustedRank = actionModifier != "copy" && currentActive.rank < newRank ? newRank - 1 : newRank;
+                    paths.splice(Math.max(0, Math.min(adjustedRank, paths.length)), 0, separatorPath);
+                    return { ...focus, paths };
+                }));
+            }
+        } else {
+            await dropPathsInTree(superstate, dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths, currentActive?.id, projection.overId ?? overId, projection, flattenedTree, activeViewSpaces, actionModifier);
+        }
         if (pendingDropReload.current) {
             pendingDropReload.current = false;
             pendingReset.current = false;
@@ -511,16 +717,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             treeRef.current?.classList.remove("mk-dropping");
         }
         isDropping.current = false;
-        // Fallback reset in case spaceStateUpdated doesn't fire
-        setTimeout(() => {
-            if (pendingReset.current) {
-                pendingReset.current = false;
-                flushSync(() => {
-                    resetState();
-                });
-                treeRef.current?.classList.remove("mk-dropping");
-            }
-        }, 200);
+        if (pendingReset.current) {
+            pendingReset.current = false;
+            flushSync(() => {
+                resetState();
+            });
+            treeRef.current?.classList.remove("mk-dropping");
+        }
     };
 
     const handleCollapse = useCallback(
@@ -565,14 +768,17 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         overIdRef.current = null;
         offsetRef.current = { x: 0, y: 0 };
     };
-    const rowHeights = useMemo(() => flattenedTree.map((f) => spaceRowHeight(superstate, presetRowHeight, f.type == "group" && !isTagTreeItemPath(f.item))), [flattenedTree]);
+    const rowHeights = useMemo(
+        () => flattenedTree.map((f) => f.type == "separator" ? 10 : spaceRowHeight(superstate, presetRowHeight, f.type == "group" && !isTagTreeItemPath(f.item))),
+        [flattenedTree, presetRowHeight, superstate],
+    );
 
     const dragOverTree = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
 
         const currentActive = activeRef.current ?? active;
         if (currentActive?.parentId != null) return;
-        if ((e.target as HTMLElement).closest('.mk-tree-wrapper[draggable="true"]')) return;
+        if ((e.target as HTMLElement).closest('[draggable="true"]')) return;
 
         // Treat the Open row and the empty area below it as the end of the root
         // section list. Without a concrete TreeItem handling this dragover,
@@ -605,15 +811,16 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 }
             }}
         >
-            {flattenedTree.length == 1 || editFocus ? (
+            {flattenedTree.length == 1 || editFocus != null ? (
                 <FocusEditor
                     superstate={superstate}
-                    focus={focuses[activeFocus]}
+                    focus={focuses[editFocus ?? activeFocus]}
                     saveFocus={(focus) => {
-                        setEditFocus(false);
+                        const focusIndex = editFocus ?? activeFocus;
+                        setEditFocus(null);
                         setFocuses(
                             focuses.map((f, i) => {
-                                return i == activeFocus ? focus : f;
+                                return i == focusIndex ? focus : f;
                             }),
                         );
                     }}
@@ -638,7 +845,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     activeIndex={activeIndex}
                 ></VirtualizedList>
             )}
-            {modifier && active?.parentId != null && !(dragAction?.action.type == "link" && dragAction.action.containerId == null) && (
+            {modifier && active?.parentId != null && !isTagTreeItemPath(active?.item) && !isLinkedTreeItem(active) && !(dragAction?.action.type == "link" && dragAction.action.containerId == null) && (
                 <div
                     className="mk-hint-dnd"
                     style={{
@@ -654,7 +861,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     }}
                 >
                     <div>{i18n.hintText.dragDropCopyModifierKey}</div>
-                    <div>{i18n.hintText.dragDropLinkModifierKey}</div>
+                    {active?.type != "separator" && <div>{i18n.hintText.dragDropLinkModifierKey}</div>}
                 </div>
             )}
         </div>

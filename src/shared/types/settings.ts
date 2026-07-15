@@ -16,7 +16,6 @@ export interface MakeMDSettings {
     deleteFileOption: "trash" | "permanent" | "system-trash";
     expandFolderOnClick: boolean;
     folderIndentationLines: boolean;
-    pinnedSeparatorLine: boolean;
     defaultFoldersAtTop: boolean;
     defaultGroupBySubtags: boolean;
     defaultSpaceSort: SpaceSort;

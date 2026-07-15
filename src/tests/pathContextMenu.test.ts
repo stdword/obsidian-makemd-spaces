@@ -471,7 +471,7 @@ describe("showPathContextMenu", () => {
         }));
     });
 
-    it("shows Wrap to Folder after Move to and defaults to the file name without its extension", async () => {
+    it("shows Wrap to Folder before Move to and defaults to the file name without its extension", async () => {
         const openMenu = jest.fn();
         const openModal = jest.fn();
         const renamePath = jest.fn(() => Promise.resolve());
@@ -507,12 +507,13 @@ describe("showPathContextMenu", () => {
         } as any;
         const event = { view: { document: { defaultView: {} } } } as any;
 
-        showPathContextMenu(superstate, pathState.path, "Drafts", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+        showPathContextMenu(superstate, pathState.path, "Drafts", { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, "right", null, 1);
 
         const options = openMenu.mock.calls[0][1].options;
         const moveIndex = options.findIndex((option: any) => option.name === i18n.menu.moveFile);
         const wrapIndex = options.findIndex((option: any) => option.name === i18n.menu.wrapToFolder);
-        expect(wrapIndex).toBe(moveIndex + 1);
+        expect(wrapIndex).toBeGreaterThan(-1);
+        expect(wrapIndex).toBeLessThan(moveIndex);
 
         options[wrapIndex].onClick(event);
         const modal = openModal.mock.calls[0][1];
@@ -584,7 +585,7 @@ describe("showPathContextMenu", () => {
 });
 
 describe("showSpaceContextMenu", () => {
-    it("shows New Note and New Folder before New and removes them from its submenu", () => {
+    it("shows New Note before New and keeps New Folder in its submenu", () => {
         const openMenu = jest.fn();
         const pathState = { path: "Projects", parent: "/", type: "space", subtype: "folder", spaces: [] as string[] };
         const space = {
@@ -609,16 +610,15 @@ describe("showSpaceContextMenu", () => {
         showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
 
         const rootOptions = openMenu.mock.calls[0][1].options;
-        expect(rootOptions.slice(0, 3).map((option: any) => option.name)).toEqual([
+        expect(rootOptions.slice(0, 2).map((option: any) => option.name)).toEqual([
             i18n.labels.createNote,
-            i18n.labels.createFolder,
             i18n.menu.new,
         ]);
 
-        rootOptions[2].onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
+        rootOptions[1].onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
         const newSubmenuOptions = openMenu.mock.calls[1][1].options;
         expect(newSubmenuOptions.some((option: any) => option.name === i18n.labels.createNote)).toBe(false);
-        expect(newSubmenuOptions.some((option: any) => option.name === i18n.labels.createFolder)).toBe(false);
+        expect(newSubmenuOptions.some((option: any) => option.name === i18n.labels.createFolder)).toBe(true);
     });
 
     it("updates the home space display color when a color is selected", async () => {
@@ -948,7 +948,7 @@ describe("showSpaceContextMenu", () => {
         expect(rootOptions.some((option: any) => option.value === "apply-all")).toBe(false);
     });
 
-    it("hides creation, rename, duplicate, reveal, and native menu actions for tag spaces", () => {
+    it("shows New Separator as the first tag-space action while hiding New and unsupported actions", () => {
         const openMenu = jest.fn();
         const pathState = {
             path: "spaces://#art",
@@ -981,7 +981,9 @@ describe("showSpaceContextMenu", () => {
         showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
 
         const rootOptions = openMenu.mock.calls[0][1].options;
-        expect(rootOptions.some((option: any) => option.name === "New")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === i18n.menu.new)).toBe(false);
+        expect(rootOptions[0]?.name).toBe(i18n.buttons.createSeparator);
+        expect(rootOptions[0]?.icon).toBe("lucide//separator-horizontal");
         expect(rootOptions.some((option: any) => option.name === "Duplicate")).toBe(false);
         expect(rootOptions.some((option: any) => option.name === "Rename")).toBe(false);
         expect(rootOptions.some((option: any) => option.name === "Reveal in Finder")).toBe(false);
@@ -1057,7 +1059,7 @@ describe("showSpaceContextMenu", () => {
         expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(true);
         expect(sortOptions.some((option: any) => option.name === "Group by Sub-tags")).toBe(true);
         expect(sortOptions.some((option: any) => option.name === "Apply to Sub-tags")).toBe(true);
-        expect(sortOptions.some((option: any) => option.name === "Apply to Subfolders")).toBe(false);
+        expect(sortOptions.some((option: any) => option.name === "Apply to Sub-folders")).toBe(false);
         expect(sortOptions.some((option: any) => option.name === "File Name (A to Z)")).toBe(true);
     });
 
@@ -1085,7 +1087,7 @@ describe("showSpaceContextMenu", () => {
         const pinIndex = rootOptions.findIndex((option: any) => option.name === "Pin to Top");
         const sortIndex = rootOptions.findIndex((option: any) => option.name === i18n.menu.sortBy);
         expect(pinIndex).toBeGreaterThan(-1);
-        expect(pinIndex).toBeLessThan(sortIndex);
+        expect(pinIndex).toBeGreaterThan(sortIndex);
     });
 
     it("opens Link to with hidden folders when shift-clicked", () => {

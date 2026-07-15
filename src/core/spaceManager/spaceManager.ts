@@ -90,7 +90,7 @@ export class SpaceManager implements ISpaceManager {
     };
 
     public onSpaceDeleted = async (path: string) => {
-        this.superstate.onSpaceDeleted(path);
+        await this.superstate.onSpaceDeleted(path);
         await this.superstate.onPathDeleted(path);
     };
 

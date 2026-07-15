@@ -241,7 +241,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
 
     menuOptions.push(menuSeparator);
 
-    // change color
+    // color
     menuOptions.push({
         name: i18n.menu.changeColor,
         icon: "ui//palette",
@@ -331,7 +331,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
 
     const menuOptions: SelectOption[] = [];
 
-    // change color
+    // color
     menuOptions.push({
         name: i18n.menu.changeColor,
         icon: "ui//palette",
@@ -357,6 +357,85 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         });
     }
 
+    if (depth > 0) {
+        // wrap to folder
+        menuOptions.push({
+            name: i18n.menu.wrapToFolder,
+            icon: "lucide//folder-symlink",
+            closeParentImmediately: true,
+            onClick: (e) => {
+                const parentPath = cache.parent && cache.parent != "/" ? cache.parent : "";
+                const folderPathForName = (value: string) => {
+                    const folderName = value.replace(/\//g, "").trim();
+                    return {
+                        folderName,
+                        folderPath: parentPath ? `${parentPath}/${folderName}` : folderName,
+                    };
+                };
+                superstate.ui.openModal(
+                    i18n.menu.wrapToFolder,
+                    <InputModal
+                        saveLabel={i18n.buttons.wrap}
+                        value={pathDisplayInfo(path).title}
+                        saveValue={async (value) => {
+                            const { folderPath } = folderPathForName(value);
+                            if (await superstate.spaceManager.pathExists(folderPath)) {
+                                superstate.ui.notify(i18n.notice.fileExists);
+                                return;
+                            }
+                            await createSpace(superstate, folderPath);
+                            await superstate.spaceManager.renamePath(path, `${folderPath}/${path.split("/").pop()}`);
+                        }}
+                        validateValue={(value) => {
+                            const { folderName, folderPath } = folderPathForName(value);
+                            if (!folderName) return i18n.notice.emptyfolderName;
+                            if (superstate.spacesIndex.has(folderPath)) return i18n.notice.duplicateFolderName;
+                        }}
+                    />,
+                    windowFromDocument(e.view.document),
+                );
+            },
+        });
+    }
+
+    menuOptions.push(menuSeparator);
+
+    // duplicate
+    menuOptions.push({
+        name: i18n.menu.duplicate,
+        icon: "ui//documents",
+        onClick: () => {
+            duplicatePathNextToOriginal(superstate, path, `${cache.parent}`, `${cache.name}`, space ?? cache.parent);
+        },
+    });
+
+    // rename
+    menuOptions.push({
+        name: i18n.menu.rename,
+        icon: "ui//edit",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const isExcalidraw = path.toLowerCase().endsWith(".excalidraw.md");
+            const displayName = isExcalidraw ? cache.name.replace(/\.excalidraw$/i, "") : cache.name;
+            superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={displayName} saveValue={(value) => renamePathByName(superstate, path, isExcalidraw ? value.replace(/\.excalidraw(?:\.md)?$/i, "") : value)}></InputModal>, windowFromDocument(e.view.document));
+        },
+    });
+
+    // move to
+    if (!isTagSpacePath(space)) {
+        menuOptions.push({
+            name: i18n.menu.moveFile,
+            icon: "ui//paper-plane",
+            closeParentImmediately: true,
+            onClick: (e) => {
+                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+                showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                    return movePathToNewSpaceAtIndex(superstate, cache, link);
+                }, e.shiftKey);
+            },
+        });
+    }
+
     // link to
     menuOptions.push({
         name: i18n.buttons.addToSpace,
@@ -378,81 +457,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
 
     menuOptions.push(menuSeparator);
 
-    // duplicate
-    menuOptions.push({
-        name: i18n.menu.duplicate,
-        icon: "ui//documents",
-        onClick: () => {
-            duplicatePathNextToOriginal(superstate, path, `${cache.parent}`, `${cache.name}`, space ?? cache.parent);
-        },
-    });
-
-    // Rename Item
-    menuOptions.push({
-        name: i18n.menu.rename,
-        icon: "ui//edit",
-        closeParentImmediately: true,
-        onClick: (e) => {
-            const isExcalidraw = path.toLowerCase().endsWith(".excalidraw.md");
-            const displayName = isExcalidraw ? cache.name.replace(/\.excalidraw$/i, "") : cache.name;
-            superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={displayName} saveValue={(value) => renamePathByName(superstate, path, isExcalidraw ? value.replace(/\.excalidraw(?:\.md)?$/i, "") : value)}></InputModal>, windowFromDocument(e.view.document));
-        },
-    });
-
-    // move to
-    if (!isTagSpacePath(space))
-        menuOptions.push({
-            name: i18n.menu.moveFile,
-            icon: "ui//paper-plane",
-            closeParentImmediately: true,
-            onClick: (e) => {
-                const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-                showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                    return movePathToNewSpaceAtIndex(superstate, cache, link);
-                }, e.shiftKey);
-            },
-        });
-
-    menuOptions.push({
-        name: i18n.menu.wrapToFolder,
-        icon: "lucide//folder-symlink",
-        closeParentImmediately: true,
-        onClick: (e) => {
-            const parentPath = cache.parent && cache.parent != "/" ? cache.parent : "";
-            const folderPathForName = (value: string) => {
-                const folderName = value.replace(/\//g, "").trim();
-                return {
-                    folderName,
-                    folderPath: parentPath ? `${parentPath}/${folderName}` : folderName,
-                };
-            };
-            superstate.ui.openModal(
-                i18n.menu.wrapToFolder,
-                <InputModal
-                    saveLabel={i18n.buttons.wrap}
-                    value={pathDisplayInfo(path).title}
-                    saveValue={async (value) => {
-                        const { folderPath } = folderPathForName(value);
-                        if (await superstate.spaceManager.pathExists(folderPath)) {
-                            superstate.ui.notify(i18n.notice.fileExists);
-                            return;
-                        }
-                        await createSpace(superstate, folderPath);
-                        await superstate.spaceManager.renamePath(path, `${folderPath}/${path.split("/").pop()}`);
-                    }}
-                    validateValue={(value) => {
-                        const { folderName, folderPath } = folderPathForName(value);
-                        if (!folderName) return i18n.notice.emptyfolderName;
-                        if (superstate.spacesIndex.has(folderPath)) return i18n.notice.duplicateFolderName;
-                    }}
-                />,
-                windowFromDocument(e.view.document),
-            );
-        },
-    });
-
-    menuOptions.push(menuSeparator);
-
+    // reveal
     if (isTagSpacePath(space) || isLinkedFileMenuItem(cache, space)) {
         menuOptions.push({
             name: i18n.menu.revealInSpaces,
@@ -483,6 +488,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
 
     menuOptions.push(menuSeparator);
 
+    // remove from focus
     if (onClose) {
         menuOptions.push({
             name: i18n.menu.closeSpace,
@@ -493,24 +499,25 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         });
     }
 
-    // unlink item
+    // unlink
     if (space && space != cache.parent && !isTagSpacePath(space))
         if (displaySpaceCache)
             menuOptions.push({
-                name: i18n.menu.removeFromSpace.replace("${1}", displaySpaceCache.name),
+                name: i18n.menu.removeFromSpace,
                 icon: "ui//pin-off",
                 onClick: () => {
                     removePathsFromSpace(superstate, displaySpaceCache.path, [path]);
                 },
             });
 
-    // Previous global Hide command (disabled in favor of per-focus exclusions).
+    // Hide (disabled in favor of per-focus exclusions).
     // menuOptions.push({
     //     name: i18n.menu.hide,
     //     icon: "ui//eye-off",
     //     onClick: () => hidePath(superstate, path),
     // });
 
+    // exclude from focus
     if (depth > 0)
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,
@@ -518,7 +525,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             onClick: () => excludePathsFromCurrentFocus(superstate, [path]),
         });
 
-    // delete item
+    // delete
     menuOptions.push({
         name: i18n.menu.delete,
         icon: "ui//trash",

@@ -3,10 +3,10 @@ import { DragActionModel } from "core/utils/dnd/dragPath";
 import { Pos } from "shared/types/Pos";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { createSpace, TreeNode } from "core/utils/superstate/spaces";
+import { createSpace, moveSpaceSeparator, removeSpaceSeparator, setSpaceSeparatorVisible, TreeNode } from "core/utils/superstate/spaces";
 import { addTag } from "core/utils/superstate/tags";
-import { tagSpacePathFromTag } from "schemas/builtin";
-import { Superstate } from "makemd-core";
+import { isSpaceSeparatorPath, SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH, tagSpacePathFromTag } from "schemas/builtin";
+import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import React, { CSSProperties, useContext } from "react";
 import { windowFromDocument } from "utils/dom";
@@ -14,10 +14,13 @@ import { showOpenMenu } from "../../UI/Menus/modals/selectSpaceMenu";
 import { TreeItem } from "./SpaceTreeItem";
 import { ensureTag } from "utils/tags";
 import { isTagSpacePath } from "schemas/builtin";
+import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 
 
 export const highlightContainerIdForDrag = (flattenedTree: TreeNode[], activeIndex: number, overIndex: number, dragAction: DragActionModel | null) => {
-    const activeContainerId = flattenedTree[activeIndex]?.parentId;
+    const activeNode = flattenedTree[activeIndex];
+    const activeContainerId = activeNode?.parentId;
+    if (activeNode?.type == "separator") return activeContainerId;
     if (!dragAction) {
         const hoverNode = overIndex == -1 ? null : flattenedTree[overIndex];
         if (!hoverNode || overIndex == activeIndex) return activeContainerId;
@@ -107,8 +110,34 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         estimateSize: React.useCallback((index) => rowHeights[index], [rowHeights]),
         overscan: 0,
     });
+    const previousRowHeights = React.useRef(rowHeights);
+    React.useLayoutEffect(() => {
+        const previous = previousRowHeights.current;
+        rowHeights.forEach((height, index) => {
+            if (previous[index] != height) rowVirtualizer.resizeItem(index, height);
+        });
+        previousRowHeights.current = rowHeights;
+    }, [rowHeights, rowVirtualizer]);
     vRef.current = rowVirtualizer;
-    const { saveActiveSpace } = useContext(NavigatorContext);
+    const { saveActiveSpace, activeFocus, focuses, setFocuses } = useContext(NavigatorContext);
+    const updateFocusSeparator = (rank: number, duplicate: boolean) => {
+        setFocuses(focuses.map((focus, index) => {
+            if (index != activeFocus) return focus;
+            const paths = [...focus.paths];
+            if (!isSpaceSeparatorPath(paths[rank])) return focus;
+            if (duplicate) paths.splice(rank + 1, 0, paths[rank]);
+            else paths.splice(rank, 1);
+            return { ...focus, paths };
+        }));
+    };
+    const setFocusSeparatorVisible = (rank: number, visible: boolean) => {
+        setFocuses(focuses.map((focus, index) => {
+            if (index != activeFocus || !isSpaceSeparatorPath(focus.paths[rank])) return focus;
+            const paths = [...focus.paths];
+            paths[rank] = visible ? SPACE_SEPARATOR_PATH : SPACE_HIDDEN_SEPARATOR_PATH;
+            return { ...focus, paths };
+        }));
+    };
     const dropIndicatorVariant = (index: number): "line-top" | "line-bottom" | "box" | null => {
         if (dragAction?.visual.kind == "box" && flattenedTree[index]?.id == dragAction.visual.containerId) return "box";
         if (dragAction?.visual.kind == "line" && flattenedTree[index]?.id == dragAction.visual.itemId) return dragAction.visual.position == "after" ? "line-bottom" : "line-top";
@@ -137,7 +166,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
     const dragContextContainerHighlighted = (index: number) => {
         if (activeIndex == -1) return false;
         const activeNode = flattenedTree[activeIndex];
-        if (!dragAction && overIndex == activeIndex && activeNode && activeNode.type != "file") return false;
+        if (!dragAction && overIndex == activeIndex && activeNode && (activeNode.type == "space" || activeNode.type == "group") && !activeNode.collapsed) return false;
         return containerSubtreeHighlighted(highlightContainerId() ?? null, index);
     };
     const isDraggedActiveRow = (index: number) => activeIndex != -1 && index == activeIndex;
@@ -200,29 +229,6 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
             }];
         });
     }, [flattenedTree, indentationWidth, rowHeights, rowOffsets]);
-    const pinnedSeparators = React.useMemo(() => {
-        return flattenedTree.flatMap((node, index) => {
-            if (!node?.pinned) return [];
-
-            let lastVisibleIndex = index;
-            for (let i = index + 1; i < flattenedTree.length; i++) {
-                const descendant = flattenedTree[i];
-                if (descendant.depth <= node.depth) break;
-                lastVisibleIndex = i;
-            }
-
-            const nextSibling = flattenedTree[lastVisibleIndex + 1];
-            if (nextSibling?.parentId == node.parentId && nextSibling?.pinned) return [];
-
-            const left = 6 + indentationWidth * (node.depth - 1);
-            const top = (rowOffsets[lastVisibleIndex] ?? 0) + (rowHeights[lastVisibleIndex] ?? 0) - 1;
-            return [{
-                id: `${node.id}-pinned-separator`,
-                left,
-                top,
-            }];
-        });
-    }, [flattenedTree, rowHeights, rowOffsets]);
     return (
         <div
             ref={parentRef}
@@ -255,27 +261,16 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                             }
                         ></div>
                     ))}
-                    {superstate.settings.pinnedSeparatorLine && pinnedSeparators.map((separator) => (
-                        <div
-                            key={separator.id}
-                            className="mk-tree-pinned-separator"
-                            style={
-                                {
-                                    "--pinned-line-top": `${separator.top}px`,
-                                    "--pinned-line-left": `${separator.left}px`,
-                                } as CSSProperties
-                            }
-                        ></div>
-                    ))}
                 </div>
                 {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                     const node = flattenedTree[virtualRow.index];
                     const indicatorVariant = dropIndicatorVariant(virtualRow.index);
+                    const separatorVisible = node.path != SPACE_HIDDEN_SEPARATOR_PATH;
                     return (
                         <div
                             key={node.id}
                             data-index={virtualRow.index}
-                            className={`mk-tree-node${indicatorVariant ? " mk-tree-node-indicator" : ""}`}
+                            className={`mk-tree-node${node.type == "separator" ? " mk-tree-node-separator" : ""}${indicatorVariant ? " mk-tree-node-indicator" : ""}`}
                             style={
                                 {
                                     "--row-height": `${rowHeights[virtualRow.index]}px`,
@@ -283,7 +278,72 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                 } as CSSProperties
                             }
                         >
-                            {node.type == "new" ? (
+                            {node.type == "separator" ? (
+                                <div
+                                    className={`mk-tree-separator${isHighlighted(virtualRow.index) ? " is-highlighted" : ""}${indicatorVariant ? ` mk-tree-separator-indicator-${indicatorVariant}` : ""}`}
+                                    style={{
+                                        "--separator-spacing": `${node.depth == 0 ? 4 : 20 + indentationWidth * Math.max(0, node.depth - 1)}px`,
+                                    } as CSSProperties}
+                                    draggable
+                                    data-space={node.space ?? "focus"}
+                                    data-rank={node.rank}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onContextMenu={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        const options: SelectOption[] = [
+                                            {
+                                                name: i18n.menu.visible,
+                                                icon: "lucide//minus",
+                                                type: SelectOptionType.Radio,
+                                                value: separatorVisible,
+                                                onClick: () => node.space
+                                                    ? setSpaceSeparatorVisible(superstate, node.space, node.rank, !separatorVisible)
+                                                    : setFocusSeparatorVisible(node.rank, !separatorVisible),
+                                            },
+                                            menuSeparator,
+                                            {
+                                                name: i18n.menu.duplicate,
+                                                icon: "ui//documents",
+                                                onClick: () => node.space ? moveSpaceSeparator(superstate, node.space, node.rank, node.space, node.rank + 1, true) : updateFocusSeparator(node.rank, true),
+                                            },
+                                            menuSeparator,
+                                            {
+                                                name: i18n.menu.delete,
+                                                icon: "ui//trash",
+                                                onClick: () => node.space ? removeSpaceSeparator(superstate, node.space, node.rank) : updateFocusSeparator(node.rank, false),
+                                            },
+                                        ];
+                                        superstate.ui.openMenu((e.target as HTMLElement).getBoundingClientRect(), defaultMenu(superstate.ui, options), windowFromDocument(e.view.document));
+                                    }}
+                                    onDragStart={(e) => {
+                                        const ownerDocument = e.currentTarget.ownerDocument;
+                                        let cleanedUp = false;
+                                        const cleanupGhost = (event: DragEvent) => {
+                                            if (cleanedUp) return;
+                                            cleanedUp = true;
+                                            ownerDocument.removeEventListener("drop", cleanupGhost, true);
+                                            ownerDocument.removeEventListener("dragend", cleanupGhost, true);
+                                            superstate.ui.dragEnded(event as any);
+                                        };
+                                        ownerDocument.addEventListener("drop", cleanupGhost, true);
+                                        ownerDocument.addEventListener("dragend", cleanupGhost, true);
+                                        superstate.ui.dragStarted(e, [SPACE_SEPARATOR_PATH]);
+                                        props.dragStarted(node.id, e.currentTarget);
+                                    }}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        props.dragOver(e, node.id, { x: e.clientX - rect.left, y: e.clientY - rect.top });
+                                    }}
+                                    onDrop={(e) => {
+                                        e.stopPropagation();
+                                        props.dragEnded(e, node.id);
+                                    }}
+                                >
+                                    {separatorVisible && <div className="mk-tree-separator-line"></div>}
+                                </div>
+                            ) : node.type == "new" ? (
                                 <div
                                     className={"mk-tree-wrapper mk-tree-section"}
                                     onClick={(e) => {

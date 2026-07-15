@@ -9,6 +9,7 @@ import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { PathStateWithRank } from "shared/types/superstate";
+import { isSpaceSeparatorPath, SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 import { movePath } from "utils/uri";
 import { deletePath } from "./path";
@@ -20,6 +21,16 @@ type RankedItem = {
     path: string;
     rank?: number;
     [key: string]: any;
+};
+
+export const uniqueRankOrder = (order: string[]) => {
+    const seen = new Set<string>();
+    return order.filter((itemPath) => {
+        if (isSpaceSeparatorPath(itemPath)) return true;
+        if (seen.has(itemPath)) return false;
+        seen.add(itemPath);
+        return true;
+    });
 };
 
 export const defaultSortForSettings = (settings: MakeMDSettings): SpaceSort => ({
@@ -107,7 +118,7 @@ export const parseSpaceMetadata = (metadata: Record<string, any>, _settings: Mak
     };
 };
 
-type TreeNodeType = "space" | "file" | "group" | "new";
+type TreeNodeType = "space" | "file" | "group" | "separator" | "new";
 export interface TreeNode {
     id: string;
     parentId: string;
@@ -267,7 +278,7 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
         const currentOrder = ensureArray(spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path));
         const nextOrder = currentOrder.filter((itemPath) => itemPath != path);
         nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
-        await saveSpaceMetadataValue(superstate, space, "rank-order", [...new Set(nextOrder)]);
+        await saveSpaceMetadataValue(superstate, space, "rank-order", uniqueRankOrder(nextOrder));
         return;
     }
 };
@@ -286,7 +297,7 @@ export const duplicatePathNextToOriginal = async (superstate: Superstate, path: 
     const nextOrder = displayedOrder.filter((itemPath) => itemPath != newPath);
     const originalIndex = nextOrder.indexOf(path);
     nextOrder.splice(originalIndex >= 0 ? originalIndex + 1 : nextOrder.length, 0, newPath);
-    await saveSpaceMetadataValue(superstate, rankSpace, "rank-order", [...new Set(nextOrder)]);
+    await saveSpaceMetadataValue(superstate, rankSpace, "rank-order", uniqueRankOrder(nextOrder));
     return newPath;
 };
 
@@ -294,7 +305,7 @@ const rankOrderWithPathAtIndex = (superstate: Superstate, spaceState: SpaceState
     const currentOrder = ensureArray(spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(spaceState.path).map((item) => item.path));
     const nextOrder = currentOrder.filter((itemPath) => itemPath != previousPath && itemPath != path);
     nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
-    return [...new Set(nextOrder)];
+    return uniqueRankOrder(nextOrder);
 };
 
 const isFiniteRank = (rank: unknown): rank is number => typeof rank == "number" && Number.isFinite(rank);
@@ -435,6 +446,64 @@ export const saveSpaceCache = async (superstate: Superstate, spaceInfo: SpaceSta
     }
 
     return superstate.updateSpaceMetadata(spaceInfo.path, nextMetadata);
+};
+
+export const addSpaceSeparator = async (superstate: Superstate, spacePath: string, rank?: number) => {
+    const space = superstate.spacesIndex.get(spacePath);
+    if (!space || !["folder", "tag", "vault"].includes(space.type)) return;
+
+    const currentSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
+    const currentOrder = currentSort.field == "rank" && ensureArray(space.metadata?.["rank-order"]).length > 0
+        ? ensureArray(space.metadata["rank-order"])
+        : pinnedItemsFirst(superstate.getSpaceItems(spacePath) ?? [], space, currentSort).map((item) => item.path);
+    const nextOrder = [...currentOrder];
+    nextOrder.splice(Math.max(0, Math.min(rank ?? nextOrder.length, nextOrder.length)), 0, SPACE_SEPARATOR_PATH);
+
+    await saveSpaceCache(superstate, space, {
+        sort: {
+            ...(storedSpaceSort(space.metadata?.sort) ?? {}),
+            field: "rank",
+            asc: true,
+        },
+        "rank-order": nextOrder,
+    });
+};
+
+export const removeSpaceSeparator = async (superstate: Superstate, spacePath: string, rank: number) => {
+    const space = superstate.spacesIndex.get(spacePath);
+    const currentOrder = ensureArray(space?.metadata?.["rank-order"]);
+    if (!space || !isSpaceSeparatorPath(currentOrder[rank])) return;
+    await saveSpaceMetadataValue(superstate, spacePath, "rank-order", currentOrder.filter((_item, index) => index != rank));
+};
+
+export const setSpaceSeparatorVisible = async (superstate: Superstate, spacePath: string, rank: number, visible: boolean) => {
+    const space = superstate.spacesIndex.get(spacePath);
+    const currentOrder = [...ensureArray(space?.metadata?.["rank-order"])];
+    if (!space || !isSpaceSeparatorPath(currentOrder[rank])) return;
+    currentOrder[rank] = visible ? SPACE_SEPARATOR_PATH : SPACE_HIDDEN_SEPARATOR_PATH;
+    await saveSpaceMetadataValue(superstate, spacePath, "rank-order", currentOrder);
+};
+
+export const moveSpaceSeparator = async (superstate: Superstate, oldSpacePath: string, oldRank: number, newSpacePath: string, newRank: number, copy = false) => {
+    const oldSpace = superstate.spacesIndex.get(oldSpacePath);
+    const newSpace = superstate.spacesIndex.get(newSpacePath);
+    const separatorPath = ensureArray(oldSpace?.metadata?.["rank-order"])[oldRank];
+    if (!oldSpace || !newSpace || !isSpaceSeparatorPath(separatorPath)) return;
+    if (effectiveSpaceSort(newSpace.metadata?.sort, superstate.settings).field != "rank") return;
+
+    if (oldSpacePath == newSpacePath) {
+        const nextOrder = [...ensureArray(oldSpace.metadata?.["rank-order"])];
+        if (!copy) nextOrder.splice(oldRank, 1);
+        const adjustedRank = !copy && oldRank < newRank ? newRank - 1 : newRank;
+        nextOrder.splice(Math.max(0, Math.min(adjustedRank, nextOrder.length)), 0, separatorPath);
+        await saveSpaceMetadataValue(superstate, oldSpacePath, "rank-order", nextOrder);
+        return;
+    }
+
+    const destinationOrder = [...ensureArray(newSpace.metadata?.["rank-order"])];
+    destinationOrder.splice(Math.max(0, Math.min(newRank, destinationOrder.length)), 0, separatorPath);
+    await saveSpaceMetadataValue(superstate, newSpacePath, "rank-order", destinationOrder);
+    if (!copy) await removeSpaceSeparator(superstate, oldSpacePath, oldRank);
 };
 
 export const defaultSpace = async (superstate: Superstate, activeFile: PathState): Promise<SpaceState> => {

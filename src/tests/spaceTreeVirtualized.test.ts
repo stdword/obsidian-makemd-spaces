@@ -42,6 +42,26 @@ describe("highlightContainerIdForDrag", () => {
         item: { path: "TargetFolder/CollapsedChild", type: "space", subtype: "folder" },
         collapsed: true,
     };
+    const separatorNode: any = {
+        id: "spaces://#fixture-tag/spaces://$separator/1",
+        parentId: "spaces://#fixture-tag",
+        type: "separator",
+    };
+
+    it("never highlights another container while dragging a separator", () => {
+        const highlightedContainer = highlightContainerIdForDrag(
+            [tagNode, separatorNode, targetFolderNode],
+            1,
+            2,
+            {
+                action: { type: "move", containerId: "TargetFolder", projection: {} as any },
+                visual: { kind: "box", containerId: "TargetFolder" },
+                label: null,
+            },
+        );
+
+        expect(highlightedContainer).toBe(tagNode.id);
+    });
 
     it("does not keep the source tag space highlighted for a root box target", () => {
         const highlightedContainer = highlightContainerIdForDrag(

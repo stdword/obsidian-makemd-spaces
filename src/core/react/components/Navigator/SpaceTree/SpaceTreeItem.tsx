@@ -201,6 +201,7 @@ export const TreeItem = (props: TreeItemProps) => {
         draggable: true,
         onDragStart: onDragStarted,
         onDrop: onDragEnded,
+        onDragEnd: onDragEnded,
     };
     const isSpace = pathState?.type == "space";
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);

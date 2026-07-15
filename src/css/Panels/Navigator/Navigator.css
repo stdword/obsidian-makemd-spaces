@@ -25,6 +25,10 @@
     z-index: 1;
 }
 
+.mk-tree-node-separator {
+    z-index: 1;
+}
+
 .mk-tree-wrapper {
     box-sizing: border-box;
     margin-left: 6px;
@@ -88,13 +92,38 @@
     pointer-events: none;
 }
 
-.mk-tree-pinned-separator {
-    corner-shape: square;
-    border-bottom: 1px dashed var(--nav-indentation-guide-color);
-    position: absolute;
-    top: var(--pinned-line-top);
-    left: var(--pinned-line-left);
-    width: calc(100% - var(--pinned-line-left) - 4px);
+.mk-tree-separator {
+    box-sizing: border-box;
+    width: calc(100% - 6px);
+    margin-left: 6px;
+    height: 10px;
+    padding-top: 2px;
+    padding-left: var(--separator-spacing);
+    padding-right: 6px;
+    display: flex;
+    align-items: center;
+    cursor: default;
+}
+
+.drag-ghost-self > svg.lucide-separator-horizontal {
+    margin-right: 0px;
+}
+
+.mk-tree-separator-line {
+    width: 100%;
+    border-top: 1px solid var(--tab-outline-color);
+}
+
+.mk-tree-separator.is-highlighted {
+    background: var(--nav-item-background-active) !important;
+}
+
+.mk-tree-separator-indicator-line-top {
+    box-shadow: inset 0 2px 0 var(--mk-ui-active);
+}
+
+.mk-tree-separator-indicator-line-bottom {
+    box-shadow: inset 0 -2px 0 var(--mk-ui-active);
 }
 
 .mk-folder-lines .mk-tree-line {
@@ -383,6 +412,7 @@ body .mk-tree-wrapper:hover .mk-path-link {
     height: 16px !important;
     opacity: 0.4;
     margin-right: 2px;
+    margin-top: 2px;
 }
 .mk-collapse:hover {
     background: none !important;

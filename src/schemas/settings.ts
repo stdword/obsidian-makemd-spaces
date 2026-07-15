@@ -22,7 +22,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
     },
     expandFolderOnClick: true,
     folderIndentationLines: true,
-    pinnedSeparatorLine: false,
     openSpacesOnLaunch: true,
     overrideNativeMenu: false,
     revealActiveFile: false,

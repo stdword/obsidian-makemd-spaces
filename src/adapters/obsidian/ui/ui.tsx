@@ -24,7 +24,7 @@ import { lucideIcons } from "./icons";
 import { showModal } from "./modal";
 import { showMainMenu } from "./showMainMenu";
 import { stickerFromString } from "./sticker";
-import { isTagSpacePath } from "schemas/builtin";
+import { isTagSpacePath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 export class ObsidianUI implements UIAdapter {
@@ -144,6 +144,15 @@ export class ObsidianUI implements UIAdapter {
         if (paths.length == 0) return;
         if (paths.length == 1) {
             const path = paths[0];
+            if (path == SPACE_SEPARATOR_PATH) {
+                this.plugin.app.dragManager.onDragStart(e.nativeEvent, {
+                    icon: "lucide-separator-horizontal",
+                    source: undefined,
+                    title: "",
+                    type: "file",
+                });
+                return;
+            }
             const file = getAbstractFileAtPath(this.plugin.app, path);
             if (!file) {
                 if (isTagSpacePath(path)) {
@@ -200,7 +209,9 @@ export class ObsidianUI implements UIAdapter {
         this.plugin.app.dragManager.setAction(label);
     };
 
-    public dragEnded = (_e: React.DragEvent<HTMLDivElement>) => {};
+    public dragEnded = (e: React.DragEvent<HTMLDivElement>) => {
+        this.plugin.app.dragManager.onDragEnd((e as React.DragEvent<HTMLDivElement>).nativeEvent ?? e);
+    };
 
     public allStickers = () => {
         const allLucide: Sticker[] = lucideIcons

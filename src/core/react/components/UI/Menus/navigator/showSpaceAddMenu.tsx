@@ -1,6 +1,6 @@
 import React from "react";
 import { isString } from "lodash";
-import { createSpace, newPathInSpace, linkPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
+import { addSpaceSeparator, createSpace, newPathInSpace, linkPathToSpaceAtIndex as linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
 import { default as i18n } from "shared/i18n";
 import { SpaceState, FilesystemSpaceInfo } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
@@ -58,6 +58,20 @@ export const newFolderMenuOption = (superstate: Superstate, space: SpaceState): 
 export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Window, space: SpaceState, dontOpen?: boolean, _isSubmenu?: boolean, onHide?: () => void) => {
     const menuOptions: SelectOption[] = [];
 
+    menuOptions.push(newFolderMenuOption(superstate, space));
+
+    menuOptions.push({
+        name: i18n.buttons.createSeparator,
+        icon: "lucide//separator-horizontal",
+        onClick: () => addSpaceSeparator(superstate, space.path),
+    });
+
+    menuOptions.push(menuSeparator);
+
+    if (space.type == "tag") {
+        return superstate.ui.openMenu(offset, defaultMenu(superstate.ui, menuOptions), win, "right", onHide);
+    }
+
     menuOptions.push({
         name: i18n.buttons.createCanvas,
         icon: "ui//layout-dashboard",
@@ -82,8 +96,9 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
         },
     });
 
-    if (space.type == "folder") {
+    if (space.type == "folder" || space.type == "vault") {
         menuOptions.push(menuSeparator);
+
         menuOptions.push({
             name: i18n.buttons.addIntoSpace,
             icon: "ui//link",

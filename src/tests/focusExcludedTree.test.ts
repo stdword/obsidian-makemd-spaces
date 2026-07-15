@@ -1,6 +1,165 @@
-import { retrieveData, revealTreePath } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
+import { constrainLinkedItemProjection, constrainSeparatorProjection, constrainTagSpaceProjection, dragModifierForActiveItem, isParentDropNoOp, resolveDragModifier, retrieveData, revealTreePath, separatorDropRank } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
+import { SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 describe("focus-excluded navigator items", () => {
+    it("finishes a drop on the direct parent immediately when there is no action", () => {
+        const item = { id: "Folder/Item.md", parentId: "Folder" } as any;
+
+        expect(isParentDropNoOp(item, "Folder")).toBe(true);
+        expect(isParentDropNoOp(item, "Other")).toBe(false);
+    });
+
+    it("links a tag space across containers but keeps reorder within its container", () => {
+        const tagSpace = { type: "space", parentId: "Folder", item: { path: "spaces://#fixture", type: "space", subtype: "tag" } } as any;
+
+        expect(dragModifierForActiveItem(tagSpace, { altKey: false, shiftKey: false } as any)).toBe("link");
+        expect(dragModifierForActiveItem(tagSpace, { altKey: true, shiftKey: false } as any)).toBe("link");
+        expect(dragModifierForActiveItem(tagSpace, { altKey: false, shiftKey: true } as any)).toBe("link");
+        expect(resolveDragModifier(tagSpace, { reorder: false } as any, "link")).toBe("link");
+        expect(resolveDragModifier(tagSpace, { reorder: true } as any, "link")).toBe("move");
+    });
+
+    it("treats dropping a tag space into its parent tag space as a no-op", () => {
+        const parent = { id: "parent", item: { path: "spaces://#topic", type: "space", subtype: "tag" } } as any;
+        const child = { id: "child", item: { path: "spaces://#topic/child", type: "space", subtype: "tag" } } as any;
+        const unrelated = { id: "unrelated", item: { path: "spaces://#other", type: "space", subtype: "tag" } } as any;
+        const projection = { insert: true, overId: parent.id, parentId: parent.id } as any;
+        const reorderProjection = { ...projection, insert: false, reorder: true };
+
+        expect(constrainTagSpaceProjection(child, projection, [parent, child])).toBeNull();
+        expect(constrainTagSpaceProjection(child, reorderProjection, [parent, child])).toBe(reorderProjection);
+        expect(constrainTagSpaceProjection(child, { ...projection, overId: unrelated.id, parentId: unrelated.id }, [parent, child, unrelated])).toBeNull();
+    });
+
+    it("only reorders a linked item in place and links it to another space", () => {
+        const source = { id: "source", item: { path: "Source", type: "space" } } as any;
+        const target = { id: "target", item: { path: "Target", type: "space" } } as any;
+        const linked = {
+            id: "source/item",
+            parentId: source.id,
+            depth: 1,
+            space: "Source",
+            item: { path: "Elsewhere/item.md", type: "file", linkedSpaces: ["Source"] },
+        } as any;
+        const reorder = { reorder: true, parentId: source.id, insert: false, overId: "source/sibling" } as any;
+        const ownContainer = { reorder: false, parentId: source.id, insert: true, overId: source.id } as any;
+        const otherContainer = { reorder: false, parentId: target.id, insert: true, overId: target.id } as any;
+
+        expect(dragModifierForActiveItem(linked, { altKey: false, shiftKey: false } as any)).toBe("link");
+        expect(resolveDragModifier(linked, reorder, "link")).toBe("move");
+        expect(constrainLinkedItemProjection(linked, reorder, [source, target, linked])).toBe(reorder);
+        expect(constrainLinkedItemProjection(linked, ownContainer, [source, target, linked])).toBeNull();
+        expect(constrainLinkedItemProjection(linked, otherContainer, [source, target, linked])).toBe(otherContainer);
+        const focusSection = { ...otherContainer, insert: false, parentId: null, overId: "section" };
+        expect(constrainLinkedItemProjection(linked, focusSection, [source, target, linked])).toBe(focusSection);
+        expect(resolveDragModifier(linked, focusSection, "link")).toBe("link");
+    });
+
+    it("uses root order when dropping a separator between focus sections", () => {
+        const separator = { id: "separator", parentId: null, type: "separator", rank: 0 } as any;
+        const first = { id: "first", parentId: null, type: "group", rank: null } as any;
+        const second = { id: "second", parentId: null, type: "group", rank: null } as any;
+        const third = { id: "third", parentId: null, type: "group", rank: null } as any;
+        const placeholder = { id: "placeholder", parentId: null, type: "new" } as any;
+
+        expect(separatorDropRank(
+            { parentId: null, insert: false, linePosition: "bottom" } as any,
+            third,
+            [separator, first, second, third, placeholder],
+            0,
+        )).toBe(4);
+    });
+
+    it("only allows separator projections within its original container", () => {
+        const separator = { type: "separator", parentId: "Source" } as any;
+        const sameContainer = { parentId: "Source", sortable: true, insert: false } as any;
+
+        expect(constrainSeparatorProjection(separator, sameContainer)).toBe(sameContainer);
+        expect(constrainSeparatorProjection(separator, { ...sameContainer, parentId: "Target" })).toBeNull();
+        expect(constrainSeparatorProjection(separator, { ...sameContainer, insert: true })).toBeNull();
+        expect(constrainSeparatorProjection(separator, { ...sameContainer, sortable: false })).toBeNull();
+    });
+
+    it("renders rank-order separators only for manual sorting", () => {
+        const sectionPath = { path: "Projects", name: "Projects", parent: "", type: "space", subtype: "folder" } as any;
+        const child = { path: "Projects/Plan.md", name: "Plan.md", parent: sectionPath.path, type: "file", rank: 1 } as any;
+        const createSuperstate = (field: string) => ({
+            settings: {},
+            spacesIndex: new Map([[sectionPath.path, {
+                path: sectionPath.path,
+                name: "Projects",
+                type: "folder",
+                metadata: { sort: { field, asc: true }, "rank-order": [SPACE_SEPARATOR_PATH, child.path] },
+                space: {},
+            }]]),
+            pathStateForPath: jest.fn(() => sectionPath),
+            getSpaceItems: jest.fn(() => [child]),
+        }) as any;
+
+        const manualTree = retrieveData(createSuperstate("rank"), [sectionPath], false, [sectionPath.path], []);
+        const alphabeticalTree = retrieveData(createSuperstate("name"), [sectionPath], false, [sectionPath.path], []);
+
+        expect(manualTree.find((node) => node.type == "separator")).toEqual(expect.objectContaining({
+            path: SPACE_SEPARATOR_PATH,
+            depth: 1,
+            childrenCount: 0,
+            collapsed: true,
+        }));
+        expect(alphabeticalTree.some((node) => node.type == "separator")).toBe(false);
+    });
+
+    it("keeps each separator occurrence at its original rank-order index", () => {
+        const sectionPath = { path: "Projects", name: "Projects", parent: "", type: "space", subtype: "folder" } as any;
+        const child = { path: "Projects/Plan.md", name: "Plan.md", parent: sectionPath.path, type: "file" } as any;
+        const rankOrder = [child.path, SPACE_SEPARATOR_PATH, "Projects/Missing A.md", "Projects/Missing B.md", SPACE_SEPARATOR_PATH];
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map([[sectionPath.path, {
+                path: sectionPath.path,
+                name: "Projects",
+                type: "folder",
+                metadata: { sort: { field: "rank", asc: true }, "rank-order": rankOrder },
+                space: {},
+            }]]),
+            pathStateForPath: jest.fn(() => sectionPath),
+            getSpaceItems: jest.fn(() => [child]),
+        } as any;
+
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], []);
+        const separators = tree.filter((node) => node.type == "separator");
+
+        expect(separators.map((node) => node.rank)).toEqual([1, 4]);
+        expect(separators.map((node) => node.id)).toEqual([
+            `${sectionPath.path}/${SPACE_SEPARATOR_PATH}/1`,
+            `${sectionPath.path}/${SPACE_SEPARATOR_PATH}/4`,
+        ]);
+    });
+
+    it("renders a focus-level separator as its own section row", () => {
+        const separator = { path: SPACE_SEPARATOR_PATH, name: "", parent: "", type: "file", subtype: "separator" } as any;
+        const tree = retrieveData({ spacesIndex: new Map() } as any, [separator], false, [], []);
+
+        expect(tree[0]).toEqual(expect.objectContaining({
+            type: "separator",
+            path: SPACE_SEPARATOR_PATH,
+            parentId: null,
+            depth: 0,
+            rank: 0,
+        }));
+    });
+
+    it("renders a non-visible separator as the same interactive separator node", () => {
+        const separator = { path: SPACE_HIDDEN_SEPARATOR_PATH, name: "", parent: "", type: "file", subtype: "separator" } as any;
+        const tree = retrieveData({ spacesIndex: new Map() } as any, [separator], false, [], []);
+
+        expect(tree[0]).toEqual(expect.objectContaining({
+            type: "separator",
+            path: SPACE_HIDDEN_SEPARATOR_PATH,
+            parentId: null,
+        }));
+    });
+
+
     it("hides an excluded folder and its branch, but keeps a linked child shown from another space", () => {
         const parentPath = { path: "Projects", name: "Projects", parent: "", type: "space", subtype: "folder" } as any;
         const excludedPath = { path: "Projects/Private", name: "Private", parent: "Projects", type: "space", subtype: "folder" } as any;

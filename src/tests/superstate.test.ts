@@ -63,6 +63,26 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
+    it("removes an externally deleted folder section from every focus", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const path = "Projects/Removed";
+        superstate.spacesIndex.set(path, { type: "folder", path, name: "Removed", metadata: {}, space: {} } as any);
+        superstate.focuses = [
+            { name: "Primary", paths: ["Before", path, "After"] },
+            { name: "Secondary", paths: [path] },
+        ] as any;
+        superstate.dispatchEvent = jest.fn();
+
+        await superstate.onSpaceDeleted(path);
+
+        expect(spaceManager.saveFocuses).toHaveBeenCalledWith([
+            expect.objectContaining({ paths: ["Before", "After"] }),
+            expect.objectContaining({ paths: [] }),
+        ]);
+        expect(superstate.spacesIndex.has(path)).toBe(false);
+        expect(superstate.dispatchEvent).toHaveBeenCalledWith("spaceDeleted", { path });
+    });
+
     it("refreshes the old loaded tag space when metadata removes a file tag", async () => {
         const { superstate } = createSuperstate();
         const path = "Notes/Untagged.md";
@@ -1522,6 +1542,7 @@ describe("Superstate tag initialization", () => {
         } as any;
         superstate.spacesIndex.set(parent.path, parent);
         superstate.spacesIndex.set(oldPath, renamed);
+        superstate.focuses = [{ name: "Main", paths: ["Before", oldPath, "After"] }] as any;
         superstate.spaceManager.pathExists.mockResolvedValue(true);
         superstate.reloadSpace = jest.fn(async (space: any) => space);
         superstate.onSpaceDefinitionChanged = jest.fn(() => Promise.resolve());
@@ -1535,6 +1556,9 @@ describe("Superstate tag initialization", () => {
 
         expect(superstate.spacesIndex.get(parent.path).metadata["rank-order"]).toEqual(["Projects/First", newPath, "Projects/Third"]);
         expect(superstate.spaceManager.saveSpace).toHaveBeenCalledWith(parent.path, expect.any(Function));
+        expect(superstate.spaceManager.saveFocuses).toHaveBeenCalledWith([
+            expect.objectContaining({ paths: ["Before", newPath, "After"] }),
+        ]);
     });
 
     it("does not recreate a moved parent while processing descendant folder rename events", async () => {

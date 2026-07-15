@@ -17,6 +17,8 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public spaceManager: SpaceManager;
     public schemes = ["spaces", "vault"];
     public authorities = ["vault"];
+    private recentlyCreatedFolders = new Map<string, number>();
+    private static readonly EXTERNAL_RENAME_WINDOW_MS = 2000;
 
     public constructor(public fileSystem: FilesystemMiddleware, public dataPath: string) {
         fileSystem.eventDispatch.addListener("onCreate", this.onCreate, 0, this);
@@ -240,6 +242,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
 
     onCreate = async (payload: { file: AFile }) => {
         if (payload.file.isFolder) {
+            this.recentlyCreatedFolders.set(payload.file.path, Date.now());
             this.spaceManager.onSpaceCreated(payload.file.path);
         } else {
             this.spaceManager.onPathCreated(payload.file.path);
@@ -256,12 +259,28 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (!payload.file.isFolder && payload.file.extension != "mdb") {
             this.spaceManager.onPathDeleted(payload.file.path);
         } else if (payload.file.isFolder) {
+            const now = Date.now();
+            const parentPath = this.spaceManager.parentPathForPath(payload.file.path);
+            const oldPathIsFocusSection = this.spaceManager.superstate.focuses.some((focus) => focus.paths.includes(payload.file.path));
+            const candidates = [...this.recentlyCreatedFolders.entries()]
+                .filter(([, createdAt]) => now - createdAt <= FilesystemSpaceAdapter.EXTERNAL_RENAME_WINDOW_MS)
+                .filter(([path]) => path != payload.file.path && this.spaceManager.parentPathForPath(path) == parentPath);
+            for (const [path, createdAt] of this.recentlyCreatedFolders) {
+                if (now - createdAt > FilesystemSpaceAdapter.EXTERNAL_RENAME_WINDOW_MS) this.recentlyCreatedFolders.delete(path);
+            }
+            if (oldPathIsFocusSection && candidates.length == 1) {
+                const [newPath] = candidates[0];
+                this.recentlyCreatedFolders.delete(newPath);
+                this.spaceManager.onSpaceRenamed(newPath, payload.file.path);
+                return;
+            }
             this.spaceManager.onSpaceDeleted(payload.file.path);
         }
     };
 
     onRename = (payload: { file: AFile; oldPath: string }) => {
         if (!payload.file) return;
+        if (payload.file.isFolder) this.recentlyCreatedFolders.delete(payload.file.path);
         if (!payload.file.isFolder && payload.file.extension != "mdb") {
             this.spaceManager.onPathChanged(payload.file.path, payload.oldPath);
         } else if (payload.file.isFolder) {

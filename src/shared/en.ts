@@ -31,12 +31,13 @@ export const en = {
         closeSpace: "Remove from Focus",
         openSpace: "Open",
 
-        applyItems: "Apply to Items in Folder",
+        applyItems: "Apply to Sub-items",
         rename: "Rename",
         moveFile: "Move to...",
         wrapToFolder: "Wrap to Folder",
         pinToTop: "Pin to Top",
         unpin: "Unpin",
+        visible: "Visible",
         duplicate: "Duplicate",
         archive: "Archive",
 
@@ -51,12 +52,12 @@ export const en = {
         excludeFromFocus: "Exclude from Focus",
         unhide: "Unhide",
 
-        removeFromSpace: 'Unlink from "${1}"',
+        removeFromSpace: 'Unlink',
 
         customSort: "Custom Sort",
         groupSpaces: "Folders at the Top",
         groupSubtags: "Group by Sub-tags",
-        recursiveSort: "Apply to Subfolders",
+        recursiveSort: "Apply to Sub-folders",
         recursiveTagSort: "Apply to Sub-tags",
         fileNameSortAlphaAsc: "File Name (A to Z)",
         fileNameSortAlphaDesc: "File Name (Z to A)",
@@ -84,6 +85,7 @@ export const en = {
 
         rename: "Change Name",
         createFolder: "Create Folder",
+        createSeparator: "New Separator",
         createCanvas: "New Canvas",
         createDrawing: "New Drawing",
         createBase: "New Base",
@@ -101,6 +103,7 @@ export const en = {
     },
 
     labels: {
+        separator: "Separator",
         all: "all",
         folders: "folders",
         files: "files",
@@ -206,10 +209,6 @@ export const en = {
         folderIndentationLines: {
             name: "Show Folder Indentation Lines",
             desc: "Turn on to show a line on the left of folders to indicate indentation",
-        },
-        pinnedSeparatorLine: {
-            name: "Show Pin Separator Line",
-            desc: "Turn on to show a dashed line after pinned items",
         },
         defaultSpaceSort: {
             name: "Sort Order (by default)",

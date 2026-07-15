@@ -15,7 +15,7 @@ export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveF
         setFocus(props.focus);
     }, [props.focus]);
     return focus && props.focus ? (
-        props.focus.name?.length == 0 || editFocus ? (
+        props.focus.name?.length == 0 || editFocus != null ? (
             <div className="mk-path-tree-focus">
                 <div
                     className={classNames("mk-focuses-item")}
@@ -41,10 +41,10 @@ export const FocusEditor = (props: { superstate: Superstate; focus: Focus; saveF
                     <button
                         onClick={() => {
                             if (props.focus.name.length == 0) {
-                                setFocuses(focuses.filter((_f, i) => i != activeFocus));
+                                setFocuses(focuses.filter((_f, i) => i != (editFocus ?? activeFocus)));
                                 props.superstate.saveSettings();
                             } else {
-                                setEditFocus(false);
+                                setEditFocus(null);
                             }
                         }}
                     >

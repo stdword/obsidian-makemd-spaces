@@ -5,6 +5,7 @@ import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/
 import { ensureArray } from "core/utils/schema";
 import { ensureTag } from "utils/tags";
 import { renameFocusExcludedPaths } from "shared/types/focus";
+import { uniqueRankOrder } from "./spaces";
 
 
 export const addTag = (superstate: Superstate, tag: string, initialized = true) => {
@@ -41,7 +42,7 @@ export const mergeTagSpaceMetadata = async (superstate: Superstate, sourcePath: 
         sort: source.metadata.sort,
         color: source.metadata.color,
         pinned: [...new Set([...ensureArray(source.metadata.pinned), ...ensureArray(target.metadata.pinned)])],
-        "rank-order": [...new Set([...ensureArray(source.metadata["rank-order"]), ...ensureArray(target.metadata["rank-order"])])],
+        "rank-order": uniqueRankOrder([...ensureArray(source.metadata["rank-order"]), ...ensureArray(target.metadata["rank-order"])]),
         "file-colors": {
             ...(target.metadata["file-colors"] ?? {}),
             ...(source.metadata["file-colors"] ?? {}),
@@ -76,8 +77,6 @@ export const mergeTagSpaceMetadata = async (superstate: Superstate, sourcePath: 
         await superstate.updateSpaceMetadata(space.path, metadata);
     }
 
-    superstate.onSpaceDeleted(sourcePath);
-
     let focusesChanged = false;
     superstate.focuses.forEach((focus) => {
         if (focus.paths.includes(sourcePath)) {
@@ -94,5 +93,7 @@ export const mergeTagSpaceMetadata = async (superstate: Superstate, sourcePath: 
     });
     if (focusesChanged)
         await superstate.spaceManager.saveFocuses(superstate.focuses);
+
+    await superstate.onSpaceDeleted(sourcePath);
 
 };

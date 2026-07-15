@@ -2,6 +2,7 @@ import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { Rect } from "shared/types/Pos";
 import { SearchMenuTab, showSearchMenu } from "./searchMenu";
+import { SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 
 export const showOpenMenu = (
@@ -26,6 +27,12 @@ export const showOpenMenu = (
             addKeyword: "Create",
             editable: true,
         },
+        specialOptions: [{
+            section: "",
+            icon: "lucide//minus",
+            name: i18n.labels.separator,
+            value: SPACE_SEPARATOR_PATH,
+        }],
         hidden,
     });
 };

@@ -168,7 +168,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
     const isTopZone = yOffset < DRAG_ROW_MIDDLE_ZONE;
     const isMiddleZone = yOffset == DRAG_ROW_MIDDLE_ZONE;
     const isBottomZone = yOffset > DRAG_ROW_MIDDLE_ZONE;
-    if (isMiddleZone && isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
+    if (activeItem.type != "separator" && isMiddleZone && isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
     const canInsertIntoFolder = previousItemDroppable && (overItem.collapsed || overItem.childrenCount == 0);
     const folderBoundaryDrop = previousItemDroppable && overItem.collapsed && (isTopZone || isBottomZone);
     const insert = activeItem.depth > 0 && canInsertIntoFolder && isMiddleZone && dragDepth >= previousItem.depth;
@@ -189,8 +189,11 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
     if (activeItem.depth > 0 && previousItemDroppable && !previousItem.collapsed && previousItem.childrenCount > 0 && isBottomZone) {
         const firstChild = items[overItemIndex + 1];
         if (firstChild?.parentId == previousItem.id) {
-            if (modifier == "move" && activeItem.parentId == previousItem.id && activeItem.id == firstChild.id) return null;
-            if (isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
+            // The line at the bottom of an expanded parent means "before its
+            // first child". If that child is already active, this is a no-op
+            // regardless of the preliminary modifier (linked items start as link).
+            if (activeItem.parentId == previousItem.id && activeItem.id == firstChild.id) return null;
+            if (activeItem.type != "separator" && isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
             if (modifier != "link" && isAlreadyInFolderContainer(activeItem, previousItem)) return null;
             return {
                 depth: firstChild.depth,
@@ -206,7 +209,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
         }
     }
     if (activeItem.depth > 0 && previousItemDroppable && !previousItem.collapsed && previousItem.childrenCount > 0 && isMiddleZone) {
-        if (isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
+        if (activeItem.type != "separator" && isTagSpaceNode(previousItem) && activeItem.parentId != previousItem.id) return null;
         if (modifier != "link" && isAlreadyInFolderContainer(activeItem, previousItem)) return null;
         return {
             depth: previousItem.depth + 1,
@@ -236,11 +239,19 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
     if (nodeContainsTarget(activeItem?.id, parentId)) return null;
 
     const parent = items.find((f) => f.id == parentId);
-    if (isTagSpaceNode(parent) && activeItem.parentId != parent.id) return null;
+    if (activeItem.type != "separator" && isTagSpaceNode(parent) && activeItem.parentId != parent.id) return null;
     if (modifier != "link" && isAlreadyInFolderContainer(activeItem, parent)) return null;
     const nextSibling = !insert && isBottomZone ? findNextSibling(items, overItemIndex, previousItem, parentId) : null;
-    const targetItem = insert ? previousItem : (nextSibling ?? previousItem);
-    const linePosition = insert ? undefined : nextSibling ? "top" : isBottomZone ? "bottom" : "top";
+    let targetItem = insert ? previousItem : (nextSibling ?? previousItem);
+    let linePosition: "top" | "bottom" | undefined = insert ? undefined : nextSibling ? "top" : isBottomZone ? "bottom" : "top";
+    if (!insert && targetItem.type == "separator") {
+        const separatorIndex = items.findIndex((item) => item.id == targetItem.id);
+        const siblingBeforeSeparator = findPreviousSibling(items, separatorIndex, targetItem, parentId);
+        if (siblingBeforeSeparator) {
+            targetItem = siblingBeforeSeparator;
+            linePosition = "bottom";
+        }
+    }
     const sortable = insert ? false : parentId == null || Boolean(targetItem.sortable);
 
     if (!insert && activeItem?.parentId == parentId) {

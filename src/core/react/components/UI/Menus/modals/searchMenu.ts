@@ -45,6 +45,8 @@ const folderSortParts = (path: string) => {
     };
 };
 export const searchMenuOptionSort = (a: SelectOption, b: SelectOption) => {
+    if (a.value == "spaces://$separator" || b.value == "spaces://$separator")
+        return a.value == "spaces://$separator" ? -1 : 1;
     if (a.value == "/" || b.value == "/")
         return a.value == "/" ? -1 : 1;
 
@@ -163,6 +165,7 @@ export const showSearchMenu = async ({
     selectProps,
     hidden,
     includeUnindexedFolders,
+    specialOptions = [],
 }: {
     offset: Rect;
     win: Window;
@@ -173,13 +176,14 @@ export const showSearchMenu = async ({
     selectProps?: Partial<SelectMenuProps>;
     hidden?: boolean;
     includeUnindexedFolders?: boolean;
+    specialOptions?: SelectOption[];
 }) => {
     offset; // offset var is not used
 
     const visibleTagPaths = tabs.includes('tags') ? await syncTagSpacesFromObsidian(superstate) : null;
     const tabsDesc = getSearchMenuTabs(superstate.settings, tabs)
     const tagPaths = visibleTagPaths ?? new Set<string>();
-    const optionsForHiddenState = (showHidden?: boolean) => searchMenuOptions(superstate, tabs, tagPaths, showHidden, includeUnindexedFolders);
+    const optionsForHiddenState = (showHidden?: boolean) => [...specialOptions, ...searchMenuOptions(superstate, tabs, tagPaths, showHidden, includeUnindexedFolders)].sort(searchMenuOptionSort);
 
     superstate.ui.openMenu(
         null, // modal opens in the center of the screen

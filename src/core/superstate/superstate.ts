@@ -2,7 +2,7 @@ import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { effectiveSpaceSort, saveSpaceCache } from "core/utils/superstate/spaces";
-import { tagSpacePathFromTag } from "schemas/builtin";
+import { isSpaceSeparatorPath, tagSpacePathFromTag } from "schemas/builtin";
 import { pathIsSpace } from "core/utils/superstate/space";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
@@ -249,9 +249,9 @@ export class Superstate implements ISuperstate {
         const allSpaces = [...this.spaceManager.allSpaces(true).values()];
 
         const promises = allSpaces.map((f) => this.reloadSpace(f, null, true));
-        [...this.spacesIndex.keys()].filter((f) => this.spacesIndex.get(f)?.type != "tag" && !allSpaces.some((g) => g.path == f)).forEach((f) => this.onSpaceDeleted(f));
+        const deletedSpaces = [...this.spacesIndex.keys()].filter((f) => this.spacesIndex.get(f)?.type != "tag" && !allSpaces.some((g) => g.path == f));
 
-        await Promise.all(promises);
+        await Promise.all([...promises, ...deletedSpaces.map((path) => this.onSpaceDeleted(path))]);
     }
 
     private pathsForTagSpace(spacePath: string): string[] {
@@ -303,7 +303,10 @@ export class Superstate implements ISuperstate {
         if (spaceState.type != "tag" && effectiveSpaceSort(spaceState.metadata?.sort, this.settings).field != "rank") return currentOrder;
         if (spaceState.type != "tag" && currentOrder.length == 0) return currentOrder;
 
-        const nextOrder = [...currentOrder.filter((path) => items.includes(path)), ...items.filter((path) => !currentOrder.includes(path))];
+        const nextOrder = [
+            ...currentOrder.filter((path) => isSpaceSeparatorPath(path) || items.includes(path)),
+            ...items.filter((path) => !currentOrder.includes(path)),
+        ];
         if (_.isEqual(currentOrder, nextOrder)) return currentOrder;
 
         const nextSpaceState = {
@@ -552,7 +555,7 @@ export class Superstate implements ISuperstate {
         if (!_.isEqual(nextFocuses, this.focuses))
             await this.spaceManager.saveFocuses(nextFocuses);
 
-        this.onSpaceDeleted(tagPath);
+        await this.onSpaceDeleted(tagPath);
     }
 
     public async deleteTagInPath(tag: string, path: string) {
@@ -800,14 +803,28 @@ export class Superstate implements ISuperstate {
             this.spacesIndex.delete(oldPath);
             await this.reloadSpace(newSpaceInfo, oldmetadata).then((f) => this.onSpaceDefinitionChanged(f, oldmetadata));
         }
+
+        let focusChanged = false;
+        this.focuses.forEach((focus) => {
+            if (!focus.paths.includes(oldPath)) return;
+            focus.paths = focus.paths.map((path) => path == oldPath ? newSpaceInfo.path : path);
+            focusChanged = true;
+        });
+        if (focusChanged) await this.spaceManager.saveFocuses(this.focuses);
     }
-    public onSpaceDeleted(space: string) {
+    public async onSpaceDeleted(space: string) {
         if (this.spacesIndex.has(space)) {
             this.spacesIndex.delete(space);
         }
         this.spacesMap.delete(space);
         this.spacesMap.deleteInverse(space);
         this.persister.remove(space, "space");
+
+        const nextFocuses = this.focuses.map((focus) => ({
+            ...focus,
+            paths: focus.paths.filter((path) => path != space),
+        }));
+        if (!_.isEqual(nextFocuses, this.focuses)) await this.spaceManager.saveFocuses(nextFocuses);
 
         this.dispatchEvent("spaceDeleted", { path: space });
     }

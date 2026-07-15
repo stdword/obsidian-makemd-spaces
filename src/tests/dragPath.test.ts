@@ -1,6 +1,48 @@
 import { getMultiProjection, getProjection } from "core/utils/dnd/dragPath";
 
 describe("nested folder drag projections", () => {
+    it("does not project a line above the first linked child already in place", () => {
+        const parent: any = {
+            id: "Talks",
+            parentId: null,
+            depth: 0,
+            type: "space",
+            item: { path: "Talks", type: "space" },
+            collapsed: false,
+            childrenCount: 2,
+            sortable: true,
+        };
+        const active: any = {
+            id: "Talks/Collections",
+            parentId: parent.id,
+            depth: 1,
+            type: "space",
+            space: "Talks",
+            item: { path: "Collections", type: "space", linkedSpaces: ["Talks"] },
+            sortable: true,
+            rank: 0,
+        };
+        const sibling: any = { ...active, id: "Talks/Home", item: { path: "Home", type: "space" }, rank: 1 };
+
+        expect(getProjection(active, [parent, active, sibling], [active.item.path], 0, 0, 29, false, "link", parent.item.path)).toBeNull();
+    });
+
+    it("projects the top of a separator as the bottom line of the sibling above", () => {
+        const parent: any = { id: "Folder", parentId: null, depth: 0, type: "space", item: { path: "Folder", type: "space" } };
+        const active: any = { id: "active", parentId: "Folder", depth: 1, type: "file", item: { path: "active" }, sortable: true, rank: 0 };
+        const above: any = { id: "above", parentId: "Folder", depth: 1, type: "file", item: { path: "above" }, sortable: true, rank: 1 };
+        const separator: any = { id: "separator", parentId: "Folder", depth: 1, type: "separator", sortable: false, rank: 2 };
+        const below: any = { id: "below", parentId: "Folder", depth: 1, type: "file", item: { path: "below" }, sortable: true, rank: 3 };
+        const items = [parent, active, above, separator, below];
+
+        expect(getProjection(active, items, [active.item.path], 3, 1, 0, true, "move", "Folder")).toEqual(expect.objectContaining({
+            overId: above.id,
+            parentId: parent.id,
+            sortable: true,
+            linePosition: "bottom",
+        }));
+    });
+
     it("allows moving a nested file one level up into an ancestor folder", () => {
         const root: any = {
             id: "Workspace",
@@ -221,6 +263,26 @@ describe("tag space drag projections", () => {
             sortable: true,
             reorder: true,
         }));
+    });
+
+    it("treats linking a tag space into another tag space as a no-op", () => {
+        const sourceTag: any = {
+            ...tagNode,
+            id: "spaces://#fixture/source",
+            parentId: tagNode.id,
+            depth: 1,
+            item: { path: "spaces://#fixture/source", type: "space", subtype: "tag" },
+            collapsed: true,
+            childrenCount: 0,
+        };
+        const targetTag: any = {
+            ...sourceTag,
+            id: "spaces://#fixture/target",
+            item: { path: "spaces://#fixture/target", type: "space", subtype: "tag" },
+            rank: 1,
+        };
+
+        expect(getProjection(sourceTag, [tagNode, sourceTag, targetTag], [sourceTag.item.path], 2, 1, 13, true, "link", tagNode.item.path)).toBeNull();
     });
 
     it("does not allow dragging external multiple items into a tag space", () => {

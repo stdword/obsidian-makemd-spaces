@@ -6,8 +6,8 @@ import i18n from "shared/i18n";
 import React, { createContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { PathState, SpaceState } from "shared/types/PathState";
-import { iconForSpace, pathDisplayInfo } from "../components/UI/pathDisplay";
-import { tagSpacePathPrefix } from "schemas/builtin";
+import { iconForSpace } from "../components/UI/pathDisplay";
+import { isSpaceSeparatorPath } from "schemas/builtin";
 
 type NavigatorContextProps = {
     dragPaths: string[];
@@ -25,8 +25,8 @@ type NavigatorContextProps = {
     closeActiveSpace: (path: string) => void;
     modifier: DropModifiers;
     setModifier: React.Dispatch<React.SetStateAction<DropModifiers>>;
-    editFocus: boolean;
-    setEditFocus: React.Dispatch<React.SetStateAction<boolean>>;
+    editFocus: number | null;
+    setEditFocus: React.Dispatch<React.SetStateAction<number | null>>;
 };
 
 export const NavigatorContext = createContext<NavigatorContextProps>({
@@ -45,7 +45,7 @@ export const NavigatorContext = createContext<NavigatorContextProps>({
     closeActiveSpace: _.noop,
     modifier: null,
     setModifier: _.noop,
-    editFocus: false,
+    editFocus: null,
     setEditFocus: _.noop,
 });
 
@@ -54,12 +54,28 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
     const [dragPaths, setDragPaths] = useState<string[]>([]);
     const [selectedPaths, setSelectedPaths] = useState<TreeNode[]>([]);
     const [activePath, setActivePath] = useState<string>(null);
-    const [editFocus, setEditFocus] = useState(false);
+    const [editFocus, setEditFocus] = useState<number | null>(null);
     const [focuses, setFocuses] = useState<Focus[]>(props.superstate.focuses);
 
     const [activeFocus, setActiveFocus] = useState<number>(props.superstate.settings.currentFocus);
 
     const pathStateForFocusPath = (path: string) => {
+        if (isSpaceSeparatorPath(path)) {
+            return {
+                path,
+                name: "",
+                parent: "",
+                type: "file",
+                subtype: "separator",
+                sticker: "",
+                metadata: {},
+                tags: [],
+                hidden: true,
+                spaces: [],
+                linkedSpaces: [],
+                pinnedSpaces: [],
+            } as PathState;
+        }
         const pathState = props.superstate.pathStateForPath(path);
         if (pathState) return pathState;
 
