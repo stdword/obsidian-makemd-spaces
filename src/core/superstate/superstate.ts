@@ -2,7 +2,7 @@ import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { effectiveSpaceSort, saveSpaceCache } from "core/utils/superstate/spaces";
-import { canonicalTagSpacePath, isSpaceSeparatorPath, replaceTagSpaceLinkPath, sameTagSpaceLink, tagSpacePathFromTag } from "schemas/builtin";
+import { canonicalTagSpacePath, isSpaceSeparatorPath, replaceTagSpaceLinkPath, sameTagSpaceLink, tagSpaceParentPath, tagSpacePathFromTag } from "schemas/builtin";
 import { pathIsSpace } from "core/utils/superstate/space";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
@@ -98,7 +98,7 @@ const tagPathStateForSpace = (space: SpaceState): PathState => ({
     linkedSpaces: [],
     pinnedSpaces: [],
     hidden: false,
-    parent: "",
+    parent: tagSpaceParentPath(space.path),
     color: "",
     sticker: "lucide//hash",
     metadata: {},
@@ -394,6 +394,14 @@ export class Superstate implements ISuperstate {
                 this.spacesMap.set(f.path, new Set(cache.spaces));
             }
         });
+        for (const space of this.spacesIndex.values()) {
+            ensureArray(space.metadata?.links).forEach((link) => {
+                const linkedPath = canonicalTagSpacePath(link);
+                if (pathIsSpace(this, linkedPath)) {
+                    this.spacesMap.set(linkedPath, new Set([...this.spacesMap.get(linkedPath), space.path]));
+                }
+            });
+        }
         this.dispatchEvent("superstateUpdated", null);
     }
 
@@ -932,9 +940,10 @@ export class Superstate implements ISuperstate {
             this.persister.store(space.path, serializePathState(pathState), "path");
         }
         this.persister.store(space.path, JSON.stringify(folderSpaceStateForStore(cache)), "space");
-        cache.metadata?.links?.forEach((f) => {
-            if (pathIsSpace(this, f)) {
-                this.spacesMap.set(f, new Set([...this.spacesMap.get(f), space.path]));
+        cache.metadata?.links?.forEach((link) => {
+            const linkedPath = canonicalTagSpacePath(link);
+            if (pathIsSpace(this, linkedPath)) {
+                this.spacesMap.set(linkedPath, new Set([...this.spacesMap.get(linkedPath), space.path]));
             }
         });
         if (initialized) {

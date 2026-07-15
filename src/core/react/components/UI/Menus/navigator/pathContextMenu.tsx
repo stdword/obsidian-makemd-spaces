@@ -21,8 +21,9 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu } from "../modals/selectSpaceMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
+import { PathStateWithRank } from "shared/types/superstate";
 
-function isLinkedFileMenuItem(item: any, space?: string) {
+function isLinkedFileMenuItem(item: PathStateWithRank, space?: string) {
     return (
         !isTagSpacePath(space) && item?.type != "space" && space && item?.parent && space != item.parent
     )
@@ -39,7 +40,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     const menuOptions: SelectOption[] = [];
 
-    // Open in a New Tab
+    // open in a new tab
     menuOptions.push({
         name: i18n.menu.openInATab,
         icon: "ui//go-to-file",
@@ -51,9 +52,9 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
+    // change color
     const hasLinkedFile = selectedPaths.some((s) => isLinkedFileMenuItem(s.item, s.space));
     if (!hasLinkedFile) {
-        // change color
         menuOptions.push({
             name: i18n.menu.changeColor,
             icon: "ui//palette",
@@ -140,6 +141,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         },
     });
 
+    // wrap to folder
     const parentPath = selectedPaths[0]?.item?.parent;
     if (parentPath != null && selectedPaths.every((item) => item.item?.parent == parentPath))
         menuOptions.push({
@@ -183,13 +185,14 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
 
     menuOptions.push(menuSeparator);
 
-    // Previous global Hide command (disabled in favor of per-focus exclusions).
+    // hide (disabled in favor of per-focus exclusions).
     // menuOptions.push({
     //     name: i18n.menu.hide,
     //     icon: "ui//eye-off",
     //     onClick: () => hidePaths(superstate, paths),
     // });
 
+    // exclude from focus
     if (selectedPaths.every((item) => item.depth > 0))
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,
@@ -197,7 +200,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
             onClick: () => excludePathsFromCurrentFocus(superstate, paths),
         });
 
-    // Delete
+    // delete
     menuOptions.push({
         name: i18n.menu.delete,
         icon: "ui//trash",
@@ -228,7 +231,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
 
     const menuOptions: SelectOption[] = [];
 
-    // Open in a New Pane
+    // open in a new tab
     menuOptions.push({
         name: i18n.menu.openInATab,
         icon: "ui//go-to-file",
@@ -281,12 +284,14 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
 
     menuOptions.push(menuSeparator);
 
-    // Previous global Hide command (disabled in favor of per-focus exclusions).
+    // hide (disabled in favor of per-focus exclusions).
     // menuOptions.push({
     //     name: i18n.menu.hide,
     //     icon: "ui//eye-off",
     //     onClick: () => hidePaths(superstate, paths),
     // });
+
+    // exclude from focus
     if (selectedPaths.every((item) => item.depth > 0))
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,
@@ -294,7 +299,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
             onClick: () => excludePathsFromCurrentFocus(superstate, paths),
         });
 
-    // Delete Item
+    // delete
     menuOptions.push({
         name: i18n.menu.delete,
         icon: "ui//trash",
@@ -321,13 +326,20 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
 };
 
 export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void, depth = 0) => {
-    const cache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
+    const pathCache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
 
-    if (!cache) return;
-    if (cache.type == "space") {
-        showSpaceContextMenu(superstate, cache, rect, win, space, onClose, depth);
+    if (!pathCache) return;
+    if (pathCache.type == "space") {
+        showSpaceContextMenu(superstate, pathCache, rect, win, space, onClose, depth);
         return;
     }
+
+    const parentIsTag = isTagSpacePath(space);
+    const isSection = depth == 0;
+
+    const parent = superstate.spacesIndex.get(space);
+    const hasParent = !!parent;
+    const isLink = hasParent && parent.path != pathCache.parent;
 
     const menuOptions: SelectOption[] = [];
 
@@ -345,26 +357,25 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push(menuSeparator);
 
     // pin / unpin
-    const displaySpaceCache = superstate.spacesIndex.get(space);
-    if (displaySpaceCache && depth > 0) {
-        const pinned = isPathPinnedInSpace(displaySpaceCache, path);
+    if (hasParent && !isSection) {
+        const pinned = isPathPinnedInSpace(parent, path);
         menuOptions.push({
             name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
             icon: pinned ? "ui//pin-off" : "ui//pin",
             onClick: () => {
-                setPathPinnedInSpace(superstate, displaySpaceCache.path, path, !pinned);
+                setPathPinnedInSpace(superstate, parent.path, path, !pinned);
             },
         });
     }
 
-    if (depth > 0) {
-        // wrap to folder
+    // wrap to folder
+    if (!isSection) {
         menuOptions.push({
             name: i18n.menu.wrapToFolder,
             icon: "lucide//folder-symlink",
             closeParentImmediately: true,
             onClick: (e) => {
-                const parentPath = cache.parent && cache.parent != "/" ? cache.parent : "";
+                const parentPath = pathCache.parent && pathCache.parent != "/" ? pathCache.parent : "";
                 const folderPathForName = (value: string) => {
                     const folderName = value.replace(/\//g, "").trim();
                     return {
@@ -405,7 +416,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         name: i18n.menu.duplicate,
         icon: "ui//documents",
         onClick: () => {
-            duplicatePathNextToOriginal(superstate, path, `${cache.parent}`, `${cache.name}`, space ?? cache.parent);
+            duplicatePathNextToOriginal(superstate, path, `${pathCache.parent}`, `${pathCache.name}`, space ?? pathCache.parent);
         },
     });
 
@@ -416,13 +427,13 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         closeParentImmediately: true,
         onClick: (e) => {
             const isExcalidraw = path.toLowerCase().endsWith(".excalidraw.md");
-            const displayName = isExcalidraw ? cache.name.replace(/\.excalidraw$/i, "") : cache.name;
+            const displayName = isExcalidraw ? pathCache.name.replace(/\.excalidraw$/i, "") : pathCache.name;
             superstate.ui.openModal(i18n.labels.rename, <InputModal saveLabel={i18n.buttons.rename} value={displayName} saveValue={(value) => renamePathByName(superstate, path, isExcalidraw ? value.replace(/\.excalidraw(?:\.md)?$/i, "") : value)}></InputModal>, windowFromDocument(e.view.document));
         },
     });
 
     // move to
-    if (!isTagSpacePath(space)) {
+    if (!parentIsTag) {
         menuOptions.push({
             name: i18n.menu.moveFile,
             icon: "ui//paper-plane",
@@ -430,7 +441,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             onClick: (e) => {
                 const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
                 showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                    return movePathToNewSpaceAtIndex(superstate, cache, link);
+                    return movePathToNewSpaceAtIndex(superstate, pathCache, link);
                 }, e.shiftKey);
             },
         });
@@ -458,7 +469,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     menuOptions.push(menuSeparator);
 
     // reveal
-    if (isTagSpacePath(space) || isLinkedFileMenuItem(cache, space)) {
+    if (parentIsTag || isLink) {
         menuOptions.push({
             name: i18n.menu.revealInSpaces,
             icon: "ui//arrow-up-right",
@@ -500,15 +511,14 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     }
 
     // unlink
-    if (space && space != cache.parent && !isTagSpacePath(space))
-        if (displaySpaceCache)
-            menuOptions.push({
-                name: i18n.menu.removeFromSpace,
-                icon: "ui//pin-off",
-                onClick: () => {
-                    removePathsFromSpace(superstate, displaySpaceCache.path, [path]);
-                },
-            });
+    if (isLink && !parentIsTag)
+        menuOptions.push({
+            name: i18n.menu.removeFromSpace,
+            icon: "ui//pin-off",
+            onClick: () => {
+                removePathsFromSpace(superstate, parent.path, [path]);
+            },
+        });
 
     // Hide (disabled in favor of per-focus exclusions).
     // menuOptions.push({
@@ -518,7 +528,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     // });
 
     // exclude from focus
-    if (depth > 0)
+    if (!isSection && !isLink)
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,
             icon: "ui//eye-off",
@@ -526,23 +536,25 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         });
 
     // delete
-    menuOptions.push({
-        name: i18n.menu.delete,
-        icon: "ui//trash",
-        onClick: (e) => {
-            superstate.ui.openModal(
-                i18n.labels.deleteFile,
-                <ConfirmationModal
-                    confirmAction={() => {
-                        deletePath(superstate, path);
-                    }}
-                    confirmLabel={i18n.buttons.delete}
-                    message={formatMessage(i18n.descriptions.deleteFile, [<i>{path.split("/").pop()}</i>])}
-                ></ConfirmationModal>,
-                windowFromDocument(e.view.document),
-            );
-        },
-    });
+    if (!isLink) {
+        menuOptions.push({
+            name: i18n.menu.delete,
+            icon: "ui//trash",
+            onClick: (e) => {
+                superstate.ui.openModal(
+                    i18n.labels.deleteFile,
+                    <ConfirmationModal
+                        confirmAction={() => {
+                            deletePath(superstate, path);
+                        }}
+                        confirmLabel={i18n.buttons.delete}
+                        message={formatMessage(i18n.descriptions.deleteFile, [<i>{path.split("/").pop()}</i>])}
+                    ></ConfirmationModal>,
+                    windowFromDocument(e.view.document),
+                );
+            },
+        });
+    }
 
     superstate.ui.openMenu(rect, defaultMenu(superstate.ui, menuOptions), win, anchor);
 

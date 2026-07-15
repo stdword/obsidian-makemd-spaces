@@ -8,7 +8,7 @@ import { PathStickerView } from "core/react/components/PathSticker";
 import { Superstate } from "makemd-core";
 import { Pos } from "shared/types/Pos";
 import { PathState } from "shared/types/PathState";
-import { TreeNode, spaceSortLabel } from "core/utils/superstate/spaces";
+import { TreeNode, spaceStickerLabel } from "core/utils/superstate/spaces";
 import { windowFromDocument } from "utils/dom";
 import { canOpenTreeItemPath, isTagTreeItemPath, isTagSpacePath } from "schemas/builtin";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
@@ -212,7 +212,9 @@ export const TreeItem = (props: TreeItemProps) => {
 
     const displayInfo = pathDisplayInfo(pathState.path);
     const displayName = isSpace ? treeItemDisplayName(pathState, data, superstate.spacesIndex) : displayInfo.title;
-    const stickerLabel = data.sort && isSpace ? `${displayName}\n${spaceSortLabel(data.sort, isTagSpace)}` : displayName;
+    const stickerLabel = data.sort && isSpace
+        ? spaceStickerLabel(displayName, data.sort, isTagSpace, data.folderCount, data.fileCount)
+        : displayName;
 
     const spacing = data.type == "group" ? -2 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
 

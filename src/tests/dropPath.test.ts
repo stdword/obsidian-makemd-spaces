@@ -35,6 +35,32 @@ describe("rankForDropLinePosition", () => {
 });
 
 describe("dropPathInSpaceAtIndex", () => {
+    it("builds a complete rank order when the first reorder moves an item to the bottom", async () => {
+        const updateSpaceMetadata = jest.fn(() => Promise.resolve());
+        const items = [
+            { path: "Studio/Ideas", rank: 0 },
+            { path: "Studio/Drafts", rank: 1 },
+            { path: "Studio/Archive", rank: 2 },
+        ];
+        const superstate = {
+            settings: {},
+            pathsIndex: new Map(items.map((item) => [item.path, { ...item, parent: "Studio", type: "space" }])),
+            pathStateForPath: jest.fn((path: string) => superstate.pathsIndex.get(path)),
+            getSpaceItems: jest.fn(() => items),
+            spacesIndex: new Map([
+                ["Studio", { path: "Studio", type: "folder", metadata: { sort: { field: "rank", asc: true }, "rank-order": [] } }],
+            ]),
+            spaceManager: { saveSpace: jest.fn((_path: string, update: (metadata: Record<string, any>) => Record<string, any>) => update({})) },
+            updateSpaceMetadata,
+        } as any;
+
+        await dropPathInSpaceAtIndex(superstate, "Studio/Ideas", "Studio", "Studio", 2);
+
+        expect(updateSpaceMetadata).toHaveBeenCalledWith("Studio", expect.objectContaining({
+            "rank-order": ["Studio/Drafts", "Studio/Archive", "Studio/Ideas"],
+        }));
+    });
+
     it("awaits tag space rank-order updates when reordering inside the same custom-sorted tag space", async () => {
         let resolveUpdate: () => void;
         const updateDone = new Promise<void>((resolve) => {
@@ -144,6 +170,39 @@ describe("dropPathInSpaceAtIndex", () => {
                 paths: ["RootFolder", "Inserted.md"],
             },
         ]);
+    });
+
+    it("keeps a folder visible in its source space when shift-linking it to another space", async () => {
+        const sourcePath = "Source";
+        const targetPath = "Target";
+        const folderPath = "Source/Archive";
+        const saveSpace = jest.fn((_path: string, update: (metadata: Record<string, any>) => Record<string, any>) => Promise.resolve(update({})));
+        const spacesMap = new Map([[folderPath, new Set([sourcePath])]]);
+        const superstate = {
+            settings: {},
+            pathsIndex: new Map([[folderPath, { path: folderPath, parent: sourcePath, name: "Archive", type: "space", subtype: "folder" }]]),
+            pathStateForPath: jest.fn((path: string) => superstate.pathsIndex.get(path)),
+            spacesIndex: new Map([
+                [sourcePath, { path: sourcePath, type: "folder", metadata: { links: [] } }],
+                [targetPath, { path: targetPath, type: "folder", metadata: { links: [] } }],
+            ]),
+            spacesMap: {
+                get: jest.fn((path: string) => spacesMap.get(path) ?? new Set()),
+                set: jest.fn((path: string, spaces: Set<string>) => spacesMap.set(path, spaces)),
+            },
+            spaceManager: { saveSpace },
+            updateSpaceMetadata: jest.fn(async (path: string, metadata: Record<string, any>) => {
+                superstate.spacesIndex.get(path).metadata = metadata;
+            }),
+            reloadPath: jest.fn(() => Promise.resolve()),
+            dispatchEvent: jest.fn(),
+            ui: { notify: jest.fn() },
+        } as any;
+
+        await dropPathInSpaceAtIndex(superstate, folderPath, sourcePath, targetPath, 0, "link");
+
+        expect([...spacesMap.get(folderPath)]).toEqual([sourcePath, targetPath]);
+        expect(saveSpace.mock.calls.map(([path]) => path)).toEqual([targetPath]);
     });
 
     it("does nothing when dropping a path into the folder that already contains it", async () => {

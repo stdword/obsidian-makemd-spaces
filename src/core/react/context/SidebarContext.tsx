@@ -7,7 +7,7 @@ import React, { createContext, useEffect, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { PathState, SpaceState } from "shared/types/PathState";
 import { iconForSpace } from "../components/UI/pathDisplay";
-import { isSpaceSeparatorPath } from "schemas/builtin";
+import { isSpaceSeparatorPath, tagSpaceParentPath } from "schemas/builtin";
 
 type NavigatorContextProps = {
     dragPaths: string[];
@@ -89,7 +89,7 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
         const fallbackPath: PathState = {
             path: spaceInfo.path,
             name: spaceInfo.name,
-            parent: "",
+            parent: subtype == "tag" ? tagSpaceParentPath(spaceInfo.path) : "",
             type: "space",
             subtype,
             sticker: iconForSpace(subtype),

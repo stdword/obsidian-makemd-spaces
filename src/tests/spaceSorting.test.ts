@@ -1,4 +1,4 @@
-import { addSpaceSeparator, childSpaceSort, duplicatePathNextToOriginal, moveSpaceSeparator, removeSpaceSeparator, saveSpaceMetadataValue, setSpaceSeparatorVisible, spaceSortFn, uniqueRankOrder, updatePathRankInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { addSpaceSeparator, childSpaceSort, duplicatePathNextToOriginal, moveSpaceSeparator, removeSpaceSeparator, saveSpaceMetadataValue, setSpaceSeparatorVisible, spaceSortFn, spaceStickerLabel, uniqueRankOrder, updatePathRankInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 const settings = {
@@ -11,6 +11,11 @@ const settings = {
 } as any;
 
 describe("space tree sorting", () => {
+    it("adds folder and file counts as the third sticker-label line", () => {
+        expect(spaceStickerLabel("Library", { field: "name", asc: true } as any, false, 2, 54))
+            .toBe("Library\nAZ↓\nfolders: 2, files: 54");
+    });
+
     it("places sub-tags before folders and files when both grouping options are enabled", () => {
         const rows: any[] = [
             { path: "Note.md", name: "Note", type: "file", subtype: "md" },

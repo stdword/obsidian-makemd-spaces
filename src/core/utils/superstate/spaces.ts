@@ -130,6 +130,8 @@ export interface TreeNode {
     path: string;
     item?: PathStateWithRank;
     childrenCount: number;
+    folderCount?: number;
+    fileCount?: number;
     collapsed: boolean;
     rank: number;
     sort?: SpaceSort;
@@ -219,6 +221,9 @@ export const spaceSortLabel = (sort: SpaceSort, tagSpace: boolean) => {
     return `${subtagLabel}${groupLabel}${fieldLabel}${directionLabel}${recursiveLabel}`;
 };
 
+export const spaceStickerLabel = (displayName: string, sort: SpaceSort, tagSpace: boolean, folderCount = 0, fileCount = 0) =>
+    `${displayName}\n${spaceSortLabel(sort, tagSpace)}\nfolders: ${folderCount}, files: ${fileCount}`;
+
 export const spaceSortFn = (sortStrategy: SpaceSort) => (a: RankedItem, b: RankedItem) => {
     if (sortStrategy.field == "rank") {
         if (sortStrategy.group) {
@@ -276,7 +281,12 @@ export const updatePathRankInSpace = async (superstate: Superstate, path: string
 
     if (spaceState.type == "tag" || spaceState.type == "folder" || spaceState.type == "vault") {
         if (effectiveSpaceSort(spaceState.metadata?.sort, superstate.settings).field != "rank") return;
-        const currentOrder = ensureArray(spaceState.metadata?.["rank-order"] ?? superstate.getSpaceItems(space).map((item) => item.path));
+        const storedOrder = ensureArray(spaceState.metadata?.["rank-order"]);
+        const displayedPaths = typeof superstate.getSpaceItems == "function" ? superstate.getSpaceItems(space).map((item) => item.path) : [];
+        const currentOrder = uniqueRankOrder([
+            ...storedOrder,
+            ...displayedPaths.filter((itemPath) => !storedOrder.includes(itemPath)),
+        ]);
         const nextOrder = currentOrder.filter((itemPath) => itemPath != path);
         nextOrder.splice(Math.max(0, rank ?? nextOrder.length), 0, path);
         await saveSpaceMetadataValue(superstate, space, "rank-order", uniqueRankOrder(nextOrder));
@@ -555,7 +565,8 @@ export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: Spac
 };
 
 export const linkedTagSpaceUri = (space: SpaceState, tagSpacePath: string) =>
-    ensureArray(space?.metadata?.links).find((link) => sameTagSpaceLink(link, tagSpacePath));
+    (ensureArray(space?.metadata?.links) as string[])
+        .find((link) => sameTagSpaceLink(link, tagSpacePath));
 
 export const setLinkedTagSpaceFiltered = async (superstate: Superstate, parentSpacePath: string, tagSpacePath: string, filtered: boolean) => {
     const parentSpace = superstate.spacesIndex.get(parentSpacePath);

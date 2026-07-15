@@ -1,4 +1,5 @@
-import { PathState } from "shared/types/PathState";
+import { ensureArray } from "core/utils/schema";
+import { PathState, SpaceState } from "shared/types/PathState";
 
 
 export const encodeSpaceName = (spaceName: string) => spaceName?.replace(/\//g, "+");
@@ -19,7 +20,25 @@ export const parseTagSpaceLink = (path: string) => {
     };
 };
 export const canonicalTagSpacePath = (path: string) => parseTagSpaceLink(path).path;
-export const isFilteredTagSpaceLink = (path: string) => isTagSpacePath(path) && parseTagSpaceLink(path).params.has("filter");
+export const tagSpaceParentPath = (path: string) => {
+    const canonicalPath = canonicalTagSpacePath(path);
+    if (!isTagSpacePath(canonicalPath)) return "";
+    const tag = canonicalPath.slice(tagSpacePathPrefix.length);
+    const separatorIndex = tag.lastIndexOf("/");
+    return separatorIndex == -1 ? "" : tagSpacePathFromTag(tag.slice(0, separatorIndex));
+};
+export const isFilter = (path: string, parentSpace: SpaceState) => {
+    if (!isTagSpacePath(path))
+        return false;
+    const links = ensureArray(parentSpace.metadata.links) as string[]
+    const currentLink = links.find((link) => {
+        if (!link.startsWith(path))  // pre-check, can be not strong: #tag & #tags
+            return false;
+        const parsed = parseTagSpaceLink(link)
+        return parsed.path == path && parsed.params.has("filter");
+    })
+    return !!currentLink;
+}
 export const setTagSpaceLinkFiltered = (path: string, filtered: boolean) => {
     const parsed = parseTagSpaceLink(path);
     if (!isTagSpacePath(parsed.path)) return path;

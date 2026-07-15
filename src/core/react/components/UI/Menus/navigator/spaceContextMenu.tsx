@@ -2,7 +2,7 @@ import React from "react";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
-import { addSpaceSeparator, duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, linkedTagSpaceUri, removePathsFromSpace, removeSpace, setLinkedTagSpaceFiltered, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { addSpaceSeparator, duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setLinkedTagSpaceFiltered, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { openStickerPalette } from "core/react/components/PathSticker";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 import { addTag, mergeTagSpaceMetadata } from "core/utils/superstate/tags";
@@ -10,7 +10,7 @@ import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import { default as i18n } from "shared/i18n";
 import { PathState, FilesystemSpaceInfo } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
-import { isFilteredTagSpaceLink, isTagSpacePath } from "schemas/builtin";
+import { isFilter } from "schemas/builtin";
 import { SpaceSort } from "shared/types/spaceDef";
 import { savePathSticker } from "utils/sticker";
 import { movePath } from "utils/uri";
@@ -26,13 +26,24 @@ import { newNoteMenuOption, showSpaceAddMenu } from "./showSpaceAddMenu";
 
 export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
     const space = superstate.spacesIndex.get(path.path);
-    if (!space) return;
-    const isTagSpace = space.type == "tag" || isTagSpacePath(path.path);
+    if (!space)
+        return;
+
+    const isTag = space.type == "tag";
+    const isHome = space.type == "vault";
+    const isSection = depth == 0;
+
+    const parent = superstate.spacesIndex.get(parentSpace);
+    const hasParent = !!parent;
+    const isLink = hasParent && parent.path != path.parent;
+
     const menuOptions: SelectOption[] = [];
 
-    if (!isTagSpace) {
+    if (!isTag) {
+        // new note
         menuOptions.push(newNoteMenuOption(superstate, space));
 
+        // new ...
         menuOptions.push({
             name: i18n.menu.new,
             icon: "ui//plus",
@@ -43,6 +54,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
     else {
+        // new separator
         menuOptions.push({
             name: i18n.buttons.createSeparator,
             icon: "lucide//separator-horizontal",
@@ -52,7 +64,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     menuOptions.push(menuSeparator);
 
-    menuOptions.push({  // color
+    // color
+    menuOptions.push({
         name: i18n.menu.changeColor,
         icon: "ui//palette",
         type: SelectOptionType.Submenu,
@@ -62,8 +75,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         },
     });
 
-    if (space.path !== "/" && !isTagSpace) {
-        menuOptions.push({  // sticker
+    // sticker
+    if (!isHome && !isTag) {
+        menuOptions.push({
             name: i18n.buttons.changeIcon,
             icon: "ui//sticker",
             showChevron: true,
@@ -75,7 +89,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     menuOptions.push(menuSeparator);
 
-    menuOptions.push({  // sort
+    // sort
+    menuOptions.push({
         name: i18n.menu.sortBy,
         icon: "ui//sort-desc",
         type: SelectOptionType.Submenu,
@@ -100,7 +115,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
                 type: SelectOptionType.Radio,
                 onClick: () => saveSort({ group: !sort.group }),
             });
-            if (isTagSpace) {
+            if (isTag) {
                 sortOptions.push({
                     name: i18n.menu.groupSubtags,
                     icon: "lucide//tags",
@@ -123,8 +138,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
             sortOptions.push(menuSeparator);
             sortOptions.push({
-                name: isTagSpace ? i18n.menu.recursiveTagSort : i18n.menu.recursiveSort,
-                icon: isTagSpace ? "lucide//git-branch" : "lucide//folder-tree",
+                name: isTag ? i18n.menu.recursiveTagSort : i18n.menu.recursiveSort,
+                icon: isTag ? "lucide//git-branch" : "lucide//folder-tree",
                 value: sort.recursive == true,
                 type: SelectOptionType.Radio,
                 onClick: () => saveSort({ recursive: !sort.recursive }),
@@ -141,8 +156,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         },
     });
 
-    if (!isTagSpace) {
-        menuOptions.push({  // apply to all sub-items
+    // apply to all sub-items
+    if (!isTag) {
+        menuOptions.push({
             name: i18n.menu.applyItems,
             icon: "ui//apply-items",
             value: "apply-all",
@@ -154,32 +170,33 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     menuOptions.push(menuSeparator);
 
     // pin / unpin
-    const parentSpaceCache = superstate.spacesIndex.get(parentSpace);
-    if (parentSpaceCache && depth > 0) {
-        const pinned = isPathPinnedInSpace(parentSpaceCache, space.path);
+    if (hasParent && !isSection) {
+        const pinned = isPathPinnedInSpace(parent, space.path);
         menuOptions.push({
             name: pinned ? i18n.menu.unpin : i18n.menu.pinToTop,
             icon: pinned ? "ui//pin-off" : "ui//pin",
             onClick: () => {
-                setPathPinnedInSpace(superstate, parentSpaceCache.path, space.path, !pinned);
+                setPathPinnedInSpace(superstate, parent.path, space.path, !pinned);
             },
         });
     }
 
-    const linkedTagUri = isTagSpace && parentSpaceCache ? linkedTagSpaceUri(parentSpaceCache, space.path) : null;
-    if (linkedTagUri) {
-        const filtered = isFilteredTagSpaceLink(linkedTagUri);
+    // use as filter
+    if (isTag && isLink) {
+        const filtered = isFilter(space.path, parent);
         menuOptions.push({
             name: i18n.menu.useAsFilter,
             icon: "lucide//filter",
             value: filtered,
             type: SelectOptionType.Radio,
-            onClick: () => setLinkedTagSpaceFiltered(superstate, parentSpaceCache.path, space.path, !filtered),
+            onClick: () => setLinkedTagSpaceFiltered(superstate, parent.path, space.path, !filtered),
         });
     }
 
-    if (isTagSpace) {
-        // merge into
+    menuOptions.push(menuSeparator);
+
+    // merge into
+    if (isTag) {
         menuOptions.push({
             name: i18n.buttons.mergeInto,
             icon: "lucide//merge",
@@ -211,7 +228,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
 
     menuOptions.push(menuSeparator);
 
-    if (space.type != "vault" && !isTagSpace) {
+    if (!isHome && !isTag) {
         menuOptions.push(menuSeparator);
 
         // duplicate
@@ -247,7 +264,8 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
     }
 
-    menuOptions.push({  // link to
+    // link to
+    menuOptions.push({
         name: i18n.buttons.addToSpace,
         icon: "ui//link",
         closeParentImmediately: true,
@@ -267,11 +285,11 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         },
     });
 
-    if (!isTagSpace) {
+    if (!isTag) {
         menuOptions.push(menuSeparator);
 
         // reveal
-        if (space.type != "vault" && parentSpace && parentSpace !== path.parent) {
+        if (!isHome && isLink) {
             menuOptions.push({
                 name: i18n.menu.revealInSpaces,
                 icon: "ui//arrow-up-right",
@@ -314,23 +332,18 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     }
 
     // unlink
-    if (parentSpaceCache && (parentSpaceCache.type == "folder" || parentSpaceCache.type == "vault")) {
-        if (parentSpace != path.parent) {
-            const spaceCache = superstate.spacesIndex.get(parentSpace);
-            if (spaceCache) {
-                menuOptions.push({
-                    name: i18n.menu.removeFromSpace,
-                    icon: "ui//pin-off",
-                    onClick: () => {
-                        removePathsFromSpace(superstate, spaceCache.path, [space.path]);
-                    },
-                });
-            }
-        }
+    if (isLink && parent.type != "tag") {
+        menuOptions.push({
+            name: i18n.menu.removeFromSpace,
+            icon: "ui//pin-off",
+            onClick: () => {
+                removePathsFromSpace(superstate, parent.path, [space.path]);
+            },
+        });
     }
 
     // Hide/Unhide (disabled in favor of per-focus exclusions).
-    // if (space.type == "folder") {
+    // if (!isTag && !isHome) {
     //     const directlyHidden = isPathDirectlyHidden(superstate, space.path);
     //     menuOptions.push({
     //         name: directlyHidden ? i18n.menu.unhide : i18n.menu.hide,
@@ -340,7 +353,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     // }
 
     // exclude from focus
-    if (depth > 0)
+    if (!isSection && !isLink)
         menuOptions.push({
             name: i18n.menu.excludeFromFocus,
             icon: "ui//eye-off",
@@ -348,13 +361,13 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         });
 
     // delete
-    if (space.type == "folder" || isTagSpace)
+    if (!isLink && !isHome)
         menuOptions.push({
             name: i18n.menu.delete,
             icon: "ui//trash",
             onClick: () => {
-                const title = isTagSpace ? i18n.labels.deleteTag : i18n.labels.deleteFolder;
-                const message = isTagSpace
+                const title = isTag ? i18n.labels.deleteTag : i18n.labels.deleteFolder;
+                const message = isTag
                     ? formatMessage(i18n.descriptions.deleteTag, [<i>#{stringFromTag(space.name)}</i>])
                     : formatMessage(i18n.descriptions.deleteFolder, [<i>{space.name}</i>]);
                 superstate.ui.openModal(title, <ConfirmationModal confirmAction={() => removeSpace(superstate, space.path)} confirmLabel={i18n.buttons.delete} message={message}></ConfirmationModal>, win);

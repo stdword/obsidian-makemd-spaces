@@ -17,7 +17,7 @@ import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
 import { DropModifiers, shouldShowLinkedItemIcon } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
-import { isFilteredTagSpaceLink, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
+import { isFilter, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 import { isPathExcludedFromFocus } from "core/utils/superstate/focus";
 
 interface SpaceTreeComponentProps {
@@ -99,12 +99,14 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const folderNotePath = space.space?.notePath || null;
     const parentSpace = superstate.spacesIndex.get(parentPath);
     const linkedTagUri = space.type == "tag" && parentSpace ? linkedTagSpaceUri(parentSpace, space.path) : null;
-    const filtered = Boolean(linkedTagUri && isFilteredTagSpaceLink(linkedTagUri));
+    const filtered = Boolean(linkedTagUri && isFilter(linkedTagUri, parentSpace));
     const spaceItems = filtered
         ? filterLinkedTagSpaceItems(superstate.getSpaceItems(space.path) ?? [], parentPath)
         : superstate.getSpaceItems(space.path) ?? [];
     const children = filterFolderNoteChildren(superstate, folderNotePath, spaceItems)
         .filter((item) => !isPathExcludedFromFocus(item.path, excludedPaths));
+    const folderCount = children.filter((item) => item.type == "space").length;
+    const fileCount = children.length - folderCount;
 
     if (section) {
         const pathIndex = superstate.pathStateForPath(space.path);
@@ -121,6 +123,8 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
                 collapsed: spaceCollapsed,
                 sortable: childrenSortable,
                 childrenCount: children.length,
+                folderCount,
+                fileCount,
                 type: "group",
                 sort: spaceSort,
                 folderNotePath,
@@ -129,6 +133,8 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     } else {
         tree.push({
             ...spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length, spaceSort, pinned),
+            folderCount,
+            fileCount,
             folderNotePath,
             filtered,
         });
@@ -174,12 +180,13 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
                 return;
             }
             const pinned = isPathPinnedInSpace(space, item.path);
+            const rankedItem = { ...item, rank: rankIndex };
             if (item.type != "space") {
                 const itemCollapsed = section ? !expandedSpaces.includes(_parentId + "/" + item.path) : true;
-                tree.push(pathStateToTreeNode(superstate, item, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
+                tree.push(pathStateToTreeNode(superstate, rankedItem, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
             } else {
                 if (superstate.spacesIndex.has(item.path)) {
-                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), item, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, excludedPaths, pinned));
+                    tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), rankedItem, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, excludedPaths, pinned));
                 }
             }
         });
@@ -325,11 +332,12 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     }, [activePath]);
 
     useEffect(() => {
-        const handleDragEnd = () => {
+        const handleDragEnd = (event: DragEvent) => {
             const hasActiveDrag = activeRef.current != null || dragPathsRef.current.length > 0 || overIdRef.current != null || dragActionRef.current != null;
             // A handled drop clears these refs synchronously. Avoid a second
             // full tree reset when its trailing native dragend arrives.
             if (!isDropping.current && hasActiveDrag) {
+                finishNativeDrag(event as any);
                 resetState();
             }
         };
@@ -471,6 +479,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const [dragAction, setDragAction] = useState<DragActionModel | null>(null);
 
     const dragStarted = (activeId: string, source: HTMLElement) => {
+        nativeDragFinished.current = false;
         const activeItem = flattenedTree.find(({ id }) => id === activeId);
         //Dont drag vault
         activeRef.current = activeItem;
@@ -628,10 +637,16 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         if (dragPaths.length == 0 && dragPathsRef.current.length > 0) resetState();
     }, [dragPaths]);
 
+    const finishNativeDrag = (e: React.DragEvent<HTMLDivElement>) => {
+        if (nativeDragFinished.current) return;
+        nativeDragFinished.current = true;
+        superstate.ui.dragEnded(e);
+    };
+
     const finishNoOpDrop = (e: React.DragEvent<HTMLDivElement>) => {
         // The tree state and Obsidian's native drag ghost are separate. A no-op
         // must synchronously finish both instead of waiting for a later dragend.
-        superstate.ui.dragEnded(e);
+        finishNativeDrag(e);
         resetState();
     };
 
@@ -680,6 +695,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             finishNoOpDrop(e);
             return;
         }
+        // Finish Obsidian's native drag synchronously. Persistence below can
+        // await filesystem writes, while the native ghost must disappear at drop.
+        finishNativeDrag(e);
         isDropping.current = true;
         pendingReset.current = true;
         treeRef.current?.classList.add("mk-dropping");
@@ -769,6 +787,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     }
 
     const isDropping = useRef(false);
+    const nativeDragFinished = useRef(false);
     const pendingReset = useRef(false);
     const pendingDropReload = useRef(false);
 

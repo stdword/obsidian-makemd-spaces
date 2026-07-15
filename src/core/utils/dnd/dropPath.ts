@@ -150,7 +150,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
             await movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, targetIndex, modifier == "copy");
         }
     }
-    if (oldSpacePath && oldSpacePath != newSpacePath) {
+    if (modifier != "link" && oldSpacePath && oldSpacePath != newSpacePath) {
         await removePathsFromSpace(superstate, oldSpacePath, [path]);
     }
 };

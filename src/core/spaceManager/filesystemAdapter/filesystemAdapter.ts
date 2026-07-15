@@ -5,6 +5,7 @@ import { fileSystemSpaceInfoByPath, fileSystemSpaceInfoFromFolder, fileSystemSpa
 import { defaultSortForSettings, parseSpaceMetadata, spaceSortFn } from "core/utils/superstate/spaces";
 import { ensureArray } from "core/utils/schema";
 import { DEFAULT_SYSTEM_NAME, FOCUSES_FILE, SPACE_CONFIG_DEFAULT_CONTENT, SPACE_CONFIG_FILE, SPACE_FOLDER } from "schemas/constants";
+import { tagSpaceParentPath } from "schemas/builtin";
 import { Focus } from "shared/types/focus";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { PathCache, SpaceState } from "shared/types/PathState";
@@ -151,7 +152,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
                     subtype: "tag",
                     name: uri.authority,
                     path,
-                    parent: "",
+                    parent: tagSpaceParentPath(path),
                     tags: [],
                     hidden: false,
                 };

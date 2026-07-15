@@ -63,6 +63,57 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
+    it("restores filtered tag-space links while loading the persisted cache", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const folderPath = "Library";
+        const tagPath = tagSpacePathFromTag("#reading");
+        const filteredLink = `${tagPath}?filter`;
+        const cachedSpaces = [
+            {
+                path: folderPath,
+                cache: JSON.stringify({
+                    path: folderPath,
+                    name: "Library",
+                    type: "folder",
+                    space: { defPath: `${folderPath}/_space.md` },
+                    metadata: { links: [filteredLink] },
+                }),
+            },
+            {
+                path: tagPath,
+                cache: JSON.stringify({ path: tagPath, name: "reading", type: "tag", space: {}, metadata: {} }),
+            },
+        ];
+        superstate.persister.loadAll = jest.fn((type: string) => Promise.resolve(type == "space" ? cachedSpaces : []));
+        spaceManager.pathExists = jest.fn((_path: string) => true);
+
+        await superstate.loadFromCache();
+
+        expect(superstate.spacesIndex.get(folderPath).metadata.links).toEqual([filteredLink]);
+        expect([...superstate.spacesMap.get(tagPath)]).toEqual([folderPath]);
+        expect([...superstate.spacesMap.get(filteredLink)]).toEqual([]);
+    });
+
+    it("restores a filtered tag-space link under its canonical path after reloading a folder", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        const folderPath = "Library";
+        const tagPath = tagSpacePathFromTag("#reading");
+        const filteredLink = `${tagPath}?filter`;
+        superstate.spacesIndex.set(tagPath, { path: tagPath, type: "tag", metadata: {}, space: {} } as any);
+        spaceManager.uriByString = jest.fn(() => ({ authority: "Library", path: "" }));
+        spaceManager.spaceTypeByString = jest.fn(() => "folder");
+        spaceManager.readPathCache = jest.fn((_path: string) => Promise.resolve(null as any));
+
+        const reloaded = await superstate.reloadSpace(
+            { path: folderPath, name: "Library", type: "folder", metadata: {}, space: {} } as any,
+            { links: [filteredLink] },
+        );
+
+        expect(reloaded.metadata.links).toEqual([filteredLink]);
+        expect([...superstate.spacesMap.get(tagPath)]).toEqual([folderPath]);
+        expect([...superstate.spacesMap.get(filteredLink)]).toEqual([]);
+    });
+
     it("keeps a canonical spacesMap entry when only a linked tag query changes", async () => {
         const { superstate } = createSuperstate();
         const folderPath = "Folder";
@@ -764,6 +815,21 @@ describe("Superstate tag initialization", () => {
         });
 
         expect(superstate.pathStateForPath(tagSpacePathFromTag("#sample/category/item")).name).toBe("sample/category/item");
+    });
+
+    it("exposes the parent tag space in hierarchical tag PathState", async () => {
+        const { superstate } = createSuperstate();
+        const parentPath = tagSpacePathFromTag("#sample/category");
+        const childPath = tagSpacePathFromTag("#sample/category/item");
+        const rootPath = tagSpacePathFromTag("#sample");
+        superstate.spacesIndex.set(childPath, { path: childPath, name: "sample/category/item", type: "tag", metadata: {}, space: {} } as any);
+        superstate.spacesIndex.set(rootPath, { path: rootPath, name: "sample", type: "tag", metadata: {}, space: {} } as any);
+
+        expect(superstate.pathStateForPath(childPath)).toEqual(expect.objectContaining({
+            path: childPath,
+            parent: parentPath,
+        }));
+        expect(superstate.pathStateForPath(rootPath)).toEqual(expect.objectContaining({ parent: "" }));
     });
 
     it("trusts stored tag space names from cache without read-time normalization", async () => {

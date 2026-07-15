@@ -108,6 +108,62 @@ describe("focus-excluded navigator items", () => {
         expect(alphabeticalTree.some((node) => node.type == "separator")).toBe(false);
     });
 
+    it("stores direct folder and file counts on a space tree node", () => {
+        const sectionPath = { path: "Library", name: "Library", parent: "", type: "space", subtype: "folder" } as any;
+        const folder = { path: "Library/Books", name: "Books", parent: sectionPath.path, type: "space", subtype: "folder" } as any;
+        const files = ["Index.md", "Notes.md"].map((name) => ({
+            path: `${sectionPath.path}/${name}`,
+            name,
+            parent: sectionPath.path,
+            type: "file",
+        }));
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map([[sectionPath.path, {
+                ...sectionPath,
+                metadata: { sort: { field: "name", asc: true } },
+                space: {},
+            }]]),
+            pathStateForPath: jest.fn(() => sectionPath),
+            getSpaceItems: jest.fn(() => [folder, ...files]),
+        } as any;
+
+        const tree = retrieveData(superstate, [sectionPath], false, [], []);
+
+        expect(tree[0]).toEqual(expect.objectContaining({
+            childrenCount: 3,
+            folderCount: 1,
+            fileCount: 2,
+        }));
+    });
+
+    it("assigns displayed ranks when manual sorting starts without a stored rank order", () => {
+        const sectionPath = { path: "Workshop", name: "Workshop", parent: "", type: "space", subtype: "folder" } as any;
+        const children = ["Ideas", "Drafts", "Archive"].map((name) => ({
+            path: `${sectionPath.path}/${name}`,
+            name,
+            parent: sectionPath.path,
+            type: "space",
+            subtype: "folder",
+            rank: -1,
+        }));
+        const spaces = [sectionPath, ...children].map((item) => [item.path, {
+            ...item,
+            metadata: item.path == sectionPath.path ? { sort: { field: "rank", asc: true }, "rank-order": [] } : {},
+            space: {},
+        }] as const);
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map(spaces),
+            pathStateForPath: jest.fn((path: string) => path == sectionPath.path ? sectionPath : children.find((item) => item.path == path)),
+            getSpaceItems: jest.fn((path: string) => path == sectionPath.path ? children : []),
+        } as any;
+
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], []);
+
+        expect(tree.filter((node) => node.parentId == sectionPath.path).map((node) => node.rank)).toEqual([0, 1, 2]);
+    });
+
     it("keeps each separator occurrence at its original rank-order index", () => {
         const sectionPath = { path: "Projects", name: "Projects", parent: "", type: "space", subtype: "folder" } as any;
         const child = { path: "Projects/Plan.md", name: "Plan.md", parent: sectionPath.path, type: "file" } as any;
