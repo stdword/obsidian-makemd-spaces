@@ -2,7 +2,7 @@ import { UIManager } from "core/middleware/ui";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { effectiveSpaceSort, saveSpaceCache } from "core/utils/superstate/spaces";
-import { isSpaceSeparatorPath, tagSpacePathFromTag } from "schemas/builtin";
+import { canonicalTagSpacePath, isSpaceSeparatorPath, replaceTagSpaceLinkPath, sameTagSpaceLink, tagSpacePathFromTag } from "schemas/builtin";
 import { pathIsSpace } from "core/utils/superstate/space";
 import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
@@ -323,7 +323,7 @@ export class Superstate implements ISuperstate {
 
     private isPathExplicitlyShownInSpace(path: string, spacePath: string): boolean {
         const metadata = this.spacesIndex.get(spacePath)?.metadata;
-        return ensureArray(metadata?.links).includes(path) || ensureArray(metadata?.pinned).includes(path);
+        return ensureArray(metadata?.links).some((link) => sameTagSpaceLink(link, path)) || ensureArray(metadata?.pinned).some((pinned) => sameTagSpaceLink(pinned, path));
     }
 
     private isHiddenSpaceRoot(spacePath: string): boolean {
@@ -420,8 +420,8 @@ export class Superstate implements ISuperstate {
     public async onSpaceDefinitionChanged(space: SpaceState, oldDef?: SpaceDefinition) {
         if (!space) return;
         const currentPaths = [...this.spacesMap.getInverse(space.path)];
-        const oldLinks = ensureArray(oldDef?.links);
-        const newLinks = ensureArray(space.metadata?.links);
+        const oldLinks = uniq(ensureArray(oldDef?.links).map(canonicalTagSpacePath));
+        const newLinks = uniq(ensureArray(space.metadata?.links).map(canonicalTagSpacePath));
         const linksChanged = !_.isEqual(newLinks, oldLinks);
         const addedLinks = linksChanged ? _.difference(newLinks, oldLinks) : [];
         const removedLinks = linksChanged ? _.difference(oldLinks, newLinks) : [];
@@ -531,7 +531,7 @@ export class Superstate implements ISuperstate {
         const tagPath = tagSpacePathFromTag(tag);
         const referencingSpaces = [...this.spacesIndex.values()].filter((space) =>
             space.path != tagPath && (
-                ensureArray(space.metadata.links).includes(tagPath) ||
+                ensureArray(space.metadata.links).some((path) => sameTagSpaceLink(path, tagPath)) ||
                 ensureArray(space.metadata.pinned).includes(tagPath) ||
                 ensureArray(space.metadata["rank-order"]).includes(tagPath) ||
                 Object.prototype.hasOwnProperty.call(space.metadata["file-colors"] ?? {}, tagPath)
@@ -541,7 +541,7 @@ export class Superstate implements ISuperstate {
             const { [tagPath]: _removedColor, ...fileColors } = space.metadata["file-colors"] ?? {};
             await saveSpaceCache(this, space, {
                 ...space.metadata,
-                links: ensureArray(space.metadata.links).filter((path) => path != tagPath),
+                links: ensureArray(space.metadata.links).filter((path) => !sameTagSpaceLink(path, tagPath)),
                 pinned: ensureArray(space.metadata.pinned).filter((path) => path != tagPath),
                 "rank-order": ensureArray(space.metadata["rank-order"]).filter((path) => path != tagPath),
                 "file-colors": fileColors,
@@ -751,7 +751,7 @@ export class Superstate implements ISuperstate {
                 const { [path]: _removedColor, ...fileColors } = space.metadata?.["file-colors"] ?? {};
                 return saveSpaceCache(this, space, {
                     ...space.metadata,
-                    links: ensureArray(space.metadata?.links).filter((f) => f != path),
+                    links: ensureArray(space.metadata?.links).filter((f) => !sameTagSpaceLink(f, path)),
                     "rank-order": ensureArray(space.metadata?.["rank-order"]).filter((f) => f != path),
                     pinned: ensureArray(space.metadata?.pinned).filter((f) => f != path),
                     "file-colors": fileColors,
@@ -771,7 +771,7 @@ export class Superstate implements ISuperstate {
         if (this.spacesIndex.has(oldPath)) {
             const referencingSpaces = [...this.spacesIndex.values()].filter((space) =>
                 space.path != oldPath && (
-                    ensureArray(space.metadata?.links).includes(oldPath) ||
+                    ensureArray(space.metadata?.links).some((link) => sameTagSpaceLink(link, oldPath)) ||
                     ensureArray(space.metadata?.["rank-order"]).includes(oldPath) ||
                     ensureArray(space.metadata?.pinned).includes(oldPath) ||
                     Object.prototype.hasOwnProperty.call(space.metadata?.["file-colors"] ?? {}, oldPath)
@@ -780,7 +780,7 @@ export class Superstate implements ISuperstate {
             for (const space of referencingSpaces) {
                 const metadata = {
                     ...space.metadata,
-                    links: replacePathInList(space.metadata?.links, oldPath, newSpaceInfo.path),
+                    links: ensureArray(space.metadata?.links).map((link) => sameTagSpaceLink(link, oldPath) ? replaceTagSpaceLinkPath(link, newSpaceInfo.path) : link),
                     "rank-order": replacePathInList(space.metadata?.["rank-order"], oldPath, newSpaceInfo.path),
                     pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newSpaceInfo.path, space.path),
                     "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newSpaceInfo.path),

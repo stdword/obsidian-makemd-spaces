@@ -25,6 +25,8 @@ export const shouldShowLinkedItemIcon = (data: TreeNode) => {
     return false
 }
 
+export const linkedItemIcon = (data: TreeNode) => data.filtered ? "lucide//filter" : "lucide//link-2";
+
 export const shouldShowPinnedItemIcon = (data: TreeNode) => {
     if (data.depth == 0) return false;
     return !!data.pinned;
@@ -312,7 +314,7 @@ export const TreeItem = (props: TreeItemProps) => {
                                     pathState={{
                                         name: "linked",
                                         path: "",
-                                        sticker: "lucide//link-2",
+                                        sticker: linkedItemIcon(data),
                                     }}
                                     space={data.space}
                                     editable={false}

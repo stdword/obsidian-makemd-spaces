@@ -37,6 +37,7 @@ export const en = {
         wrapToFolder: "Wrap to Folder",
         pinToTop: "Pin to Top",
         unpin: "Unpin",
+        useAsFilter: "Use as Filter",
         visible: "Visible",
         duplicate: "Duplicate",
         archive: "Archive",

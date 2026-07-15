@@ -1,4 +1,5 @@
-import { pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { filterLinkedTagSpaceItems } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isTagTreeItemPath } from "schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
@@ -45,6 +46,10 @@ describe("calculateFolderLineHeight", () => {
 });
 
 describe("linked item icon", () => {
+    it("uses filter for a filtered link and link for a regular link", () => {
+        expect(linkedItemIcon({ filtered: true } as any)).toBe("lucide//filter");
+        expect(linkedItemIcon({ filtered: false } as any)).toBe("lucide//link-2");
+    });
     it("shows for items linked into a different tree space", () => {
         expect(
             shouldShowLinkedItemIcon({
@@ -133,6 +138,29 @@ describe("linked item icon", () => {
                 item: { path: "Folder", parent: "" },
             } as any),
         ).toBe(false);
+    });
+});
+
+describe("linked tag space filter", () => {
+    it("keeps only recursive descendants of the containing folder", () => {
+        const items = [
+            { path: "Folder/Sub/Item.md" },
+            { path: "Folder/Direct.md" },
+            { path: "Other/Item.md" },
+            { path: "Folderish/Item.md" },
+        ] as any;
+        expect(filterLinkedTagSpaceItems(items, "Folder").map((item) => item.path)).toEqual([
+            "Folder/Sub/Item.md",
+            "Folder/Direct.md",
+        ]);
+    });
+
+    it("does not show the containing folder represented by its folder note", () => {
+        const items = [
+            { path: "Folder", type: "space" },
+            { path: "Folder/Sub/Item.md", type: "file" },
+        ] as any;
+        expect(filterLinkedTagSpaceItems(items, "Folder").map((item) => item.path)).toEqual(["Folder/Sub/Item.md"]);
     });
 });
 

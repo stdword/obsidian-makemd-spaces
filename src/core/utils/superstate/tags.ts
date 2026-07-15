@@ -1,6 +1,6 @@
 import { Superstate } from "makemd-core";
 
-import { tagSpacePathFromTag } from "schemas/builtin";
+import { replaceTagSpaceLinkPath, sameTagSpaceLink, tagSpacePathFromTag } from "schemas/builtin";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { ensureArray } from "core/utils/schema";
 import { ensureTag } from "utils/tags";
@@ -49,10 +49,10 @@ export const mergeTagSpaceMetadata = async (superstate: Superstate, sourcePath: 
         },
     });
 
-    const replaceSource = (paths: unknown) => [...new Set(ensureArray(paths).map((path) => path == sourcePath ? targetPath : path))];
+    const replaceSource = (paths: unknown) => [...new Set(ensureArray(paths).map((path) => sameTagSpaceLink(path, sourcePath) ? replaceTagSpaceLinkPath(path, targetPath) : path))];
     const referencingSpaces = [...superstate.spacesIndex.values()].filter((space) =>
         space.path != sourcePath && (
-            ensureArray(space.metadata.links).includes(sourcePath) ||
+            ensureArray(space.metadata.links).some((path) => sameTagSpaceLink(path, sourcePath)) ||
             ensureArray(space.metadata.pinned).includes(sourcePath) ||
             ensureArray(space.metadata["rank-order"]).includes(sourcePath) ||
             Object.prototype.hasOwnProperty.call(space.metadata["file-colors"] ?? {}, sourcePath)

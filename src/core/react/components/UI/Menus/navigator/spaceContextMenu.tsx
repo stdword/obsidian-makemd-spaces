@@ -2,7 +2,7 @@ import React from "react";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
-import { addSpaceSeparator, duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
+import { addSpaceSeparator, duplicatePathNextToOriginal, effectiveSpaceSort, isPathPinnedInSpace, linkPathToSpaceAtIndex, linkedTagSpaceUri, removePathsFromSpace, removeSpace, setLinkedTagSpaceFiltered, setPathPinnedInSpace, updateSpaceSort } from "core/utils/superstate/spaces";
 import { openStickerPalette } from "core/react/components/PathSticker";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 import { addTag, mergeTagSpaceMetadata } from "core/utils/superstate/tags";
@@ -10,7 +10,7 @@ import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import { default as i18n } from "shared/i18n";
 import { PathState, FilesystemSpaceInfo } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
-import { isTagSpacePath } from "schemas/builtin";
+import { isFilteredTagSpaceLink, isTagSpacePath } from "schemas/builtin";
 import { SpaceSort } from "shared/types/spaceDef";
 import { savePathSticker } from "utils/sticker";
 import { movePath } from "utils/uri";
@@ -163,6 +163,18 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             onClick: () => {
                 setPathPinnedInSpace(superstate, parentSpaceCache.path, space.path, !pinned);
             },
+        });
+    }
+
+    const linkedTagUri = isTagSpace && parentSpaceCache ? linkedTagSpaceUri(parentSpaceCache, space.path) : null;
+    if (linkedTagUri) {
+        const filtered = isFilteredTagSpaceLink(linkedTagUri);
+        menuOptions.push({
+            name: i18n.menu.useAsFilter,
+            icon: "lucide//filter",
+            value: filtered,
+            type: SelectOptionType.Radio,
+            onClick: () => setLinkedTagSpaceFiltered(superstate, parentSpaceCache.path, space.path, !filtered),
         });
     }
 

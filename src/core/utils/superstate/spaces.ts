@@ -9,7 +9,7 @@ import { PathState, SpaceState } from "shared/types/PathState";
 import { MakeMDSettings } from "shared/types/settings";
 import { SpaceDefinition, SpaceSort } from "shared/types/spaceDef";
 import { PathStateWithRank } from "shared/types/superstate";
-import { isSpaceSeparatorPath, SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
+import { canonicalTagSpacePath, isSpaceSeparatorPath, sameTagSpaceLink, setTagSpaceLinkFiltered, SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 import { movePath } from "utils/uri";
 import { deletePath } from "./path";
@@ -134,6 +134,7 @@ export interface TreeNode {
     rank: number;
     sort?: SpaceSort;
     pinned?: boolean;
+    filtered?: boolean;
     folderNotePath?: string | null;
 }
 export const spaceToTreeNode = (path: PathStateWithRank, collapsed: boolean, sortable: boolean, depth: number, parentId: string, parentPath: string, childrenCount: number, sort?: SpaceSort, pinned?: boolean): TreeNode => {
@@ -170,7 +171,7 @@ export const pathStateToTreeNode = (_superstate: Superstate, item: PathStateWith
     pinned,
 });
 
-export const isPathPinnedInSpace = (space: SpaceState, path: string) => ensureArray(space?.metadata?.pinned).includes(path);
+export const isPathPinnedInSpace = (space: SpaceState, path: string) => ensureArray(space?.metadata?.pinned).some((pinnedPath) => sameTagSpaceLink(pinnedPath, path));
 
 export const setPathPinnedInSpace = async (superstate: Superstate, spacePath: string, path: string, pinned: boolean) => {
     const space = superstate.spacesIndex.get(spacePath);
@@ -178,8 +179,8 @@ export const setPathPinnedInSpace = async (superstate: Superstate, spacePath: st
 
     const currentPinned = ensureArray(space.metadata?.pinned);
     const nextPinned = pinned
-        ? [...currentPinned.filter((itemPath) => itemPath != path), path]
-        : currentPinned.filter((itemPath) => itemPath != path);
+        ? [...currentPinned.filter((itemPath) => !sameTagSpaceLink(itemPath, path)), canonicalTagSpacePath(path)]
+        : currentPinned.filter((itemPath) => !sameTagSpaceLink(itemPath, path));
 
     if (JSON.stringify(currentPinned) == JSON.stringify(nextPinned)) return;
     await saveSpaceMetadataValue(superstate, space.path, "pinned", nextPinned);
@@ -522,6 +523,7 @@ export const defaultSpace = async (superstate: Superstate, activeFile: PathState
 };
 
 export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: SpaceState, path: string, rank?: number) => {
+    path = canonicalTagSpacePath(path);
     if (path == space.path) {
         superstate.ui.notify('Linking space to itself not allowed')
         return;
@@ -531,7 +533,7 @@ export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: Spac
         return false;
     }
     const spaceExists = ensureArray(space.metadata.links) ?? [];
-    const pathExists = spaceExists.find((f) => f == path);
+    const pathExists = spaceExists.find((f) => sameTagSpaceLink(f, path));
     if (pathExists) {
         superstate.ui.notify(i18n.notice.cannotLinkToOwnFolder);
         return false;
@@ -550,6 +552,21 @@ export const linkPathToSpaceAtIndex = async (superstate: Superstate, space: Spac
         superstate.dispatchEvent("spaceStateUpdated", { path: space.path });
     }
     await updatePathRankInSpace(superstate, path, rank, space.path);
+};
+
+export const linkedTagSpaceUri = (space: SpaceState, tagSpacePath: string) =>
+    ensureArray(space?.metadata?.links).find((link) => sameTagSpaceLink(link, tagSpacePath));
+
+export const setLinkedTagSpaceFiltered = async (superstate: Superstate, parentSpacePath: string, tagSpacePath: string, filtered: boolean) => {
+    const parentSpace = superstate.spacesIndex.get(parentSpacePath);
+    if (!parentSpace) return;
+    const links = ensureArray(parentSpace.metadata?.links);
+    const currentLink = links.find((link) => sameTagSpaceLink(link, tagSpacePath));
+    if (!currentLink) return;
+    const nextLink = setTagSpaceLinkFiltered(currentLink, filtered);
+    if (nextLink == currentLink) return;
+    await saveSpaceMetadataValue(superstate, parentSpace.path, "links", links.map((link) => link == currentLink ? nextLink : link));
+    superstate.dispatchEvent("spaceStateUpdated", { path: parentSpace.path });
 };
 
 export const removeSpace = async (superstate: Superstate, space: string) => {
@@ -635,7 +652,7 @@ export const removePathsFromSpace = async (superstate: Superstate, spacePath: st
             superstate,
             space.path,
             "links",
-            ensureArray(space.metadata?.links).filter((f) => !paths.some((g) => g == f)),
+            ensureArray(space.metadata?.links).filter((f) => !paths.some((g) => sameTagSpaceLink(g, f))),
         );
         paths.forEach((path) => superstate.dispatchEvent("pathStateUpdated", { path }));
         superstate.dispatchEvent("spaceStateUpdated", { path: space.path });

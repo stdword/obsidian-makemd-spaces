@@ -2,7 +2,7 @@ import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
-import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
+import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, linkedTagSpaceUri, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
@@ -17,7 +17,7 @@ import { PathStateWithRank } from "shared/types/superstate";
 import { FocusEditor } from "./NavigatorFocusEditor";
 import { DropModifiers, shouldShowLinkedItemIcon } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
-import { isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
+import { isFilteredTagSpaceLink, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 import { isPathExcludedFromFocus } from "core/utils/superstate/focus";
 
 interface SpaceTreeComponentProps {
@@ -49,6 +49,11 @@ export const constrainSeparatorProjection = (activeItem: TreeNode | null, projec
     if (activeItem?.type != "separator") return projection;
     if (!projection || projection.insert || !projection.sortable || projection.parentId != activeItem.parentId) return null;
     return projection;
+};
+
+export const filterLinkedTagSpaceItems = (items: PathStateWithRank[], parentFolderPath: string) => {
+    const prefix = parentFolderPath == "/" ? "" : `${parentFolderPath}/`;
+    return items.filter((item) => item.path != parentFolderPath && (prefix == "" || item.path.startsWith(prefix)));
 };
 
 export const constrainTagSpaceProjection = (activeItem: TreeNode | null, projection: DragProjection | null, flattenedTree: TreeNode[]): DragProjection | null => {
@@ -92,7 +97,13 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
     const childrenSortable = isSpaceSortable(space, superstate.settings);
     const folderNotePath = space.space?.notePath || null;
-    const children = filterFolderNoteChildren(superstate, folderNotePath, superstate.getSpaceItems(space.path) ?? [])
+    const parentSpace = superstate.spacesIndex.get(parentPath);
+    const linkedTagUri = space.type == "tag" && parentSpace ? linkedTagSpaceUri(parentSpace, space.path) : null;
+    const filtered = Boolean(linkedTagUri && isFilteredTagSpaceLink(linkedTagUri));
+    const spaceItems = filtered
+        ? filterLinkedTagSpaceItems(superstate.getSpaceItems(space.path) ?? [], parentPath)
+        : superstate.getSpaceItems(space.path) ?? [];
+    const children = filterFolderNoteChildren(superstate, folderNotePath, spaceItems)
         .filter((item) => !isPathExcludedFromFocus(item.path, excludedPaths));
 
     if (section) {
@@ -119,6 +130,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
         tree.push({
             ...spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length, spaceSort, pinned),
             folderNotePath,
+            filtered,
         });
     }
 

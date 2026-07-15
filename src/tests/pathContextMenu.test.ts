@@ -1090,6 +1090,35 @@ describe("showSpaceContextMenu", () => {
         expect(pinIndex).toBeGreaterThan(sortIndex);
     });
 
+    it("shows Use as Filter immediately after Pin to Top for a linked tag space", async () => {
+        const openMenu = jest.fn();
+        const parentPath = "Folder";
+        const tagPath = "spaces://#topic";
+        const pathState = { path: tagPath, type: "space", subtype: "tag", parent: "" };
+        const parentSpace: any = { path: parentPath, type: "folder", metadata: { links: [`${tagPath}?filter`], pinned: [] as string[] } };
+        const updateSpaceMetadata = jest.fn(async (_path, metadata) => { parentSpace.metadata = metadata; });
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map<string, any>([
+                [parentPath, parentSpace],
+                [tagPath, { path: tagPath, type: "tag", metadata: {} }],
+            ]),
+            spaceManager: { saveSpace: jest.fn(async (_path, update) => update(parentSpace.metadata)) },
+            updateSpaceMetadata,
+            dispatchEvent: jest.fn(),
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, parentPath, undefined, 1);
+        const rootOptions = openMenu.mock.calls[0][1].options;
+        const pinIndex = rootOptions.findIndex((option: any) => option.name === i18n.menu.pinToTop);
+        const filterIndex = rootOptions.findIndex((option: any) => option.name === i18n.menu.useAsFilter);
+        expect(filterIndex).toBe(pinIndex + 1);
+        expect(rootOptions[filterIndex]).toEqual(expect.objectContaining({ icon: "lucide//filter", value: true }));
+        await rootOptions[filterIndex].onClick();
+        expect(parentSpace.metadata.links).toEqual([tagPath]);
+    });
+
     it("opens Link to with hidden folders when shift-clicked", () => {
         const openMenu = jest.fn();
         const pathState = {

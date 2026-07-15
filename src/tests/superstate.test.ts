@@ -63,6 +63,19 @@ const createSuperstate = () => {
 };
 
 describe("Superstate tag initialization", () => {
+    it("keeps a canonical spacesMap entry when only a linked tag query changes", async () => {
+        const { superstate } = createSuperstate();
+        const folderPath = "Folder";
+        const tagPath = tagSpacePathFromTag("#project");
+        superstate.spacesMap.set(tagPath, new Set([folderPath]));
+        await superstate.onSpaceDefinitionChanged(
+            { path: folderPath, type: "folder", metadata: { links: [`${tagPath}?filter`] } } as any,
+            { links: [tagPath] },
+        );
+        expect([...superstate.spacesMap.get(tagPath)]).toEqual([folderPath]);
+        expect([...superstate.spacesMap.get(`${tagPath}?filter`)]).toEqual([]);
+        expect([...superstate.spacesMap.getInverse(folderPath)]).toEqual([tagPath]);
+    });
     it("removes an externally deleted folder section from every focus", async () => {
         const { superstate, spaceManager } = createSuperstate();
         const path = "Projects/Removed";

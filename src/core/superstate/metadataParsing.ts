@@ -3,7 +3,7 @@ import { PathCache, PathState, PathType, SpaceState } from "shared/types/PathSta
 import { MakeMDSettings } from "shared/types/settings";
 import { uniq } from "utils/array";
 
-import { isTagSpacePath, tagSpacePathFromTag } from "schemas/builtin";
+import { canonicalTagSpacePath, isTagSpacePath, sameTagSpaceLink, tagSpacePathFromTag } from "schemas/builtin";
 import { excludePathPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
@@ -108,7 +108,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
             }
         }
         if (space.metadata?.links?.length > 0) {
-            const spaceItem = (space.metadata?.links ?? []).find((f) => f == pathState.path);
+            const spaceItem = (space.metadata?.links ?? []).find((f) => sameTagSpaceLink(f, pathState.path));
             if (spaceItem) {
                 if (subtype != "md" && subtype != "folder" && space.type == "tag") {
                     tags.push(tagPathToTag(space.path));
@@ -126,7 +126,7 @@ export const parseMetadata = (path: string, settings: MakeMDSettings, spacesCach
         evalSpace(s, space);
     }
     const explicitVisibleSpaces = [...spacesCache.entries()]
-        .filter(([, space]) => (space.metadata?.links ?? []).includes(pathState.path) || (space.metadata?.pinned ?? []).includes(pathState.path))
+        .filter(([, space]) => (space.metadata?.links ?? []).some((link) => sameTagSpaceLink(link, pathState.path)) || (space.metadata?.pinned ?? []).some((pinned) => canonicalTagSpacePath(pinned) == canonicalTagSpacePath(pathState.path)))
         .map(([spacePath]) => spacePath);
     const visibleHiddenSpaces = uniq([...spaces, ...explicitVisibleSpaces]).filter((spacePath) => explicitVisibleSpaces.includes(spacePath) && spacePath != path);
     const metadata: PathState = hidden
