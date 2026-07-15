@@ -4,7 +4,7 @@ import { openStickerPalette } from "core/react/components/PathSticker";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
-import { TreeNode, createSpace, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
+import { TreeNode, createSpace, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import { deletePath, movePathToSpace } from "core/utils/superstate/path";
@@ -209,8 +209,8 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
                 i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
                 <ConfirmationModal
                     confirmAction={() => {
-                        paths.forEach((f) => {
-                            deletePath(superstate, f);
+                        paths.forEach((path) => {
+                            deletePath(superstate, path);
                         });
                     }}
                     confirmLabel={i18n.buttons.delete}
@@ -307,11 +307,11 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
             superstate.ui.openModal(
                 i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
                 <ConfirmationModal
-                    confirmAction={() => {
-                        paths.forEach((f) => {
-                            deletePath(superstate, f);
-                        });
-                    }}
+                    confirmAction={() => Promise.all(paths.map((path) =>
+                        isTagSpacePath(path)
+                            ? removeSpace(superstate, path)
+                            : deletePath(superstate, path)
+                    ))}
                     confirmLabel={i18n.buttons.delete}
                     message={<><div>{i18n.descriptions.deleteFiles}</div><div>{i18n.descriptions.deleteTags}</div></>}
                 ></ConfirmationModal>,

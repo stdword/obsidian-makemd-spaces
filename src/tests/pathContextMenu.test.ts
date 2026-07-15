@@ -215,6 +215,35 @@ describe("triggerMultiPathMenu", () => {
         expect(space.metadata.pinned).toEqual(["Projects/Alpha.md", "Projects/Beta.md"]);
     });
 
+    it("deletes every selected sub-tag through tag-space deletion", async () => {
+        const openMenu = jest.fn();
+        const openModal = jest.fn();
+        const onTagDeleted = jest.fn(() => Promise.resolve());
+        const parentPath = "spaces://#topic";
+        const firstPath = "spaces://#topic/first";
+        const secondPath = "spaces://#topic/second";
+        const superstate = {
+            spacesIndex: new Map([
+                [firstPath, { path: firstPath, name: "topic/first", type: "tag", metadata: {} }],
+                [secondPath, { path: secondPath, name: "topic/second", type: "tag", metadata: {} }],
+            ]),
+            onTagDeleted,
+            ui: { openMenu, openModal },
+        };
+        const selectedPaths = [
+            { item: { path: firstPath, type: "space", subtype: "tag" }, path: firstPath, space: parentPath, depth: 1 },
+            { item: { path: secondPath, type: "space", subtype: "tag" }, path: secondPath, space: parentPath, depth: 1 },
+        ];
+        const event = { target: { getBoundingClientRect: jest.fn(() => ({})) }, view: { document: { defaultView: {} } } };
+
+        triggerMultiPathMenu(superstate as any, selectedPaths as any, event as any);
+        const deleteOption = openMenu.mock.calls[0][1].options.find((option: any) => option.name === i18n.menu.delete);
+        deleteOption.onClick(event as any);
+        await openModal.mock.calls[0][1].props.confirmAction();
+
+        expect(onTagDeleted.mock.calls).toEqual([["topic/first"], ["topic/second"]]);
+    });
+
     it("wraps selected sibling paths into one new folder", async () => {
         const openMenu = jest.fn();
         const openModal = jest.fn();
