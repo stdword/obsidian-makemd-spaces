@@ -1039,6 +1039,30 @@ describe("Superstate tag initialization", () => {
         expect(spaceManager.pathsForTag).toHaveBeenCalledWith("#sample/group/item");
     });
 
+    it("does not create an empty nested tag space from a stale inverse-index key", async () => {
+        const { superstate } = createSuperstate();
+        const parentPath = tagSpacePathFromTag("#category");
+        const childPath = tagSpacePathFromTag("#category/unused");
+        superstate.tagsMap.invMap.set("#category/unused", new Set());
+
+        expect(superstate.getSpaceItems(parentPath).map((item: any) => item.path)).not.toContain(childPath);
+    });
+
+    it("shows a stored empty nested tag space until it is deleted", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        spaceManager.uriByString = jest.fn(() => ({}));
+        spaceManager.spaceTypeByString = jest.fn(() => "tag");
+        const parent = await addTag(superstate, "workspace");
+        const child = await addTag(superstate, "workspace/archive");
+
+        expect(superstate.getSpaceItems(parent.path).map((item: any) => item.path)).toContain(child.path);
+
+        await superstate.onTagDeleted(child.name);
+
+        expect(superstate.spacesIndex.has(child.path)).toBe(false);
+        expect(superstate.getSpaceItems(parent.path).map((item: any) => item.path)).not.toContain(child.path);
+    });
+
     it("shows descendant-tagged files directly when grouping by sub-tags is disabled", () => {
         const { superstate } = createSuperstate();
         const parentTagPath = tagSpacePathFromTag("#topic");

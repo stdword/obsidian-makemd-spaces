@@ -261,7 +261,9 @@ export class Superstate implements ISuperstate {
         const tag = '#' + tagSpaceNameFromPath(spacePath).toLowerCase();
         const childTagPrefix = tag + "/";
         const descendantTags = uniq([
-            ...[...this.tagsMap.invMap.keys()].filter((indexedTag) => indexedTag.startsWith(childTagPrefix)),
+            ...[...this.tagsMap.invMap.keys()].filter((indexedTag) =>
+                indexedTag.startsWith(childTagPrefix) && this.tagsMap.getInverse(indexedTag).size > 0
+            ),
             ...(this.spaceManager.readTags?.() ?? []).map((indexedTag) => indexedTag.toLowerCase()).filter((indexedTag) => indexedTag.startsWith(childTagPrefix)),
         ]);
         const groupBySubtags = effectiveSpaceSort(this.spacesIndex.get(spacePath)?.metadata?.sort, this.settings).subtags == true;
@@ -271,11 +273,17 @@ export class Superstate implements ISuperstate {
             const adapterPaths = tags.flatMap((indexedTag) => this.spaceManager.pathsForTag?.(indexedTag) ?? []);
             return uniq([...indexedPaths, ...adapterPaths].map((path) => this.folderPathForTaggedFolderNote(path) ?? path));
         }
-        const childTagPaths = uniq(descendantTags.map((descendantTag) => childTagPrefix + descendantTag.slice(childTagPrefix.length).split("/")[0]))
+        const storedChildTagPaths = [...this.spacesIndex.values()]
+            .filter((space) => space.type == "tag" && tagSpaceParentPath(space.path) == spacePath)
+            .map((space) => space.path);
+        const childTagPaths = uniq([
+            ...descendantTags.map((descendantTag) => tagSpacePathFromTag(childTagPrefix + descendantTag.slice(childTagPrefix.length).split("/")[0])),
+            ...storedChildTagPaths,
+        ])
             .map((childTag) => {
-                const childPath = tagSpacePathFromTag(childTag);
+                const childPath = childTag;
                 if (!this.spacesIndex.has(childPath))
-                    this.spacesIndex.set(childPath, tagSpaceState(fileSystemSpaceInfoFromTag(this.spaceManager, childTag)));
+                    this.spacesIndex.set(childPath, tagSpaceState(fileSystemSpaceInfoFromTag(this.spaceManager, tagSpaceNameFromPath(childPath))));
                 return childPath;
             });
         const indexedPaths = [...this.tagsMap.getInverse(tag)];

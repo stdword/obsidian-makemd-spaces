@@ -108,6 +108,35 @@ describe("focus-excluded navigator items", () => {
         expect(alphabeticalTree.some((node) => node.type == "separator")).toBe(false);
     });
 
+    it("renders pinned items before the manual rank order", () => {
+        const sectionPath = { path: "Projects", name: "Projects", parent: "", type: "space", subtype: "folder" } as any;
+        const first = { path: "Projects/First.md", name: "First", parent: sectionPath.path, type: "file", rank: 0 } as any;
+        const pinned = { path: "Projects/Pinned.md", name: "Pinned", parent: sectionPath.path, type: "file", rank: 1 } as any;
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map([[sectionPath.path, {
+                path: sectionPath.path,
+                name: "Projects",
+                type: "folder",
+                metadata: {
+                    sort: { field: "rank", asc: true },
+                    "rank-order": [first.path, pinned.path],
+                    pinned: [pinned.path],
+                },
+                space: {},
+            }]]),
+            pathStateForPath: jest.fn(() => sectionPath),
+            getSpaceItems: jest.fn(() => [first, pinned]),
+        } as any;
+
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], []);
+
+        expect(tree.filter((node) => node.parentId == sectionPath.path).map((node) => node.path)).toEqual([
+            pinned.path,
+            first.path,
+        ]);
+    });
+
     it("stores direct folder and file counts on a space tree node", () => {
         const sectionPath = { path: "Library", name: "Library", parent: "", type: "space", subtype: "folder" } as any;
         const folder = { path: "Library/Books", name: "Books", parent: sectionPath.path, type: "space", subtype: "folder" } as any;

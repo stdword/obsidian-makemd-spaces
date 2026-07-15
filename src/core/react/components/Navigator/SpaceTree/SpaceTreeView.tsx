@@ -147,12 +147,17 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
         const sortedChildren = pinnedItemsFirst(children, space, spaceSort);
         const childrenByPath = new Map(sortedChildren.map((item) => [item.path, item]));
         const rankOrder = space.metadata?.["rank-order"] ?? [];
+        const pinnedChildren = sortedChildren.filter((item) => isPathPinnedInSpace(space, item.path));
         const rankedChildren: (PathStateWithRank | string)[] = spaceSort.field == "rank"
-            ? rankOrder.reduce<(PathStateWithRank | string)[]>((items, itemPath) => {
-                if (isSpaceSeparatorPath(itemPath)) items.push(itemPath);
-                else if (childrenByPath.has(itemPath)) items.push(childrenByPath.get(itemPath));
-                return items;
-            }, []).concat(sortedChildren.filter((item) => !rankOrder.includes(item.path)))
+            ? [
+                ...pinnedChildren,
+                ...rankOrder.reduce<(PathStateWithRank | string)[]>((items, itemPath) => {
+                    if (isSpaceSeparatorPath(itemPath)) items.push(itemPath);
+                    else if (childrenByPath.has(itemPath) && !isPathPinnedInSpace(space, itemPath)) items.push(childrenByPath.get(itemPath));
+                    return items;
+                }, []),
+                ...sortedChildren.filter((item) => !isPathPinnedInSpace(space, item.path) && !rankOrder.includes(item.path)),
+            ]
             : sortedChildren;
         const separatorRanks = rankOrder.reduce<number[]>((ranks, itemPath, index) => {
             if (isSpaceSeparatorPath(itemPath)) ranks.push(index);
