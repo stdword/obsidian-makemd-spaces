@@ -1,4 +1,4 @@
-import { linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { FOLDER_NOTE_TREE_CLASS, linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { filterLinkedTagSpaceItems } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isFilter, isTagTreeItemPath } from "schemas/builtin";
@@ -198,6 +198,15 @@ describe("pinned item icon", () => {
                 },
             } as any),
         ).toBe(false);
+    });
+});
+
+describe("folder note style", () => {
+    it("uses a namespaced class that Folder Notes does not manage", () => {
+        expect(FOLDER_NOTE_TREE_CLASS).toBe("mk-has-folder-note");
+
+        const navigatorCss = fs.readFileSync(path.resolve(__dirname, "../css/Panels/Navigator/Navigator.css"), "utf8");
+        expect(navigatorCss).toContain(".folder-note-cursive .mk-has-folder-note .nav-folder-title-content");
     });
 });
 

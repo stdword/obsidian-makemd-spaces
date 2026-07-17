@@ -348,6 +348,23 @@ body .mk-tree-new {
     flex-grow: unset;  /* AnuPuccin theme fix for Folder Notes integration */
 }
 
+/* Keep Folder Notes styling without using its DOM-managed `has-folder-note`
+   class, which the Folder Notes plugin removes from custom explorer rows. */
+.folder-note-cursive .mk-has-folder-note .nav-folder-title-content {
+    font-style: italic;
+}
+
+.folder-note-bold .mk-has-folder-note .nav-folder-title-content {
+    font-weight: bold;
+}
+
+.folder-note-underline .mk-has-folder-note .nav-folder-title-content {
+    text-decoration-line: underline;
+    text-decoration-color: var(--text-faint);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 1px;
+}
+
 .mk-tree-node > [data-depth="0"] .mk-tree-text {
     padding-left: 3px;
 }

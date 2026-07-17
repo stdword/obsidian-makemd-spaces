@@ -17,6 +17,7 @@ import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
+export const FOLDER_NOTE_TREE_CLASS = "mk-has-folder-note";
 
 export const shouldShowLinkedItemIcon = (data: TreeNode) => {
     if (data.depth <= 0 || isTagSpacePath(data.space)) return false;
@@ -252,7 +253,7 @@ export const TreeItem = (props: TreeItemProps) => {
                             "mk-tree-item",
                             "tree-item-self",
                             isSpace ? "nav-folder-title" : "nav-file-title",
-                            hasFolderNote ? "has-folder-note" : "",
+                            hasFolderNote ? FOLDER_NOTE_TREE_CLASS : "",
                             active ? "is-active" : "",
                             selected ? "is-selected" : "",
 
