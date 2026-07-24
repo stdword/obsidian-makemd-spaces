@@ -52,6 +52,80 @@ describe("ObsidianFileSystem.getFile", () => {
     });
 });
 
+describe("ObsidianFileSystem.copyFile", () => {
+    const createCopyFilesystem = (paths: Record<string, { type: "file" | "folder" }>, copies: Record<string, TFile>) => {
+        const filesystem = Object.create(ObsidianFileSystem.prototype) as ObsidianFileSystem;
+        filesystem.cache = new Map();
+        const copy = jest.fn((source: string, destination: string) => {
+            if (destination in paths) return Promise.reject(new Error("File already exists"));
+            paths[destination] = { type: "file" };
+            return Promise.resolve();
+        });
+        (filesystem as any).plugin = {
+            app: {
+                metadataCache: {
+                    getFirstLinkpathDest: jest.fn(),
+                },
+                vault: {
+                    getAbstractFileByPath: jest.fn((path: string) => copies[path] ?? null),
+                    adapter: {
+                        exists: jest.fn((path: string) => Promise.resolve(path in paths)),
+                        stat: jest.fn((path: string) => Promise.resolve(paths[path] ?? null)),
+                        list: jest.fn((folder: string) =>
+                            Promise.resolve({
+                                files: Object.keys(paths).filter((p) => paths[p].type == "file" && p.startsWith(folder + "/")),
+                                folders: Object.keys(paths).filter((p) => paths[p].type == "folder" && p.startsWith(folder + "/")),
+                            }),
+                        ),
+                        copy,
+                    },
+                },
+            },
+        };
+        return { filesystem, copy };
+    };
+
+    const tFile = (path: string, basename: string, extension: string): TFile =>
+        Object.assign(new TFile(), {
+            basename,
+            extension,
+            name: path.split("/").pop(),
+            path,
+            parent: { path: path.split("/").slice(0, -1).join("/") },
+            stat: { ctime: 1, mtime: 2, size: 3 },
+        });
+
+    it("duplicates excalidraw files next to the original", async () => {
+        const { filesystem, copy } = createCopyFilesystem(
+            {
+                Drawings: { type: "folder" },
+                "Drawings/Sketch.excalidraw.md": { type: "file" },
+            },
+            {
+                "Drawings/Sketch1.excalidraw.md": tFile("Drawings/Sketch1.excalidraw.md", "Sketch1.excalidraw", "md"),
+            },
+        );
+
+        await expect(filesystem.copyFile("Drawings/Sketch.excalidraw.md", "Drawings", "Sketch")).resolves.toBe("Drawings/Sketch1.excalidraw.md");
+        expect(copy).toHaveBeenCalledWith("Drawings/Sketch.excalidraw.md", "Drawings/Sketch1.excalidraw.md");
+    });
+
+    it("duplicates non-standard files next to the original", async () => {
+        const { filesystem, copy } = createCopyFilesystem(
+            {
+                Files: { type: "folder" },
+                "Files/archive.tar.gz": { type: "file" },
+            },
+            {
+                "Files/archive.tar1.gz": tFile("Files/archive.tar1.gz", "archive.tar1", "gz"),
+            },
+        );
+
+        await expect(filesystem.copyFile("Files/archive.tar.gz", "Files", "archive.tar")).resolves.toBe("Files/archive.tar1.gz");
+        expect(copy).toHaveBeenCalledWith("Files/archive.tar.gz", "Files/archive.tar1.gz");
+    });
+});
+
 describe("ObsidianFileSystem cache", () => {
     it("keeps file metadata in memory without a persistent file cache", () => {
         const filesystem = Object.create(ObsidianFileSystem.prototype) as ObsidianFileSystem;

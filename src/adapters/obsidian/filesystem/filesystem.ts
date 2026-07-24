@@ -11,7 +11,7 @@ import { uniqueNameFromString } from "utils/array";
 import { removeTrailingSlashFromFolder } from "utils/paths";
 import { parseURI } from "utils/uri";
 import { excludePathPredicate } from "utils/hide";
-import { getParentPathFromString, pathToString } from "utils/path";
+import { getParentPathFromString } from "utils/path";
 import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
 import { SPACE_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE } from "schemas/constants";
 
@@ -307,7 +307,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                     const files = await this.plugin.app.vault.adapter.list(folder).then((g) => g.files);
                     const newName = uniqueNameFromString(
                         file.name,
-                        files.map((f) => pathToString(f)),
+                        files.map((f) => splitFileName(f.split("/").pop()).name),
                     );
                     newPath = folder + "/" + fileNameWithExtension(newName, file.extension);
                 }

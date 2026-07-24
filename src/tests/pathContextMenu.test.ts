@@ -352,7 +352,7 @@ describe("showPathContextMenu", () => {
         const pathState = { path: "Folder/Note.md", name: "Note", parent: "Folder", type: "file", subtype: "md" };
         const superstate = {
             pathsIndex: new Map([[pathState.path, pathState]]),
-            spacesIndex: new Map(),
+            spacesIndex: new Map([["Dashboard", { path: "Dashboard", name: "Dashboard", type: "folder" }]]),
             spaceManager: { copyPath: jest.fn() },
             ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
         };
@@ -1032,7 +1032,10 @@ describe("showSpaceContextMenu", () => {
         };
         const superstate = {
             settings: {},
-            spacesIndex: new Map([[space.path, space]]),
+            spacesIndex: new Map([
+                [space.path, space],
+                ["Dashboard", { path: "Dashboard", name: "Dashboard", type: "folder" }],
+            ]),
             spaceManager: {},
             ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
         };
