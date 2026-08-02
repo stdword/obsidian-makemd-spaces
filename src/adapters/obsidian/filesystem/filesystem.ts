@@ -12,7 +12,7 @@ import { removeTrailingSlashFromFolder } from "utils/paths";
 import { parseURI } from "utils/uri";
 import { excludePathPredicate } from "utils/hide";
 import { getParentPathFromString } from "utils/path";
-import { fileNameWithExtension, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
+import { fileNameWithSameSuffix, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
 import { SPACE_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE } from "schemas/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
@@ -267,7 +267,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         const file = await this.getFile(path);
 
         if (!file) return;
-        newName = newName ? fileNameWithExtension(newName, file.extension) : file.filename;
+        newName = newName ? fileNameWithSameSuffix(newName, file.filename) : file.filename;
 
         let newPath = folder + "/" + newName;
         let newFile: AFile;
@@ -309,7 +309,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                         file.name,
                         files.map((f) => splitFileName(f.split("/").pop()).name),
                     );
-                    newPath = folder + "/" + fileNameWithExtension(newName, file.extension);
+                    newPath = folder + "/" + fileNameWithSameSuffix(newName, file.filename);
                 }
                 await this.plugin.app.vault.adapter.copy(file.path, newPath);
             } catch (e) {

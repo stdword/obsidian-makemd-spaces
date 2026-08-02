@@ -10,7 +10,7 @@ jest.mock(
 );
 
 import { ObsidianFileSystem } from "adapters/obsidian/filesystem/filesystem";
-import { fileNameWithExtension, tFileToAFile, uniqueFileName } from "adapters/obsidian/utils/file";
+import { fileNameWithExtension, fileNameWithSameSuffix, tFileToAFile, uniqueFileName } from "adapters/obsidian/utils/file";
 import { TFile } from "obsidian";
 
 const createFilesystem = (paths: Record<string, { type: "file" | "folder" }>) => {
@@ -110,6 +110,21 @@ describe("ObsidianFileSystem.copyFile", () => {
         expect(copy).toHaveBeenCalledWith("Drawings/Sketch.excalidraw.md", "Drawings/Sketch1.excalidraw.md");
     });
 
+    it("preserves the .excalidraw suffix when duplicating legacy Excalidraw files", async () => {
+        const { filesystem, copy } = createCopyFilesystem(
+            {
+                Drawings: { type: "folder" },
+                "Drawings/Sketch.excalidraw": { type: "file" },
+            },
+            {
+                "Drawings/Sketch1.excalidraw": tFile("Drawings/Sketch1.excalidraw", "Sketch1", "excalidraw"),
+            },
+        );
+
+        await expect(filesystem.copyFile("Drawings/Sketch.excalidraw", "Drawings", "Sketch")).resolves.toBe("Drawings/Sketch1.excalidraw");
+        expect(copy).toHaveBeenCalledWith("Drawings/Sketch.excalidraw", "Drawings/Sketch1.excalidraw");
+    });
+
     it("duplicates non-standard files next to the original", async () => {
         const { filesystem, copy } = createCopyFilesystem(
             {
@@ -192,6 +207,11 @@ describe("file names with extensions", () => {
         expect(fileNameWithExtension("Sketch", "excalidraw")).toBe("Sketch.excalidraw.md");
         expect(fileNameWithExtension("archive.tar", "gz")).toBe("archive.tar.gz");
         expect(fileNameWithExtension("README", "")).toBe("README");
+    });
+
+    it("preserves the original physical suffix when creating a copy name", () => {
+        expect(fileNameWithSameSuffix("Sketch copy", "Sketch.excalidraw")).toBe("Sketch copy.excalidraw");
+        expect(fileNameWithSameSuffix("Sketch copy", "Sketch.excalidraw.md")).toBe("Sketch copy.excalidraw.md");
     });
 
     it("uses the physical excalidraw suffix when generating unique file names", () => {

@@ -36,6 +36,17 @@ export const fileNameWithExtension = (name: string, extension: string) => {
     return suffix?.length > 0 ? `${name}.${suffix}` : name;
 };
 
+/**
+ * Preserves compound physical suffixes (such as `.excalidraw.md`) instead
+ * of reconstructing a name from the logical file type.
+ */
+export const fileNameWithSameSuffix = (name: string, filename: string) => {
+    if (filename.endsWith(".excalidraw.md")) return `${name}.excalidraw.md`;
+
+    const suffixStart = filename.lastIndexOf(".");
+    return suffixStart == -1 ? name : `${name}${filename.substring(suffixStart)}`;
+};
+
 export const tFileToAFile = (file: TAbstractFile | TFile): AFile => {
     if (!file) return null;
     if (file instanceof TFile && file.stat) {

@@ -1032,7 +1032,7 @@ describe("showSpaceContextMenu", () => {
         };
         const superstate = {
             settings: {},
-            spacesIndex: new Map([
+            spacesIndex: new Map<string, any>([
                 [space.path, space],
                 ["Dashboard", { path: "Dashboard", name: "Dashboard", type: "folder" }],
             ]),
