@@ -77,6 +77,10 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
 
         if (!newSpace) return;
         if (projected.sortable) {
+            if (parentId != overItem.id && droppable.length > 0) {
+                const storedRank = rankForDropPositionInSpace(superstate, droppable[0], newSpace, overItem, projected.linePosition ?? "top");
+                if (storedRank != null) newRank = storedRank;
+            }
             newRank = Math.min(...droppable.map((path) => rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, flattenedTree)));
         }
         await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
@@ -114,6 +118,14 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
             newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == focusNodePath(overItem)) : parentId == overItem.id ? -1 : (overItem.rank ?? -1);
             newRank = rankForDropLinePosition(newRank, projected, activeItem, oldSpace, newSpace);
             if (projected.sortable && newSpace) {
+                if (parentId != null && parentId != overItem.id) {
+                    // The stored rank-order can hold entries hidden from the
+                    // tree (folder notes, hidden separators), so the visible
+                    // row rank does not index into it; translate the target
+                    // through the stored order like same-space reorders do.
+                    const storedRank = rankForDropPositionInSpace(superstate, path, newSpace, overItem, projected.linePosition ?? "top");
+                    if (storedRank != null) newRank = storedRank;
+                }
                 newRank = rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, clonedItems);
             }
         }

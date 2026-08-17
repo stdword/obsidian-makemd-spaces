@@ -64,6 +64,7 @@ export interface TreeItemProps {
     style: CSSProperties;
     onCollapse?(node: TreeNode, open: boolean): void;
     enableObsidianDragGhost: boolean;
+    pointerDnd?: boolean;
     dragStarted: (activeId: string, source: HTMLElement) => void;
     dragOver: (e: React.DragEvent<HTMLElement>, overId: string, position: Pos) => void;
     dragEnded: (e: React.DragEvent<HTMLDivElement>, overId: string) => void;
@@ -201,7 +202,11 @@ export const TreeItem = (props: TreeItemProps) => {
         onDragOver: onDragOver,
     };
     const innerProps = {
-        draggable: true,
+        // In pointer-DnD mode internal drags are driven by pointer events in
+        // SpaceTreeView; native dragstart must not fire for tree rows. Native
+        // drop handlers stay attached so external drags (files, other panes)
+        // are still accepted.
+        draggable: !props.pointerDnd,
         onDragStart: onDragStarted,
         onDrop: onDragEnded,
         onDragEnd: onDragEnded,
@@ -232,6 +237,7 @@ export const TreeItem = (props: TreeItemProps) => {
                 )}
                 style={treeItemColorVariables(color, isSpace) as TreeItemStyle}
                 data-depth={depth}
+                data-tree-id={props.id}
                 ref={innerRef}
                 onAuxClick={openAuxClick}
                 onClick={(e) => openPathAtTarget(data, e)}

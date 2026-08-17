@@ -1,6 +1,7 @@
 import { isEqual } from "lodash";
 import i18n from "shared/i18n";
 
+import { PathStickerView } from "core/react/components/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, linkedTagSpaceUri, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
@@ -9,7 +10,7 @@ import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { filterFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { createPortal, flushSync } from "react-dom";
 import { PathState, SpaceState } from "shared/types/PathState";
 import { Pos } from "shared/types/Pos";
 import { SpaceSort } from "shared/types/spaceDef";
@@ -26,6 +27,16 @@ interface SpaceTreeComponentProps {
 
 export const isLinkedTreeItem = (item: TreeNode | null) => Boolean(item && !isTagTreeItemPath(item.item) && shouldShowLinkedItemIcon(item));
 export const isParentDropNoOp = (activeItem: TreeNode | null, overId: string) => Boolean(activeItem && activeItem.parentId == overId);
+
+// A drop that would land the item back in its own parent is a no-op. Judged by
+// the projection's target container (not the hovered row): positional inserts
+// around the parent row target the grandparent and are real moves out of the
+// folder, and sortable reorders within the parent are real rank changes.
+export const isProjectionParentNoOp = (activeItem: TreeNode | null, projection: DragProjection | null): boolean => {
+    if (!activeItem || !projection) return false;
+    const dropContainerId = projection.insert ? projection.overId : projection.parentId;
+    return isParentDropNoOp(activeItem, dropContainerId as string) && !(projection.sortable && !projection.insert);
+};
 
 export const dragModifierForActiveItem = (activeItem: TreeNode | null, event: Pick<React.DragEvent, "altKey" | "shiftKey">): DropModifiers => {
     if (activeItem?.type == "separator") return event.altKey ? "copy" : "move";
@@ -44,6 +55,23 @@ export const resolveDragModifier = (activeItem: TreeNode | null, projection: Dra
 
 const ENABLE_OBSIDIAN_DRAG_GHOST = true;
 const ENABLE_DRAG_ACTION_LABEL = true;
+// Drive internal tree drags with pointer events instead of native HTML5 DnD.
+// Pointer events are frame-coalesced by the browser, so trackpad drags stay
+// smooth (native drag sessions throttle renderer frames to ~10/s — see the
+// note in dragOver). Native drop handling stays in place for external drags
+// INTO the tree (Finder files, other Obsidian panes).
+//
+// Deliberately sacrificed (a native drag session cannot be started from the
+// middle of a pointer gesture, only from a dragstart event): dragging rows OUT
+// of the navigator —
+//   - into an editor pane (link insert), the tab bar, a pane split target
+//   - onto a canvas
+//   - into another Obsidian window (popout)
+//   - into Finder / other applications
+// If any of these come back, the viable hybrid is choosing the native path at
+// gesture start (e.g. Cmd-drag sets row.draggable before the browser decides),
+// not a mid-gesture switch.
+const ENABLE_POINTER_DND = true;
 
 export const constrainSeparatorProjection = (activeItem: TreeNode | null, projection: DragProjection | null): DragProjection | null => {
     if (activeItem?.type != "separator") return projection;
@@ -568,11 +596,18 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         return {
             action,
             visual,
-            label: currentActive?.type != "separator" && ENABLE_OBSIDIAN_DRAG_GHOST && ENABLE_DRAG_ACTION_LABEL ? dragActionLabel(action) : null,
+            label: currentActive?.type != "separator" && ((ENABLE_OBSIDIAN_DRAG_GHOST && ENABLE_DRAG_ACTION_LABEL) || ENABLE_POINTER_DND) ? dragActionLabel(action) : null,
         };
     };
 
     const dragOver = (e: React.DragEvent<HTMLElement>, _overId: string, position: Pos) => {
+        // NOTE (perf): trackpads emit 300-500 dragover events/s (native DnD
+        // events are not frame-coalesced). Profiling showed the handler below
+        // is not the bottleneck for drag jank: during a native drag session
+        // Electron throttles renderer frames to ~10/s for trackpad drags
+        // regardless of main-thread load, so caching/coalescing here does not
+        // improve smoothness. Fixing the jank requires moving off native HTML5
+        // DnD (e.g. pointer-event based dnd-kit).
         if (compensatedDragSource.current) {
             compensatedDragSource.current.style.removeProperty("transform");
             compensatedDragSource.current = null;
@@ -619,7 +654,11 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             dragActionRef.current = nextDragAction;
             setDragAction(nextDragAction);
         }
-        if (nextDragAction?.label) {
+        // Obsidian's dragManager clears the action on every dragover, so the
+        // label must be re-applied each event — do not dedupe this call. In
+        // pointer mode there is no dragManager ghost; the label renders on the
+        // pointer ghost instead.
+        if (nextDragAction?.label && !ENABLE_POINTER_DND) {
             superstate.ui.setDragLabel(nextDragAction.label);
         }
         if (currentDragPaths.length > 1) {
@@ -668,12 +707,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             finishNoOpDrop(e);
             return;
         }
-        // A direct drop on the item's own parent is always a no-op. Positional
-        // projections around that row must not trigger persistence or reload.
-        if (isParentDropNoOp(currentActive, overId)) {
-            finishNoOpDrop(e);
-            return;
-        }
         const actionModifier = dragActionRef.current?.action.type == "link" ? "link" : dragActionRef.current?.action.type == "copy" ? "copy" : "move";
         const fallbackOverIndex = flattenedTree.findIndex((node) => node.id == overId);
         const fallbackOverItem = fallbackOverIndex == -1 ? null : flattenedTree[fallbackOverIndex];
@@ -701,6 +734,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             flattenedTree,
         );
         if (!currentActive || !projection) {
+            finishNoOpDrop(e);
+            return;
+        }
+        if (isProjectionParentNoOp(currentActive, projection)) {
             finishNoOpDrop(e);
             return;
         }
@@ -813,6 +850,192 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         [flattenedTree, presetRowHeight, superstate],
     );
 
+    const pointerGhostRef = useRef<HTMLDivElement>(null);
+    const pointerDragRef = useRef<{
+        pointerId: number;
+        sourceEl: HTMLElement;
+        id: string;
+        startX: number;
+        startY: number;
+        x: number;
+        y: number;
+        active: boolean;
+        cleanup: () => void;
+    } | null>(null);
+
+    // dragOver/dragEnded only read modifier keys and write dropEffect; pointer
+    // events carry the former and a stub absorbs the latter.
+    const pointerDragEventShim = (e: PointerEvent) => ({ altKey: e.altKey, shiftKey: e.shiftKey, dataTransfer: { dropEffect: "move" } }) as unknown as React.DragEvent<HTMLDivElement>;
+
+    // Focus tab currently targeted by a pointer drag (pin-to-focus drop).
+    const pointerFocusRef = useRef<number | null>(null);
+    const [pointerFocusTarget, setPointerFocusTarget] = useState<number | null>(null);
+
+    const clearTreeDropTarget = () => {
+        setOverId(null);
+        setDragAction(null);
+        dragActionRef.current = null;
+        overIdRef.current = null;
+        offsetRef.current = { x: 0, y: 0 };
+    };
+
+    const onTreePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (!ENABLE_POINTER_DND) return;
+        if (e.button != 0 || pointerDragRef.current) return;
+        const row = (e.target as HTMLElement).closest<HTMLElement>("[data-tree-id]");
+        if (!row) return;
+        const id = row.dataset.treeId;
+        const node = flattenedTree.find((f) => f.id == id);
+        if (!node || node.type == "new") return;
+        const doc = row.ownerDocument;
+        const win = doc.defaultView;
+        // The virtualized scroller (overflow-y: auto ancestor) for edge
+        // auto-scroll during the drag.
+        let scroller: HTMLElement | null = row.parentElement;
+        while (scroller && scroller != doc.body) {
+            if (/(auto|scroll)/.test(win?.getComputedStyle(scroller).overflowY ?? "")) break;
+            scroller = scroller.parentElement;
+        }
+        if (scroller == doc.body) scroller = null;
+        const state = { pointerId: e.pointerId, sourceEl: row, id, startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY, altKey: false, shiftKey: false, active: false, focusEl: null as HTMLElement | null, cleanup: () => {} };
+        const setFocusTarget = (focusEl: HTMLElement | null) => {
+            if (focusEl == state.focusEl) return;
+            state.focusEl?.classList.remove("mk-focus-drop");
+            state.focusEl = focusEl;
+            focusEl?.classList.add("mk-focus-drop");
+            const index = focusEl ? Number(focusEl.dataset.focusIndex) : null;
+            pointerFocusRef.current = index;
+            setPointerFocusTarget(index);
+            if (focusEl) clearTreeDropTarget();
+        };
+        const hitTest = () => {
+            const under = doc.elementFromPoint(state.x, state.y);
+            // Focus tabs are pin-to-focus drop targets: no tree projection,
+            // only the tab highlight and an "Add to" ghost label.
+            setFocusTarget(node.type == "separator" ? null : (under?.closest<HTMLElement>("[data-focus-index]") ?? null));
+            if (state.focusEl) return;
+            const overRow = under?.closest<HTMLElement>("[data-tree-id]");
+            if (overRow?.dataset.treeId) {
+                const rect = overRow.getBoundingClientRect();
+                dragOver(
+                    { altKey: state.altKey, shiftKey: state.shiftKey, dataTransfer: { dropEffect: "move" } } as unknown as React.DragEvent<HTMLDivElement>,
+                    overRow.dataset.treeId,
+                    { x: state.x - rect.left, y: state.y - rect.top },
+                );
+            }
+        };
+        // Edge auto-scroll: while the pointer hovers near the scroller's top or
+        // bottom edge, keep scrolling and re-hit-testing even when the pointer
+        // itself is not moving.
+        let scrollLoop: number | null = null;
+        const autoScrollTick = () => {
+            scrollLoop = null;
+            if (!state.active || !scroller || !win) return;
+            const rect = scroller.getBoundingClientRect();
+            const EDGE = 32;
+            const MAX_SPEED = 14;
+            let delta = 0;
+            if (state.y < rect.top + EDGE) delta = -Math.ceil(((rect.top + EDGE - state.y) / EDGE) * MAX_SPEED);
+            else if (state.y > rect.bottom - EDGE) delta = Math.ceil(((state.y - (rect.bottom - EDGE)) / EDGE) * MAX_SPEED);
+            if (delta != 0) {
+                const before = scroller.scrollTop;
+                scroller.scrollTop = before + delta;
+                if (scroller.scrollTop != before) hitTest();
+            }
+            scrollLoop = win.requestAnimationFrame(autoScrollTick);
+        };
+        const onMove = (ev: PointerEvent) => {
+            if (!state.active) {
+                if (Math.abs(ev.clientX - state.startX) + Math.abs(ev.clientY - state.startY) < 5) return;
+                state.active = true;
+                doc.body.style.userSelect = "none";
+                dragStarted(state.id, state.sourceEl);
+                // There is no native drag session behind a pointer drag, so the
+                // Obsidian dragManager must not be notified on completion.
+                nativeDragFinished.current = true;
+                if (scrollLoop == null && win) scrollLoop = win.requestAnimationFrame(autoScrollTick);
+            }
+            state.x = ev.clientX;
+            state.y = ev.clientY;
+            state.altKey = ev.altKey;
+            state.shiftKey = ev.shiftKey;
+            if (pointerGhostRef.current) {
+                pointerGhostRef.current.style.transform = `translate3d(${ev.clientX + 14}px, ${ev.clientY + 10}px, 0)`;
+            }
+            hitTest();
+        };
+        const onUp = (ev: PointerEvent) => {
+            const wasActive = state.active;
+            const focusIndex = pointerFocusRef.current;
+            state.cleanup();
+            if (!wasActive) return;
+            // The row underneath still receives a click after pointerup; swallow
+            // it so finishing a drag does not open the path.
+            const suppressClick = (ce: Event) => {
+                ce.stopPropagation();
+                ce.preventDefault();
+            };
+            doc.defaultView?.addEventListener("click", suppressClick, true);
+            setTimeout(() => doc.defaultView?.removeEventListener("click", suppressClick, true), 0);
+            if (focusIndex != null) {
+                const droppedPaths = dragPathsRef.current;
+                setFocuses(focuses.map((focus, index) => (index == focusIndex ? { ...focus, paths: [...focus.paths, ...droppedPaths.filter((path) => !focus.paths.includes(path))] } : focus)));
+                resetState();
+                return;
+            }
+            if (overIdRef.current) {
+                dragEnded(pointerDragEventShim(ev), overIdRef.current);
+            } else {
+                resetState();
+            }
+        };
+        const onCancel = () => {
+            const wasActive = state.active;
+            state.cleanup();
+            if (wasActive) resetState();
+        };
+        const onKey = (ev: KeyboardEvent) => {
+            if (ev.key == "Escape") onCancel();
+        };
+        state.cleanup = () => {
+            setFocusTarget(null);
+            // Listeners live on the document so the drag survives the source
+            // row being re-rendered or unmounted mid-drag (multi-select drags
+            // dim/re-render rows; external updates can rebuild the tree).
+            doc.removeEventListener("pointermove", onMove);
+            doc.removeEventListener("pointerup", onUp);
+            doc.removeEventListener("pointercancel", onCancel);
+            doc.defaultView?.removeEventListener("keydown", onKey, true);
+            if (scrollLoop != null) {
+                win?.cancelAnimationFrame(scrollLoop);
+                scrollLoop = null;
+            }
+            try {
+                row.releasePointerCapture(state.pointerId);
+            } catch {
+                // pointer may already be released
+            }
+            doc.body.style.removeProperty("user-select");
+            pointerDragRef.current = null;
+        };
+        doc.addEventListener("pointermove", onMove);
+        doc.addEventListener("pointerup", onUp);
+        doc.addEventListener("pointercancel", onCancel);
+        doc.defaultView?.addEventListener("keydown", onKey, true);
+        // TODO(rare): if the source row unmounts mid-drag its pointer capture
+        // is silently released; the document listeners keep the drag alive
+        // inside the window, but events outside the window are then lost until
+        // pointerup. Not handled — the case is rare enough (external tree
+        // rebuild mid-drag while the cursor is outside the window).
+        try {
+            row.setPointerCapture(e.pointerId);
+        } catch {
+            // capture is an optimization (keeps events flowing outside the
+            // window); the drag still works from the document listeners
+        }
+        pointerDragRef.current = state;
+    };
+
     const dragOverTree = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
 
@@ -837,6 +1060,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             className="mk-path-tree"
             onDragLeave={dragLeave}
             onDragOver={dragOverTree}
+            onPointerDown={onTreePointerDown}
             style={
                 {
                     "--spaceRowHeight": spaceRowHeight(superstate, presetRowHeight, false) + "px",
@@ -878,6 +1102,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     selectRange={selectRange}
                     indentationWidth={indentationWidth}
                     enableObsidianDragGhost={ENABLE_OBSIDIAN_DRAG_GHOST}
+                    pointerDnd={ENABLE_POINTER_DND}
                     dragStarted={dragStarted}
                     dragOver={dragOver}
                     dragEnded={dragEnded}
@@ -885,6 +1110,45 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     activeIndex={activeIndex}
                 ></VirtualizedList>
             )}
+            {ENABLE_POINTER_DND &&
+                active &&
+                pointerDragRef.current?.active &&
+                createPortal(
+                    // Obsidian's own drag-ghost markup so the theme styles it;
+                    // portaled to body because fixed positioning breaks inside
+                    // the transformed/clipped virtualized list ancestors.
+                    <div
+                        ref={pointerGhostRef}
+                        className="drag-ghost"
+                        style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            transform: `translate3d(${pointerDragRef.current.x + 14}px, ${pointerDragRef.current.y + 10}px, 0)`,
+                            pointerEvents: "none",
+                            willChange: "transform",
+                        }}
+                    >
+                        <div className="drag-ghost-self" style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                            {active.type == "separator" ? (
+                                <div className="mk-path-icon" dangerouslySetInnerHTML={{ __html: superstate.ui.getSticker("lucide//separator-horizontal") }}></div>
+                            ) : (
+                                <>
+                                    {dragPaths.length == 1 && active.item && (
+                                        <PathStickerView superstate={superstate} pathState={superstate.pathStateForPath(active.item.path) ?? active.item} space={active.space} editable={false} />
+                                    )}
+                                    <span>{dragPaths.length > 1 ? i18n.labels.filesCount.replace("{$1}", dragPaths.length.toString()) : (active.item?.name ?? active.path)}</span>
+                                </>
+                            )}
+                        </div>
+                        {pointerFocusTarget != null ? (
+                            <div className="drag-ghost-action">{`${i18n.labels.addTo} ${focuses[pointerFocusTarget]?.name || i18n.labels.focus}`}</div>
+                        ) : (
+                            dragAction?.label && <div className="drag-ghost-action">{dragAction.label}</div>
+                        )}
+                    </div>,
+                    (treeRef.current?.ownerDocument ?? document).body,
+                )}
             {modifier && active?.parentId != null && !isTagTreeItemPath(active?.item) && !isLinkedTreeItem(active) && !(dragAction?.action.type == "link" && dragAction.action.containerId == null) && (
                 <div
                     className="mk-hint-dnd"

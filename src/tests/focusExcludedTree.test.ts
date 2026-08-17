@@ -1,4 +1,4 @@
-import { constrainLinkedItemProjection, constrainSeparatorProjection, constrainTagSpaceProjection, dragModifierForActiveItem, isParentDropNoOp, resolveDragModifier, retrieveData, revealTreePath, separatorDropRank } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
+import { constrainLinkedItemProjection, constrainSeparatorProjection, constrainTagSpaceProjection, dragModifierForActiveItem, isParentDropNoOp, isProjectionParentNoOp, resolveDragModifier, retrieveData, revealTreePath, separatorDropRank } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 describe("focus-excluded navigator items", () => {
@@ -7,6 +7,21 @@ describe("focus-excluded navigator items", () => {
 
         expect(isParentDropNoOp(item, "Folder")).toBe(true);
         expect(isParentDropNoOp(item, "Other")).toBe(false);
+    });
+
+    it("judges parent no-ops by the projection target container, not the hovered row", () => {
+        const item = { id: "Root/Folder/Item.md", parentId: "Root/Folder" } as any;
+
+        // dropping into the own parent row (middle zone) stays a no-op
+        expect(isProjectionParentNoOp(item, { insert: true, overId: "Root/Folder", parentId: "Root/Folder", sortable: false } as any)).toBe(true);
+        // inserting above/below the parent row targets the grandparent — a real move out
+        expect(isProjectionParentNoOp(item, { insert: false, overId: "Root/Folder", parentId: "Root", sortable: true } as any)).toBe(false);
+        // sortable reorder within the own parent is a real rank change
+        expect(isProjectionParentNoOp(item, { insert: false, overId: "Root/Folder/Other.md", parentId: "Root/Folder", sortable: true } as any)).toBe(false);
+        // a non-sortable projection landing in the own parent is a no-op
+        expect(isProjectionParentNoOp(item, { insert: false, overId: "Root/Folder/Other.md", parentId: "Root/Folder", sortable: false } as any)).toBe(true);
+        expect(isProjectionParentNoOp(item, null)).toBe(false);
+        expect(isProjectionParentNoOp(null, { insert: true, overId: "Root/Folder" } as any)).toBe(false);
     });
 
     it("links a tag space across containers but keeps reorder within its container", () => {

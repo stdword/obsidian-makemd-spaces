@@ -96,6 +96,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
     overIndex: number;
     activeIndex: number;
     enableObsidianDragGhost: boolean;
+    pointerDnd?: boolean;
     dragStarted: (activeId: string, source: HTMLElement) => void;
     dragOver: (e: React.DragEvent<HTMLElement>, overId: string, position: Pos) => void;
     dragEnded: (e: React.DragEvent<HTMLElement>, overId: string) => void;
@@ -284,7 +285,8 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                     style={{
                                         "--separator-spacing": `${node.depth == 0 ? 4 : 20 + indentationWidth * Math.max(0, node.depth - 1)}px`,
                                     } as CSSProperties}
-                                    draggable
+                                    draggable={!props.pointerDnd}
+                                    data-tree-id={node.id}
                                     data-space={node.space ?? "focus"}
                                     data-rank={node.rank}
                                     onClick={(e) => e.stopPropagation()}
@@ -370,6 +372,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                     depth={node.depth}
                                     indentationWidth={indentationWidth}
                                     enableObsidianDragGhost={props.enableObsidianDragGhost}
+                                    pointerDnd={props.pointerDnd}
                                     dragStarted={props.dragStarted}
                                     dragOver={props.dragOver}
                                     dragEnded={props.dragEnded}

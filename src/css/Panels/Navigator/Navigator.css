@@ -109,6 +109,17 @@
     margin-right: 0px;
 }
 
+/* Pointer-drag ghost: icon matches the action label, which is the ghost's
+   base text color dimmed by opacity (not --text-muted) */
+.drag-ghost .mk-path-icon {
+    margin-top: 2px;
+}
+.drag-ghost .mk-path-icon svg,
+.drag-ghost .mk-path-icon img {
+    color: inherit !important;
+    opacity: 0.7;
+}
+
 .mk-tree-separator-line {
     width: 100%;
     border-top: 1px solid var(--tab-outline-color);

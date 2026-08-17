@@ -118,6 +118,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             }}
             ref={innerRef}
             className="mk-focus"
+            data-focus-index={index}
             onClick={() => {
                 superstate.settings.currentFocus = index;
                 superstate.saveSettings();
