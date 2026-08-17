@@ -19,6 +19,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public schemes = ["spaces", "vault"];
     public authorities = ["vault"];
     private recentlyCreatedFolders = new Map<string, number>();
+    private pendingSpaceCreations = new Map<string, Promise<void>>();
     private static readonly EXTERNAL_RENAME_WINDOW_MS = 2000;
 
     public constructor(public fileSystem: FilesystemMiddleware, public dataPath: string) {
@@ -244,9 +245,19 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     onCreate = async (payload: { file: AFile }) => {
         if (payload.file.isFolder) {
             this.recentlyCreatedFolders.set(payload.file.path, Date.now());
-            this.spaceManager.onSpaceCreated(payload.file.path);
+            const creation = Promise.resolve(this.spaceManager.onSpaceCreated(payload.file.path)).finally(() => {
+                if (this.pendingSpaceCreations.get(payload.file.path) == creation) this.pendingSpaceCreations.delete(payload.file.path);
+            });
+            this.pendingSpaceCreations.set(payload.file.path, creation);
+            await creation;
         } else {
-            this.spaceManager.onPathCreated(payload.file.path);
+            // Externally created files can arrive before their freshly created parent
+            // folder finished indexing as a space; without waiting the file would be
+            // parsed against a spaces index that has no entry for the parent yet and
+            // end up detached from it in the navigator.
+            const pendingParent = this.pendingSpaceCreations.get(this.spaceManager.parentPathForPath(payload.file.path));
+            if (pendingParent) await pendingParent;
+            await this.spaceManager.onPathCreated(payload.file.path);
         }
     };
 

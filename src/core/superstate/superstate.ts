@@ -186,6 +186,7 @@ export class Superstate implements ISuperstate {
     public liveSpaceLinkMap: IndexMap;
     private indexer: Indexer;
     private metadataChanges: Map<string, Promise<void>>;
+    private pendingParentSpaceIndexing: Map<string, Promise<void>> = new Map();
 
     public focuses: Focus[];
 
@@ -731,7 +732,30 @@ export class Superstate implements ISuperstate {
         });
     }
 
+    private ensureParentSpaceIndexed(parentPath: string) {
+        const pending = this.pendingParentSpaceIndexing.get(parentPath);
+        if (pending) return pending;
+        const indexing = (async () => {
+            if (this.spacesIndex.has(parentPath)) return;
+            if (!(await this.spaceManager.pathExists(parentPath))) return;
+            const space = await this.reloadSpace(this.spaceManager.spaceInfoForPath(parentPath), null, true);
+            if (space) await this.onSpaceDefinitionChanged(space);
+        })().finally(() => {
+            if (this.pendingParentSpaceIndexing.get(parentPath) == indexing) this.pendingParentSpaceIndexing.delete(parentPath);
+        });
+        this.pendingParentSpaceIndexing.set(parentPath, indexing);
+        return indexing;
+    }
+
     public async onPathCreated(path: string) {
+        const parentPath = this.spaceManager.parentPathForPath(path);
+        // A path created outside the app may reach us before its parent folder was
+        // indexed as a space. Index the parent first so the path is parsed against a
+        // spaces index that already knows about it, otherwise it never gets attached
+        // to the parent space and the navigator only shows part of the new content.
+        if (parentPath && !isSpaceInternalPath(parentPath) && !this.spacesIndex.has(parentPath)) {
+            await this.ensureParentSpaceIndexed(parentPath);
+        }
         await this.reloadPath(path, true);
         const parent = this.pathsIndex.get(path)?.parent;
         if (parent) await this.refreshFolderNoteForSpace(parent);
