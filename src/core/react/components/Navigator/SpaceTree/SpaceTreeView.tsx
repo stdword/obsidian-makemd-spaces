@@ -949,6 +949,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 if (Math.abs(ev.clientX - state.startX) + Math.abs(ev.clientY - state.startY) < 5) return;
                 state.active = true;
                 doc.body.style.userSelect = "none";
+
+                try {
+                    row.setPointerCapture(state.pointerId);
+                } catch {
+                    // capture is an optimization (keeps events flowing outside
+                    // the window); the drag still works from the document
+                    // listeners
+                }
                 dragStarted(state.id, state.sourceEl);
                 // There is no native drag session behind a pointer drag, so the
                 // Obsidian dragManager must not be notified on completion.
@@ -1027,12 +1035,6 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         // inside the window, but events outside the window are then lost until
         // pointerup. Not handled — the case is rare enough (external tree
         // rebuild mid-drag while the cursor is outside the window).
-        try {
-            row.setPointerCapture(e.pointerId);
-        } catch {
-            // capture is an optimization (keeps events flowing outside the
-            // window); the drag still works from the document listeners
-        }
         pointerDragRef.current = state;
     };
 
@@ -1119,7 +1121,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     // the transformed/clipped virtualized list ancestors.
                     <div
                         ref={pointerGhostRef}
-                        className="drag-ghost"
+                        className="drag-ghost mk-drag-ghost"
                         style={{
                             position: "fixed",
                             top: 0,
