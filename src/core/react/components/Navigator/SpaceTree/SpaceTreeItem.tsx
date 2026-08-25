@@ -1,6 +1,5 @@
 import classNames from "classnames";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useDropzone } from "react-dropzone";
 
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { NavigatorContext } from "core/react/context/SidebarContext";
@@ -14,6 +13,7 @@ import { canOpenTreeItemPath, isTagTreeItemPath, isTagSpacePath } from "schemas/
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
 import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
 
 export type DropModifiers = "copy" | "link" | "move";
 type TreeItemStyle = React.CSSProperties & Record<string, string>;
@@ -58,6 +58,7 @@ export interface TreeItemProps {
     onSelectRange?(id: string): void;
     indicator: boolean;
     indicatorVariant?: "line-top" | "line-bottom" | "box";
+    indicatorDepth?: number | null;
     indentationWidth: number;
     data: TreeNode;
     superstate: Superstate;
@@ -72,11 +73,10 @@ export interface TreeItemProps {
 }
 
 export const TreeItem = (props: TreeItemProps) => {
-    const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
+    const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", indicatorDepth = null, collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace } = useContext(NavigatorContext);
 
     const innerRef = useRef(null);
-    const [dropHighlighted, setDropHighlighted] = useState(false);
     const [, refreshPathState] = useState(0);
     const pathState = pathStateForTreeItem(superstate, data);
     const openAuxClick = (e: React.MouseEvent) => {
@@ -139,35 +139,11 @@ export const TreeItem = (props: TreeItemProps) => {
 
         dragOver(e, data.id, position);
     };
-    const onDrop = useCallback((files: File[]) => {
-        if (isSpace) {
-            // Do something with the files
-            files.map(async (file) => {
-                file.arrayBuffer().then((arrayBuffer) => {
-                    superstate.spaceManager.writeToPath(pathState.path + "/" + file.name, arrayBuffer, true);
-                });
-            });
-        }
-    }, []);
-    const onDragEnter = useCallback(() => {
-        if (isSpace) setDropHighlighted(true);
-    }, []);
-
-    const { getRootProps, getInputProps } = useDropzone({
-        onDrop,
-        onDragEnter,
-        onDragLeave: () => {
-            setDropHighlighted(false);
-        },
-        onDropAccepted: () => {
-            setDropHighlighted(false);
-        },
-        onDropRejected: () => {
-            setDropHighlighted(false);
-        },
-        noClick: true,
-    });
     const onDragEnded = (e: React.DragEvent<HTMLDivElement>) => {
+        // An OS-file drop must reach react-dropzone: its file parsing is async
+        // and bails out silently when it later finds propagation stopped, so
+        // stopping here would swallow the copy and leave the highlight stuck.
+        if (isExternalFileDrag(e)) return;
         e.stopPropagation();
         dragEnded(e, data.id);
     };
@@ -212,6 +188,7 @@ export const TreeItem = (props: TreeItemProps) => {
         onDragEnd: onDragEnded,
     };
     const isSpace = pathState?.type == "space";
+    const raisedIndicator = indicator && indicatorVariant != "box" && indicatorDepth != null && indicatorDepth < depth;
     const isTagSpace = isTagTreeItemPath(pathState ?? data.item);
 
     const hasFolderNote = isSpace && !isTagSpace && data.folderNotePath != null;
@@ -251,9 +228,7 @@ export const TreeItem = (props: TreeItemProps) => {
                         ...style,
                         ...(dragActive ? { pointerEvents: "none" } : {}),
                     }}
-                    {...getRootProps({ className: "dropzone" })}
                 >
-                    <input {...getInputProps()} />
                     <div
                         className={classNames(
                             "mk-tree-item",
@@ -263,13 +238,15 @@ export const TreeItem = (props: TreeItemProps) => {
                             active ? "is-active" : "",
                             selected ? "is-selected" : "",
 
-                            indicator || dropHighlighted ? "mk-indicator-row" : "",
+                            indicator ? "mk-indicator-row" : "",
                             indicator && indicatorVariant == "line-bottom" ? "mk-indicator-row-bottom" : "",
                             indicator && indicatorVariant == "box" ? "mk-indicator-row-box" : "",
+                            raisedIndicator ? "mk-indicator-row-raised" : "",
                         )}
                         style={
                             {
-                                "--spacing": `${spacing}px`,
+                                "--spacing": `var(--indicator-spacing, ${spacing}px)`,
+                                ...(raisedIndicator ? { "--indicator-spacing": `${indentationWidth * Math.max(0, indicatorDepth - 1) + 20}px` } : {}),
                                 ...treeItemActiveColorVariables(color, isSpace),
                             } as TreeItemStyle
                         }

@@ -175,6 +175,8 @@ export const en = {
         emptyfolderName: "Folder name must be non-empty",
         duplicateFolderName: "This folder already exist",
         cannotLinkToOwnFolder: "Item is already in this folder",
+        cannotCopyToVirtualSpace: "Can't copy files here, this space has no folder",
+        copyFileFailed: "Couldn't copy file",
         noPropertyName: "No Property Name",
 
         somethingWentWrong: "Something Went Wrong",

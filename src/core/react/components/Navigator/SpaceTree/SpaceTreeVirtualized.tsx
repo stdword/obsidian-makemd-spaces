@@ -165,7 +165,9 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         return highlightContainerIdForDrag(flattenedTree, activeIndex, overIndex, dragAction);
     };
     const dragContextContainerHighlighted = (index: number) => {
-        if (activeIndex == -1) return false;
+        // External-file drags have no active row in the tree (activeIndex -1)
+        // but do carry a dragAction; only bail when neither marks a live drag.
+        if (activeIndex == -1 && !dragAction) return false;
         const activeNode = flattenedTree[activeIndex];
         if (!dragAction && overIndex == activeIndex && activeNode && (activeNode.type == "space" || activeNode.type == "group") && !activeNode.collapsed) return false;
         return containerSubtreeHighlighted(highlightContainerId() ?? null, index);
@@ -379,6 +381,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                     dragActive={activeIndex != -1}
                                     indicator={indicatorVariant != null}
                                     indicatorVariant={indicatorVariant ?? "line-top"}
+                                    indicatorDepth={dragAction?.visual.kind == "line" ? (dragAction.visual.depth ?? null) : null}
                                     superstate={superstate}
                                     style={{}}
                                     onSelectRange={selectRange}

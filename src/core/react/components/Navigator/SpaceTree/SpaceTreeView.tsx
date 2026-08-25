@@ -5,8 +5,9 @@ import { PathStickerView } from "core/react/components/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, linkedTagSpaceUri, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
-import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection } from "core/utils/dnd/dragPath";
+import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
+import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
 import { filterFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -586,7 +587,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                       projection,
                   };
         const visual: DragActionVisual | null = position
-            ? { kind: "line", itemId: position.itemId, position: position.kind }
+            ? { kind: "line", itemId: position.itemId, position: position.kind, depth: projection.depth }
             : targetContainerId
               ? overItem?.id == targetContainerId && (overItem.collapsed || overItem.childrenCount == 0)
                   ? { kind: "box", containerId: targetContainerId }
@@ -608,22 +609,26 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         // regardless of main-thread load, so caching/coalescing here does not
         // improve smoothness. Fixing the jank requires moving off native HTML5
         // DnD (e.g. pointer-event based dnd-kit).
+        const isExternalDrag = isExternalFileDrag(e);
         if (compensatedDragSource.current) {
             compensatedDragSource.current.style.removeProperty("transform");
             compensatedDragSource.current = null;
         }
-        const currentActive = activeRef.current ?? active;
-        const requestedModifier = dragModifierForActiveItem(currentActive, e);
+        const currentActive = isExternalDrag ? EXTERNAL_DRAG_NODE : (activeRef.current ?? active);
+        const requestedModifier = isExternalDrag ? "copy" : dragModifierForActiveItem(currentActive, e);
         const x = offsetRef.current.x;
         const y = offsetRef.current.y;
         const nextOverId = _overId ?? overIdRef.current;
-        const currentDragPaths = dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths;
+        const currentDragPaths = isExternalDrag ? [EXTERNAL_DRAG_NODE.path] : dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths;
         const nextOverIndex = flattenedTree.findIndex((f) => f.id == nextOverId);
         const overItem = nextOverIndex == -1 ? null : flattenedTree[nextOverIndex];
         const rowHeight = overItem?.type == "separator" ? 10 : spaceRowHeight(superstate, presetRowHeight, false);
         const newY = position.y <= rowHeight / 3 ? 0 : position.y >= (rowHeight * 2) / 3 ? rowHeight : 13;
-        const nextDepth = overItem?.depth ?? 0;
-        const newX = nextDepth * indentationWidth;
+
+        const rowDepth = overItem?.depth ?? 0;
+        const followingRow = flattenedTree.slice(nextOverIndex + 1).find((node) => node.type != "new");
+        const nextDepth = verticalInsertionDepth(position.y, rowHeight, rowDepth, followingRow?.depth ?? 0);
+        const newX = rowDepth * indentationWidth;
         const nextActiveIndex = currentActive?.id ? flattenedTree.findIndex((f) => f.id == currentActive.id) : -1;
         const nextProjection = constrainLinkedItemProjection(
             currentActive,
@@ -637,7 +642,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             ),
             flattenedTree,
         );
-        const modifier = resolveDragModifier(currentActive, nextProjection, requestedModifier);
+        const modifier = isExternalDrag ? "copy" : resolveDragModifier(currentActive, nextProjection, requestedModifier);
         if (modifierRef.current != modifier) {
             modifierRef.current = modifier;
             setModifier(modifier);
@@ -658,7 +663,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         // label must be re-applied each event — do not dedupe this call. In
         // pointer mode there is no dragManager ghost; the label renders on the
         // pointer ghost instead.
-        if (nextDragAction?.label && !ENABLE_POINTER_DND) {
+        if (nextDragAction?.label && !ENABLE_POINTER_DND && !isExternalDrag) {
             superstate.ui.setDragLabel(nextDragAction.label);
         }
         if (currentDragPaths.length > 1) {
@@ -1041,7 +1046,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const dragOverTree = (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
 
-        const currentActive = activeRef.current ?? active;
+
+        const currentActive = isExternalFileDrag(e) ? EXTERNAL_DRAG_NODE : (activeRef.current ?? active);
         if (currentActive?.parentId != null) return;
         if ((e.target as HTMLElement).closest('[draggable="true"]')) return;
 
@@ -1070,6 +1076,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 } as React.CSSProperties
             }
             onDrop={(e) => {
+                if (isExternalFileDrag(e)) {
+                    e.preventDefault();
+                    const files = Array.from(e.dataTransfer?.files ?? []);
+                    dropExternalFilesAtProjection(superstate, files, dragActionRef.current?.action.projection ?? null, flattenedTree);
+                    resetState();
+                    return;
+                }
                 if (overId) {
                     dragEnded(e, overId);
                 } else {

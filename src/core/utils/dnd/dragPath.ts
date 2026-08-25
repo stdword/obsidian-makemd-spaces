@@ -30,7 +30,7 @@ export type DragAction =
     | { type: "link"; containerId: string | null; position?: DragInsertPosition; projection: DragProjection };
 
 export type DragActionVisual =
-    | { kind: "line"; itemId: string; position: "before" | "after" }
+    | { kind: "line"; itemId: string; position: "before" | "after"; depth?: number }
     | { kind: "box"; containerId: string }
     | { kind: "folder"; containerId: string };
 
@@ -87,6 +87,24 @@ const isAlreadyInFolderContainer = (activeItem: TreeNode, folderNode?: TreeNode 
 
 export function getDragDepth(offset: number, indentationWidth: number) {
     return Math.round(offset / indentationWidth);
+}
+
+/**
+ * Insertion depth chosen purely by the pointer's Y inside a row. On the last
+ * row of a subtree the bottom zone is split into stacked sub-zones, one per
+ * level that ends at this row (rowDepth down to nextRowDepth + 1): the lower
+ * the pointer, the further the insertion "escapes" the nesting — the way to
+ * drop AFTER a trailing expanded folder at the folder's own level without any
+ * horizontal movement. Rows that close no levels keep a single bottom zone.
+ */
+export function verticalInsertionDepth(pointerY: number, rowHeight: number, rowDepth: number, nextRowDepth: number) {
+    const bottomZoneStart = (rowHeight * 2) / 3;
+    if (pointerY < bottomZoneStart) return rowDepth;
+    const closingLevels = Math.max(1, rowDepth - Math.max(0, nextRowDepth));
+    if (closingLevels == 1) return rowDepth;
+    const subZoneHeight = (rowHeight - bottomZoneStart) / closingLevels;
+    const subZone = Math.min(closingLevels - 1, Math.floor((pointerY - bottomZoneStart) / subZoneHeight));
+    return rowDepth - subZone;
 }
 
 const DRAG_ROW_MIDDLE_ZONE = 13;
@@ -252,7 +270,9 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
             linePosition = "bottom";
         }
     }
-    const sortable = insert ? false : parentId == null || Boolean(targetItem.sortable);
+
+    const sortableReference = targetItem.parentId == parentId ? targetItem : items.find((item) => item.parentId == parentId && item.type != "new");
+    const sortable = insert ? false : parentId == null || Boolean(sortableReference?.sortable);
 
     if (!insert && activeItem?.parentId == parentId) {
         const targetIndex = items.findIndex((item) => item.id == targetItem.id);

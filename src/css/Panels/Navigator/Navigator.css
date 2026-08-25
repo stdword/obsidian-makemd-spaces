@@ -194,6 +194,13 @@
     left: 0;
 }
 
+.mk-tree-wrapper .mk-indicator-row.mk-indicator-row-raised:not(.mk-indicator-row-box) {
+    position: relative;
+    padding-left: 18px;
+    --spacing: var(--indicator-spacing, 36px) !important;
+}
+
+
 .mk-tree-wrapper .mk-indicator-row.mk-indicator-row-box {
     border-radius: 8px;
     outline: 2px solid var(--mk-ui-active);

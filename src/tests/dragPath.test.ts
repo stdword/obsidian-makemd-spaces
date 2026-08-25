@@ -1,4 +1,4 @@
-import { getMultiProjection, getProjection } from "core/utils/dnd/dragPath";
+import { getMultiProjection, getProjection, verticalInsertionDepth } from "core/utils/dnd/dragPath";
 
 describe("nested folder drag projections", () => {
     it("does not project a line above the first linked child already in place", () => {
@@ -469,5 +469,112 @@ describe("tag space drag projections", () => {
             linePosition: "top",
             overId: "null/Anchor.md",
         }));
+    });
+});
+
+describe("insertion after a trailing expanded folder", () => {
+    // Root
+    //   Notes/A.md
+    //   Notes/Sub        (expanded folder, LAST child of Notes)
+    //     Notes/Sub/B.md (last visible row of the subtree)
+    const tree: any = [
+        { id: "Notes", parentId: null, depth: 0, index: 0, type: "space", path: "Notes", item: { path: "Notes", type: "space" }, childrenCount: 2, collapsed: false, rank: 0, sortable: true },
+        { id: "Notes/A.md", parentId: "Notes", depth: 1, index: 1, type: "file", path: "Notes/A.md", item: { path: "Notes/A.md", parent: "Notes", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: true },
+        { id: "Notes/Sub", parentId: "Notes", depth: 1, index: 2, type: "space", path: "Notes/Sub", item: { path: "Notes/Sub", type: "space" }, childrenCount: 1, collapsed: false, rank: 1, sortable: true },
+        { id: "Notes/Sub/B.md", parentId: "Notes/Sub", depth: 2, index: 3, type: "file", path: "Notes/Sub/B.md", item: { path: "Notes/Sub/B.md", parent: "Notes/Sub", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: true },
+    ];
+    const active: any = { id: "Other/X.md", parentId: "Other", depth: 1, type: "file", space: "Other", path: "Other/X.md", item: { path: "Other/X.md", parent: "Other", type: "file" }, sortable: true, rank: 0, childrenCount: 0 };
+
+    it("bottom zone of the last child at the child's depth stays inside the folder", () => {
+        const projection = getProjection(active, tree, [active.path], 3, 2, 25, true, "move", "Notes");
+        expect(projection?.parentId).toBe("Notes/Sub");
+        expect(projection?.linePosition).toBe("bottom");
+    });
+
+    it("bottom zone of the last child at the parent's depth inserts after the folder", () => {
+        // dragDepth 1 = the folder's own level, chosen by pointer X
+        const projection = getProjection(active, tree, [active.path], 3, 1, 25, true, "move", "Notes");
+        expect(projection?.parentId).toBe("Notes");
+        expect(projection?.depth).toBe(1);
+        expect(projection?.linePosition).toBe("bottom");
+    });
+});
+
+describe("insertion after a trailing expanded folder", () => {
+    // Root
+    //   Notes/A.md
+    //   Notes/Sub        (expanded folder, LAST child of Notes)
+    //     Notes/Sub/B.md (last visible row of the subtree)
+    const tree: any = [
+        { id: "Notes", parentId: null, depth: 0, index: 0, type: "space", path: "Notes", item: { path: "Notes", type: "space" }, childrenCount: 2, collapsed: false, rank: 0, sortable: true },
+        { id: "Notes/A.md", parentId: "Notes", depth: 1, index: 1, type: "file", path: "Notes/A.md", item: { path: "Notes/A.md", parent: "Notes", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: true },
+        { id: "Notes/Sub", parentId: "Notes", depth: 1, index: 2, type: "space", path: "Notes/Sub", item: { path: "Notes/Sub", type: "space" }, childrenCount: 1, collapsed: false, rank: 1, sortable: true },
+        { id: "Notes/Sub/B.md", parentId: "Notes/Sub", depth: 2, index: 3, type: "file", path: "Notes/Sub/B.md", item: { path: "Notes/Sub/B.md", parent: "Notes/Sub", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: true },
+    ];
+    const active: any = { id: "Other/X.md", parentId: "Other", depth: 1, type: "file", space: "Other", path: "Other/X.md", item: { path: "Other/X.md", parent: "Other", type: "file" }, sortable: true, rank: 0, childrenCount: 0 };
+
+    it("bottom zone of the last child at the child's depth stays inside the folder", () => {
+        const projection = getProjection(active, tree, [active.path], 3, 2, 25, true, "move", "Notes");
+        expect(projection?.parentId).toBe("Notes/Sub");
+        expect(projection?.linePosition).toBe("bottom");
+    });
+
+    it("bottom zone of the last child at the parent's depth inserts after the folder", () => {
+        // dragDepth 1 = the folder's own level, chosen by pointer X
+        const projection = getProjection(active, tree, [active.path], 3, 1, 25, true, "move", "Notes");
+        expect(projection?.parentId).toBe("Notes");
+        expect(projection?.depth).toBe(1);
+        expect(projection?.linePosition).toBe("bottom");
+    });
+});
+
+describe("raised insertion into a rank-sorted ancestor", () => {
+    // Archive (rank-sorted) > Reports (alphabetical, its rows are not sortable)
+    // Raising the insertion from Reports' last child to Archive's level must take
+    // sortability from the TARGET container (Archive), not the row under cursor.
+    const tree: any = [
+        { id: "Archive", parentId: null, depth: 0, index: 0, type: "space", path: "Archive", item: { path: "Archive", type: "space" }, childrenCount: 2, collapsed: false, rank: 0, sortable: true },
+        { id: "Archive/Reports", parentId: "Archive", depth: 1, index: 1, type: "space", path: "Archive/Reports", item: { path: "Archive/Reports", type: "space" }, childrenCount: 1, collapsed: false, rank: 0, sortable: true },
+        { id: "Archive/Reports/Q4.md", parentId: "Archive/Reports", depth: 2, index: 2, type: "file", path: "Archive/Reports/Q4.md", item: { path: "Archive/Reports/Q4.md", parent: "Archive/Reports", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: false },
+    ];
+    const active: any = { id: "X", parentId: "Y", depth: 1, type: "file", path: "X", item: { path: "X", parent: "Y", type: "file" }, sortable: true, rank: 0, childrenCount: 0 };
+
+    it("keeps the unsortable container's behaviour at the row's own depth", () => {
+        const projection = getProjection(active, tree, ["X"], 2, 2, 25, true, "move", "Archive");
+        expect(projection?.sortable).toBe(false);
+    });
+
+    it("is sortable when raised to the rank-sorted ancestor's level", () => {
+        const projection = getProjection(active, tree, ["X"], 2, 1, 25, true, "move", "Archive");
+        expect(projection?.parentId).toBe("Archive");
+        expect(projection?.sortable).toBe(true);
+        expect(projection?.linePosition).toBe("bottom");
+    });
+});
+
+describe("verticalInsertionDepth", () => {
+    const rowHeight = 24;
+    it("keeps the row depth outside the bottom zone", () => {
+        expect(verticalInsertionDepth(4, rowHeight, 3, 1)).toBe(3);
+        expect(verticalInsertionDepth(12, rowHeight, 3, 1)).toBe(3);
+    });
+
+    it("keeps the row depth when the next row does not close any levels", () => {
+        expect(verticalInsertionDepth(23, rowHeight, 2, 2)).toBe(2);
+        expect(verticalInsertionDepth(23, rowHeight, 2, 3)).toBe(2);
+    });
+
+    it("splits the bottom zone of a subtree's last row into level sub-zones", () => {
+        // row depth 3, next row depth 1 → two sub-zones: 16..20 stays depth 3,
+        // 20..24 raises to depth 2 (after the folder).
+        expect(verticalInsertionDepth(17, rowHeight, 3, 1)).toBe(3);
+        expect(verticalInsertionDepth(23, rowHeight, 3, 1)).toBe(2);
+    });
+
+    it("offers every closing level at the end of the list", () => {
+        // nothing after the row → levels 3, 2, 1 stacked bottom-up.
+        expect(verticalInsertionDepth(17, rowHeight, 3, 0)).toBe(3);
+        expect(verticalInsertionDepth(20, rowHeight, 3, 0)).toBe(2);
+        expect(verticalInsertionDepth(23.9, rowHeight, 3, 0)).toBe(1);
     });
 });
