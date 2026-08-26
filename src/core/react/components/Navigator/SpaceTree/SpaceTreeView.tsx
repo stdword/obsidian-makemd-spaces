@@ -5,7 +5,7 @@ import { PathStickerView } from "core/react/components/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, linkedTagSpaceUri, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
-import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth } from "core/utils/dnd/dragPath";
+import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth, verticalInsertionZone } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
 import { filterFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
@@ -623,10 +623,11 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         const nextOverIndex = flattenedTree.findIndex((f) => f.id == nextOverId);
         const overItem = nextOverIndex == -1 ? null : flattenedTree[nextOverIndex];
         const rowHeight = overItem?.type == "separator" ? 10 : spaceRowHeight(superstate, presetRowHeight, false);
-        const newY = position.y <= rowHeight / 3 ? 0 : position.y >= (rowHeight * 2) / 3 ? rowHeight : 13;
+        const previousRow = nextOverIndex <= 0 ? null : flattenedTree[nextOverIndex - 1];
+        const followingRow = nextOverIndex == -1 ? null : flattenedTree.slice(nextOverIndex + 1).find((node) => node.type != "new");
+        const newY = verticalInsertionZone(position.y, rowHeight, overItem, previousRow, followingRow);
 
         const rowDepth = overItem?.depth ?? 0;
-        const followingRow = flattenedTree.slice(nextOverIndex + 1).find((node) => node.type != "new");
         const nextDepth = verticalInsertionDepth(position.y, rowHeight, rowDepth, followingRow?.depth ?? 0);
         const newX = rowDepth * indentationWidth;
         const nextActiveIndex = currentActive?.id ? flattenedTree.findIndex((f) => f.id == currentActive.id) : -1;

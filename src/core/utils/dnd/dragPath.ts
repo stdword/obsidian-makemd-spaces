@@ -109,6 +109,17 @@ export function verticalInsertionDepth(pointerY: number, rowHeight: number, rowD
 
 const DRAG_ROW_MIDDLE_ZONE = 13;
 
+const rowReorderable = (node: TreeNode | null | undefined) => Boolean(node) && (node.type == "separator" || node.parentId == null || Boolean(node.sortable));
+
+export function verticalInsertionZone(pointerY: number, rowHeight: number, overItem: TreeNode | null | undefined, previousRow: TreeNode | null | undefined, followingRow: TreeNode | null | undefined) {
+    const overReorderable = rowReorderable(overItem);
+    const keepTopEdge = overReorderable || rowReorderable(previousRow);
+    const keepBottomEdge = overReorderable || rowReorderable(followingRow);
+    if (keepTopEdge && pointerY <= rowHeight / 3) return 0;
+    if (keepBottomEdge && pointerY >= (rowHeight * 2) / 3) return rowHeight;
+    return DRAG_ROW_MIDDLE_ZONE;
+}
+
 const findNextSibling = (items: TreeNode[], itemIndex: number, item: TreeNode, parentId: string | null) => {
     for (let index = itemIndex + 1; index < items.length; index++) {
         const candidate = items[index];

@@ -1,4 +1,4 @@
-import { getMultiProjection, getProjection, verticalInsertionDepth } from "core/utils/dnd/dragPath";
+import { getMultiProjection, getProjection, verticalInsertionDepth, verticalInsertionZone } from "core/utils/dnd/dragPath";
 
 describe("nested folder drag projections", () => {
     it("does not project a line above the first linked child already in place", () => {
@@ -576,5 +576,44 @@ describe("verticalInsertionDepth", () => {
         expect(verticalInsertionDepth(17, rowHeight, 3, 0)).toBe(3);
         expect(verticalInsertionDepth(20, rowHeight, 3, 0)).toBe(2);
         expect(verticalInsertionDepth(23.9, rowHeight, 3, 0)).toBe(1);
+    });
+});
+
+describe("verticalInsertionZone", () => {
+    const rowHeight = 24;
+    const sortableRow: any = { id: "sortable", parentId: "Ranked", depth: 1, type: "space", sortable: true };
+    const plainRow: any = { id: "plain", parentId: "Alphabetical", depth: 1, type: "space", sortable: false };
+    const otherPlainRow: any = { ...plainRow, id: "plain-2" };
+    const rootRow: any = { id: "root", parentId: null, depth: 0, type: "space", sortable: false };
+
+    it("keeps thirds when the row's own container is rank sorted", () => {
+        expect(verticalInsertionZone(2, rowHeight, sortableRow, sortableRow, sortableRow)).toBe(0);
+        expect(verticalInsertionZone(12, rowHeight, sortableRow, sortableRow, sortableRow)).toBe(13);
+        expect(verticalInsertionZone(22, rowHeight, sortableRow, sortableRow, sortableRow)).toBe(rowHeight);
+    });
+
+    it("expands the box over the whole row when neither side can be reordered", () => {
+        for (const y of [0, 2, 12, 22, rowHeight]) {
+            expect(verticalInsertionZone(y, rowHeight, plainRow, otherPlainRow, otherPlainRow)).toBe(13);
+        }
+    });
+
+    it("keeps only the edge whose neighbour is reorderable", () => {
+        expect(verticalInsertionZone(2, rowHeight, plainRow, sortableRow, otherPlainRow)).toBe(0);
+        expect(verticalInsertionZone(22, rowHeight, plainRow, sortableRow, otherPlainRow)).toBe(13);
+
+        expect(verticalInsertionZone(2, rowHeight, plainRow, otherPlainRow, sortableRow)).toBe(13);
+        expect(verticalInsertionZone(22, rowHeight, plainRow, otherPlainRow, sortableRow)).toBe(rowHeight);
+    });
+
+    it("drops the edge that faces the end of the list", () => {
+        expect(verticalInsertionZone(2, rowHeight, plainRow, null, otherPlainRow)).toBe(13);
+        expect(verticalInsertionZone(22, rowHeight, plainRow, otherPlainRow, null)).toBe(13);
+    });
+
+    it("treats root rows and separators as reorderable neighbours", () => {
+        expect(verticalInsertionZone(2, rowHeight, plainRow, rootRow, otherPlainRow)).toBe(0);
+        const separator: any = { id: "sep", parentId: "Alphabetical", depth: 1, type: "separator", sortable: false };
+        expect(verticalInsertionZone(22, rowHeight, plainRow, otherPlainRow, separator)).toBe(rowHeight);
     });
 });
