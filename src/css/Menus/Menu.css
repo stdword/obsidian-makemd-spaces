@@ -327,14 +327,17 @@
     white-space: nowrap;
     line-height: normal;
 }
+
 .mk-menu-option mark {
     text-decoration: underline;
-    background: none;
-    color: inherit;
+    background: none !important;
+    background-color: transparent !important;
+    color: inherit !important;
     font-weight: 600;
-    border-radius: unset;
-    margin: unset;
-    padding: unset;
+    border: 0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 .mk-menu-option:not(.mk-disabled):hover {

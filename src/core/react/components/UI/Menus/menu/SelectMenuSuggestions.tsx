@@ -8,7 +8,8 @@ import { Rect } from "shared/types/Pos";
 import { IUIManager } from "shared/types/uiManager";
 import { matchAny } from "./concerns/matchers";
 import { verticalDeltaForShiftWheel } from "./selectMenuLimits";
-function markIt(name: string, query: string) {
+export function markIt(name: string, query: string) {
+    if (!query?.length) return name;
     const regexp = matchAny(query);
     return name?.replace(regexp, "<mark>$&</mark>");
 }
