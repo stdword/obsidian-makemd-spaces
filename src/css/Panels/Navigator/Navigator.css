@@ -110,13 +110,11 @@
 }
 
 .mk-drag-ghost.drag-ghost {
-    background: var(--background-primary);
-    color: var(--text-normal);
+
+    background: var(--drag-ghost-background);
+    color: var(--drag-ghost-text-color);
     border: 1px solid var(--background-modifier-border);
     box-shadow: var(--shadow-s);
-}
-.theme-dark .mk-drag-ghost.drag-ghost {
-    background: var(--interactive-normal);
 }
 
 .drag-ghost .mk-path-icon {
