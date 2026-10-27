@@ -1268,6 +1268,51 @@ describe("Superstate tag initialization", () => {
         expect(superstate.pathsIndex.has(tagPath)).toBe(false);
     });
 
+    it("persists folder rank-order to the space definition when new items are appended", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.spacesIndex.set("Journal", {
+            type: "folder",
+            name: "Journal",
+            path: "Journal",
+            metadata: {
+                sort: { field: "rank", asc: true },
+                "rank-order": ["Journal/Old.md"],
+                pinned: [],
+            },
+            space: { path: "Journal", name: "Journal", defPath: "Journal/.space/context.json", notePath: "", folderPath: "Journal" },
+        } as any);
+        [
+            ["Journal/Old.md", "Old"],
+            ["Journal/Fresh.md", "Fresh"],
+        ].forEach(([path, name]) => {
+            superstate.pathsIndex.set(path, {
+                path,
+                name,
+                type: "file",
+                subtype: "md",
+                parent: "Journal",
+                tags: [],
+                spaces: ["Journal"],
+                hidden: false,
+            });
+            superstate.spacesMap.set(path, new Set(["Journal"]));
+        });
+        spaceManager.saveSpace.mockClear();
+
+        superstate.getSpaceItems("Journal");
+        await Promise.resolve();
+
+        expect(superstate.spacesIndex.get("Journal").metadata["rank-order"]).toEqual(["Journal/Old.md", "Journal/Fresh.md"]);
+        expect(spaceManager.saveSpace).toHaveBeenCalledTimes(1);
+        const [savedPath, definitionFn] = (spaceManager.saveSpace.mock.calls as any[])[0];
+        expect(savedPath).toBe("Journal");
+        expect(definitionFn({ "rank-order": ["Journal/Old.md"], links: [], pinned: [] })["rank-order"]).toEqual(["Journal/Old.md", "Journal/Fresh.md"]);
+
+        spaceManager.saveSpace.mockClear();
+        superstate.getSpaceItems("Journal");
+        expect(spaceManager.saveSpace).not.toHaveBeenCalled();
+    });
+
     it("leaves empty folder rank-order unset so manual sort falls back to name ascending", () => {
         const { superstate } = createSuperstate();
         superstate.spacesIndex.set("FolderSpace", {

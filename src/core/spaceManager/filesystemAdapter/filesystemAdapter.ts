@@ -324,6 +324,22 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         return this.fileSystem.allCaches();
     }
 
+    // @returns: {raw, text}
+    //     raw: null — invalid JSON in file
+    //     raw: {} — no file or empty one
+    //     raw: <parsed> — valid json
+    private async readRawSpaceDefinition(defPath: string): Promise<{ raw: Record<string, any> | null; text: string | null }> {
+        const text = defPath ? await this.fileSystem.readTextFromFile(defPath) : null;
+        if (!text || text.trim().length == 0)
+            return { raw: {}, text: null };
+        try {
+            const parsed = JSON.parse(text);
+            return { raw: parsed && typeof parsed == "object" ? parsed : null, text };
+        } catch (e) {
+            return { raw: null, text };
+        }
+    }
+
     private spaceDefinitionForStore(metadata: SpaceDefinition): SpaceDefinition {
         const storedDefinition = {
             color: metadata.color ?? "",
@@ -405,12 +421,16 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
         if (!space) return null;
 
         const spaceInfo = this.filesystemInfo(space);
-        const metaCache = spaceInfo.defPath ? await this.fileSystem.readTextFromFile(spaceInfo.defPath) : null;
+        const { raw: spaceDef, text: metaCache } = await this.readRawSpaceDefinition(spaceInfo.defPath);
         if (!metaCache) {
             const metadata = parseSpaceMetadata({}, this.spaceManager.superstate.settings);
             return metadata;
         }
-        const spaceDef = safelyParseJSON(metaCache);
+        if (!spaceDef) {
+            console.warn(`Spaces :: ${spaceInfo.defPath} is not valid JSON, keeping the loaded metadata`);
+            const loaded = this.spaceManager.superstate.spacesIndex?.get(path)?.metadata;
+            return loaded ? { ...loaded } : parseSpaceMetadata({}, this.spaceManager.superstate.settings);
+        }
         const metadata = parseSpaceMetadata(spaceDef, this.spaceManager.superstate.settings);
         const metadataForStore = {
             ...metadata,
@@ -434,7 +454,11 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     public async saveSpace(path: string, definitionFn: (def: SpaceDefinition) => SpaceDefinition) {
         const spaceInfo = this.spaceInfoForPath(path);
         const filesystemInfo = this.filesystemInfo(spaceInfo);
-        const rawDefinition = safelyParseJSON(filesystemInfo.defPath ? await this.fileSystem.readTextFromFile(filesystemInfo.defPath) : null) ?? {};
+        const { raw: rawDefinition } = await this.readRawSpaceDefinition(filesystemInfo.defPath);
+        if (!rawDefinition) {
+            console.warn(`Spaces :: ${filesystemInfo.defPath} is not valid JSON, skipping save to avoid wiping it`);
+            return;
+        }
         const currentMetadata = parseSpaceMetadata(rawDefinition, this.spaceManager.superstate.settings);
         const metadata = definitionFn(currentMetadata) ?? {};
         const sortChanged = JSON.stringify(metadata.sort) != JSON.stringify(currentMetadata.sort);

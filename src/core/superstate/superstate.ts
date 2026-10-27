@@ -330,6 +330,11 @@ export class Superstate implements ISuperstate {
         };
         this.spacesIndex.set(spacePath, nextSpaceState);
         this.persister?.store(spacePath, JSON.stringify(nextSpaceState.type == "tag" ? tagSpaceStateForStore(nextSpaceState) : folderSpaceStateForStore(nextSpaceState)), "space", nextSpaceState.type == "tag" ? "" : undefined);
+        if (nextSpaceState.type != "tag") {
+            // Keep the space definition on disk in sync, otherwise a restart reloads the stale order.
+            Promise.resolve(this.spaceManager.saveSpace(spacePath, (metadata) => ({ ...metadata, "rank-order": nextOrder })))
+                .catch((error: unknown) => console.error("Spaces :: failed to persist rank-order", spacePath, error));
+        }
         return nextOrder;
     }
 

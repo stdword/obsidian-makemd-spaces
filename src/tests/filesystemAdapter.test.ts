@@ -182,6 +182,34 @@ describe("FilesystemSpaceAdapter", () => {
         expect(metadata["rank-order"]).toEqual(["Projects/Beta.md", "Projects/Alpha.md"]);
     });
 
+    it("keeps an unparsable context.json untouched and falls back to the loaded space metadata", async () => {
+        const { adapter, text, files } = createAdapter();
+        const brokenJson = '{\n  "sort": { "field": "rank", "asc": true },\n  "rank-order": ["Projects/Beta.md",';
+        files.set("Projects/.space/context.json", { path: "Projects/.space/context.json" });
+        text.set("Projects/.space/context.json", brokenJson);
+        adapter.spaceManager.superstate.spacesIndex = new Map([[
+            "Projects",
+            { path: "Projects", type: "folder", metadata: { sort: { field: "rank", asc: true }, "rank-order": ["Projects/Beta.md", "Projects/Alpha.md"], links: [], pinned: [], "file-colors": {} } },
+        ]]);
+
+        const metadata = await adapter.spaceDefinitionForPath("Projects");
+
+        expect(text.get("Projects/.space/context.json")).toBe(brokenJson);
+        expect(metadata["rank-order"]).toEqual(["Projects/Beta.md", "Projects/Alpha.md"]);
+        expect(metadata.sort).toEqual({ field: "rank", asc: true });
+    });
+
+    it("does not overwrite an unparsable context.json when saving a metadata value", async () => {
+        const { adapter, text, files } = createAdapter();
+        const brokenJson = '{ "sort": { "field": "rank" }, "rank-order": [';
+        files.set("Projects/.space/context.json", { path: "Projects/.space/context.json" });
+        text.set("Projects/.space/context.json", brokenJson);
+
+        await adapter.saveSpace("Projects", (metadata: any) => ({ ...metadata, "rank-order": ["Projects/Alpha.md"] }));
+
+        expect(text.get("Projects/.space/context.json")).toBe(brokenJson);
+    });
+
     it("writes only the changed sort value when creating context.json for a sort change", async () => {
         const { adapter, text } = createAdapter();
 
