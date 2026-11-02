@@ -35,6 +35,7 @@ export const en = {
         rename: "Rename",
         moveFile: "Move to...",
         wrapToFolder: "Wrap to Folder",
+        wrapEachToFolder: "Wrap Each to Folder",
         pinToTop: "Pin to Top",
         unpin: "Unpin",
         useAsFilter: "Use as Filter",

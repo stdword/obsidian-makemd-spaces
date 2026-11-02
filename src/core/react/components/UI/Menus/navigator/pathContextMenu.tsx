@@ -4,12 +4,13 @@ import { openStickerPalette } from "core/react/components/PathSticker";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
-import { TreeNode, createSpace, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
+import { TreeNode, duplicatePathNextToOriginal, isPathPinnedInSpace, movePathToNewSpaceAtIndex, removePathsFromSpace, removeSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import { deletePath, movePathToSpace } from "core/utils/superstate/path";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { validateWrapFolderName, wrapEachPathInOwnFolder, wrapFolderPathForName, wrapPathsInFolder } from "core/utils/superstate/wrapToFolder";
 
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
 import { default as i18n } from "shared/i18n";
@@ -28,6 +29,19 @@ function isLinkedFileMenuItem(item: PathStateWithRank, space?: string) {
         !isTagSpacePath(space) && item?.type != "space" && space && item?.parent && space != item.parent
     )
 }
+
+const openWrapToFolderModal = (superstate: Superstate, parentPath: string | undefined, initialName: string, paths: string[], win: Window) => {
+    superstate.ui.openModal(
+        i18n.menu.wrapToFolder,
+        <InputModal
+            saveLabel={i18n.buttons.wrap}
+            value={initialName}
+            saveValue={(value) => wrapPathsInFolder(superstate, wrapFolderPathForName(parentPath, value).folderPath, paths)}
+            validateValue={(value) => validateWrapFolderName(superstate, parentPath, value)}
+        />,
+        win,
+    );
+};
 
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
     const paths = selectedPaths.map((s) => s.item.path);
@@ -99,6 +113,39 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         });
     }
 
+    // wrap to folder
+    const parentPath = selectedPaths[0]?.item?.parent;
+    if (parentPath != null && selectedPaths.every((item) => item.item?.parent == parentPath)) {
+        menuOptions.push({
+            name: i18n.menu.wrapToFolder,
+            icon: "lucide//folder-symlink",
+            closeParentImmediately: true,
+            onClick: (e) => openWrapToFolderModal(superstate, parentPath, "", paths, windowFromDocument(e.view.document)),
+        });
+        menuOptions.push({
+            name: i18n.menu.wrapEachToFolder,
+            icon: "lucide//folder-symlink",
+            onClick: () => wrapEachPathInOwnFolder(superstate, selectedPaths.map((s) => s.item)),
+        });
+    }
+
+    menuOptions.push(menuSeparator);
+
+    // move to
+    menuOptions.push({
+        name: i18n.menu.moveFile,
+        icon: "ui//paper-plane",
+        closeParentImmediately: true,
+        onClick: (e) => {
+            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
+            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
+                paths.forEach((f) => {
+                    movePathToSpace(superstate, f, link);
+                });
+            }, e.shiftKey);
+        },
+    });
+
     // link to...
     menuOptions.push({
         name: i18n.buttons.addToSpace,
@@ -123,65 +170,6 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
             );
         },
     });
-
-    menuOptions.push(menuSeparator);
-
-    // move to
-    menuOptions.push({
-        name: i18n.menu.moveFile,
-        icon: "ui//paper-plane",
-        closeParentImmediately: true,
-        onClick: (e) => {
-            const offset = (e.target as HTMLButtonElement).getBoundingClientRect();
-            showFoldersMenu(offset, windowFromDocument(e.view.document), superstate, (link) => {
-                paths.forEach((f) => {
-                    movePathToSpace(superstate, f, link);
-                });
-            }, e.shiftKey);
-        },
-    });
-
-    // wrap to folder
-    const parentPath = selectedPaths[0]?.item?.parent;
-    if (parentPath != null && selectedPaths.every((item) => item.item?.parent == parentPath))
-        menuOptions.push({
-            name: i18n.menu.wrapToFolder,
-            icon: "lucide//folder-symlink",
-            closeParentImmediately: true,
-            onClick: (e) => {
-                const normalizedParentPath = parentPath != "/" ? parentPath : "";
-                const folderPathForName = (value: string) => {
-                    const folderName = value.replace(/\//g, "").trim();
-                    return {
-                        folderName,
-                        folderPath: normalizedParentPath ? `${normalizedParentPath}/${folderName}` : folderName,
-                    };
-                };
-                superstate.ui.openModal(
-                    i18n.menu.wrapToFolder,
-                    <InputModal
-                        saveLabel={i18n.buttons.wrap}
-                        value=""
-                        saveValue={async (value) => {
-                            const { folderPath } = folderPathForName(value);
-                            if (await superstate.spaceManager.pathExists(folderPath)) {
-                                superstate.ui.notify(i18n.notice.fileExists);
-                                return;
-                            }
-                            await createSpace(superstate, folderPath);
-                            for (const path of paths)
-                                await superstate.spaceManager.renamePath(path, `${folderPath}/${path.split("/").pop()}`);
-                        }}
-                        validateValue={(value) => {
-                            const { folderName, folderPath } = folderPathForName(value);
-                            if (!folderName) return i18n.notice.emptyfolderName;
-                            if (superstate.spacesIndex.has(folderPath)) return i18n.notice.duplicateFolderName;
-                        }}
-                    />,
-                    windowFromDocument(e.view.document),
-                );
-            },
-        });
 
     menuOptions.push(menuSeparator);
 
@@ -374,38 +362,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
             name: i18n.menu.wrapToFolder,
             icon: "lucide//folder-symlink",
             closeParentImmediately: true,
-            onClick: (e) => {
-                const parentPath = pathCache.parent && pathCache.parent != "/" ? pathCache.parent : "";
-                const folderPathForName = (value: string) => {
-                    const folderName = value.replace(/\//g, "").trim();
-                    return {
-                        folderName,
-                        folderPath: parentPath ? `${parentPath}/${folderName}` : folderName,
-                    };
-                };
-                superstate.ui.openModal(
-                    i18n.menu.wrapToFolder,
-                    <InputModal
-                        saveLabel={i18n.buttons.wrap}
-                        value={pathDisplayInfo(path).title}
-                        saveValue={async (value) => {
-                            const { folderPath } = folderPathForName(value);
-                            if (await superstate.spaceManager.pathExists(folderPath)) {
-                                superstate.ui.notify(i18n.notice.fileExists);
-                                return;
-                            }
-                            await createSpace(superstate, folderPath);
-                            await superstate.spaceManager.renamePath(path, `${folderPath}/${path.split("/").pop()}`);
-                        }}
-                        validateValue={(value) => {
-                            const { folderName, folderPath } = folderPathForName(value);
-                            if (!folderName) return i18n.notice.emptyfolderName;
-                            if (superstate.spacesIndex.has(folderPath)) return i18n.notice.duplicateFolderName;
-                        }}
-                    />,
-                    windowFromDocument(e.view.document),
-                );
-            },
+            onClick: (e) => openWrapToFolderModal(superstate, pathCache.parent, pathDisplayInfo(path).title, [path], windowFromDocument(e.view.document)),
         });
     }
 

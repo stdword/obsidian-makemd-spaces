@@ -282,6 +282,75 @@ describe("triggerMultiPathMenu", () => {
     });
 });
 
+describe("wrap each item to its own folder", () => {
+    it("wraps every selected item into a folder named after it without the extension", async () => {
+        const openMenu = jest.fn();
+        const renamePath = jest.fn(() => Promise.resolve());
+        const createFolder = jest.fn(() => Promise.resolve());
+        const superstate = {
+            spacesIndex: new Map([["Library", { path: "Library", type: "folder", metadata: { pinned: [] } }]]),
+            pathsIndex: new Map(),
+            spaceManager: {
+                pathExists: jest.fn((path: string) => Promise.resolve(path == "Library/Taken")),
+                spaceInfoForPath: jest.fn((path: string) => ({ path, name: path.split("/").pop() })),
+                parentPathForPath: jest.fn(() => "Library"),
+                createSpace: createFolder,
+                renamePath,
+            },
+            reloadSpace: jest.fn((space: any) => Promise.resolve({ ...space, metadata: {} })),
+            onSpaceDefinitionChanged: jest.fn(),
+            ui: { openMenu, openModal: jest.fn(), notify: jest.fn() },
+        };
+        const selectedPaths = [
+            { item: { path: "Library/Alpha.md", parent: "Library", type: "file" }, path: "Library/Alpha.md", space: "Library", depth: 1 },
+            { item: { path: "Library/Taken.canvas", parent: "Library", type: "file" }, path: "Library/Taken.canvas", space: "Library", depth: 1 },
+            { item: { path: "Library/Sub", parent: "Library", type: "space" }, path: "Library/Sub", space: "Library", depth: 1 },
+        ];
+        const event = { target: { getBoundingClientRect: jest.fn(() => ({})) }, view: { document: { defaultView: {} } } };
+
+        triggerMultiPathMenu(superstate as any, selectedPaths as any, event as any);
+        const options = openMenu.mock.calls[0][1].options;
+        const wrapIndex = options.findIndex((option: any) => option.name === i18n.menu.wrapToFolder);
+        const wrapEach = options[wrapIndex + 1];
+        expect(wrapEach.name).toBe(i18n.menu.wrapEachToFolder);
+        expect(wrapEach.icon).toBe(options[wrapIndex].icon);
+        const names = options.map((option: any) => option.name);
+        expect(names.indexOf(i18n.menu.pinToTop)).toBeLessThan(wrapIndex);
+        expect(names.indexOf(i18n.menu.moveFile)).toBeGreaterThan(wrapIndex + 1);
+        expect(names.indexOf(i18n.buttons.addToSpace)).toBe(names.indexOf(i18n.menu.moveFile) + 1);
+
+        await wrapEach.onClick(event as any);
+
+        expect(superstate.ui.openModal).not.toHaveBeenCalled();
+        expect(createFolder.mock.calls.map((call: any[]) => call[0])).toEqual(["Alpha", "Sub"]);
+        expect(renamePath.mock.calls).toEqual([
+            ["Library/Alpha.md", "Library/Alpha/Alpha.md"],
+            ["Library/Sub", "Library/Sub/Sub"],
+        ]);
+        expect(superstate.ui.notify).toHaveBeenCalledWith(i18n.notice.fileExists);
+    });
+
+    it("does not offer the per-item wrap in the single path menu", () => {
+        const openMenu = jest.fn();
+        const pathsIndex = new Map([["Library/Alpha.md", { path: "Library/Alpha.md", name: "Alpha", type: "file", subtype: "md", parent: "Library", color: "", sticker: "" }]]);
+        const superstate = {
+            spacesIndex: new Map(),
+            pathsIndex,
+            settings: {},
+            pathStateForPath: jest.fn((path: string) => pathsIndex.get(path)),
+            spacesMap: { get: jest.fn(() => new Set()), set: jest.fn() },
+            spaceManager: { spaceInfoForPath: jest.fn((): any => null) },
+            ui: { openMenu, openModal: jest.fn(), notify: jest.fn(), getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
+        } as any;
+
+        showPathContextMenu(superstate as any, "Library/Alpha.md", "Library", {} as any, {} as any, undefined, undefined, 1);
+
+        const names = openMenu.mock.calls[0][1].options.map((option: any) => option.name);
+        expect(names).toContain(i18n.menu.wrapToFolder);
+        expect(names).not.toContain(i18n.menu.wrapEachToFolder);
+    });
+});
+
 describe("showPathContextMenu", () => {
     it("opens the space context menu for virtual tag spaces without path cache", () => {
         const openMenu = jest.fn();
