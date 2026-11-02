@@ -151,7 +151,16 @@ export const TreeItem = (props: TreeItemProps) => {
         dragEnded(e, data.id);
     };
     const handleRightClick = (e: React.MouseEvent) => {
-        selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string)) ? triggerMultiPathMenu(superstate, selectedPaths, e) : contextMenu(e);
+        if (selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string))) {
+            triggerMultiPathMenu(superstate, selectedPaths, e);
+            return;
+        }
+        // Select the item like a left click would, but without opening it or its folder note.
+        if (data.item?.path) {
+            setActivePath(data.item.path);
+            setSelectedPaths([data]);
+        }
+        contextMenu(e);
     };
     const color = treeItemDisplayColor(pathState, pathState?.type == "space" ? superstate.spacesIndex.get(pathState.path)?.metadata?.defaultColor : "");
     const contextMenu = (e: React.MouseEvent) => {
