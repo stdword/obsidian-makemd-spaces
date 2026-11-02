@@ -1,4 +1,4 @@
-import { FOLDER_NOTE_TREE_CLASS, linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { FOLDER_NOTE_TREE_CLASS, linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon, toggleSelectedPath } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { filterLinkedTagSpaceItems } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isFilter, isTagTreeItemPath } from "schemas/builtin";
@@ -348,5 +348,22 @@ describe("treeItemActiveColorVariables", () => {
         expect(treeItemActiveColorVariables("#ff6699", true)).toEqual({
             "--icon-color": "#ffffff",
         });
+    });
+});
+
+describe("toggleSelectedPath", () => {
+    const alpha = { id: "Vault/alpha.md", path: "Vault/alpha.md" } as any;
+    const beta = { id: "Vault/beta.md", path: "Vault/beta.md" } as any;
+
+    it("adds an unselected item to the selection", () => {
+        expect(toggleSelectedPath([alpha], beta)).toEqual([alpha, beta]);
+    });
+
+    it("removes an already selected item on a repeated alt-click", () => {
+        expect(toggleSelectedPath([alpha, beta], beta)).toEqual([alpha]);
+    });
+
+    it("clears the selection when the only selected item is toggled", () => {
+        expect(toggleSelectedPath([alpha], alpha)).toEqual([]);
     });
 });

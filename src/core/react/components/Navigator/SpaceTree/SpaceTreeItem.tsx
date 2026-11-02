@@ -72,6 +72,9 @@ export interface TreeItemProps {
     dragActive: boolean;
 }
 
+export const toggleSelectedPath = (selected: TreeNode[], path: TreeNode): TreeNode[] =>
+    selected.some((f) => f.id == path.id) ? selected.filter((f) => f.id != path.id) : [...selected, path];
+
 export const TreeItem = (props: TreeItemProps) => {
     const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", indicatorDepth = null, collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace } = useContext(NavigatorContext);
@@ -91,7 +94,7 @@ export const TreeItem = (props: TreeItemProps) => {
             onSelectRange(path.id as string);
             return;
         } else if (e.altKey) {
-            setSelectedPaths((s) => [...s.filter((f) => f.id != path.id), path]);
+            setSelectedPaths((s) => toggleSelectedPath(s, path));
             return;
         }
         if (isTagSpace) {
