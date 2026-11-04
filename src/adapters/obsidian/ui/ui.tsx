@@ -75,11 +75,12 @@ export class ObsidianUI implements UIAdapter {
     };
 
     public isPluginEnabled = (id: string) => Boolean(this.plugin.app.plugins.getPlugin(id));
-    public createExcalidrawDrawing = async (folder?: string) => {
+    public createExcalidrawDrawing = async (folder?: string, location?: TargetLocation) => {
         const excalidraw = this.plugin.app.plugins.getPlugin("obsidian-excalidraw-plugin");
         if (!excalidraw?.createAndOpenDrawing) return;
 
-        const path = await excalidraw.createAndOpenDrawing("Untitled.excalidraw.md", "new-tab", folder == "/" ? "" : folder);
+        const paneTarget = location == "split" ? "new-pane" : location == "tab" ? "new-tab" : "active-pane";
+        const path = await excalidraw.createAndOpenDrawing("Untitled.excalidraw.md", paneTarget, folder == "/" ? "" : folder);
         if (path) {
             this.manager.setActivePath(path);
         }

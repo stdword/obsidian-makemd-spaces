@@ -2,6 +2,7 @@ import classNames from "classnames";
 import React, { CSSProperties, useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
+import { targetLocationForEvent } from "core/utils/targetLocation";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { PathStickerView } from "core/react/components/PathSticker";
 import { Superstate } from "makemd-core";
@@ -110,7 +111,7 @@ export const TreeItem = (props: TreeItemProps) => {
             }
         }
         if (canOpenTreeItemPath(path.item)) {
-            superstate.ui.openPath(path.item.path, e.ctrlKey || e.metaKey || e.button == 1 ? (e.altKey ? "split" : "tab") : false);
+            superstate.ui.openPath(path.item.path, targetLocationForEvent(e));
         }
         setActivePath(path.item.path);
         setSelectedPaths([path]);

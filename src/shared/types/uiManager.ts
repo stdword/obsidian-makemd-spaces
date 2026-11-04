@@ -47,7 +47,7 @@ export interface IUIManager {
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
     isPluginEnabled: (id: string) => boolean;
-    createExcalidrawDrawing: (folder?: string) => Promise<void>;
+    createExcalidrawDrawing: (folder?: string, location?: TargetLocation) => Promise<void>;
 }
 
 export interface UIAdapter {
@@ -69,7 +69,7 @@ export interface UIAdapter {
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
     isPluginEnabled: (id: string) => boolean;
-    createExcalidrawDrawing: (folder?: string) => Promise<void>;
+    createExcalidrawDrawing: (folder?: string, location?: TargetLocation) => Promise<void>;
     mainMenu: (el: HTMLElement, superstate: ISuperstate) => void;
 }
 export type UIManagerEventTypes = {

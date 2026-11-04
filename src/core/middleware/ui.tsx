@@ -168,7 +168,7 @@ export class UIManager implements IUIManager {
     public isPluginEnabled(id: string) {
         return this.mainFrame.isPluginEnabled(id);
     }
-    public createExcalidrawDrawing(folder?: string) {
-        return this.mainFrame.createExcalidrawDrawing(folder);
+    public createExcalidrawDrawing(folder?: string, location?: TargetLocation) {
+        return this.mainFrame.createExcalidrawDrawing(folder, location);
     }
 }

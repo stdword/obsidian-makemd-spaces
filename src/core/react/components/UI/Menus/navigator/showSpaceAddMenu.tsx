@@ -6,6 +6,7 @@ import { SpaceState, FilesystemSpaceInfo } from "shared/types/PathState";
 import { Rect } from "shared/types/Pos";
 import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
 import { windowFromDocument } from "utils/dom";
+import { targetLocationForEvent } from "core/utils/targetLocation";
 import { SelectOption, Superstate } from "makemd-core";
 import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { InputModal } from "../../Modals/InputModal";
@@ -15,8 +16,8 @@ import { showLinkMenu } from "../modals/linkMenu";
 export const newNoteMenuOption = (superstate: Superstate, space: SpaceState, dontOpen?: boolean): SelectOption => ({
     name: i18n.labels.createNote,
     icon: "ui//file-text",
-    onClick: () => {
-        newPathInSpace(superstate, space, "md", DEFAULT_NEW_NOTE_NAME, dontOpen);
+    onClick: (e) => {
+        newPathInSpace(superstate, space, "md", DEFAULT_NEW_NOTE_NAME, dontOpen, undefined, targetLocationForEvent(e));
     },
 });
 
@@ -75,24 +76,24 @@ export const showSpaceAddMenu = (superstate: Superstate, offset: Rect, win: Wind
     menuOptions.push({
         name: i18n.buttons.createCanvas,
         icon: "ui//layout-dashboard",
-        onClick: () => {
-            newPathInSpace(superstate, space, "canvas", null, dontOpen);
+        onClick: (e) => {
+            newPathInSpace(superstate, space, "canvas", null, dontOpen, undefined, targetLocationForEvent(e));
         },
     });
     if (superstate.ui.isPluginEnabled("obsidian-excalidraw-plugin")) {
         menuOptions.push({
             name: i18n.buttons.createDrawing,
             icon: "ui//excalidraw",
-            onClick: () => {
-                superstate.ui.createExcalidrawDrawing((space.space as FilesystemSpaceInfo)?.folderPath);
+            onClick: (e) => {
+                superstate.ui.createExcalidrawDrawing((space.space as FilesystemSpaceInfo)?.folderPath, targetLocationForEvent(e));
             },
         });
     }
     menuOptions.push({
         name: i18n.buttons.createBase,
         icon: "ui//table",
-        onClick: () => {
-            newPathInSpace(superstate, space, "base", null, dontOpen);
+        onClick: (e) => {
+            newPathInSpace(superstate, space, "base", null, dontOpen, undefined, targetLocationForEvent(e));
         },
     });
 
