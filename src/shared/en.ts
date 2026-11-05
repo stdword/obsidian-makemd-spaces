@@ -234,10 +234,6 @@ export const en = {
             name: "Use Obsidian Context Menu",
             desc: "Show the Obsidian context menu instead of Spaces",
         },
-        expandFolderOnClick: {
-            name: "Auto Expand Folder",
-            desc: "Auto expand folders on click",
-        },
         revealActiveFile: {
             name: "Reveal Active File",
             desc: "Automatically reveal the active file in Spaces",

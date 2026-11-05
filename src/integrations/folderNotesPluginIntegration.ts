@@ -56,3 +56,8 @@ export const folderPathForHiddenFolderNote = (superstate: ISuperstate, path: str
     const parentSpace = superstate.spacesIndex.get(parentPath);
     return parentSpace?.type == "folder" && parentSpace.space?.notePath == path ? parentSpace.path : null;
 };
+
+// The navigator highlights the row whose path equals the active path. A hidden folder note
+// has no row, so its folder is treated as the active item instead.
+export const navigatorActivePathForPath = (superstate: ISuperstate, path: string): string =>
+    folderPathForHiddenFolderNote(superstate, path) ?? path;

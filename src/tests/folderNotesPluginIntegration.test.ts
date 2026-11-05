@@ -1,4 +1,4 @@
-import { filterFolderNoteChildren, folderPathForHiddenFolderNote, getFolderNotePath } from "integrations/folderNotesPluginIntegration";
+import { filterFolderNoteChildren, folderPathForHiddenFolderNote, getFolderNotePath, navigatorActivePathForPath } from "integrations/folderNotesPluginIntegration";
 import { PathStateWithRank } from "shared/types/superstate";
 
 const item = (path: string, type = "file"): PathStateWithRank =>
@@ -114,5 +114,20 @@ describe("FolderNotesPluginIntegration", () => {
         });
 
         expect(folderPathForHiddenFolderNote(superstate, notePath)).toBeNull();
+    });
+
+    it("highlights the folder in the navigator when its hidden folder note is active", () => {
+        const notePath = "Recipes/Soups/Soups.md";
+        const superstate = Object.assign(superstateWithFolderNotes({ hideFolderNote: true }), {
+            pathStateForPath: jest.fn(() => item(notePath)),
+            spacesIndex: new Map([["Recipes/Soups", {
+                path: "Recipes/Soups",
+                type: "folder",
+                space: { notePath },
+            }]]),
+        });
+
+        expect(navigatorActivePathForPath(superstate, notePath)).toBe("Recipes/Soups");
+        expect(navigatorActivePathForPath(superstate, "Recipes/Soups/Borscht.md")).toBe("Recipes/Soups/Borscht.md");
     });
 });

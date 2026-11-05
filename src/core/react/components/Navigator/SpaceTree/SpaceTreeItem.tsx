@@ -76,6 +76,13 @@ export interface TreeItemProps {
 export const toggleSelectedPath = (selected: TreeNode[], path: TreeNode): TreeNode[] =>
     selected.some((f) => f.id == path.id) ? selected.filter((f) => f.id != path.id) : [...selected, path];
 
+// A folder click never folds (that is the double click). An unselected folder gets selected and
+// its folder note opened; the single selected folder ignores further clicks.
+export const folderClickPlan = (selected: boolean, selectedCount: number, folderNotePath: string | null): { select: boolean; openPath: string | null } => {
+    if (selected && selectedCount == 1) return { select: false, openPath: null };
+    return { select: true, openPath: selected ? null : (folderNotePath ?? null) };
+};
+
 export const TreeItem = (props: TreeItemProps) => {
     const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", indicatorDepth = null, collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace } = useContext(NavigatorContext);
@@ -101,20 +108,23 @@ export const TreeItem = (props: TreeItemProps) => {
         if (isTagSpace) {
             onCollapse?.(data, Boolean(collapsed));
         } else if (isSpace) {
-            if (superstate.settings.expandFolderOnClick) {
-                if (collapsed) {
-                    onCollapse(data, true);
-                } else if (selected) {
-                    // Only collapse if already selected, so first click selects, second click collapses
-                    onCollapse(data, false);
-                }
-            }
+            const plan = folderClickPlan(selected, selectedPaths.length, data.folderNotePath ?? null);
+            if (!plan.select) return;
+            if (plan.openPath) superstate.ui.openPath(plan.openPath, targetLocationForEvent(e));
+            setActivePath(path.item.path);
+            setSelectedPaths([path]);
+            return;
         }
         if (canOpenTreeItemPath(path.item)) {
             superstate.ui.openPath(path.item.path, targetLocationForEvent(e));
         }
         setActivePath(path.item.path);
         setSelectedPaths([path]);
+    };
+
+    const toggleFolderOnDoubleClick = (e: React.MouseEvent) => {
+        if (!isSpace || isTagSpace || e.shiftKey || e.altKey) return;
+        onCollapse(data, false);
     };
 
     const onDragStarted = (e: React.DragEvent<HTMLDivElement>) => {
@@ -231,6 +241,11 @@ export const TreeItem = (props: TreeItemProps) => {
                 ref={innerRef}
                 onAuxClick={openAuxClick}
                 onClick={(e) => openPathAtTarget(data, e)}
+                onDoubleClick={toggleFolderOnDoubleClick}
+                onMouseDown={(e) => {
+                    // Keep a double click from selecting the row text.
+                    if (e.detail > 1) e.preventDefault();
+                }}
                 onContextMenu={(e) => handleRightClick(e)}
                 {...dropProps}
                 {...innerProps}
@@ -263,7 +278,9 @@ export const TreeItem = (props: TreeItemProps) => {
                                 ...treeItemActiveColorVariables(color, isSpace),
                             } as TreeItemStyle
                         }
-                        data-path={pathState?.path}
+                        // Not data-path: Folder Notes treats any .nav-folder-title[data-path] as the file
+                        // explorer and swallows title clicks before the row handler runs.
+                        data-tree-path={pathState?.path}
                     >
                         {data.type == "space" && (
                             <CollapseToggle

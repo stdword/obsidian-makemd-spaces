@@ -8,7 +8,7 @@ import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
 import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth, verticalInsertionZone } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
-import { filterFolderNoteChildren } from "integrations/folderNotesPluginIntegration";
+import { filterFolderNoteChildren, navigatorActivePathForPath } from "integrations/folderNotesPluginIntegration";
 import { Superstate } from "makemd-core";
 import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal, flushSync } from "react-dom";
@@ -491,7 +491,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     }, [reloadData]);
 
     const changeActivePath = (path: string) => {
-        setActivePath(path);
+        setActivePath(navigatorActivePathForPath(superstate, path));
     };
 
     const overIndex = useMemo(() => flattenedTree.findIndex((f) => f.id == overId), [overId, flattenedTree]);

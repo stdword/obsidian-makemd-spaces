@@ -128,11 +128,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     },
                 },
                 {
-                    name: "expandFolderOnClick",
-                    category: "system",
-                    type: "boolean",
-                },
-                {
                     name: "revealActiveFile",
                     category: "system",
                     type: "boolean",

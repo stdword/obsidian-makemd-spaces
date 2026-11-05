@@ -281,10 +281,6 @@ body .mk-tree-new {
     gap: 2px;
 }
 
-.workspace-leaf:not(.mod-active) .is-selected {
-    background: var(--nav-item-background-active) !important;
-}
-
 .mk-tree-wrapper.is-highlighted {
     background: var(--nav-item-background-active) !important;
 }
@@ -483,6 +479,13 @@ body .mk-tree-wrapper:hover .mk-path-link {
     color: var(--nav-item-color-active);
 
     background: var(--nav-item-background-active);
+}
+
+/* The active row must still show whether it is part of the selection, otherwise
+   alt-clicking it looks like a no-op (Obsidian's .tree-item-self.is-selected loses on specificity). */
+.mk-tree-item.is-active.is-selected:not(.clone) {
+    color: var(--nav-item-color-selected);
+    background: var(--nav-item-background-selected);
 }
 
 .mk-icon-menu {

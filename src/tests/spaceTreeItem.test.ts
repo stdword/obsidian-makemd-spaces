@@ -1,4 +1,4 @@
-import { FOLDER_NOTE_TREE_CLASS, linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon, toggleSelectedPath } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { FOLDER_NOTE_TREE_CLASS, linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon, toggleSelectedPath, folderClickPlan } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { filterLinkedTagSpaceItems } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
 import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isFilter, isTagTreeItemPath } from "schemas/builtin";
@@ -211,6 +211,21 @@ describe("folder note style", () => {
 });
 
 
+describe("selected active row style", () => {
+    it("shows the selection on the active row so alt-click toggling is visible", () => {
+        const navigatorCss = fs.readFileSync(path.resolve(__dirname, "../css/Panels/Navigator/Navigator.css"), "utf8");
+        const rule = navigatorCss.match(/\.mk-tree-item\.is-active\.is-selected:not\(\.clone\) \{([^}]*)\}/);
+        expect(rule).not.toBeNull();
+        expect(rule[1]).toContain("var(--nav-item-background-selected)");
+        expect(navigatorCss.indexOf(".mk-tree-item.is-active.is-selected")).toBeGreaterThan(navigatorCss.indexOf(".mk-tree-item.is-active:not(.clone)"));
+    });
+
+    it("keeps the selection color when the navigator pane loses focus", () => {
+        const navigatorCss = fs.readFileSync(path.resolve(__dirname, "../css/Panels/Navigator/Navigator.css"), "utf8");
+        expect(navigatorCss).not.toContain(".workspace-leaf:not(.mod-active) .is-selected");
+    });
+});
+
 describe("treeItemColorVariables", () => {
     it("uses the current tag-space file color instead of stale global path color", () => {
         const path = "Notes/Tagged.md";
@@ -365,5 +380,37 @@ describe("toggleSelectedPath", () => {
 
     it("clears the selection when the only selected item is toggled", () => {
         expect(toggleSelectedPath([alpha], alpha)).toEqual([]);
+    });
+});
+
+describe("folderClickPlan", () => {
+    it("selects an unselected folder and opens its folder note without folding", () => {
+        expect(folderClickPlan(false, 0, "Trips/Norway/Norway.md")).toEqual({ select: true, openPath: "Trips/Norway/Norway.md" });
+    });
+
+    it("only selects an unselected folder that has no folder note", () => {
+        expect(folderClickPlan(false, 0, null)).toEqual({ select: true, openPath: null });
+    });
+
+    it("does nothing when the folder is the single selected item", () => {
+        expect(folderClickPlan(true, 1, "Trips/Norway/Norway.md")).toEqual({ select: false, openPath: null });
+    });
+
+    it("narrows a multi-selection down to the clicked folder", () => {
+        expect(folderClickPlan(true, 3, null)).toEqual({ select: true, openPath: null });
+    });
+});
+
+describe("folder row click behavior", () => {
+    const treeItemSource = fs.readFileSync(path.join(__dirname, "../core/react/components/Navigator/SpaceTree/SpaceTreeItem.tsx"), "utf8");
+
+    it("does not expose data-path so Folder Notes leaves title clicks to the row handler", () => {
+        expect(treeItemSource).not.toMatch(/\bdata-path=/);
+        expect(treeItemSource).toContain("data-tree-path=");
+    });
+
+    it("folds a folder on double click instead of single click", () => {
+        expect(treeItemSource).toContain("onDoubleClick=");
+        expect(treeItemSource).not.toContain("expandFolderOnClick");
     });
 });

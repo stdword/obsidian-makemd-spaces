@@ -20,7 +20,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
         field: "name",
         asc: true,
     },
-    expandFolderOnClick: true,
     folderIndentationLines: true,
     openSpacesOnLaunch: true,
     overrideNativeMenu: false,
