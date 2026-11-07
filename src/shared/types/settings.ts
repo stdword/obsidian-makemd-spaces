@@ -13,7 +13,6 @@ export interface MakeMDSettings {
     newFileLocation: string;
 
     // settings
-    deleteFileOption: "trash" | "permanent" | "system-trash";
     folderIndentationLines: boolean;
     defaultFoldersAtTop: boolean;
     defaultGroupBySubtags: boolean;

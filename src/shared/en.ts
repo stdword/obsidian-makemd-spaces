@@ -243,16 +243,6 @@ export const en = {
             name: "Reveal Active File",
             desc: "Automatically reveal the active file in Spaces",
         },
-        deleteFileOption: {
-            name: "Delete File Option",
-            desc: "Select how you want files to be deleted",
-        },
-
-        spacesDeleteOptions: {
-            permanent: "Permanent",
-            trash: "Trash",
-            "system-trash": "System Trash",
-        },
     },
 
     colors: {

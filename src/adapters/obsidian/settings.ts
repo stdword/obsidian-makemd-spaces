@@ -132,18 +132,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     category: "system",
                     type: "boolean",
                 },
-                {
-                    name: "deleteFileOption",
-                    category: "system",
-                    type: "options",
-                    props: {
-                        options: [
-                            { name: i18n.settings.spacesDeleteOptions.permanent, value: "permanent" },
-                            { name: i18n.settings.spacesDeleteOptions.trash, value: "trash" },
-                            { name: i18n.settings.spacesDeleteOptions["system-trash"], value: "system-trash" },
-                        ],
-                    },
-                },
             ],
         };
 

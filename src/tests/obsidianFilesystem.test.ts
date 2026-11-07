@@ -226,3 +226,30 @@ describe("file names with extensions", () => {
         expect(uniqueFileName("Other.excalidraw.md", "Sketch", "excalidraw", folder as any)).toBe("Sketch 1.excalidraw.md");
     });
 });
+
+describe("ObsidianFileSystem.deleteFile", () => {
+    it("deletes through fileManager.trashFile so Obsidian's own trash setting applies", async () => {
+        const filesystem = Object.create(ObsidianFileSystem.prototype) as ObsidianFileSystem;
+        const file = new TFile();
+        const trashFile = jest.fn(() => Promise.resolve());
+        const vaultDelete = jest.fn(() => Promise.resolve());
+        const vaultTrash = jest.fn(() => Promise.resolve());
+        (filesystem as any).plugin = {
+            superstate: { settings: {} },
+            app: {
+                fileManager: { trashFile },
+                vault: {
+                    getAbstractFileByPath: jest.fn(() => file),
+                    delete: vaultDelete,
+                    trash: vaultTrash,
+                },
+            },
+        };
+
+        await filesystem.deleteFile("Inbox/Scratch.md");
+
+        expect(trashFile).toHaveBeenCalledWith(file);
+        expect(vaultDelete).not.toHaveBeenCalled();
+        expect(vaultTrash).not.toHaveBeenCalled();
+    });
+});

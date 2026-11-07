@@ -16,6 +16,7 @@ import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { ConfirmationModal, formatMessage } from "core/react/components/UI/Modals/ConfirmationModal";
 import { removeSpace } from "core/utils/superstate/spaces";
+import { deletePath } from "core/utils/superstate/path";
 import { getLineRangeFromRef } from "utils/obsidian";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
@@ -339,7 +340,17 @@ export class ObsidianUI implements UIAdapter {
                 item.setIcon("trash");
                 item.onClick(() => {
                     if (file instanceof TFile) {
-                        this.plugin.app.vault.delete(file);
+                        this.openModal(
+                            i18n.labels.deleteFile,
+                            <ConfirmationModal
+                                confirmAction={() => {
+                                    deletePath(this.manager.superstate, path);
+                                }}
+                                confirmLabel={i18n.buttons.delete}
+                                message={formatMessage(i18n.descriptions.deleteFile, [<i>{file.name}</i>])}
+                            ></ConfirmationModal>,
+                            window,
+                        );
                         return;
                     }
                     this.openModal(

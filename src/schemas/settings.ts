@@ -13,7 +13,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
     newFileLocation: "root",
 
     // settings
-    deleteFileOption: "system-trash",
     defaultFoldersAtTop: true,
     defaultGroupBySubtags: true,
     defaultSpaceSort: {

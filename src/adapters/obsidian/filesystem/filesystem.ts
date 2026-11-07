@@ -433,15 +433,9 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                 }
             }
         }
-        const deleteOption = this.plugin.superstate.settings.deleteFileOption;
         if (!file) return;
-        if (deleteOption === "permanent") {
-            return this.plugin.app.vault.delete(file, true);
-        } else if (deleteOption === "system-trash") {
-            return this.plugin.app.vault.trash(file, true);
-        } else if (deleteOption === "trash") {
-            return this.plugin.app.vault.trash(file, false);
-        }
+        // Honour Obsidian's own "Deleted files" setting (Files & Links) instead of a plugin option.
+        return this.plugin.app.fileManager.trashFile(file);
     }
     public filesForTag(tag: string) {
         return getAllFilesForTag(this.plugin, tag);
