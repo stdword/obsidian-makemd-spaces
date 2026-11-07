@@ -28,7 +28,7 @@ export interface IUIManager {
     viewsByPath: (path: string) => ViewAdapter[];
     adapters: UIAdapter[];
     createRoot: (container: Element | DocumentFragment, options?: RootOptions) => Root;
-    openMenu: (rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor?: Anchors, onHide?: () => void, force?: boolean) => MenuObject;
+    openMenu: (rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor?: Anchors, onHide?: () => void) => MenuObject;
     openCustomMenu: (rect: Rect, fc: JSX.Element, props: any, win: Window, defaultAnchor?: Anchors, onHide?: () => void, className?: string, onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject) => MenuObject;
     notify: (content: string, destination?: string) => void;
     error: (error: any) => void;

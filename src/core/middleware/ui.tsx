@@ -95,8 +95,8 @@ export class UIManager implements IUIManager {
         return this.mainFrame.createRoot(container);
     }
 
-    public openMenu(rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor: Anchors = "right", onHide?: () => void, force?: boolean): MenuObject {
-        return this.trackMenuObject(showSelectMenu(rect, menuProps, win, defaultAnchor, onHide, force));
+    public openMenu(rect: Rect, menuProps: SelectMenuProps, win: Window, defaultAnchor: Anchors = "right", onHide?: () => void): MenuObject {
+        return this.trackMenuObject(showSelectMenu(rect, menuProps, win, defaultAnchor, onHide));
     }
 
     public openCustomMenu(rect: Rect, fc: JSX.Element, props: any, win: Window, defaultAnchor: Anchors = "right", onHide?: () => void, className?: string, onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject): MenuObject {

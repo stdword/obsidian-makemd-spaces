@@ -44,6 +44,12 @@ describe("showMenu", () => {
         expect(guard).toBeLessThan(notify);
     });
 
+    it("leaves centered positioning to the .mk-menu-centered CSS rule", () => {
+        expect(source).not.toContain('portalElement.style.top = "30%"');
+        expect(source).toContain("if (!props.centered) {");
+        expect(source).not.toMatch(/\bforce\b/);
+    });
+
     it("applies the requested className to the menu portal", () => {
         expect(source).toContain("portalElement.classList.add(...props.className.split");
         expect(read("src/css/Menus/Menu.css")).not.toContain(".mk-combo-menu {");

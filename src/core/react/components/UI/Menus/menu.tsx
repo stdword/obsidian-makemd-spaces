@@ -88,7 +88,6 @@ export const showMenu = (props: {
     onSubmenu?: (openSubmenu: (offset: Rect, onHide: () => void) => MenuObject) => MenuObject;
     className?: string;
     centered?: boolean;
-    force?: boolean;
 }): MenuObject => {
     const backdropElement = props.centered ? props.win.document.createElement("div") : null;
     const portalElement = props.win.document.createElement("div");
@@ -159,11 +158,9 @@ export const showMenu = (props: {
     };
 
     updateRoot(props.props);
-    if (props.centered) {
-        portalElement.style.position = "fixed";
-        portalElement.style.left = "50%";
-        portalElement.style.top = "30%";
-    } else {
+    // A centered menu is positioned by .mk-menu-centered in Menu.css; inline styles here
+    // would override that rule.
+    if (!props.centered) {
         portalElement.style.position = "absolute";
         portalElement.style.left = `${props.rect.x}px`;
         portalElement.style.top = `${props.rect.y}px`;
