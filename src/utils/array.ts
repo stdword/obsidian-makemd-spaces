@@ -1,7 +1,5 @@
 export const insert = (arr: any[], index: number, newItem: any) => (!index || index <= 0 ? [newItem, ...arr] : [...arr.slice(0, index), newItem, ...arr.slice(index)]);
 
-export const insertMulti = (arr: any[], index: number, newItem: any[]) => (!index || index <= 0 ? [...newItem, ...arr] : [...arr.slice(0, index), ...newItem, ...arr.slice(index)]);
-
 export const uniq = (a: any[]) => [...new Set(a)];
 export const uniqCaseInsensitive = (a: string[]) => [...new Map(a.map((s) => [s.toLowerCase(), s])).values()];
 export const uniqueNameFromString = (name: string, cols: string[]) => {

@@ -2,10 +2,6 @@ import { Superstate } from "makemd-core";
 import { pathToString } from "utils/path";
 
 
-export const validateName = (tag: string) => {
-    return tag.trim();
-};
-
 export const getAllSubtags = (superstate: Superstate, tag: string) => {
     const tags = superstate.spaceManager.readTags();
     return tags.filter((f) => f.startsWith(tag) && f != tag);

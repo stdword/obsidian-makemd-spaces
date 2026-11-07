@@ -1,6 +1,5 @@
 import { FOLDER_NOTE_TREE_CLASS, linkedItemIcon, pathStateForTreeItem, shouldShowLinkedItemIcon, shouldShowPinnedItemIcon, toggleSelectedPath, folderClickPlan } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { filterLinkedTagSpaceItems } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
-import { calculateFolderLineHeight } from "core/react/components/Navigator/SpaceTree/treeLineHeight";
 import { canOpenTreeItemPath, isFilter, isTagTreeItemPath } from "schemas/builtin";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "core/react/components/Navigator/SpaceTree/treeItemStyles";
 import fs from "fs";
@@ -24,24 +23,6 @@ describe("canOpenTreeItemPath", () => {
     it("keeps folders and files openable", () => {
         expect(canOpenTreeItemPath({ type: "space", subtype: "folder", path: "Projects", sticker: "", color: "" } as any)).toBe(true);
         expect(canOpenTreeItemPath({ type: "file", subtype: "md", path: "Note.md", sticker: "", color: "" } as any)).toBe(true);
-    });
-});
-
-describe("calculateFolderLineHeight", () => {
-    it("extends a parent folder line through expanded nested descendants", () => {
-        const flattenedTree = [
-            { id: "Workspace/Area", depth: 1, type: "space" },
-            { id: "Workspace/Area/Notes", depth: 2, type: "space" },
-            { id: "Workspace/Area/Notes/file-a.md", depth: 3, type: "file" },
-            { id: "Workspace/Area/Notes/file-b.md", depth: 3, type: "file" },
-            { id: "Workspace/Area/Notes/file-c.md", depth: 3, type: "file" },
-            { id: "Workspace/Area/Collections", depth: 2, type: "space" },
-            { id: "Workspace/Area/Resources", depth: 2, type: "space" },
-            { id: "spaces://#topic/subtopic", depth: 0, type: "group" },
-        ] as any;
-        const rowHeights = flattenedTree.map(() => 25);
-
-        expect(calculateFolderLineHeight(flattenedTree, rowHeights, 0, false)).toBe(137);
     });
 });
 

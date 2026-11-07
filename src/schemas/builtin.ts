@@ -2,8 +2,6 @@ import { ensureArray } from "core/utils/schema";
 import { PathState, SpaceState } from "shared/types/PathState";
 
 
-export const encodeSpaceName = (spaceName: string) => spaceName?.replace(/\//g, "+");
-
 export const SPACE_SEPARATOR_PATH = "spaces://$separator";
 export const SPACE_HIDDEN_SEPARATOR_PATH = `${SPACE_SEPARATOR_PATH}?non-visible`;
 export const isSpaceSeparatorPath = (path: string) => path == SPACE_SEPARATOR_PATH || path == SPACE_HIDDEN_SEPARATOR_PATH;

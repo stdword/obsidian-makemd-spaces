@@ -1,18 +1,7 @@
-import { Superstate } from "makemd-core";
 
 export const removeLeadingSlash = (path: string) => (
     path.charAt(0) == "/" ? path.substring(1) : path
 );
-
-export const pathDisplayName = (path: string, superstate: Superstate) => {
-    if (!path) return "";
-
-    const uri = superstate.spaceManager.uriByString(path);
-    if (uri.refType) {
-        return uri.ref;
-    }
-    return superstate.pathsIndex.get(uri.basePath)?.name || path;
-};
 
 export const folderPathToString = (path: string) => removeLeadingSlash(path.substring(path.lastIndexOf("/"))) || path;
 export const getParentFolderPaths = (path: string): string[] => {

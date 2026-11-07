@@ -26,10 +26,6 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
         this.plugin = plugin;
     }
 
-    refreshObsidian() {
-        this.app.commands.executeCommandById("app:reload");
-    }
-
     refreshView() {
         this.display();
     }
