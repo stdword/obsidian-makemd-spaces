@@ -1,4 +1,5 @@
 import { defaultMenu, menuSeparator } from "core/react/components/UI/Menus/menu/SelectionMenu";
+import { ExcludedFiles } from "core/react/components/UI/Modals/ExcludedFiles";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
 import MakeMDPlugin from "main";
 import { SelectOption, Superstate } from "makemd-core";
@@ -61,6 +62,19 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
             superstate.ui.openModal(i18n.labels.hiddenItems, <HiddenPaths superstate={superstate}></HiddenPaths>, windowFromDocument(e.view.document));
         },
     });
+
+    // Per-focus exclusions, next to the vault-wide hidden items.
+    const focusIndex = superstate.settings.currentFocus;
+    const focus = superstate.focuses[focusIndex];
+    if (focus) {
+        menuOptions.push({
+            name: i18n.labels.manageExcludedFiles,
+            icon: "lucide//filter-x",
+            onClick: (e) => {
+                superstate.ui.openModal(i18n.labels.excludedItems.replace("${1}", focus.name), <ExcludedFiles superstate={superstate} focusIndex={focusIndex} />, windowFromDocument(e.view.document));
+            },
+        });
+    }
 
     menuOptions.push({
         name: i18n.menu.settings,
