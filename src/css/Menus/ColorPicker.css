@@ -78,15 +78,6 @@
     gap: 8px;
 }
 
-.mk-color-hex-input {
-    flex: 1;
-    padding: 4px 8px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    font-size: 12px;
-    font-family: monospace;
-}
-
 .mk-color-swatches {
     display: flex;
     flex-direction: column;

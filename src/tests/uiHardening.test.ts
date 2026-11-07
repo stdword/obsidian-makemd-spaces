@@ -1,6 +1,5 @@
 import { readFileSync } from "fs";
 import { isConfirmKey } from "core/react/components/UI/Modals/ConfirmationModal";
-import { hexInputValue, normalizeHexInput } from "core/react/components/UI/Menus/modals/colorPickerMenu";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -20,20 +19,11 @@ describe("ConfirmationModal keyboard", () => {
     });
 });
 
-describe("ColorPicker hex field", () => {
-    it("shows only real hex colors in the field", () => {
-        expect(hexInputValue("#1A2b3C")).toBe("#1A2b3C");
-        expect(hexInputValue("var(--mk-color-red)")).toBe("");
-        expect(hexInputValue("")).toBe("");
-        expect(hexInputValue(undefined as unknown as string)).toBe("");
-    });
-
-    it("accepts a complete hex with or without the hash and rejects partial input", () => {
-        expect(normalizeHexInput("#A1B2C3")).toBe("#A1B2C3");
-        expect(normalizeHexInput("a1b2c3")).toBe("#a1b2c3");
-        expect(normalizeHexInput(" #A1B2C3 ")).toBe("#A1B2C3");
-        expect(normalizeHexInput("#A1B")).toBeNull();
-        expect(normalizeHexInput("#GGGGGG")).toBeNull();
+describe("ColorPicker", () => {
+    it("has no text input: colors come from the palette and the canvas only", () => {
+        const source = read("src/core/react/components/UI/Menus/modals/colorPickerMenu.tsx");
+        expect(source).not.toContain("<input");
+        expect(source).not.toContain("mk-color-hex-input");
     });
 
     it("creates the debounced saver once and flushes it on unmount", () => {

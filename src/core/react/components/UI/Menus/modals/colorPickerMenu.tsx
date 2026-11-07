@@ -223,15 +223,6 @@ const ColorPaletteSelector: React.FC<{
     );
 };
 
-// Palette values are CSS variables (var(--mk-color-red)); only a real hex belongs in the hex field.
-export const hexInputValue = (color: string): string => (/^#[0-9A-F]{6}$/i.test(color ?? "") ? color : "");
-
-// Accepts "#RRGGBB" or "RRGGBB" while typing and returns the canonical "#RRGGBB", or null if incomplete.
-export const normalizeHexInput = (draft: string): string | null => {
-    const match = (draft ?? "").trim().match(/^#?([0-9A-F]{6})$/i);
-    return match ? `#${match[1]}` : null;
-};
-
 export const ColorPicker = (props: { superstate: Superstate; color: string; hide?: () => void; saveValue: (color: string) => void; stayOpen?: boolean; hidePaletteSelector?: boolean }) => {
     const [value, setValue] = useState(props.color ?? "#eb3b5a");
     const [currentColor, setCurrentColor] = useState<string>(value);
@@ -254,11 +245,6 @@ export const ColorPicker = (props: { superstate: Superstate; color: string; hide
         setValue(v);
         debouncedSaveValue(v);
     };
-
-    // The hex field keeps its own draft so partial input is not reverted by the
-    // controlled value; a complete #RRGGBB (with or without the #) is saved as typed.
-    const [hexDraft, setHexDraft] = useState(hexInputValue(currentColor));
-    useEffect(() => setHexDraft(hexInputValue(currentColor)), [currentColor]);
 
     const updateColor = (color: string) => {
         if (color) {
@@ -382,19 +368,6 @@ export const ColorPicker = (props: { superstate: Superstate; color: string; hide
                     {/* Current Color Display */}
                     <div className="mk-color-current" style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
                         <ColorSwatch color={currentColor} size="large" onClick={() => {}} />
-                        <input
-                            type="text"
-                            value={hexDraft}
-                            onChange={(e) => {
-                                setHexDraft(e.target.value);
-                                const hex = normalizeHexInput(e.target.value);
-                                if (hex) saveValue(hex);
-                            }}
-                            onBlur={() => setHexDraft(hexInputValue(currentColor))}
-                            className="mk-color-hex-input"
-                            placeholder="#000000"
-                            style={{ flex: 1, minWidth: 0 }}
-                        />
                     </div>
                 </div>
             )}
