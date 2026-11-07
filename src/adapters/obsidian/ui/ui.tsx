@@ -299,7 +299,7 @@ export class ObsidianUI implements UIAdapter {
         if (file) {
             const fileMenu = new Menu();
             fileMenu.addItem((item) => {
-                item.setTitle("Delete");
+                item.setTitle(i18n.menu.delete);
                 item.setIcon("trash");
                 item.onClick(() => {
                     if (file instanceof TFile) {

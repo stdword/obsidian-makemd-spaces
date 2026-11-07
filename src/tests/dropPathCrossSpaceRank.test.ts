@@ -1,14 +1,3 @@
-jest.mock(
-    "makemd-core",
-    () => ({
-        SelectOptionType: {
-            Submenu: "submenu",
-            Separator: "separator",
-            Radio: "radio",
-        },
-    }),
-    { virtual: true },
-);
 jest.mock("core/utils/superstate/spaces", () => ({
     ...jest.requireActual("core/utils/superstate/spaces"),
     movePathToNewSpaceAtIndex: jest.fn(() => Promise.resolve()),

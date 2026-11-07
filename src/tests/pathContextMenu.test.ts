@@ -1,15 +1,3 @@
-jest.mock(
-    "makemd-core",
-    () => ({
-        SelectOptionType: {
-            Submenu: "submenu",
-            Separator: "separator",
-            Radio: "radio",
-        },
-    }),
-    { virtual: true },
-);
-
 jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
     showColorPickerMenu: jest.fn((_superstate, _offset, _win, _color, saveValue) => saveValue("#123456")),
 }));
@@ -860,7 +848,7 @@ describe("showSpaceContextMenu", () => {
 
         const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
-        expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(true);
+        expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === i18n.menu.fileNameSortAlphaAsc)?.value).toBe(true);
         expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (1 to 9)")).toBeUndefined();
         expect(openMenu.mock.calls[1][1].options.find((option: any) => option.name === "File Name (9 to 1)")).toBeUndefined();
 
@@ -878,8 +866,8 @@ describe("showSpaceContextMenu", () => {
 
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
-        expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "File Name (A to Z)")?.value).toBe(false);
-        expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === "Modified Time (new to old)")?.value).toBe(true);
+        expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === i18n.menu.fileNameSortAlphaAsc)?.value).toBe(false);
+        expect(openMenu.mock.calls[2][1].options.find((option: any) => option.name === i18n.menu.modifiedTimeSortAsc)?.value).toBe(true);
     });
 
     it("passes submenu onHide to sort menu so selecting a sort closes the parent menu", () => {
@@ -982,7 +970,7 @@ describe("showSpaceContextMenu", () => {
 
         const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
-        const clearSort = openMenu.mock.calls[1][1].options.find((option: any) => option.name === "Reset to Default");
+        const clearSort = openMenu.mock.calls[1][1].options.find((option: any) => option.name === i18n.menu.clearSort);
 
         await clearSort.onClick();
 
@@ -1047,7 +1035,7 @@ describe("showSpaceContextMenu", () => {
 
         const sortMenu = openMenu.mock.calls[0][1].options.find((option: any) => option.icon === "ui//sort-desc");
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
-        const clearSort = openMenu.mock.calls[1][1].options.find((option: any) => option.name === "Reset to Default");
+        const clearSort = openMenu.mock.calls[1][1].options.find((option: any) => option.name === i18n.menu.clearSort);
 
         await clearSort.onClick();
 
@@ -1130,10 +1118,10 @@ describe("showSpaceContextMenu", () => {
         expect(rootOptions.some((option: any) => option.name === i18n.menu.new)).toBe(false);
         expect(rootOptions[0]?.name).toBe(i18n.buttons.createSeparator);
         expect(rootOptions[0]?.icon).toBe("lucide//separator-horizontal");
-        expect(rootOptions.some((option: any) => option.name === "Duplicate")).toBe(false);
-        expect(rootOptions.some((option: any) => option.name === "Rename")).toBe(false);
-        expect(rootOptions.some((option: any) => option.name === "Reveal in Finder")).toBe(false);
-        expect(rootOptions.some((option: any) => option.name === "More options")).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === i18n.menu.duplicate)).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === i18n.menu.rename)).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === i18n.menu.revealInDefault)).toBe(false);
+        expect(rootOptions.some((option: any) => option.name === i18n.menu.openNativeMenu)).toBe(false);
         expect(rootOptions.some((option: any) => option.name === i18n.menu.revealInSpaces)).toBe(false);
     });
 
@@ -1205,11 +1193,11 @@ describe("showSpaceContextMenu", () => {
         sortMenu.onSubmenu({ x: 0, y: 0, width: 0, height: 0 });
 
         const sortOptions = openMenu.mock.calls[1][1].options;
-        expect(sortOptions.some((option: any) => option.name === "Folders at the Top")).toBe(true);
-        expect(sortOptions.some((option: any) => option.name === "Group by Sub-tags")).toBe(true);
-        expect(sortOptions.some((option: any) => option.name === "Apply to Sub-tags")).toBe(true);
-        expect(sortOptions.some((option: any) => option.name === "Apply to Sub-folders")).toBe(false);
-        expect(sortOptions.some((option: any) => option.name === "File Name (A to Z)")).toBe(true);
+        expect(sortOptions.some((option: any) => option.name === i18n.menu.groupSpaces)).toBe(true);
+        expect(sortOptions.some((option: any) => option.name === i18n.menu.groupSubtags)).toBe(true);
+        expect(sortOptions.some((option: any) => option.name === i18n.menu.recursiveTagSort)).toBe(true);
+        expect(sortOptions.some((option: any) => option.name === i18n.menu.recursiveSort)).toBe(false);
+        expect(sortOptions.some((option: any) => option.name === i18n.menu.fileNameSortAlphaAsc)).toBe(true);
     });
 
     it("shows Pin to Top for a sub-tag inside its parent tag space", () => {
@@ -1233,7 +1221,7 @@ describe("showSpaceContextMenu", () => {
         showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, parentPath, undefined, 1);
 
         const rootOptions = openMenu.mock.calls[0][1].options;
-        const pinIndex = rootOptions.findIndex((option: any) => option.name === "Pin to Top");
+        const pinIndex = rootOptions.findIndex((option: any) => option.name === i18n.menu.pinToTop);
         const sortIndex = rootOptions.findIndex((option: any) => option.name === i18n.menu.sortBy);
         expect(pinIndex).toBeGreaterThan(-1);
         expect(pinIndex).toBeGreaterThan(sortIndex);

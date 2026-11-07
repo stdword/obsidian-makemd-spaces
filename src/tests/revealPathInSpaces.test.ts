@@ -1,5 +1,6 @@
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 import { eventTypes } from "schemas/event";
+import i18n from "shared/i18n";
 
 describe("revealPathInSpaces", () => {
     beforeEach(() => {
@@ -60,7 +61,7 @@ describe("revealPathInSpaces", () => {
         await revealPathInSpaces(superstate as any, "Missing/Note.md");
 
         expect(window.dispatchEvent).toHaveBeenCalled();
-        expect(notify).toHaveBeenCalledWith("Not found");
+        expect(notify).toHaveBeenCalledWith(i18n.notice.notFound);
     });
 
     it("notifies when the navigator cannot find the path inside the matched focus", async () => {
@@ -75,6 +76,6 @@ describe("revealPathInSpaces", () => {
 
         await revealPathInSpaces(superstate as any, "Content/Missing.md");
 
-        expect(notify).toHaveBeenCalledWith("Not found");
+        expect(notify).toHaveBeenCalledWith(i18n.notice.notFound);
     });
 });

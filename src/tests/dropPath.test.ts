@@ -1,15 +1,3 @@
-jest.mock(
-    "makemd-core",
-    () => ({
-        SelectOptionType: {
-            Submenu: "submenu",
-            Separator: "separator",
-            Radio: "radio",
-        },
-    }),
-    { virtual: true },
-);
-
 import { dropPathInSpaceAtIndex, dropPathInTree, dropPathsInSpaceAtIndex, rankForDropLinePosition, rankForDropPositionInSpace } from "core/utils/dnd/dropPath";
 import { linkPathToSpaceAtIndex } from "core/utils/superstate/spaces";
 import i18n from "shared/i18n";

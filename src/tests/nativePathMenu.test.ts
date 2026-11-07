@@ -37,6 +37,7 @@ jest.mock(
 
 import { ObsidianUI } from "adapters/obsidian/ui/ui";
 import { Menu, TFile } from "obsidian";
+import i18n from "shared/i18n";
 
 describe("ObsidianUI.nativePathMenu", () => {
     beforeAll(() => {
@@ -69,11 +70,11 @@ describe("ObsidianUI.nativePathMenu", () => {
 
         ui.nativePathMenu({ currentTarget: { getBoundingClientRect: () => ({ left: 0, bottom: 0 }) } } as any, "Inbox/Scratch.md");
 
-        const deleteItem = (menu as any).items.find((i: any) => i.title == "Delete");
+        const deleteItem = (menu as any).items.find((i: any) => i.title == i18n.menu.delete);
         deleteItem.onClick();
 
         expect(vaultDelete).not.toHaveBeenCalled();
         expect(openModal).toHaveBeenCalledTimes(1);
-        expect(openModal.mock.calls[0][0]).toBe("Delete File");
+        expect(openModal.mock.calls[0][0]).toBe(i18n.labels.deleteFile);
     });
 });

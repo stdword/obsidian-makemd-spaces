@@ -1,13 +1,3 @@
-jest.mock(
-    "makemd-core",
-    () => ({
-        SelectOptionType: {
-            Separator: "separator",
-        },
-    }),
-    { virtual: true },
-);
-
 jest.mock("core/react/components/UI/Menus/modals/linkMenu", () => ({
     showLinkMenu: jest.fn(),
 }));

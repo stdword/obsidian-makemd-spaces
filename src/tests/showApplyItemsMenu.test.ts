@@ -1,13 +1,3 @@
-jest.mock(
-    "makemd-core",
-    () => ({
-        SelectOptionType: {
-            Submenu: "submenu",
-        },
-    }),
-    { virtual: true },
-);
-
 jest.mock("core/react/components/UI/Menus/modals/colorPickerMenu", () => ({
     showColorPickerMenu: jest.fn(),
 }));

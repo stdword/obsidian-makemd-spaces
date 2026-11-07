@@ -500,34 +500,6 @@ describe("insertion after a trailing expanded folder", () => {
     });
 });
 
-describe("insertion after a trailing expanded folder", () => {
-    // Root
-    //   Notes/A.md
-    //   Notes/Sub        (expanded folder, LAST child of Notes)
-    //     Notes/Sub/B.md (last visible row of the subtree)
-    const tree: any = [
-        { id: "Notes", parentId: null, depth: 0, index: 0, type: "space", path: "Notes", item: { path: "Notes", type: "space" }, childrenCount: 2, collapsed: false, rank: 0, sortable: true },
-        { id: "Notes/A.md", parentId: "Notes", depth: 1, index: 1, type: "file", path: "Notes/A.md", item: { path: "Notes/A.md", parent: "Notes", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: true },
-        { id: "Notes/Sub", parentId: "Notes", depth: 1, index: 2, type: "space", path: "Notes/Sub", item: { path: "Notes/Sub", type: "space" }, childrenCount: 1, collapsed: false, rank: 1, sortable: true },
-        { id: "Notes/Sub/B.md", parentId: "Notes/Sub", depth: 2, index: 3, type: "file", path: "Notes/Sub/B.md", item: { path: "Notes/Sub/B.md", parent: "Notes/Sub", type: "file" }, childrenCount: 0, collapsed: false, rank: 0, sortable: true },
-    ];
-    const active: any = { id: "Other/X.md", parentId: "Other", depth: 1, type: "file", space: "Other", path: "Other/X.md", item: { path: "Other/X.md", parent: "Other", type: "file" }, sortable: true, rank: 0, childrenCount: 0 };
-
-    it("bottom zone of the last child at the child's depth stays inside the folder", () => {
-        const projection = getProjection(active, tree, [active.path], 3, 2, 25, true, "move", "Notes");
-        expect(projection?.parentId).toBe("Notes/Sub");
-        expect(projection?.linePosition).toBe("bottom");
-    });
-
-    it("bottom zone of the last child at the parent's depth inserts after the folder", () => {
-        // dragDepth 1 = the folder's own level, chosen by pointer X
-        const projection = getProjection(active, tree, [active.path], 3, 1, 25, true, "move", "Notes");
-        expect(projection?.parentId).toBe("Notes");
-        expect(projection?.depth).toBe(1);
-        expect(projection?.linePosition).toBe("bottom");
-    });
-});
-
 describe("raised insertion into a rank-sorted ancestor", () => {
     // Archive (rank-sorted) > Reports (alphabetical, its rows are not sortable)
     // Raising the insertion from Reports' last child to Archive's level must take
