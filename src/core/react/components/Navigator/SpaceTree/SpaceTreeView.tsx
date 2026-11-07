@@ -884,6 +884,14 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         offsetRef.current = { x: 0, y: 0 };
     };
 
+    // Pointer-drag listeners are attached once at pointerdown and live on the document
+    // for the whole gesture. Route them through a ref refreshed on every render so each
+    // move/up sees the current tree and handlers: starting a drag on a root section
+    // already rebuilds flattenedTree (hideSectionChildren), and reloadData can fire
+    // mid-drag, while the closures captured at pointerdown would still see the old tree.
+    const pointerDragHandlersRef = useRef({ dragStarted, dragOver, dragEnded, resetState, focuses, setFocuses });
+    pointerDragHandlersRef.current = { dragStarted, dragOver, dragEnded, resetState, focuses, setFocuses };
+
     const onTreePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         if (!ENABLE_POINTER_DND) return;
         if (e.button != 0 || pointerDragRef.current) return;
@@ -936,7 +944,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             const overRow = under?.closest<HTMLElement>("[data-tree-id]");
             if (overRow?.dataset.treeId) {
                 const rect = overRow.getBoundingClientRect();
-                dragOver(
+                pointerDragHandlersRef.current.dragOver(
                     { altKey: state.altKey, shiftKey: state.shiftKey, dataTransfer: { dropEffect: "move" } } as unknown as React.DragEvent<HTMLDivElement>,
                     overRow.dataset.treeId,
                     { x: state.x - rect.left, y: state.y - rect.top },
@@ -976,7 +984,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     // the window); the drag still works from the document
                     // listeners
                 }
-                dragStarted(state.id, state.sourceEl);
+                pointerDragHandlersRef.current.dragStarted(state.id, state.sourceEl);
                 // There is no native drag session behind a pointer drag, so the
                 // Obsidian dragManager must not be notified on completion.
                 nativeDragFinished.current = true;
@@ -1004,22 +1012,23 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             };
             doc.defaultView?.addEventListener("click", suppressClick, true);
             setTimeout(() => doc.defaultView?.removeEventListener("click", suppressClick, true), 0);
+            const handlers = pointerDragHandlersRef.current;
             if (focusIndex != null) {
                 const droppedPaths = dragPathsRef.current;
-                setFocuses(focuses.map((focus, index) => (index == focusIndex ? { ...focus, paths: [...focus.paths, ...droppedPaths.filter((path) => !focus.paths.includes(path))] } : focus)));
-                resetState();
+                handlers.setFocuses(handlers.focuses.map((focus, index) => (index == focusIndex ? { ...focus, paths: [...focus.paths, ...droppedPaths.filter((path) => !focus.paths.includes(path))] } : focus)));
+                handlers.resetState();
                 return;
             }
             if (overIdRef.current) {
-                dragEnded(pointerDragEventShim(ev), overIdRef.current);
+                handlers.dragEnded(pointerDragEventShim(ev), overIdRef.current);
             } else {
-                resetState();
+                handlers.resetState();
             }
         };
         const onCancel = () => {
             const wasActive = state.active;
             state.cleanup();
-            if (wasActive) resetState();
+            if (wasActive) pointerDragHandlersRef.current.resetState();
         };
         const onKey = (ev: KeyboardEvent) => {
             if (ev.key == "Escape") onCancel();
