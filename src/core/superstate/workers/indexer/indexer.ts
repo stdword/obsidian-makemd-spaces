@@ -194,16 +194,6 @@ export class Indexer {
             });
             return;
         }
-        if (job.type == "index") {
-            const pathsIndex = this.cache.pathsIndex;
-            this.message(workerId, {
-                job,
-                payload: {
-                    pathsIndex,
-                },
-            });
-            return;
-        }
     }
 
     private message(workerId: number, message: { job: WorkerJobType; payload: any }) {

@@ -1,4 +1,4 @@
-import { indexAllPaths, parseAllPaths, parsePath } from "./impl";
+import { parseAllPaths, parsePath } from "./impl";
 const ctx: Worker = self as any;
 
 const describeError = (error: unknown) => (error instanceof Error ? `${error.message}\n${error.stack ?? ""}` : String(error));
@@ -13,8 +13,6 @@ ctx.onmessage = async (evt) => {
             result = parsePath(payload);
         } else if (job.type == "paths") {
             result = parseAllPaths(payload);
-        } else if (job.type == "index") {
-            result = indexAllPaths(payload);
         } else {
             throw new Error(`Unknown job type ${job.type}`);
         }

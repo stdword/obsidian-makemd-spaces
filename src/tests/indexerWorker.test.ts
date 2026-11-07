@@ -3,7 +3,6 @@ jest.mock("core/superstate/workers/indexer/impl", () => ({
         throw new TypeError("Cannot read properties of undefined (reading 'tags')");
     }),
     parseAllPaths: jest.fn(() => ({ ok: true })),
-    indexAllPaths: jest.fn(() => ({ ok: true })),
 }));
 
 describe("indexer worker", () => {
