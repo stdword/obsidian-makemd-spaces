@@ -83,13 +83,14 @@ export const folderClickPlan = (selected: boolean, selectedCount: number, folder
     return { select: true, openPath: selected ? null : (folderNotePath ?? null) };
 };
 
-export const TreeItem = (props: TreeItemProps) => {
+const TreeItemComponent = (props: TreeItemProps) => {
     const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", indicatorDepth = null, collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
     const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace } = useContext(NavigatorContext);
 
     const innerRef = useRef(null);
     const [, refreshPathState] = useState(0);
-    const pathState = pathStateForTreeItem(superstate, data);
+    // The tree is rebuilt (new TreeNode objects) whenever the index changes, so `data` is a safe memo key.
+    const pathState = React.useMemo(() => pathStateForTreeItem(superstate, data), [superstate, data]);
     const openAuxClick = (e: React.MouseEvent) => {
         if (e.button == 1 && canOpenTreeItemPath(pathState)) {
             superstate.ui.openPath(pathState.path, "tab");
@@ -216,11 +217,15 @@ export const TreeItem = (props: TreeItemProps) => {
 
     const hasFolderNote = isSpace && !isTagSpace && data.folderNotePath != null;
 
-    const displayInfo = pathDisplayInfo(pathState.path);
-    const displayName = isSpace ? treeItemDisplayName(pathState, data, superstate.spacesIndex) : displayInfo.title;
-    const stickerLabel = data.sort && isSpace
-        ? spaceStickerLabel(displayName, data.sort, isTagSpace, data.folderCount, data.fileCount)
-        : displayName;
+    const { displayInfo, displayName, stickerLabel } = React.useMemo(() => {
+        const info = pathDisplayInfo(pathState.path);
+        const name = isSpace ? treeItemDisplayName(pathState, data, superstate.spacesIndex) : info.title;
+        return {
+            displayInfo: info,
+            displayName: name,
+            stickerLabel: data.sort && isSpace ? spaceStickerLabel(name, data.sort, isTagSpace, data.folderCount, data.fileCount) : name,
+        };
+    }, [pathState, data, superstate, isSpace, isTagSpace]);
 
     const spacing = data.type == "group" ? -2 : indentationWidth * (depth - 1) + (data.type == "space" ? 0 : 20);
 
@@ -357,4 +362,7 @@ export const TreeItem = (props: TreeItemProps) => {
         </>
     );
 };
+
+// Rows are rendered by a virtualized list that re-renders on every drag hover; skip rows whose props did not change.
+export const TreeItem = React.memo(TreeItemComponent);
 TreeItem.displayName = "TreeItem";

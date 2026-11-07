@@ -20,7 +20,7 @@ import { FocusEditor } from "./NavigatorFocusEditor";
 import { DropModifiers, shouldShowLinkedItemIcon } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 import { isFilter, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
-import { isPathExcludedFromFocus, addPathsToFocus } from "core/utils/superstate/focus";
+import { isPathExcludedFromFocus, addPathsToFocus, excludedPathsForFocus } from "core/utils/superstate/focus";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
@@ -339,7 +339,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const dragPathsRef = useRef<string[]>([]);
     const dragActionRef = useRef<DragActionModel | null>(null);
     const hideSectionChildren = active != null && active.parentId == null;
-    const excludedPaths = focuses[activeFocus]?.["excluded-paths"] ?? [];
+    const excludedPaths = excludedPathsForFocus(focuses[activeFocus]);
     const computedFlattenedTree = useMemo(
         () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths),
         [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths, treeVersion],
@@ -891,6 +891,15 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     // mid-drag, while the closures captured at pointerdown would still see the old tree.
     const pointerDragHandlersRef = useRef({ dragStarted, dragOver, dragEnded, resetState, focuses, setFocuses });
     pointerDragHandlersRef.current = { dragStarted, dragOver, dragEnded, resetState, focuses, setFocuses };
+    // Stable identities for the memoized virtualized rows; they read the current handlers through the ref.
+    const stableDragHandlers = useMemo(
+        () => ({
+            dragStarted: (...args: Parameters<typeof dragStarted>) => pointerDragHandlersRef.current.dragStarted(...args),
+            dragOver: (...args: Parameters<typeof dragOver>) => pointerDragHandlersRef.current.dragOver(...args),
+            dragEnded: (...args: Parameters<typeof dragEnded>) => pointerDragHandlersRef.current.dragEnded(...args),
+        }),
+        [],
+    );
 
     const onTreePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
         if (!ENABLE_POINTER_DND) return;
@@ -1141,9 +1150,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     indentationWidth={indentationWidth}
                     enableObsidianDragGhost={ENABLE_OBSIDIAN_DRAG_GHOST}
                     pointerDnd={ENABLE_POINTER_DND}
-                    dragStarted={dragStarted}
-                    dragOver={dragOver}
-                    dragEnded={dragEnded}
+                    dragStarted={stableDragHandlers.dragStarted}
+                    dragOver={stableDragHandlers.dragOver}
+                    dragEnded={stableDragHandlers.dragEnded}
                     overIndex={overIndex}
                     activeIndex={activeIndex}
                 ></VirtualizedList>

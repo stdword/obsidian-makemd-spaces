@@ -17,6 +17,42 @@ import { isTagSpacePath } from "schemas/builtin";
 import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 
 
+export type TreeLine = { id: string; left: number; top: number; height: number };
+
+/**
+ * Vertical guide lines for expanded containers, in one pass over the flattened tree:
+ * children directly follow their parent, so a container has children iff the next row is
+ * one level deeper, and its subtree ends right before the next row at its depth or above.
+ */
+export const treeLinesForTree = (flattenedTree: TreeNode[], rowHeights: number[], rowOffsets: number[], rowSpacing: (node: TreeNode) => number): TreeLine[] => {
+    const subtreeEnd = new Array<number>(flattenedTree.length);
+    const open: number[] = [];
+    for (let i = 0; i < flattenedTree.length; i++) {
+        const depth = flattenedTree[i]?.depth ?? 0;
+        while (open.length && (flattenedTree[open[open.length - 1]]?.depth ?? 0) >= depth) subtreeEnd[open.pop()] = i - 1;
+        open.push(i);
+    }
+    while (open.length) subtreeEnd[open.pop()] = flattenedTree.length - 1;
+
+    const lines: TreeLine[] = [];
+    for (let index = 0; index < flattenedTree.length; index++) {
+        const node = flattenedTree[index];
+        if (!node || node.depth == 0 || (node.type != "group" && node.type != "space") || node.collapsed) continue;
+        const next = flattenedTree[index + 1];
+        if (!next || next.depth != node.depth + 1) continue;
+        const last = subtreeEnd[index];
+        const top = (rowOffsets[index] ?? 0) + (rowHeights[index] ?? 0);
+        const bottom = (rowOffsets[last] ?? 0) + (rowHeights[last] ?? 0);
+        const height = bottom - top - 4;
+        if (height <= 0) continue;
+        lines.push({ id: node.id, left: 6 + rowSpacing(node) + 10 - 1, top, height });
+    }
+    return lines;
+};
+
+/** Only the lines that intersect the rendered scroll window are mounted. */
+export const visibleTreeLines = (lines: TreeLine[], rangeStart: number, rangeEnd: number): TreeLine[] => lines.filter((line) => line.top < rangeEnd && line.top + line.height > rangeStart);
+
 export const highlightContainerIdForDrag = (flattenedTree: TreeNode[], activeIndex: number, overIndex: number, dragAction: DragActionModel | null) => {
     const activeNode = flattenedTree[activeIndex];
     const activeContainerId = activeNode?.parentId;
@@ -153,16 +189,21 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         if (activeNode.collapsed) return false;
         return node.id == activeNode.id || node.id.startsWith(`${activeNode.id}/`);
     };
+    // Per-render lookups shared by every visible row instead of O(n) scans per row.
+    const nodeIndexById = React.useMemo(() => new Map(flattenedTree.map((node, index) => [node.id, index] as const)), [flattenedTree]);
+    const selectedIds = React.useMemo(() => new Set(selectedPaths.map((node) => node.id)), [selectedPaths]);
+    const highlightContainerId = React.useMemo(
+        () => (activeIndex == -1 && !dragAction ? null : (highlightContainerIdForDrag(flattenedTree, activeIndex, overIndex, dragAction) ?? null)),
+        [flattenedTree, activeIndex, overIndex, dragAction],
+    );
     const containerSubtreeHighlighted = (containerId: string | null, index: number) => {
         if (!containerId) return false;
-        const container = flattenedTree.find((node) => node.id == containerId);
+        const containerIndex = nodeIndexById.get(containerId);
+        const container = containerIndex == null ? undefined : flattenedTree[containerIndex];
         const node = flattenedTree[index];
         if (!container || !node) return false;
         if (container.type == "file" || container.collapsed) return false;
         return node.id == containerId || node.id.startsWith(`${containerId}/`);
-    };
-    const highlightContainerId = () => {
-        return highlightContainerIdForDrag(flattenedTree, activeIndex, overIndex, dragAction);
     };
     const dragContextContainerHighlighted = (index: number) => {
         // External-file drags have no active row in the tree (activeIndex -1)
@@ -170,7 +211,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         if (activeIndex == -1 && !dragAction) return false;
         const activeNode = flattenedTree[activeIndex];
         if (!dragAction && overIndex == activeIndex && activeNode && (activeNode.type == "space" || activeNode.type == "group") && !activeNode.collapsed) return false;
-        return containerSubtreeHighlighted(highlightContainerId() ?? null, index);
+        return containerSubtreeHighlighted(highlightContainerId, index);
     };
     const isDraggedActiveRow = (index: number) => activeIndex != -1 && index == activeIndex;
     const isHighlighted = (index: number) => draggedSourceSubtreeHighlighted(index) || dragContextContainerHighlighted(index);
@@ -193,45 +234,9 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
             return start;
         });
     }, [rowHeights]);
-    const treeLines = React.useMemo(() => {
-        return flattenedTree.flatMap((node, index) => {
-            if (!node || node.depth == 0 || !["group", "space"].includes(node.type) || node.collapsed) return [];
-
-            let firstDirectChildIndex = -1;
-            let lastDirectChildIndex = -1;
-            for (let i = index + 1; i < flattenedTree.length; i++) {
-                const descendant = flattenedTree[i];
-                if (descendant.depth <= node.depth) break;
-                if (descendant.depth == node.depth + 1) {
-                    if (firstDirectChildIndex == -1) {
-                        firstDirectChildIndex = i;
-                    }
-                    lastDirectChildIndex = i;
-                }
-            }
-
-            if (firstDirectChildIndex == -1 || lastDirectChildIndex == -1) return [];
-
-            let lastVisibleBranchIndex = lastDirectChildIndex;
-            for (let i = lastDirectChildIndex + 1; i < flattenedTree.length; i++) {
-                const descendant = flattenedTree[i];
-                if (descendant.depth <= node.depth) break;
-                lastVisibleBranchIndex = i;
-            }
-
-            const top = (rowOffsets[index] ?? 0) + (rowHeights[index] ?? 0);
-            const bottom = (rowOffsets[lastVisibleBranchIndex] ?? 0) + (rowHeights[lastVisibleBranchIndex] ?? 0);
-            const height = bottom - top - 4;
-            if (height <= 0) return [];
-
-            return [{
-                id: node.id,
-                left: 6 + rowSpacing(node) + 10 - 1,
-                top,
-                height,
-            }];
-        });
-    }, [flattenedTree, indentationWidth, rowHeights, rowOffsets]);
+    const treeLines = React.useMemo(() => treeLinesForTree(flattenedTree, rowHeights, rowOffsets, rowSpacing), [flattenedTree, indentationWidth, rowHeights, rowOffsets]);
+    const virtualItems = rowVirtualizer.getVirtualItems();
+    const renderedLines = visibleTreeLines(treeLines, virtualItems[0]?.start ?? 0, virtualItems[virtualItems.length - 1]?.end ?? 0);
     return (
         <div
             ref={parentRef}
@@ -251,7 +256,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                 }}
             >
                 <div className="mk-tree-lines-layer">
-                    {treeLines.map((line) => (
+                    {renderedLines.map((line) => (
                         <div
                             key={line.id}
                             className="mk-tree-line"
@@ -265,7 +270,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                         ></div>
                     ))}
                 </div>
-                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                {virtualItems.map((virtualRow) => {
                     const node = flattenedTree[virtualRow.index];
                     const indicatorVariant = dropIndicatorVariant(virtualRow.index);
                     const separatorVisible = node.path != SPACE_HIDDEN_SEPARATOR_PATH;
@@ -388,7 +393,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                     active={activePath == node.item?.path}
                                     highlighted={isHighlighted(virtualRow.index)}
                                     dimmed={isDimmed(virtualRow.index)}
-                                    selected={(selectedPaths as TreeNode[]).some((g) => g.id == node.id)}
+                                    selected={selectedIds.has(node.id)}
                                     collapsed={node.collapsed}
                                     onCollapse={handleCollapse}
                                 ></TreeItem>

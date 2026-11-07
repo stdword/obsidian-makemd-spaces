@@ -36,3 +36,7 @@ export const removeExcludedPathFromFocus = async (superstate: Superstate, focusI
 // Drop target for paths dragged onto a focus tab: appends the new paths to that focus only.
 export const addPathsToFocus = (focuses: Focus[], focusIndex: number, paths: string[]): Focus[] =>
     focuses.map((focus, index) => (index == focusIndex ? { ...focus, paths: [...focus.paths, ...paths.filter((path) => !focus.paths.includes(path))] } : focus));
+
+const NO_EXCLUDED_PATHS: string[] = [];
+// Stable empty array for focuses without exclusions, so memoized tree computations keyed on it do not rerun every render.
+export const excludedPathsForFocus = (focus: Focus | undefined): string[] => focus?.["excluded-paths"] ?? NO_EXCLUDED_PATHS;

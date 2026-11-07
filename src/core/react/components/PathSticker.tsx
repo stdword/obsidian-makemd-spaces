@@ -10,7 +10,7 @@ import { showColorPickerMenu } from "./UI/Menus/modals/colorPickerMenu";
 export const openStickerPalette = (superstate: Superstate, win: Window, selectedSticker: (emoji: string) => void) =>
     superstate.ui.openPalette(<StickerModal ui={superstate.ui} selectedSticker={selectedSticker} />, win, "mk-no-transition");
 
-export const PathStickerView = (props: {
+const PathStickerViewComponent = (props: {
     superstate: Superstate;
     pathState: Pick<PathState, 'name' | 'path' | 'sticker'>;
     space: string;
@@ -79,3 +79,5 @@ export const PathStickerView = (props: {
         </div>
     );
 };
+
+export const PathStickerView = React.memo(PathStickerViewComponent);

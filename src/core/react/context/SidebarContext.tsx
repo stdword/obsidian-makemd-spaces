@@ -3,7 +3,7 @@ import { TreeNode } from "core/utils/superstate/spaces";
 import _ from "lodash";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useMemo, useRef, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { PathState, SpaceState } from "shared/types/PathState";
 import { iconForSpace } from "../components/UI/pathDisplay";
@@ -174,29 +174,40 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
             props.superstate.eventsDispatcher.removeListener("superstateUpdated", reloadPaths);
         };
     }, []);
-    return (
-        <NavigatorContext.Provider
-            value={{
-                dragPaths,
-                setDragPaths,
-                activeFocus: activeFocus,
-                selectedPaths: selectedPaths,
-                setSelectedPaths: setSelectedPaths,
-                activePath: activePath,
-                setActiveFocus: setActiveFocus,
-                setActivePath: setActivePath,
-                activeViewSpaces,
-                focuses: focuses,
-                setFocuses: saveFocuses,
-                saveActiveSpace: setActiveViewSpaceByPath,
-                closeActiveSpace: closeActiveViewSpace,
-                modifier,
-                setModifier,
-                editFocus: editFocus,
-                setEditFocus: setEditFocus,
-            }}
-        >
-            {props.children}
-        </NavigatorContext.Provider>
+    // The handlers above close over the latest state, so they get a new identity every
+    // render; expose stable wrappers so the context value only changes with its data and
+    // memoized consumers (tree rows) are not re-rendered for nothing.
+    const latestHandlers = useRef({ saveFocuses, setActiveViewSpaceByPath, closeActiveViewSpace });
+    latestHandlers.current = { saveFocuses, setActiveViewSpaceByPath, closeActiveViewSpace };
+    const stableHandlers = useMemo(
+        () => ({
+            setFocuses: (paths: Focus[]) => latestHandlers.current.saveFocuses(paths),
+            saveActiveSpace: (path: string) => latestHandlers.current.setActiveViewSpaceByPath(path),
+            closeActiveSpace: (path: string) => latestHandlers.current.closeActiveViewSpace(path),
+        }),
+        [],
     );
+    const value = useMemo(
+        () => ({
+            dragPaths,
+            setDragPaths,
+            activeFocus,
+            selectedPaths,
+            setSelectedPaths,
+            activePath,
+            setActiveFocus,
+            setActivePath,
+            activeViewSpaces,
+            focuses,
+            setFocuses: stableHandlers.setFocuses,
+            saveActiveSpace: stableHandlers.saveActiveSpace,
+            closeActiveSpace: stableHandlers.closeActiveSpace,
+            modifier,
+            setModifier,
+            editFocus,
+            setEditFocus,
+        }),
+        [dragPaths, activeFocus, selectedPaths, activePath, activeViewSpaces, focuses, modifier, editFocus, stableHandlers],
+    );
+    return <NavigatorContext.Provider value={value}>{props.children}</NavigatorContext.Provider>;
 };
