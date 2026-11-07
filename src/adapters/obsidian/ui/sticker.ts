@@ -1,5 +1,6 @@
 import MakeMDPlugin from "main";
 import { uiIconSet } from "shared/assets/icons";
+import { escapeHtml } from "utils/html";
 import { emojiFromString, parseStickerString } from "utils/stickers";
 import { lucideIcon } from "./icons";
 
@@ -15,7 +16,9 @@ export const stickerFromString = (
     if (type == "" || type == "emoji") {
         // State-of-the-art solution for exact emoji bounding box fitting
         // Uses SVG foreignObject for perfect sizing and alignment
-        const emoji = emojiFromString(value);
+        // Sticker values come from space definitions and frontmatter; an unparsable value is
+        // shown as text, never interpreted as markup.
+        const emoji = escapeHtml(emojiFromString(value));
 
         // Method 1: SVG with foreignObject for precise control
         // Using 2x2 viewBox with 1.7px font-size for perfect alignment
@@ -36,7 +39,7 @@ export const stickerFromString = (
             </svg>
         `;
     } else if (type == "ui")
-        return uiIconSet[value];
+        return Object.prototype.hasOwnProperty.call(uiIconSet, value) ? uiIconSet[value] : "";
     else if (type == "lucide")
         return lucideIcon(value);
 

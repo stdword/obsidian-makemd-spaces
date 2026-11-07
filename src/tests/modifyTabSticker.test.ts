@@ -1,7 +1,7 @@
 jest.mock("main", () => jest.fn());
 jest.mock("obsidian", () => ({ MarkdownView: class MarkdownView {} }), { virtual: true });
 
-import { dedupeTabHeaderIconEl, markTabStickerIcon } from "adapters/obsidian/utils/modifyTabSticker";
+import { dedupeTabHeaderIconEl, markTabStickerIcon, tabStickerImageMarkup } from "adapters/obsidian/utils/modifyTabSticker";
 
 const createChild = (outerHTML: string) => ({
     outerHTML,
@@ -47,5 +47,11 @@ describe("modifyTabSticker helpers", () => {
 
         expect(svg.attributes["data-mk-tab-sticker"]).toBe("true");
         expect(image.attributes["data-mk-tab-sticker"]).toBe("true");
+    });
+
+    it("keeps a resource path with quotes inside the img src attribute", () => {
+        const markup = tabStickerImageMarkup('app://vault/icons/a" onerror="alert(1).png');
+        expect(markup).toBe('<img src="app://vault/icons/a&quot; onerror=&quot;alert(1).png" />');
+        expect(markup.match(/<img/g)).toHaveLength(1);
     });
 });

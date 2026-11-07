@@ -1,5 +1,6 @@
 import MakeMDPlugin from "main";
 import { MarkdownView } from "obsidian";
+import { escapeHtml } from "utils/html";
 import { parseStickerString } from "utils/stickers";
 import { stickerFromString } from "../ui/sticker";
 
@@ -22,6 +23,9 @@ export const markTabStickerIcon = (iconEl?: HTMLElement) => {
     Array.from(iconEl.children).forEach((child) => child.setAttribute("data-mk-tab-sticker", "true"));
 };
 
+// Resource paths may contain quotes or angle brackets; they must stay inside the attribute.
+export const tabStickerImageMarkup = (path: string) => `<img src="${escapeHtml(path)}" />`;
+
 export const modifyTabSticker = (plugin: MakeMDPlugin) => {
     const activeLeaf = plugin.app.workspace.activeLeaf;
     dedupeTabHeaderIconEl(activeLeaf?.tabHeaderInnerIconEl);
@@ -38,7 +42,7 @@ export const modifyTabSticker = (plugin: MakeMDPlugin) => {
             if (stickerType == "image") {
                 const path = plugin.superstate.ui.getUIPath(stickerPath);
                 if (path) {
-                    leaf.tabHeaderInnerIconEl.innerHTML = `<img src="${path}" />`;
+                    leaf.tabHeaderInnerIconEl.innerHTML = tabStickerImageMarkup(path);
                     markTabStickerIcon(leaf.tabHeaderInnerIconEl);
                 }
             } else {
