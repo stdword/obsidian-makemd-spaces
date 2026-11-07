@@ -129,7 +129,7 @@ export const en = {
         addExtension: "Add Rule",
 
         manageExcludedFiles: "Manage Excluded Items",
-        manageExcludedFromCurrentFocus: "Excluded from Current Focus Items",
+        manageExcludedFromCurrentFocus: "Excluded Items (from focus)",
         excludedItems: "Excluded from \"${1}\" Focus",
         excludedPaths: "Exclude specific paths",
 
