@@ -3,6 +3,7 @@ jest.mock("obsidian", () => ({}), { virtual: true });
 
 import { showMainMenu } from "adapters/obsidian/ui/showMainMenu";
 import i18n from "shared/i18n";
+import { SelectOptionType } from "shared/types/menu";
 
 describe("showMainMenu", () => {
     const open = (focuses: any[], currentFocus = 0) => {
@@ -21,17 +22,19 @@ describe("showMainMenu", () => {
         return { options: call[1].options as any[], openModal, superstate };
     };
 
-    it("lists Manage Excluded Items right after Manage Hidden Items", () => {
+    it("puts the current-focus exclusions in their own group right above Manage Hidden Items", () => {
         const { options } = open([{ name: "Work", sticker: "", paths: [] }]);
         const names = options.map((option) => option.name);
-        const hidden = names.indexOf(i18n.labels.manageHiddenFiles);
-        expect(hidden).toBeGreaterThan(-1);
-        expect(names[hidden + 1]).toBe(i18n.labels.manageExcludedFiles);
+        const excluded = names.indexOf(i18n.labels.manageExcludedFromCurrentFocus);
+        expect(excluded).toBeGreaterThan(-1);
+        expect(options[excluded - 1].type).toBe(SelectOptionType.Separator);
+        expect(options[excluded + 1].type).toBe(SelectOptionType.Separator);
+        expect(names[excluded + 2]).toBe(i18n.labels.manageHiddenFiles);
     });
 
     it("opens the exclusions modal for the current focus", () => {
         const { options, openModal } = open([{ name: "Work", sticker: "", paths: [] }, { name: "Home", sticker: "", paths: [] }], 1);
-        const item = options.find((option) => option.name == i18n.labels.manageExcludedFiles);
+        const item = options.find((option) => option.name == i18n.labels.manageExcludedFromCurrentFocus);
         item.onClick({ view: { document: { defaultView: {} } } });
         const [title, modal] = openModal.mock.calls[0];
         expect(title).toBe(i18n.labels.excludedItems.replace("${1}", "Home"));
@@ -40,6 +43,6 @@ describe("showMainMenu", () => {
 
     it("omits the exclusions item when there is no current focus", () => {
         const { options } = open([], 0);
-        expect(options.map((option) => option.name)).not.toContain(i18n.labels.manageExcludedFiles);
+        expect(options.map((option) => option.name)).not.toContain(i18n.labels.manageExcludedFromCurrentFocus);
     });
 });

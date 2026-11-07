@@ -53,6 +53,20 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
         },
     });
 
+    // Per-focus exclusions get their own group above the vault-wide hidden items.
+    const focusIndex = superstate.settings.currentFocus;
+    const focus = superstate.focuses[focusIndex];
+    if (focus) {
+        menuOptions.push(menuSeparator);
+        menuOptions.push({
+            name: i18n.labels.manageExcludedFromCurrentFocus,
+            icon: "lucide//filter-x",
+            onClick: (e) => {
+                superstate.ui.openModal(i18n.labels.excludedItems.replace("${1}", focus.name), <ExcludedFiles superstate={superstate} focusIndex={focusIndex} />, windowFromDocument(e.view.document));
+            },
+        });
+    }
+
     menuOptions.push(menuSeparator);
 
     menuOptions.push({
@@ -62,19 +76,6 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
             superstate.ui.openModal(i18n.labels.hiddenItems, <HiddenPaths superstate={superstate}></HiddenPaths>, windowFromDocument(e.view.document));
         },
     });
-
-    // Per-focus exclusions, next to the vault-wide hidden items.
-    const focusIndex = superstate.settings.currentFocus;
-    const focus = superstate.focuses[focusIndex];
-    if (focus) {
-        menuOptions.push({
-            name: i18n.labels.manageExcludedFiles,
-            icon: "lucide//filter-x",
-            onClick: (e) => {
-                superstate.ui.openModal(i18n.labels.excludedItems.replace("${1}", focus.name), <ExcludedFiles superstate={superstate} focusIndex={focusIndex} />, windowFromDocument(e.view.document));
-            },
-        });
-    }
 
     menuOptions.push({
         name: i18n.menu.settings,
