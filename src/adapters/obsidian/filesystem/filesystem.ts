@@ -1,4 +1,5 @@
 import { getAllFilesForTag, loadTags } from "adapters/obsidian/utils/tags";
+import { getParentPathFromString, removeTrailingSlashFromFolder, nameWithoutExtension } from "utils/path";
 import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileSystemAdapter, FileTypeCache, FilesystemMiddleware } from "makemd-core";
@@ -8,10 +9,8 @@ import { DEFAULT_SETTINGS } from "schemas/settings";
 import { DBRows } from "shared/types/mdb";
 import { PathCache } from "shared/types/PathState";
 import { uniqueNameFromString } from "utils/array";
-import { removeTrailingSlashFromFolder } from "utils/paths";
 import { parseURI } from "utils/uri";
 import { excludePathPredicate } from "utils/hide";
-import { getParentPathFromString } from "utils/path";
 import { fileNameWithSameSuffix, getAbstractFileAtPath, getAllAbstractFilesInVault, splitFileName, tFileToAFile } from "../utils/file";
 import { SPACE_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE } from "schemas/constants";
 
@@ -90,7 +89,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
                     parent: file.parent,
                     type: file.isFolder ? "space" : "file",
                     subtype: file.isFolder ? "folder" : file.extension,
-                    name: file.isFolder ? file.name : file.name.replace(new RegExp(`\\.${file.extension}$`), ""),
+                    name: file.isFolder ? file.name : nameWithoutExtension(file.name, file.extension),
                     path: file.path,
                     hidden: false,
                 };
@@ -204,7 +203,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             parent: afile.parent,
             type: afile.isFolder ? "space" : "file",
             subtype: afile.isFolder ? "folder" : afile.extension,
-            name: afile.isFolder ? afile.name : afile.name.replace(new RegExp(`\\.${afile.extension}$`), ""),
+            name: afile.isFolder ? afile.name : nameWithoutExtension(afile.name, afile.extension),
             path: afile.path,
             hidden: false,
         });
@@ -250,7 +249,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             parent: newFile.parent,
             type: newFile.isFolder ? "space" : "file",
             subtype: newFile.isFolder ? "folder" : newFile.extension,
-            name: newFile.isFolder ? newFile.name : newFile.name.replace(new RegExp(`\\.${newFile.extension}$`), ""),
+            name: newFile.isFolder ? newFile.name : nameWithoutExtension(newFile.name, newFile.extension),
             path: newFile.path,
             hidden: false,
         });
@@ -334,7 +333,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
             parent: newFile.parent,
             type: newFile.isFolder ? "space" : "file",
             subtype: newFile.isFolder ? "folder" : newFile.extension,
-            name: newFile.isFolder ? newFile.name : newFile.name.replace(new RegExp(`\\.${newFile.extension}$`), ""),
+            name: newFile.isFolder ? newFile.name : nameWithoutExtension(newFile.name, newFile.extension),
             path: newFile.path,
             hidden: false,
         });

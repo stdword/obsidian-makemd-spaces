@@ -9,7 +9,7 @@ import { PathState, FilesystemSpaceInfo, SpaceState } from "shared/types/PathSta
 import { Rect } from "shared/types/Pos";
 import { isFilter } from "schemas/builtin";
 import { SpaceSort } from "shared/types/spaceDef";
-import { savePathSticker } from "utils/sticker";
+import { savePathSticker } from "utils/stickerActions";
 import { movePath } from "utils/uri";
 import { stringFromTag } from "utils/tags";
 import { ConfirmationModal, formatMessage } from "../../Modals/ConfirmationModal";

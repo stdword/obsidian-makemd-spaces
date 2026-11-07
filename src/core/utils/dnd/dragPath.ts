@@ -1,4 +1,6 @@
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
+import { isNodeOrDescendant } from "core/utils/tree";
+import { parentPathOf } from "utils/path";
 import { TreeNode } from "core/utils/superstate/spaces";
 import { isTagSpacePath } from "schemas/builtin";
 
@@ -18,6 +20,9 @@ export type DragProjection = {
     reorder: boolean;
     linePosition?: "top" | "bottom";
 };
+
+/** The container a projection drops into: the hovered row when inserting into it, else its parent. */
+export const projectionContainerId = (projection: Pick<DragProjection, "insert" | "overId" | "parentId">): string | null => (projection.insert ? projection.overId : projection.parentId);
 
 export type DragInsertPosition =
     | { kind: "before"; itemId: string }
@@ -56,11 +61,6 @@ function getMinDepth(previousItem: TreeNode) {
     return 0;
 }
 
-const nodeContainsTarget = (nodeId: string, targetId: string | null) => {
-    if (!nodeId || !targetId) return false;
-    return targetId == nodeId || targetId.startsWith(`${nodeId}/`);
-};
-
 const isTagSpaceNode = (node?: TreeNode | null) => node?.item?.subtype == "tag" || isTagSpacePath(node?.item?.path);
 
 const selectedNodesForPaths = (items: TreeNode[], paths: string[]) => items.filter((node) => node.item?.path && paths.includes(node.item.path));
@@ -73,15 +73,9 @@ const selectedNodesAreInsideTagSpace = (items: TreeNode[], paths: string[], tagS
 const isSpaceContainerNode = (node?: TreeNode | null) => node?.item?.type == "space";
 const isFolderContainerNode = (node?: TreeNode | null) => node?.item?.type == "space" && node.item?.subtype != "tag";
 
-const parentPathForPath = (path: string | undefined) => {
-    if (!path) return "";
-    const separatorIndex = path.lastIndexOf("/");
-    return separatorIndex == -1 ? "" : path.slice(0, separatorIndex);
-};
-
 const isAlreadyInFolderContainer = (activeItem: TreeNode, folderNode?: TreeNode | null) => {
     if (!isFolderContainerNode(folderNode) || activeItem.parentId == folderNode.id) return false;
-    const physicalParent = activeItem.item?.parent ?? parentPathForPath(activeItem.item?.path);
+    const physicalParent = activeItem.item?.parent ?? parentPathOf(activeItem.item?.path);
     return physicalParent == folderNode.item?.path;
 };
 
@@ -191,7 +185,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
 
     if (!previousItem) return;
     if (previousItem.type == "new") return null;
-    if (nodeContainsTarget(activeItem?.id, previousItem.id)) return null;
+    if (isNodeOrDescendant(activeItem?.id, previousItem.id)) return null;
 
     const previousItemDroppable = isSpaceContainerNode(previousItem);
     const isTopZone = yOffset < DRAG_ROW_MIDDLE_ZONE;
@@ -265,7 +259,7 @@ export function getProjection(activeItem: TreeNode, items: TreeNode[], paths: st
     }
     const parentId = getParentId();
 
-    if (nodeContainsTarget(activeItem?.id, parentId)) return null;
+    if (isNodeOrDescendant(activeItem?.id, parentId)) return null;
 
     const parent = items.find((f) => f.id == parentId);
     if (activeItem.type != "separator" && isTagSpaceNode(parent) && activeItem.parentId != parent.id) return null;

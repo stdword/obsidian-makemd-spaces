@@ -2,7 +2,7 @@
 import { arrayMove } from "utils/array";
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
-import { nodeIsAncestorOfTarget } from "core/utils/tree";
+import { isNodeOrDescendant } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import i18n from "shared/i18n";
 import { PathState } from "shared/types/PathState";
@@ -49,13 +49,6 @@ export const rankForDropPositionInSpace = (superstate: Superstate, path: string,
     return insertionRank;
 };
 
-const nodeContainsTarget = (nodeId: string, targetId: string) => {
-    if (!nodeId || !targetId) return false;
-    const node = nodeId.toString();
-    const target = targetId.toString();
-    return target == node || target.startsWith(`${node}/`);
-};
-
 export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: string, over: string, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (paths.length == 1) {
         await dropPathInTree(superstate, paths[0], active, over, projected, flattenedTree, activeSpaces, modifier);
@@ -67,7 +60,7 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         const overItem = flattenedTree[overIndex];
         const dropTarget = overItem.type == "file" ? (overItem.depth == 0 ? null : flattenedTree.find((f) => f.id == overItem.parentId)?.item) : overItem.item;
 
-        const droppable = paths.filter((f) => !nodeIsAncestorOfTarget(f, dropTarget?.path));
+        const droppable = paths.filter((f) => !isNodeOrDescendant(f, dropTarget?.path));
 
         const parentId = projected.insert ? targetId : projected.parentId;
         const newSpace = flattenedTree.find(({ id }) => id === parentId)?.item.path;
@@ -88,7 +81,7 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
 export const dropPathInTree = async (superstate: Superstate, path: string, active: string, over: string, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (projected) {
         const targetId = projected.overId ?? over;
-        if (nodeContainsTarget(active, targetId) || nodeContainsTarget(active, projected.parentId)) {
+        if (isNodeOrDescendant(active, targetId) || isNodeOrDescendant(active, projected.parentId)) {
             return;
         }
         const clonedItems: TreeNode[] = flattenedTree;
@@ -192,7 +185,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
     }
 
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
-        if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
+        if (modifier == "link" || isNodeOrDescendant(path, newSpaceCache.path)) {
             await linkPathToSpaceAtIndex(superstate, newSpaceCache, path, targetIndex);
         } else {
             if (cache.parent == newSpaceCache.path) return;
@@ -212,7 +205,7 @@ export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: str
     if (!newSpaceCache) return;
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
         await Promise.all(paths.map((path) => {
-            if (modifier == "link" || nodeIsAncestorOfTarget(path, newSpaceCache.path)) {
+            if (modifier == "link" || isNodeOrDescendant(path, newSpaceCache.path)) {
                 return linkPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
             } else {
                 return movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");

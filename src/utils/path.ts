@@ -1,4 +1,3 @@
-
 export const removeLeadingSlash = (path: string) => (
     path.charAt(0) == "/" ? path.substring(1) : path
 );
@@ -37,3 +36,16 @@ export const getParentPathFromString = (file: string) => {
     }
     return file.substring(0, indexOfLastSlash + 1);
 };
+
+/** Parent of a vault path: "" for a top-level entry or a missing path (no leading/trailing slash semantics). */
+export const parentPathOf = (path: string | undefined): string => {
+    if (!path) return "";
+    const index = path.lastIndexOf("/");
+    return index == -1 ? "" : path.slice(0, index);
+};
+
+export const removeTrailingSlashFromFolder = (path: string) => (path == "/" ? path : path.slice(-1) == "/" ? path.substring(0, path.length - 1) : path);
+
+/** "Plan.md" + "md" -> "Plan"; leaves the name alone when it does not end with that extension. */
+export const nameWithoutExtension = (name: string, extension: string | undefined): string =>
+    extension && name.endsWith(`.${extension}`) ? name.slice(0, -(extension.length + 1)) : name;

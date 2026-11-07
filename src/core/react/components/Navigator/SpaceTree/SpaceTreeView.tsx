@@ -5,7 +5,7 @@ import { PathStickerView } from "core/react/components/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, linkedTagSpaceUri, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
-import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth, verticalInsertionZone } from "core/utils/dnd/dragPath";
+import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth, verticalInsertionZone, projectionContainerId } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
 import { filterFolderNoteChildren, navigatorActivePathForPath } from "integrations/folderNotesPluginIntegration";
@@ -35,7 +35,7 @@ export const isParentDropNoOp = (activeItem: TreeNode | null, overId: string) =>
 // folder, and sortable reorders within the parent are real rank changes.
 export const isProjectionParentNoOp = (activeItem: TreeNode | null, projection: DragProjection | null): boolean => {
     if (!activeItem || !projection) return false;
-    const dropContainerId = projection.insert ? projection.overId : projection.parentId;
+    const dropContainerId = projectionContainerId(projection);
     return isParentDropNoOp(activeItem, dropContainerId as string) && !(projection.sortable && !projection.insert);
 };
 
@@ -89,7 +89,7 @@ export const constrainTagSpaceProjection = (activeItem: TreeNode | null, project
     // A line projection in the current container is a reorder, even when that
     // container is the tag space's parent. Only reject dropping into the parent.
     if (projection.reorder) return projection;
-    const targetContainerId = projection.insert ? projection.overId : projection.parentId;
+    const targetContainerId = projectionContainerId(projection);
     const targetContainer = flattenedTree.find((node) => node.id == targetContainerId);
     if (!isTagTreeItemPath(targetContainer?.item)) return projection;
     return null;
@@ -98,13 +98,17 @@ export const constrainTagSpaceProjection = (activeItem: TreeNode | null, project
 export const constrainLinkedItemProjection = (activeItem: TreeNode | null, projection: DragProjection | null, flattenedTree: TreeNode[]): DragProjection | null => {
     if (!projection || !isLinkedTreeItem(activeItem)) return projection;
     if (projection.reorder && projection.parentId == activeItem.parentId) return projection;
-    const targetContainerId = projection.insert ? projection.overId : projection.parentId;
+    const targetContainerId = projectionContainerId(projection);
     // Root is the current focus: linking there adds the item as a section.
     if (targetContainerId == null && !projection.insert) return projection;
     if (!targetContainerId || targetContainerId == activeItem.parentId) return null;
     const targetContainer = flattenedTree.find((node) => node.id == targetContainerId);
     return targetContainer?.item?.type == "space" ? projection : null;
 };
+
+/** Separator, tag-space and linked-item rules applied in the order the drag pipeline expects. */
+export const constrainProjection = (activeItem: TreeNode | null, projection: DragProjection | null, flattenedTree: TreeNode[]): DragProjection | null =>
+    constrainLinkedItemProjection(activeItem, constrainTagSpaceProjection(activeItem, constrainSeparatorProjection(activeItem, projection), flattenedTree), flattenedTree);
 
 export const separatorDropRank = (projection: DragProjection, target: TreeNode | undefined, flattenedTree: TreeNode[], destinationLength: number, destinationOrder?: string[]) => {
     if (projection.insert) return destinationLength;
@@ -566,7 +570,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const dragActionForProjection = (projection: DragProjection, currentModifier: DropModifiers): DragActionModel | null => {
         if (!projection?.droppable) return null;
         const overItem = flattenedTree.find((f) => f.id == projection.overId);
-        const targetContainerId = projection.insert ? projection.overId : projection.parentId;
+        const targetContainerId = projectionContainerId(projection);
         const currentActive = activeRef.current ?? active;
         if (!projection.insert && !projection.sortable && overItem?.id != targetContainerId && currentActive?.parentId == targetContainerId) return null;
         const position: DragInsertPosition | undefined = projection.sortable
@@ -630,16 +634,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         const nextDepth = verticalInsertionDepth(position.y, rowHeight, rowDepth, followingRow?.depth ?? 0);
         const newX = rowDepth * indentationWidth;
         const nextActiveIndex = currentActive?.id ? flattenedTree.findIndex((f) => f.id == currentActive.id) : -1;
-        const nextProjection = constrainLinkedItemProjection(
+        const nextProjection = constrainProjection(
             currentActive,
-            constrainTagSpaceProjection(
-                currentActive,
-                constrainSeparatorProjection(
-                    currentActive,
-                    currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, requestedModifier, currentActive.space) : null,
-                ),
-                flattenedTree,
-            ),
+            currentActive && nextOverId && nextOverIndex != -1 ? getProjection(currentActive, flattenedTree, currentDragPaths, nextOverIndex, nextDepth, newY, nextActiveIndex < nextOverIndex, requestedModifier, currentActive.space) : null,
             flattenedTree,
         );
         const modifier = isExternalDrag ? "copy" : resolveDragModifier(currentActive, nextProjection, requestedModifier);
@@ -715,27 +712,22 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         const actionModifier = dragActionRef.current?.action.type == "link" ? "link" : dragActionRef.current?.action.type == "copy" ? "copy" : "move";
         const fallbackOverIndex = flattenedTree.findIndex((node) => node.id == overId);
         const fallbackOverItem = fallbackOverIndex == -1 ? null : flattenedTree[fallbackOverIndex];
-        const projection = constrainLinkedItemProjection(
+        const projection = constrainProjection(
             currentActive,
-            constrainTagSpaceProjection(
-                currentActive,
-                constrainSeparatorProjection(currentActive, dragActionRef.current?.action.projection ?? (
-                    currentActive && fallbackOverItem
-                        ? getProjection(
-                            currentActive,
-                            flattenedTree,
-                            dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths,
-                            fallbackOverIndex,
-                            fallbackOverItem.depth,
-                            offsetRef.current.y,
-                            activeIndex < fallbackOverIndex,
-                            modifierRef.current ?? "move",
-                            currentActive.space,
-                        )
-                        : null
-                )),
-                flattenedTree,
-            ),
+            dragActionRef.current?.action.projection ??
+                (currentActive && fallbackOverItem
+                    ? getProjection(
+                          currentActive,
+                          flattenedTree,
+                          dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths,
+                          fallbackOverIndex,
+                          fallbackOverItem.depth,
+                          offsetRef.current.y,
+                          activeIndex < fallbackOverIndex,
+                          modifierRef.current ?? "move",
+                          currentActive.space,
+                      )
+                    : null),
             flattenedTree,
         );
         if (!currentActive || !projection) {
@@ -755,7 +747,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         if (currentActive.type == "separator") {
             const separatorPath = currentActive.path;
             const target = flattenedTree.find((node) => node.id == (projection.overId ?? overId));
-            const targetContainer = flattenedTree.find((node) => node.id == (projection.insert ? projection.overId : projection.parentId));
+            const targetContainer = flattenedTree.find((node) => node.id == (projectionContainerId(projection)));
             const newSpacePath = projection.insert ? target?.item?.path : targetContainer?.item?.path;
             const destinationSpace = newSpacePath ? superstate.spacesIndex.get(newSpacePath) : null;
             const destinationLength = destinationSpace?.metadata?.["rank-order"]?.length ?? 0;

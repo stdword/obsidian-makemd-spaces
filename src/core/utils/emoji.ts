@@ -1,6 +1,6 @@
 import { PathColorTarget, savePathColor, savePathColors } from "core/utils/superstate/label";
 import { Superstate } from "makemd-core";
-import { savePathSticker } from "utils/sticker";
+import { savePathSticker } from "utils/stickerActions";
 
 export const saveIconsForPaths = (superstate: Superstate, paths: string[], icon: string) => {
     paths.forEach((path) => {

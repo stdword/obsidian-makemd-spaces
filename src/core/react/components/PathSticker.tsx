@@ -3,7 +3,7 @@ import StickerModal from "core/react/components/StickerModal";
 import { savePathColor } from "core/utils/superstate/label";
 import { ISuperstate as Superstate } from "shared/types/superstate";
 import { PathState } from "shared/types/PathState";
-import { savePathSticker } from "utils/sticker";
+import { savePathSticker } from "utils/stickerActions";
 import { windowFromDocument } from "utils/dom";
 import { showColorPickerMenu } from "./UI/Menus/modals/colorPickerMenu";
 

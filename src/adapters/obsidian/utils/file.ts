@@ -5,7 +5,7 @@ import { App, TAbstractFile, TFile, TFolder, WorkspaceLeaf, normalizePath } from
 import { TargetLocation } from "shared/types/path";
 import { DEFAULT_NEW_NOTE_NAME } from "schemas/constants";
 import { selectElementContents } from "utils/dom";
-import { removeTrailingSlashFromFolder } from "utils/paths";
+import { removeTrailingSlashFromFolder } from "utils/path";
 import { sanitizeFileName, sanitizeFolderName } from "utils/sanitizers";
 
 export const splitFileName = (filename: string) => {

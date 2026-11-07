@@ -1,4 +1,5 @@
 import { UIManager } from "core/middleware/ui";
+import { parentPathOf } from "utils/path";
 import { VersionedMap } from "utils/versionedMap";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
@@ -136,13 +137,8 @@ const replacePathInList = (items: unknown, oldPath: string, newPath: string): st
 const replacePathInRankOrder = (items: unknown, oldPath: string, newPath: string): string[] =>
     uniqueRankOrder(ensureArray(items).map((path) => (path == oldPath ? newPath : path)));
 
-const parentPathForPath = (path: string): string => {
-    const index = path.lastIndexOf("/");
-    return index == -1 ? "" : path.slice(0, index);
-};
-
 const replaceOrUnpinMovedPath = (items: unknown, oldPath: string, newPath: string, spacePath: string): string[] => {
-    const movedOutOfFolderSpace = parentPathForPath(oldPath) == spacePath && parentPathForPath(newPath) != spacePath;
+    const movedOutOfFolderSpace = parentPathOf(oldPath) == spacePath && parentPathOf(newPath) != spacePath;
     if (movedOutOfFolderSpace) return ensureArray(items).filter((path) => path != oldPath && path != newPath);
     return replacePathInList(items, oldPath, newPath);
 };

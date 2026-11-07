@@ -1,8 +1,7 @@
-import { getParentPathFromString } from "utils/path";
 
+import { getParentPathFromString, removeTrailingSlashFromFolder } from "utils/path";
 import { DBTable, DBTables } from "shared/types/mdb";
 import { uniq } from "utils/array";
-import { removeTrailingSlashFromFolder } from "utils/paths";
 import { sanitizeSQLStatement } from "utils/sanitizers";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
 import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializers";

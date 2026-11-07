@@ -1,7 +1,8 @@
 import { Superstate } from "makemd-core";
+import { isNodeOrDescendant } from "core/utils/tree";
 import i18n from "shared/i18n";
 import { rankForDropPositionInSpace } from "core/utils/dnd/dropPath";
-import { DragProjection } from "core/utils/dnd/dragPath";
+import { DragProjection, projectionContainerId } from "core/utils/dnd/dragPath";
 import { TreeNode, effectiveSpaceSort, saveSpaceMetadataValue, uniqueRankOrder } from "core/utils/superstate/spaces";
 import { ensureArray } from "core/utils/schema";
 
@@ -97,17 +98,15 @@ export const dropExternalFilesInSpace = async (superstate: Superstate, files: Ex
 };
 
 
-const nodeIsAncestorOf = (ancestor: TreeNode, node: TreeNode) => node.id == ancestor.id || String(node.id).startsWith(`${ancestor.id}/`);
-
 export const dropExternalFilesAtProjection = async (superstate: Superstate, files: ExternalDropFile[], projection: DragProjection | null, flattenedTree: TreeNode[]) => {
     if (!projection || files.length == 0) return false;
-    const parentId = projection.insert ? projection.overId : projection.parentId;
+    const parentId = projectionContainerId(projection);
     const parentNode = flattenedTree.find((node) => node.id == parentId);
     const spacePath = parentNode?.item?.path;
     if (!spacePath) return false;
     const overNode = projection.linePosition ? flattenedTree.find((node) => node.id == projection.overId) : null;
 
-    const rankNode = overNode && overNode.parentId != parentId ? flattenedTree.find((node) => node.depth == projection.depth && nodeIsAncestorOf(node, overNode)) ?? overNode : overNode;
+    const rankNode = overNode && overNode.parentId != parentId ? flattenedTree.find((node) => node.depth == projection.depth && isNodeOrDescendant(node.id, overNode.id)) ?? overNode : overNode;
     const rankTarget = rankNode ? { node: rankNode, position: projection.linePosition } : null;
     await dropExternalFilesInSpace(superstate, files, spacePath, rankTarget);
     return true;

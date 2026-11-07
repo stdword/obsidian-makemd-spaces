@@ -1,8 +1,7 @@
 import { SpaceState } from "shared/types/PathState";
+import { folderPathToString, removeTrailingSlashFromFolder } from "utils/path";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { DEFAULT_SYSTEM_NAME, SPACE_CONFIG_PATH } from "schemas/constants";
-import { removeTrailingSlashFromFolder } from "utils/paths";
-import { folderPathToString } from "utils/path";
 import { tagSpacePathFromTag } from "schemas/builtin";
 
 

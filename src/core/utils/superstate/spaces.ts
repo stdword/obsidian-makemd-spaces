@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import { parentPathOf } from "utils/path";
 import i18n from "shared/i18n";
 
 import { ensureArray, ensureBoolean, ensureString } from "core/utils/schema";
@@ -321,13 +322,8 @@ const rankOrderWithPathAtIndex = (superstate: Superstate, spaceState: SpaceState
 
 const isFiniteRank = (rank: unknown): rank is number => typeof rank == "number" && Number.isFinite(rank);
 
-const parentPathForPath = (path: string): string => {
-    const index = path.lastIndexOf("/");
-    return index == -1 ? "" : path.slice(0, index);
-};
-
 const physicalParentForPath = (superstate: Superstate, path: string): string => {
-    return (superstate.pathStateForPath?.(path) ?? superstate.pathsIndex?.get(path))?.parent ?? parentPathForPath(path);
+    return (superstate.pathStateForPath?.(path) ?? superstate.pathsIndex?.get(path))?.parent ?? parentPathOf(path);
 };
 
 export const pathIsAlreadyInFolderPath = (superstate: Superstate, path: string, folderPath: string): boolean => {

@@ -1,5 +1,5 @@
 import { PathRefTypes, URI } from "shared/types/path";
-import { removeTrailingSlashFromFolder } from "utils/paths";
+import { removeTrailingSlashFromFolder } from "utils/path";
 
 export const parseURI = (uri: string): URI => {
     const fullPath = uri;
