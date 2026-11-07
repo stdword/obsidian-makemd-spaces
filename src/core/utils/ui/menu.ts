@@ -18,10 +18,10 @@ export const calculateBoundsBasedOnPosition = (targetRect: Rect, rect: DOMRect, 
     if (overflowY > 0 && anchor == "bottom") {
         newHeight = Math.max(0, bounds.height - newY);
     } else if (overflowY > 0) {
-        if (targetRect.y - rect.height < 0) newY = targetRect.y - overflowY;
-        else {
-            newY = targetRect.y - rect.height - 10;
-        }
+        // Not enough room below: slide the menu up only as far as needed so its bottom
+        // edge hugs the viewport (never flip it above the target, which made the menu
+        // jump between neighbouring rows and left space unused at the bottom).
+        newY = Math.max(viewportPadding, bounds.height - rect.height - viewportPadding);
     }
     return {
         x: newX,

@@ -22,4 +22,23 @@ describe("calculateBoundsBasedOnPosition", () => {
         expect(position.x).toBe(12);
         expect(position.x + wide.width).toBe(488);
     });
+
+    it("slides a right-anchored menu up just enough to hug the bottom edge", () => {
+        const bounds = { width: 500, height: 1000 };
+        const menu = { width: 200, height: 600 } as DOMRect;
+
+        // Fits below: stays at the row.
+        expect(calculateBoundsBasedOnPosition({ x: 10, y: 100, width: 40, height: 20 }, menu, bounds, "right").y).toBe(100);
+        // Would overflow below but fits above: still slides, no flip above the row.
+        expect(calculateBoundsBasedOnPosition({ x: 10, y: 800, width: 40, height: 20 }, menu, bounds, "right").y).toBe(388);
+        // Would not fit above either: same bottom-hugging position.
+        expect(calculateBoundsBasedOnPosition({ x: 10, y: 500, width: 40, height: 20 }, menu, bounds, "right").y).toBe(388);
+    });
+
+    it("never pushes a menu taller than the viewport above the top padding", () => {
+        const bounds = { width: 500, height: 400 };
+        const menu = { width: 200, height: 900 } as DOMRect;
+
+        expect(calculateBoundsBasedOnPosition({ x: 10, y: 300, width: 40, height: 20 }, menu, bounds, "right").y).toBe(12);
+    });
 });
