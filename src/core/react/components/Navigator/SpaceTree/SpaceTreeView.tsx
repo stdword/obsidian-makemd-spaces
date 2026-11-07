@@ -20,7 +20,7 @@ import { FocusEditor } from "./NavigatorFocusEditor";
 import { DropModifiers, shouldShowLinkedItemIcon } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 import { isFilter, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
-import { isPathExcludedFromFocus } from "core/utils/superstate/focus";
+import { isPathExcludedFromFocus, addPathsToFocus } from "core/utils/superstate/focus";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
@@ -1015,7 +1015,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             const handlers = pointerDragHandlersRef.current;
             if (focusIndex != null) {
                 const droppedPaths = dragPathsRef.current;
-                handlers.setFocuses(handlers.focuses.map((focus, index) => (index == focusIndex ? { ...focus, paths: [...focus.paths, ...droppedPaths.filter((path) => !focus.paths.includes(path))] } : focus)));
+                handlers.setFocuses(addPathsToFocus(handlers.focuses, focusIndex, droppedPaths));
                 handlers.resetState();
                 return;
             }

@@ -7,12 +7,22 @@ import { MenuObject } from "shared/types/menu";
 import { Rect } from "shared/types/Pos";
 import { IUIManager } from "shared/types/uiManager";
 import { matchAny } from "./concerns/matchers";
+import { escapeHtml } from "utils/html";
 import { verticalDeltaForShiftWheel } from "./selectMenuLimits";
 import { activateMenuOption, canFocusOption } from "./selectMenuKeyboard";
+// Returns HTML-safe markup: the text is escaped and only the <mark> tags are added.
 export function markIt(name: string, query: string) {
-    if (!query?.length) return name;
+    const text = name ?? "";
+    if (!query?.length) return escapeHtml(text);
     const regexp = matchAny(query);
-    return name?.replace(regexp, "<mark>$&</mark>");
+    let html = "";
+    let last = 0;
+    for (const match of text.matchAll(regexp)) {
+        if (match[0].length == 0) continue;
+        html += `${escapeHtml(text.slice(last, match.index))}<mark>${escapeHtml(match[0])}</mark>`;
+        last = match.index + match[0].length;
+    }
+    return html + escapeHtml(text.slice(last));
 }
 
 const SelectMenuSuggestionsComponent = (props: { ui: IUIManager; item: SelectOption; query: string; active: boolean; onDeleteOption?: (value: string) => void }) => {
@@ -41,7 +51,7 @@ const SelectMenuSuggestionsComponent = (props: { ui: IUIManager; item: SelectOpt
                             : {}
                     }
                     dangerouslySetInnerHTML={{
-                        __html: props.query.length > 0 ? markIt(props.item.name, props.query) : props.item.name,
+                        __html: markIt(props.item.name, props.query),
                     }}
                 />
                 {props.item.description && (

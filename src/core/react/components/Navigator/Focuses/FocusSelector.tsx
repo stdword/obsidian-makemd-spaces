@@ -4,7 +4,7 @@ import { CSS } from "@dnd-kit/utilities";
 
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { DragProjection } from "core/utils/dnd/dragPath";
-import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
+import { addPathsToFocus } from "core/utils/superstate/focus";
 import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -82,20 +82,11 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
             setActiveId(id);
         }
     };
+    // Native (cmd-drag) drop of paths onto a focus tab. Reordering focus tabs is already
+    // applied live in dragOver, and pointer drags from the tree are completed by the tree.
     const dragEnded = () => {
-        if (projected && projected.insert) {
-            const space = props.superstate.spacesIndex.get(overId);
-
-            if (space) dropPathsInSpaceAtIndex(props.superstate, dragPaths, space.path, 0, "link");
-        } else if (dragPaths.length == 1) {
-            const toIndex = overId;
-
-            if (activeId !== null) {
-                const fromIndex = activeId;
-                setFocuses(arrayMove(focuses, fromIndex, toIndex));
-            } else {
-                setFocuses(focuses.map((f, i) => (i == toIndex ? { ...f, paths: [...f.paths, dragPaths[0]] } : f)));
-            }
+        if (overId != null && activeId === null && dragPaths.length > 0) {
+            setFocuses(addPathsToFocus(focuses, overId, dragPaths));
         }
         resetState();
     };

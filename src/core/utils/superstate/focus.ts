@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import { Focus } from "shared/types/focus";
 
 export const isPathExcludedFromFocus = (path: string, excludedPaths: string[] = []) =>
     excludedPaths.includes(path);
@@ -31,3 +32,7 @@ export const removeExcludedPathFromFocus = async (superstate: Superstate, focusI
 
     await superstate.spaceManager.saveFocuses(focuses);
 };
+
+// Drop target for paths dragged onto a focus tab: appends the new paths to that focus only.
+export const addPathsToFocus = (focuses: Focus[], focusIndex: number, paths: string[]): Focus[] =>
+    focuses.map((focus, index) => (index == focusIndex ? { ...focus, paths: [...focus.paths, ...paths.filter((path) => !focus.paths.includes(path))] } : focus));

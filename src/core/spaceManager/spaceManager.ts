@@ -65,7 +65,7 @@ export class SpaceManager implements ISpaceManager {
     };
 
     public onPathCreated = async (path: string) => {
-        this.superstate.onPathCreated(path);
+        await this.superstate.onPathCreated(path);
     };
 
     public onPathDeleted = async (path: string) => {

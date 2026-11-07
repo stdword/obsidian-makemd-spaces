@@ -17,4 +17,10 @@ describe("markIt", () => {
     it("escapes regex metacharacters in the query", () => {
         expect(markIt("cost (net)", "(net)")).toBe("cost <mark>(net)</mark>");
     });
+
+    it("escapes markup in the text so names and descriptions cannot inject HTML", () => {
+        expect(markIt("<img src=x onerror=alert(1)>", "")).toBe("&lt;img src=x onerror=alert(1)&gt;");
+        expect(markIt("a <b> & c", "b")).toBe("a &lt;<mark>b</mark>&gt; &amp; c");
+        expect(markIt("tag <script>", "<script>")).toBe("tag <mark>&lt;script&gt;</mark>");
+    });
 });
