@@ -1,5 +1,11 @@
 import React, { useEffect } from "react";
 import i18n from "shared/i18n";
+import { IUIManager } from "shared/types/uiManager";
+
+// Enter confirms only when the event reaches this modal through the shared inputManager:
+// menus opened on top register later and swallow the key first, and the listener never
+// fires for a different window the way a global window handler would.
+export const isConfirmKey = (event: Pick<KeyboardEvent, "key" | "isComposing">): boolean => event.key === "Enter" && !event.isComposing;
 
 export const formatMessage = (template: string, values: React.ReactNode[]) => <>
     {template.split(/(\$\{\d+\})/g).map((part, index) => {
@@ -9,6 +15,7 @@ export const formatMessage = (template: string, values: React.ReactNode[]) => <>
 </>;
 
 export const ConfirmationModal = (props: {
+  ui?: IUIManager;
   hide?: () => void;
   confirmAction: () => void;
   message: React.ReactNode;
@@ -21,19 +28,19 @@ export const ConfirmationModal = (props: {
         hide();
     };
     useEffect(() => {
+        const inputManager = props.ui?.inputManager;
+        if (!inputManager) return;
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Enter") {
-                event.preventDefault();
-                event.stopPropagation();
-                event.stopImmediatePropagation();
-                confirm();
-            }
+            if (!isConfirmKey(event)) return false;
+            event.preventDefault();
+            confirm();
+            return true;
         };
-        window.addEventListener("keydown", handleKeyDown);
+        inputManager.on("keydown", handleKeyDown);
         return () => {
-            window.removeEventListener("keydown", handleKeyDown);
+            inputManager.off("keydown", handleKeyDown);
         };
-    }, []);
+    }, [props.ui]);
     return (
         <div className="mk-modal-contents">
             {message ? <div className="mk-modal-message">{message}</div> : null}

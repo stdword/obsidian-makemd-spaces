@@ -38,6 +38,9 @@ export const showModal = (props: { ui: ObsidianUI; fc: JSX.Element; title?: stri
                 )}
 
                 {cloneElement(props.fc, {
+                    // Modal contents get the UI manager so they can listen through its
+                    // inputManager (same ordering as menus) instead of the global window.
+                    ui: props.fc.props?.ui ?? props.ui.manager,
                     hide: () => hide(),
                     ...newProps,
                 })}

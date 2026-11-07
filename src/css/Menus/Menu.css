@@ -82,9 +82,6 @@
 .mk-menu-suggester {
     visibility: hidden;
 }
-.mk-combo-menu {
-    height: 90%;
-}
 .mk-drawer-overlay {
     position: fixed;
     inset: 0px;

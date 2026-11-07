@@ -4,7 +4,7 @@ import { Superstate } from "makemd-core";
 
 import { debounce } from "lodash";
 import i18n from "shared/i18n";
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getColorPalettes, hslToRgb, rgbToHsl, hexToRgb, rgbToHex } from "core/utils/colorPalette";
 
 // Color mode types
@@ -223,6 +223,15 @@ const ColorPaletteSelector: React.FC<{
     );
 };
 
+// Palette values are CSS variables (var(--mk-color-red)); only a real hex belongs in the hex field.
+export const hexInputValue = (color: string): string => (/^#[0-9A-F]{6}$/i.test(color ?? "") ? color : "");
+
+// Accepts "#RRGGBB" or "RRGGBB" while typing and returns the canonical "#RRGGBB", or null if incomplete.
+export const normalizeHexInput = (draft: string): string | null => {
+    const match = (draft ?? "").trim().match(/^#?([0-9A-F]{6})$/i);
+    return match ? `#${match[1]}` : null;
+};
+
 export const ColorPicker = (props: { superstate: Superstate; color: string; hide?: () => void; saveValue: (color: string) => void; stayOpen?: boolean; hidePaletteSelector?: boolean }) => {
     const [value, setValue] = useState(props.color ?? "#eb3b5a");
     const [currentColor, setCurrentColor] = useState<string>(value);
@@ -231,19 +240,25 @@ export const ColorPicker = (props: { superstate: Superstate; color: string; hide
     const [saturation, setSaturation] = useState(50);
     const [lightness, setLightness] = useState(50);
 
-    // Debounced save function to prevent excessive updates
-    const debouncedSaveValue = useCallback(
-        debounce((color: string) => {
-            props.saveValue(color);
-        }, 150),
-        [props.saveValue],
-    );
+    // One debounced saver for the component's lifetime: callers pass inline arrows for
+    // saveValue, so keying it on props.saveValue would recreate it (and drop pending
+    // calls) on every render. The latest saveValue is read through a ref, and whatever
+    // is still pending is flushed when the picker unmounts.
+    const saveValueRef = useRef(props.saveValue);
+    saveValueRef.current = props.saveValue;
+    const debouncedSaveValue = useMemo(() => debounce((color: string) => saveValueRef.current(color), 150), []);
+    useEffect(() => () => debouncedSaveValue.flush(), [debouncedSaveValue]);
 
     const saveValue = (v: string) => {
         setCurrentColor(v);
         setValue(v);
         debouncedSaveValue(v);
     };
+
+    // The hex field keeps its own draft so partial input is not reverted by the
+    // controlled value; a complete #RRGGBB (with or without the #) is saved as typed.
+    const [hexDraft, setHexDraft] = useState(hexInputValue(currentColor));
+    useEffect(() => setHexDraft(hexInputValue(currentColor)), [currentColor]);
 
     const updateColor = (color: string) => {
         if (color) {
@@ -369,12 +384,13 @@ export const ColorPicker = (props: { superstate: Superstate; color: string; hide
                         <ColorSwatch color={currentColor} size="large" onClick={() => {}} />
                         <input
                             type="text"
-                            value={currentColor}
+                            value={hexDraft}
                             onChange={(e) => {
-                                if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-                                    saveValue(e.target.value);
-                                }
+                                setHexDraft(e.target.value);
+                                const hex = normalizeHexInput(e.target.value);
+                                if (hex) saveValue(hex);
                             }}
+                            onBlur={() => setHexDraft(hexInputValue(currentColor))}
                             className="mk-color-hex-input"
                             placeholder="#000000"
                             style={{ flex: 1, minWidth: 0 }}

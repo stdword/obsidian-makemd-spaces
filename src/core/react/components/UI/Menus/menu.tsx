@@ -93,6 +93,7 @@ export const showMenu = (props: {
     const backdropElement = props.centered ? props.win.document.createElement("div") : null;
     const portalElement = props.win.document.createElement("div");
     portalElement.classList.add("mk-menu");
+    if (props.className) portalElement.classList.add(...props.className.split(" ").filter((name) => name));
     if (props.centered) portalElement.classList.add("mk-menu-centered");
 
     if (backdropElement) {
@@ -107,10 +108,12 @@ export const showMenu = (props: {
     const hideFunction = () => {
         let hasBeenCalled = false;
         return (supress: boolean, immediate?: boolean) => {
-            if (props.onHide && !supress) props.onHide();
-            if (submenu) submenu.hide(true);
+            // Escape and a backdrop click can both land inside the 50ms unmount window;
+            // only the first call may notify onHide and tear the menu down.
             if (hasBeenCalled) return;
             hasBeenCalled = true;
+            if (props.onHide && !supress) props.onHide();
+            if (submenu) submenu.hide(true);
             // Unmount is deferred (it may run inside a React event handler), so mark the menu
             // hidden right away: it disappears instantly and stops reacting to keyboard input.
             portalElement.classList.add("mk-menu-hidden");
