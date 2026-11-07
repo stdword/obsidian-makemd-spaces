@@ -711,7 +711,6 @@ describe("dropPathInSpaceAtIndex", () => {
 
     it("does not add tags by dropping external multiple paths into a tag space", async () => {
         const tagSpacePath = "spaces://#fixture";
-        const addTag = jest.fn(() => Promise.resolve());
         const superstate = {
             pathsIndex: new Map([
                 ["Outside.md", { path: "Outside.md", name: "Outside", type: "file" }],

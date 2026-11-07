@@ -1,6 +1,6 @@
 jest.mock("makemd-core", () => ({}), { virtual: true });
 
-import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, dropExternalFilesInSpace, isExternalFileDrag, splitDroppedFileName, uniqueDroppedFileName } from "core/utils/dnd/externalFileDrop";
+import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, dropExternalFilesInSpace, splitDroppedFileName, uniqueDroppedFileName } from "core/utils/dnd/externalFileDrop";
 import { getProjection } from "core/utils/dnd/dragPath";
 import * as spaces from "core/utils/superstate/spaces";
 
