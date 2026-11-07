@@ -41,6 +41,8 @@ export class Indexer {
     /** Paths -> promises for file reloads which have not yet been queued. */
     callbacks: Map<string, [FileCallback, FileCallback][]>;
     private jobStarts: Map<string, number>;
+    /** Job currently running on each worker, so a worker crash can reject the right promise. */
+    private activeJobs: Map<number, WorkerJobType>;
 
     public constructor(
         public numWorkers: number,
@@ -53,11 +55,16 @@ export class Indexer {
         this.reloadSet = new Set();
         this.callbacks = new Map();
         this.jobStarts = new Map();
+        this.activeJobs = new Map();
 
         for (let index = 0; index < numWorkers; index++) {
             const worker = new SuperstateWorker({ name: "Superstate Indexer " + (index + 1) });
 
             worker.onmessage = (evt: Partial<any>) => this.finish(evt.data.job, evt.data.result, index);
+            // An uncaught exception or an unserializable message never produces onmessage; without
+            // these the worker would stay busy forever and every reload of its job would hang.
+            worker.onerror = (evt: Partial<ErrorEvent>) => this.failWorker(index, `Indexer worker crashed: ${evt?.message ?? evt?.error ?? "unknown error"}`);
+            worker.onmessageerror = () => this.failWorker(index, "Indexer worker received an unreadable message");
             this.workers.push(worker);
             // this.register(() => worker.terminate());
             this.busy.push(false);
@@ -91,9 +98,22 @@ export class Indexer {
         return promise;
     }
 
+    /** Reject whatever job the worker was running and hand it the next queued one. */
+    private failWorker(index: number, message: string) {
+        const job = this.activeJobs.get(index);
+        if (job) {
+            this.finish(job, { $error: message }, index);
+            return;
+        }
+        this.busy[index] = false;
+        const next = this.reloadQueue.shift();
+        if (next !== undefined) this.start(next, index);
+    }
+
     /** Finish the parsing of a file, potentially queueing a new file. */
     private finish(jerb: WorkerJobType, data: any, index: number) {
         const jobKey = stringifyJob(jerb);
+        this.activeJobs.delete(index);
         const elapsedMs = this.jobStarts.has(jobKey) ? Date.now() - this.jobStarts.get(jobKey) : undefined;
         this.jobStarts.delete(jobKey);
         // Cache the callbacks before we do book-keeping.
@@ -110,16 +130,18 @@ export class Indexer {
         if (job !== undefined) this.start(job, index);
 
         // Resolve promises to let users know this file has finished.
-        if ("$error" in data) {
-            for (const [_, reject] of calls) reject(data["$error"]);
+        const result = data ?? { $error: `Indexer returned no result for ${jobKey}` };
+        if (typeof result == "object" && "$error" in result) {
+            for (const [_, reject] of calls) reject(result["$error"]);
         } else {
-            for (const [callback, _] of calls) callback(data);
+            for (const [callback, _] of calls) callback(result);
         }
     }
 
     private start(job: WorkerJobType, workerId: number) {
         const jobKey = stringifyJob(job);
         this.busy[workerId] = true;
+        this.activeJobs.set(workerId, job);
         this.jobStarts.set(jobKey, Date.now());
         this.send(job, workerId).catch((error) => {
             this.finish(job, { $error: error }, workerId);
@@ -198,6 +220,7 @@ export class Indexer {
         this.reloadQueue = [];
         this.reloadSet.clear();
         this.jobStarts.clear();
+        this.activeJobs.clear();
         this.busy = this.busy.map(() => false);
         this.workers.forEach((worker) => worker.terminate());
     }
