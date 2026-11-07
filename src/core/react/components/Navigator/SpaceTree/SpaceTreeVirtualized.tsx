@@ -17,6 +17,9 @@ import { isTagSpacePath } from "schemas/builtin";
 import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 
 
+// Shared empty style: TreeItem is memoized, and a fresh `{}` per render would defeat that.
+const EMPTY_ROW_STYLE: CSSProperties = {};
+
 export type TreeLine = { id: string; left: number; top: number; height: number };
 
 /**
@@ -388,7 +391,7 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                                     indicatorVariant={indicatorVariant ?? "line-top"}
                                     indicatorDepth={dragAction?.visual.kind == "line" ? (dragAction.visual.depth ?? null) : null}
                                     superstate={superstate}
-                                    style={{}}
+                                    style={EMPTY_ROW_STYLE}
                                     onSelectRange={selectRange}
                                     active={activePath == node.item?.path}
                                     highlighted={isHighlighted(virtualRow.index)}
