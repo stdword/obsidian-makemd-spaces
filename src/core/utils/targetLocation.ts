@@ -6,5 +6,6 @@ type ModifierEvent = { ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean; b
 export const targetLocationForEvent = (e?: ModifierEvent | null): TargetLocation => {
     if (!e) return false;
     const newTab = e.ctrlKey || e.metaKey || e.button == 1;
-    return e.altKey ? "split" : (newTab ? "tab" : false);
+    if (!newTab) return false;
+    return e.altKey ? "split" : "tab";
 };
