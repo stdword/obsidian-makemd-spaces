@@ -1,7 +1,8 @@
 import { stringifyJob } from "core/utils/superstate/serializer";
 import { Superstate } from "makemd-core";
 import { WorkerJobType } from "shared/types/PathState";
-import { BatchPathWorkerPayload, PathWorkerPayload } from "./impl";
+import { VersionedMap } from "utils/versionedMap";
+import { BatchPathWorkerPayload, PathWorkerPayload, SpacesSyncPayload } from "./impl";
 //@ts-ignore
 import SuperstateWorker from "./indexer.worker";
 /** Callback when a file is resolved. */
@@ -43,6 +44,8 @@ export class Indexer {
     private jobStarts: Map<string, number>;
     /** Job currently running on each worker, so a worker crash can reject the right promise. */
     private activeJobs: Map<number, WorkerJobType>;
+    /** spacesIndex version each worker's mirror was last synced to. */
+    private spacesVersionByWorker: Map<number, number>;
 
     public constructor(
         public numWorkers: number,
@@ -56,11 +59,15 @@ export class Indexer {
         this.callbacks = new Map();
         this.jobStarts = new Map();
         this.activeJobs = new Map();
+        this.spacesVersionByWorker = new Map();
 
         for (let index = 0; index < numWorkers; index++) {
             const worker = new SuperstateWorker({ name: "Superstate Indexer " + (index + 1) });
 
-            worker.onmessage = (evt: Partial<any>) => this.finish(evt.data.job, evt.data.result, index);
+            worker.onmessage = (evt: Partial<any>) => {
+                if (evt.data?.job?.type == "spaces") return;
+                this.finish(evt.data.job, evt.data.result, index);
+            };
             // An uncaught exception or an unserializable message never produces onmessage; without
             // these the worker would stay busy forever and every reload of its job would hang.
             worker.onerror = (evt: Partial<ErrorEvent>) => this.failWorker(index, `Indexer worker crashed: ${evt?.message ?? evt?.error ?? "unknown error"}`);
@@ -100,6 +107,8 @@ export class Indexer {
 
     /** Reject whatever job the worker was running and hand it the next queued one. */
     private failWorker(index: number, message: string) {
+        // The worker may have lost its state; make the next job resend the spaces index.
+        this.spacesVersionByWorker.delete(index);
         const job = this.activeJobs.get(index);
         if (job) {
             this.finish(job, { $error: message }, index);
@@ -148,16 +157,30 @@ export class Indexer {
         });
     }
 
+    /**
+     * Refresh the worker's mirror of spacesIndex when the index changed since the last sync.
+     * Cloning the whole index on every single-path reload dominated indexing cost; with a
+     * VersionedMap the clone happens only after an actual change.
+     */
+    private syncSpaces(workerId: number) {
+        const index = this.cache.spacesIndex;
+        const version = index instanceof VersionedMap ? index.version : null;
+        if (version != null && this.spacesVersionByWorker.get(workerId) == version) return;
+        const payload: SpacesSyncPayload = { spacesCache: index };
+        this.message(workerId, { job: { type: "spaces", path: "" }, payload });
+        if (version != null) this.spacesVersionByWorker.set(workerId, version);
+    }
+
     /** Send a new task to the given worker ID. */
     private async send(job: WorkerJobType, workerId: number) {
         if (job.type == "paths") {
             const pathCaches = await this.cache.spaceManager.allCaches();
             const payload: BatchPathWorkerPayload = {
                 settings: this.cache.settings,
-                spacesCache: this.cache.spacesIndex,
                 pathCache: pathCaches,
                 oldMetadata: this.cache.pathsIndex,
             };
+            this.syncSpaces(workerId);
             this.message(workerId, {
                 job,
                 payload: payload,
@@ -180,7 +203,6 @@ export class Indexer {
             const payload: PathWorkerPayload = {
                 path: job.path,
                 settings: this.cache.settings,
-                spacesCache: this.cache.spacesIndex,
                 pathMetadata,
                 name,
                 parent,
@@ -188,6 +210,7 @@ export class Indexer {
                 subtype,
                 oldMetadata: this.cache.pathsIndex.get(job.path),
             };
+            this.syncSpaces(workerId);
             this.message(workerId, {
                 job,
                 payload: payload,

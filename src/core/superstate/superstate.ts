@@ -1,4 +1,5 @@
 import { UIManager } from "core/middleware/ui";
+import { VersionedMap } from "utils/versionedMap";
 import { fileSystemSpaceInfoFromTag } from "core/spaceManager/filesystemAdapter/spaceInfo";
 import { SpaceManager } from "core/spaceManager/spaceManager";
 import { effectiveSpaceSort, saveSpaceCache, uniqueRankOrder } from "core/utils/superstate/spaces";
@@ -207,7 +208,7 @@ export class Superstate implements ISuperstate {
 
         //Initiate Indexes
         this.pathsIndex = new Map();
-        this.spacesIndex = new Map();
+        this.spacesIndex = new VersionedMap();
         this.focuses = [];
 
         //Initiate Maps
