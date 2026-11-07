@@ -25,6 +25,8 @@ export type SelectMenuProps = {
     onHover?: (option: any) => void;
     onHide?: () => void;
     isDisclosure?: boolean;
+    // Set on menus opened from another menu's option; ArrowLeft closes them and returns to the parent.
+    isSubmenu?: boolean;
     wrapperClass?: string;
     centered?: boolean;
     onSelectSection?: (section: string) => void;

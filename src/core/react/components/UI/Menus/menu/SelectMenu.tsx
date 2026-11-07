@@ -165,6 +165,7 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress
             allowNew={props.editable}
             previewComponent={props.previewComponent}
             isDisclosure={props.isDisclosure}
+            isSubmenu={props.isSubmenu}
         />
     );
 });

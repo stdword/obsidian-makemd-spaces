@@ -14,6 +14,8 @@ import SelectMenuSuggestions from "./SelectMenuSuggestions";
 import { focusNextElement } from "./concerns/focusNextElement";
 import { matchAny, matchExact } from "./concerns/matchers";
 import { applySectionLimits, escapeActionForQuery, prioritizeSearchMatches } from "./selectMenuLimits";
+import { activateMenuOption, menuKeyAction, stepOptionIndex } from "./selectMenuKeyboard";
+import { isMenuHidden } from "../menu";
 const KEYS = {
     ENTER: "Enter",
     TAB: "Tab",
@@ -101,6 +103,7 @@ type SelectMenuComponentProps = {
     allowNew?: boolean;
     allowNewBySection?: Record<string, boolean | undefined>;
     isDisclosure?: boolean;
+    isSubmenu?: boolean;
 };
 
 const findMatchIndex = (options: SelectOption[], query: string) => {
@@ -287,10 +290,23 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
     };
 
     const onKeyDown = (e: React.KeyboardEvent) => {
-        if (onComposition.current) {
+        if (onComposition.current || isMenuHidden(container.current)) {
             return false;
         }
         let handled = false;
+        const keyAction = menuKeyAction(e.key, options, index, props.isSubmenu);
+        if (keyAction == "close-submenu") {
+            e.preventDefault();
+            e.stopPropagation();
+            props.hide(true);
+            return true;
+        }
+        if (keyAction == "activate" || keyAction == "open-submenu") {
+            e.preventDefault();
+            e.stopPropagation();
+            activateFocusedOption(e);
+            return true;
+        }
         // when one of the terminating keys is pressed, add current query to the tags
         if (props.delimiters.indexOf(e.key) > -1) {
             if (query || index > -1) {
@@ -380,27 +396,40 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
 
     const pressUpKey = (e: React.KeyboardEvent) => {
         e.preventDefault();
-
-        // if first item, cycle to the bottom
-        const size = options.length - 1;
-        const newIndex = index <= 0 ? size : index - 1;
-        if (options[newIndex].disabled) {
-            setIndex(newIndex <= 0 ? size : newIndex - 1);
-        } else {
-            setIndex(newIndex);
-        }
+        setIndex(stepOptionIndex(options, index, -1));
     };
     const pressDownKey = (e: React.KeyboardEvent) => {
         e.preventDefault();
+        setIndex(stepOptionIndex(options, index, 1));
+    };
 
-        // if last item, cycle to top
-        const size = options.length - 1;
-        const newIndex = index >= size ? 0 : index + 1;
-        if (options[newIndex].disabled) {
-            setIndex(newIndex >= size ? 0 : newIndex + 1);
-        } else {
-            setIndex(newIndex);
-        }
+    // Keyboard activation (Enter / ArrowRight) goes through the same path as a mouse click.
+    const activateFocusedOption = (e: React.KeyboardEvent) => {
+        const item = options[index];
+        if (!item) return;
+        const el = refs.current[index];
+        const anchor = el?.getBoundingClientRect() ?? { x: 0, y: 0, width: 0, height: 0 };
+        const view = el?.ownerDocument?.defaultView ?? window;
+        const event = {
+            ctrlKey: e.ctrlKey,
+            metaKey: e.metaKey,
+            altKey: e.altKey,
+            shiftKey: e.shiftKey,
+            detail: 0,
+            view,
+            currentTarget: el,
+            target: el,
+            nativeEvent: e,
+            preventDefault: (): void => undefined,
+            stopPropagation: (): void => undefined,
+        };
+        activateMenuOption(item, anchor, event, {
+            openSubmenu,
+            hide: props.hide,
+            onHide: props.onHide,
+            selectOption: addTag,
+            isDisclosureMenu: props.isDisclosure,
+        });
     };
 
     function pressBackspaceKey() {
@@ -456,7 +485,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
         return () => {
             props.ui.inputManager.off("keydown", onKeyDown);
         };
-    }, [options, index]);
+    }, [options, index, props.isSubmenu]);
 
     const expanded = focused && query.length >= props.minQueryLength;
     const classNames = Object.assign({}, CLASS_NAMES, props.classNames);
@@ -472,6 +501,8 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             submenuRef.current.hide(true);
         }
         submenuRef.current = menu;
+        // Let the child menu know it has a parent so ArrowLeft can close it and return here.
+        menu?.update?.({ isSubmenu: true });
     };
     useEffect(() => {
         return () => submenuRef.current?.hide(true);

@@ -25,6 +25,11 @@
         opacity: 1;
     }
 }
+.mk-menu.mk-menu-hidden,
+.mk-menu-backdrop.mk-menu-hidden {
+    display: none;
+}
+
 .mk-menu {
     --mk-menu-max-height: calc(100vh - var(--header-height));
     padding: 0;

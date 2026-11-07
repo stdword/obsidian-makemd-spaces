@@ -8,6 +8,7 @@ import { Rect } from "shared/types/Pos";
 import { IUIManager } from "shared/types/uiManager";
 import { matchAny } from "./concerns/matchers";
 import { verticalDeltaForShiftWheel } from "./selectMenuLimits";
+import { activateMenuOption, canFocusOption } from "./selectMenuKeyboard";
 export function markIt(name: string, query: string) {
     if (!query?.length) return name;
     const regexp = matchAny(query);
@@ -145,7 +146,6 @@ const SelectMenuSuggestions = (props: {
     isDisclosureMenu: boolean;
     openSubmenu?: (menu: MenuObject) => void;
 }) => {
-    const canFocusOption = (item: SelectOption) => !item.disabled && item.type != SelectOptionType.Separator && item.type != SelectOptionType.Section && item.type != SelectOptionType.Input && item.type != SelectOptionType.Custom;
     const scrollShiftWheelVertically = (e: React.WheelEvent<HTMLDivElement>) => {
         if (!e.shiftKey) return;
         e.preventDefault();
@@ -177,41 +177,15 @@ const SelectMenuSuggestions = (props: {
                     }
                 }}
                 onClick={(e) => {
-                    if (item.onSubmenu && props.openSubmenu) {
-                        const el = props.refs?.current[index].getBoundingClientRect();
-                        if (item.closeParentOnOpen) {
-                            props.openSubmenu(null);
-                            props.hide();
-                            item.onSubmenu(el, () => {});
-                        } else {
-                            props.openSubmenu(
-                                item.onSubmenu(el, () => {
-                                    if (props.onHide) {
-                                        props.onHide();
-                                    }
-                                    props.hide();
-                                }),
-                            );
-                        }
-                    } else if (item.onClick) {
-                        props.openSubmenu?.(null);
-                        item.onClick(e);
-                        if (!item.keepOpen && item.type != SelectOptionType.Submenu && item.type != SelectOptionType.Disclosure) {
-                            props.hide(false, item.closeParentImmediately);
-                        }
-                    } else {
-                        props.openSubmenu?.(null);
-                        if (item.type == null || item.type == SelectOptionType.Option || item.type == SelectOptionType.Disclosure) {
-                            props.selectOption(item, {
-                                ctrlKey: e.ctrlKey,
-                                metaKey: e.metaKey,
-                                altKey: e.altKey,
-                                shiftKey: e.shiftKey,
-                                doubleClick: e.detail == 2,
-                            });
-                            if (!props.isDisclosureMenu) e.stopPropagation();
-                        }
-                    }
+                    const anchor = props.refs?.current[index]?.getBoundingClientRect() ?? { x: 0, y: 0, width: 0, height: 0 };
+                    activateMenuOption(item, anchor, e, {
+                        openSubmenu: props.openSubmenu,
+                        hide: props.hide,
+                        onHide: props.onHide,
+                        selectOption: props.selectOption,
+                        isDisclosureMenu: props.isDisclosureMenu,
+                    });
+                    if (!item.onSubmenu && !item.onClick && !props.isDisclosureMenu) e.stopPropagation();
                 }}
                 id={key}
                 key={key}

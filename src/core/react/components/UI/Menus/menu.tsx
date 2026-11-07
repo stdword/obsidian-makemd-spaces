@@ -6,6 +6,9 @@ import { MenuObject } from "shared/types/menu";
 import { Anchors, Rect } from "shared/types/Pos";
 import { IUIManager } from "shared/types/uiManager";
 
+// True once showMenu's hide() ran for the menu containing this element but React has not unmounted it yet.
+export const isMenuHidden = (el: Element | null | undefined): boolean => Boolean(el?.closest?.(".mk-menu-hidden"));
+
 export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors; hide: (supress?: boolean) => void; children: any }) => {
     const sensors = useSensors(
         useSensor(MouseSensor, {
@@ -21,6 +24,7 @@ export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors
     // const [rect, setRect] = React.useState<Rect>(props.rect);
     useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
+            if (isMenuHidden(ref.current)) return false;
             if (e.key == "Escape") {
                 props.hide(true);
                 return true;
@@ -107,6 +111,10 @@ export const showMenu = (props: {
             if (submenu) submenu.hide(true);
             if (hasBeenCalled) return;
             hasBeenCalled = true;
+            // Unmount is deferred (it may run inside a React event handler), so mark the menu
+            // hidden right away: it disappears instantly and stops reacting to keyboard input.
+            portalElement.classList.add("mk-menu-hidden");
+            backdropElement?.classList.add("mk-menu-hidden");
             const remove = () => {
                 resizeObserver?.disconnect();
                 root.unmount();
