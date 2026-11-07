@@ -1,20 +1,18 @@
 import { getParentPathFromString } from "utils/path";
 
-import JSZip from "jszip";
 import { DBTable, DBTables } from "shared/types/mdb";
 import { uniq } from "utils/array";
 import { removeTrailingSlashFromFolder } from "utils/paths";
 import { sanitizeSQLStatement } from "utils/sanitizers";
 import { Database, QueryExecResult, SqlJsStatic } from "sql.js";
 import { serializeSQLFieldNames, serializeSQLStatements, serializeSQLValues } from "utils/serializers";
-import { ZippedSqliteStorage } from "../localCache/sqliteStorage";
+import { SqliteStorage } from "../localCache/sqliteStorage";
 
-JSZip.support.nodebuffer = false;
-
-export const getZippedDB = async (storage: ZippedSqliteStorage, sqlJS: SqlJsStatic, path: string) => {
-    const buf = await getZippedDBFile(storage, path);
+// The cache database is stored as a plain SQLite file: db.export() bytes in, the same bytes out.
+export const getDB = async (storage: SqliteStorage, sqlJS: SqlJsStatic, path: string) => {
+    const buf = await readDBFile(storage, path);
     if (buf) {
-        const db = await new sqlJS.Database(new Uint8Array(buf));
+        const db = new sqlJS.Database(new Uint8Array(buf));
         try {
             db.exec("SELECT name FROM sqlite_schema");
         } catch {
@@ -25,37 +23,19 @@ export const getZippedDB = async (storage: ZippedSqliteStorage, sqlJS: SqlJsStat
     return new sqlJS.Database();
 };
 
-export const getZippedDBFile = async (storage: ZippedSqliteStorage, path: string) => {
+export const readDBFile = async (storage: SqliteStorage, path: string): Promise<ArrayBuffer | null> => {
     if (!(await storage.middleware.fileExists(path))) {
         return null;
     }
-    const zip = new JSZip();
-
-    const file = await storage.middleware.readBinaryToFile(path);
-    let buffer;
-    try {
-        buffer = await zip.loadAsync(file).then(() => zip.file("data.mdb").async("arraybuffer"));
-    } catch (e) {
-        // empty
-    }
-    return buffer;
+    return storage.middleware.readBinaryToFile(path);
 };
 
-export const saveZippedDBFile = async (storage: ZippedSqliteStorage, path: string, binary: ArrayBuffer) => {
-    if (!(await storage.middleware.fileExists(removeTrailingSlashFromFolder(getParentPathFromString(path))))) {
-        await storage.middleware.createFolder(getParentPathFromString(path));
+export const saveDBFile = async (storage: SqliteStorage, path: string, binary: ArrayBuffer) => {
+    const folder = removeTrailingSlashFromFolder(getParentPathFromString(path));
+    if (!(await storage.middleware.fileExists(folder))) {
+        await storage.middleware.createFolder(folder);
     }
-    const zip = new JSZip();
-    zip.file("data.mdb", binary);
-    const zipFile = await zip.generateAsync({
-        type: "arraybuffer",
-        compression: "DEFLATE",
-        compressionOptions: {
-            level: 5,
-        },
-    });
-    const file = storage.middleware.writeBinaryToFile(path, zipFile);
-    return file;
+    return storage.middleware.writeBinaryToFile(path, binary);
 };
 
 export const dbResultsToDBTables = (res: QueryExecResult[]): DBTable[] => {

@@ -16,7 +16,7 @@ import { fileNameWithSameSuffix, getAbstractFileAtPath, getAllAbstractFilesInVau
 import { SPACE_FOLDER, FOCUSES_FILE, DEFAULT_SYSTEM_NAME, SPACE_CONFIG_FILE } from "schemas/constants";
 
 export class ObsidianFileSystem implements FileSystemAdapter {
-    static stateFileName = "superstate.mdc";
+    static stateFileName = "superstate.mdb";
 
     protected settingsPath: string;
 

@@ -1,14 +1,14 @@
 jest.mock("adapters/mdb/db/db", () => ({
     dbResultsToDBTables: jest.fn((): any[] => []),
     deleteFromDB: jest.fn(),
-    getZippedDB: jest.fn(),
+    getDB: jest.fn(),
     insertIntoDB: jest.fn(),
     replaceDB: jest.fn(),
-    saveZippedDBFile: jest.fn(),
+    saveDBFile: jest.fn(),
     selectDB: jest.fn(),
 }));
 
-import { deleteFromDB, insertIntoDB, saveZippedDBFile } from "adapters/mdb/db/db";
+import { deleteFromDB, insertIntoDB, saveDBFile } from "adapters/mdb/db/db";
 import { LocalStorageCache } from "adapters/mdb/localCache/localCache";
 
 describe("LocalStorageCache", () => {
@@ -53,10 +53,10 @@ describe("LocalStorageCache", () => {
         await cache.store("Projects", "{}", "space");
         await cache.unload();
 
-        expect(saveZippedDBFile).toHaveBeenCalledTimes(1);
+        expect(saveDBFile).toHaveBeenCalledTimes(1);
         jest.runOnlyPendingTimers();
 
-        expect(saveZippedDBFile).toHaveBeenCalledTimes(1);
+        expect(saveDBFile).toHaveBeenCalledTimes(1);
         jest.useRealTimers();
     });
 });

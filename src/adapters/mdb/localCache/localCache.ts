@@ -1,11 +1,11 @@
-import { dbResultsToDBTables, deleteFromDB, dropTable, getZippedDB, insertIntoDB, replaceDB, saveZippedDBFile, selectDB } from "adapters/mdb/db/db";
+import { dbResultsToDBTables, deleteFromDB, dropTable, getDB, insertIntoDB, replaceDB, saveDBFile, selectDB } from "adapters/mdb/db/db";
 import { debounce } from "lodash";
 import { CacheDBSchema } from "schemas/cache";
 import { DBRow, DBTable, DBTables } from "shared/types/mdb";
 import { sanitizeSQLStatement } from "utils/sanitizers";
 import { Database } from "sql.js";
 import { LocalCachePersister } from "shared/types/persister";
-import { ZippedSqliteStorage } from "./sqliteStorage";
+import { SqliteStorage } from "./sqliteStorage";
 
 /** Simpler wrapper for a file-backed cache for arbitrary metadata. */
 export class LocalStorageCache implements LocalCachePersister {
@@ -14,7 +14,7 @@ export class LocalStorageCache implements LocalCachePersister {
     private dirty = false;
     public indexVersion = Date.now().toString();
     private defaultTables : DBTables;
-    public constructor(public storageDBPath: string, private storage: ZippedSqliteStorage, types: string[]) {
+    public constructor(public storageDBPath: string, private storage: SqliteStorage, types: string[]) {
         this.defaultTables = types.reduce((acc, type) => ({...acc, [type]: CacheDBSchema}), {})
     }
 
@@ -26,7 +26,7 @@ export class LocalStorageCache implements LocalCachePersister {
     }
     public async initialize () {
 
-        this.db = await getZippedDB(this.storage, await this.storage.sqlJS(), this.storageDBPath);
+        this.db = await getDB(this.storage, await this.storage.sqlJS(), this.storageDBPath);
         let tables: DBTable[];
         try {
             tables =  dbResultsToDBTables(
@@ -87,7 +87,7 @@ export class LocalStorageCache implements LocalCachePersister {
         if (!this.db) return;
         if (!this.dirty) return;
         this.dirty = false;
-        await saveZippedDBFile(this.storage, this.storageDBPath, this.db.export().buffer as ArrayBuffer);
+        await saveDBFile(this.storage, this.storageDBPath, this.db.export().buffer as ArrayBuffer);
     };
 
     private debounceSaveSpaceDatabase = debounce(
