@@ -29,7 +29,6 @@ import { Superstate } from "core/superstate/superstate";
 import { IMakeMDPlugin } from "adapters/obsidian/types/makemd";
 import "css/DefaultVibe.css";
 import "css/Menus/ColorPicker.css";
-import "css/Menus/MainMenu.css";
 import "css/Menus/Menu.css";
 import "css/Menus/SearchMenu.css";
 import "css/Menus/StickerMenu.css";
@@ -37,6 +36,7 @@ import "css/Modal/Modal.css";
 import "css/Panels/Navigator/FileTree.css";
 import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
+import "css/UI/Layout.css";
 
 export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     app: App;

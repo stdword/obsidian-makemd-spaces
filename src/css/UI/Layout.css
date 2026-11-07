@@ -1,0 +1,108 @@
+/* Layout utilities used by the sticker palette, InputModal and menu inputs.
+   Restored from the make.md layout sheet, trimmed to the classes the components use. */
+
+.mk-layout-row {
+    display: flex;
+}
+
+.mk-layout-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.mk-layout-wrap {
+    flex-wrap: wrap;
+}
+
+.mk-layout-scroll {
+    overflow: auto;
+}
+
+.mk-gap-4 {
+    gap: 4px;
+}
+
+.mk-gap-8 {
+    gap: 8px;
+}
+
+.mk-padding-4 {
+    padding: 4px;
+}
+
+.mk-padding-12 {
+    padding: 12px;
+}
+
+.mk-border-radius-4 {
+    border-radius: 4px;
+}
+
+.mk-hover:hover {
+    background: var(--mk-ui-background-hover);
+}
+
+.mk-icon-xsmall {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.mk-icon-xsmall svg {
+    width: 12px;
+    height: 12px;
+}
+
+button.mk-toolbar-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 30px;
+    padding: 4px 8px;
+    --icon-size: 14px;
+    font-size: max(13px, 1em);
+    font-weight: var(--font-medium);
+    color: var(--mk-ui-text-tertiary);
+    background: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+body:not(.is-mobile) button.mk-toolbar-button:hover {
+    color: var(--mk-ui-text-primary);
+    background: var(--mk-ui-background-hover);
+}
+
+.mk-toolbar-button svg {
+    width: var(--icon-size);
+    height: var(--icon-size);
+}
+
+/* Rows in the hidden/excluded item lists: name takes the space, the remove icon stays compact. */
+.mk-modal-item-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mk-modal-item-button {
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    border-radius: 4px;
+    color: var(--mk-ui-text-tertiary);
+    cursor: pointer;
+}
+
+.mk-modal-item-button:hover {
+    color: var(--mk-ui-text-primary);
+    background: var(--mk-ui-background-hover);
+}
+
+.mk-modal-item-button svg {
+    width: 14px;
+    height: 14px;
+}

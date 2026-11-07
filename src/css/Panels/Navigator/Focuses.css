@@ -2,35 +2,8 @@
     flex: 1;
 }
 
-.mk-button-blink {
-    padding: 8px 12px !important;
-}
-
-.mk-search {
-    display: flex;
-    padding: 8px 8px;
-    margin: 4px 12px;
-    margin-left: 0px;
-}
-
-.mk-search svg {
-    width: 16px;
-    height: 16px;
-}
-
 .mk-focus {
     display: flex;
-}
-
-.mk-focus-new {
-    display: flex;
-    align-items: center;
-    color: var(--mk-ui-text-secondary);
-    opacity: 0.5;
-}
-
-.mk-focus-new:hover {
-    opacity: 1;
 }
 
 .mk-focuses-menu {
@@ -100,8 +73,7 @@
     transition: transform 250ms ease;
 }
 
-.mk-focuses-item svg,
-.mk-focus-new svg {
+.mk-focuses-item svg {
     width: var(--icon-size);
     height: var(--icon-size);
 }

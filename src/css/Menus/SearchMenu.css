@@ -11,18 +11,6 @@
     border-bottom: 1px solid var(--mk-ui-border);
 }
 
-button.mk-menu-search-button {
-    background: none;
-    border: none;
-    box-shadow: none;
-    --icon-size: 16px;
-}
-
-button.mk-menu-search-button svg {
-    width: var(--icon-size);
-    height: var(--icon-size);
-}
-
 .mk-menu-search-container {
     display: flex;
     gap: 8px;

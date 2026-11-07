@@ -1,29 +1,3 @@
-.mk-ui-color-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.mk-ui-color-picker-selector {
-    border-bottom: thin solid var(--mk-ui-divider);
-}
-
-.mk-ui-color-picker-palette {
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-}
-
-.mk-ui-color-picker .mk-color {
-    margin: 4px;
-}
-
-.mk-ui-color-picker-palette > div {
-    display: flex;
-    flex-direction: row;
-    gap: 4px;
-}
-
 /* Enhanced Color Picker Styles */
 
 .mk-ui-color-picker-enhanced {
@@ -82,30 +56,6 @@
     gap: 8px;
 }
 
-.mk-color-swatches {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.mk-color-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.mk-color-section-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-muted);
-}
-
-.mk-color-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-
 /* Gradient Editor */
 
 /* Color Palette Selector */
@@ -133,13 +83,6 @@
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-}
-
-.mk-palette-empty {
-    text-align: center;
-    padding: 24px;
-    color: var(--text-muted);
-    font-size: 14px;
 }
 
 /* None Mode Display */
@@ -194,35 +137,6 @@
 .mk-color-swatch-large {
     width: 40px;
     height: 40px;
-}
-
-.mk-color-swatch-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: 4px;
-    pointer-events: none;
-}
-
-.mk-color-swatch-name {
-    color: white;
-    font-size: 9px;
-    font-weight: 500;
-    line-height: 1.2;
-    text-align: left;
-    word-break: break-word;
-}
-
-.mk-color-swatch-value {
-    color: white;
-    font-size: 8px;
-    font-family: monospace;
-    line-height: 1.2;
-    opacity: 0.8;
 }
 
 /* Gradient Swatch Styles */

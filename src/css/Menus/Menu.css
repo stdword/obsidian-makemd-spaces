@@ -71,10 +71,6 @@
     max-width: inherit;
 }
 
-.mk-menu-suggester {
-    visibility: hidden;
-}
-
 .workspace-split {
     padding-top: var(--safe-area-inset-top);
     background: var(--editor-bg-color);
@@ -82,11 +78,6 @@
 
 [vaul-drawer][vaul-drawer-direction="bottom"]:after {
     display: none;
-}
-
-.mk-menu-suggester.mk-ready {
-    animation: 0.15s ease-out 0s 1 slideInFromBottom;
-    visibility: visible;
 }
 
 .mk-menu svg {
@@ -221,11 +212,6 @@
     cursor: var(--cursor);
     font-size: 13px;
     justify-content: space-between;
-}
-
-.mk-menu-sticker {
-    width: 16px;
-    height: 16px;
 }
 
 .mk-emoji-icon-span {

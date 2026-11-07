@@ -60,39 +60,6 @@
 
 /* Title input for context create modal */
 
-.mk-modal-title-container {
-    width: 100%;
-    margin-bottom: 8px;
-}
-
-.mk-modal-title-input {
-    width: 100%;
-    min-height: 36px;
-    padding: 6px 12px;
-    border: 1px solid var(--mk-ui-border);
-    border-radius: 4px;
-    font-size: var(--font-ui-large);
-    font-weight: var(--font-semibold);
-    line-height: 1.5;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    background: var(--mk-ui-background);
-    color: var(--mk-ui-text);
-}
-
-.mk-modal-title-input:focus {
-    outline: none;
-    border-color: var(--mk-ui-border-active);
-    background: var(--mk-ui-background-active);
-}
-
-.mk-modal-title-input:empty::before {
-    content: attr(data-ph);
-    color: var(--mk-ui-text-tertiary);
-    font-weight: normal;
-}
-
 .mk-modal:before,
 .mk-palette:before {
     content: "";
@@ -187,16 +154,6 @@
     width: 100%;
 }
 
-.mk-modal-card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 8px;
-    background: var(--mk-ui-background);
-    box-shadow: var(--mk-shadow-card);
-}
-
 .mk-modal-description {
     font-size: var(--font-ui-small);
     color: var(--mk-ui-text-secondary);
@@ -213,142 +170,11 @@
     gap: 8px;
 }
 
-.mk-tab {
-    padding: 4px 12px;
-    border-radius: 8px;
-    display: flex;
-    --icon-size: 20px;
-    border: thin solid transparent;
-}
-
-.mk-tab svg {
-    width: var(--icon-size);
-    height: var(--icon-size);
-}
-
-.mk-tab:hover {
-    background: var(--mk-ui-background-hover);
-}
-
-.mk-tab.mk-active {
-    border: thin solid var(--mk-ui-border);
-    background: var(--mk-ui-background-selected);
-    color: var(--mk-color-ui-accent);
-}
-
-.mk-button {
-    padding: 8px 16px;
-    border-radius: 6px;
-    border: 1px solid var(--background-modifier-border);
-    background: var(--background-primary);
-    color: var(--text-normal);
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.mk-button:hover {
-    background: var(--background-modifier-hover);
-}
-
-.mk-button-primary {
-    background: var(--text-accent);
-    color: var(--text-on-accent);
-    border-color: var(--text-accent);
-}
-
-.mk-button-primary:hover {
-    background: var(--text-accent-hover);
-    border-color: var(--text-accent-hover);
-}
-
-.mk-button-secondary {
-    background: var(--background-secondary);
-}
-
-.mk-button-secondary:hover {
-    background: var(--background-modifier-hover);
-}
-
-.mk-modal-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-/* Onboarding Settings Styles */
-
-/* Asset Settings Tabs */
-
-/* Color Palette Manager */
-
-.mk-color-palette-manager {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.mk-palette-manager-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--background-modifier-border);
-    gap: 16px;
-}
-
-.mk-palette-name-input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background: var(--background-primary);
-    color: var(--text-normal);
-}
-
-.mk-palette-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    border: none;
-    border-radius: 6px;
-    padding: 12px;
-    background: var(--background-secondary);
-    margin-bottom: 8px;
-}
-
-.mk-palette-left-column {
-    width: 140px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: row;
-    gap: 8px;
-}
-
-.mk-palette-right-column {
-    flex: 1;
-    min-width: 0;
-}
-
 .mk-palette-name {
     font-weight: 500;
     font-size: 14px;
     color: var(--text-normal);
     display: flex;
-    align-items: center;
-}
-
-.mk-palette-actions {
-    display: flex;
-    gap: 4px;
     align-items: center;
 }
 
@@ -359,125 +185,9 @@
     align-items: center;
 }
 
-.mk-palette-add-color {
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    border: 1px dashed var(--background-modifier-border);
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    transition: all 0.2s ease;
-}
-
-.mk-palette-add-color:hover {
-    border-color: var(--interactive-accent);
-    color: var(--interactive-accent);
-    background: var(--background-modifier-hover);
-}
-
-.mk-palette-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    width: 100%;
-}
-
 .mk-palette-name {
     font-weight: 500;
     font-size: 14px;
-}
-
-.mk-palette-category {
-    font-size: 12px;
-    color: var(--text-muted);
-    background: var(--background-modifier-border);
-    padding: 2px 8px;
-    border-radius: 4px;
-    margin-left: 8px;
-}
-
-.mk-palette-actions {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-}
-
-.mk-palette-actions svg {
-    width: 14px;
-    height: 14px;
-}
-
-.mk-palette-add-color {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    font-size: 16px;
-    font-weight: bold;
-    background: var(--interactive-accent);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.mk-palette-add-color:hover {
-    background: var(--interactive-accent-hover);
-}
-
-.mk-palette-delete {
-    padding: 4px 8px;
-    font-size: 12px;
-    background: var(--background-modifier-border);
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.mk-palette-delete:hover {
-    background: var(--background-modifier-border-hover);
-}
-
-.mk-color-wrapper {
-    position: relative;
-    display: flex;
-    flex-direction: row;
-}
-
-.mk-color-remove {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    width: 16px;
-    height: 16px;
-    padding: 0;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 50%;
-    font-size: 12px;
-    line-height: 1;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-}
-
-.mk-color-wrapper:hover .mk-color-remove {
-    display: flex;
-}
-
-.mk-color-remove:hover {
-    background: var(--background-modifier-error);
-    color: white;
-    border-color: var(--background-modifier-error);
 }
 
 .mk-palette-colors {
@@ -485,86 +195,6 @@
     gap: 8px;
     flex-wrap: wrap;
 }
-
-.mk-color {
-    width: 32px;
-    height: 32px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: transform 0.1s ease;
-}
-
-/* Icon Set Manager */
-
-.mk-icon-set-manager {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.mk-icon-preview {
-    margin-top: 20px;
-}
-
-.mk-icon-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 16px;
-    margin-top: 12px;
-}
-
-.mk-icon-preview-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 8px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-}
-
-.mk-icon-label {
-    font-size: 11px;
-    color: var(--text-muted);
-}
-
-/* Edit Options Modal Styles */
-
-.mk-color-scheme-selector {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.mk-color-scheme-selector label {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--mk-ui-text-primary);
-}
-
-.mk-color-scheme-selector .mk-select {
-    flex: 1;
-    padding: 6px 12px;
-    border: 1px solid var(--mk-ui-divider);
-    border-radius: 4px;
-    background: var(--mk-ui-background);
-    color: var(--mk-ui-text-primary);
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.mk-color-scheme-selector .mk-select:hover {
-    border-color: var(--mk-ui-border);
-}
-
-.mk-color-scheme-selector .mk-select:focus {
-    outline: none;
-    border-color: var(--mk-ui-border-active);
-}
-
-/* Context Create Item Modal Styles */
 
 .mk-field-error {
     color: var(--text-error);
