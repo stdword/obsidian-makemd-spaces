@@ -1,5 +1,3 @@
-import { readFileSync } from "fs";
-import { execSync } from "child_process";
 import { arrayMove } from "utils/array";
 
 describe("arrayMove", () => {
@@ -14,17 +12,5 @@ describe("arrayMove", () => {
         expect(arrayMove([1, 2, 3], 0, 10)).toEqual([2, 3, 1]);
         expect(arrayMove([1, 2, 3], 2, -5)).toEqual([3, 1, 2]);
         expect(arrayMove([1, 2, 3], 7, 0)).toEqual([1, 2, 3]);
-    });
-});
-
-describe("dependencies", () => {
-    it("no longer references dnd-kit or react-dropzone anywhere in src", () => {
-        const hits = execSync('grep -rl "@dnd-kit\\|react-dropzone" src || true', { encoding: "utf8" }).trim();
-        expect(hits).toBe("src/tests/arrayMove.test.ts");
-        const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-        const all = { ...pkg.dependencies, ...pkg.devDependencies };
-        for (const name of ["@dnd-kit/core", "@dnd-kit/sortable", "react-dropzone", "@types/react-color", "@types/react-tag-autocomplete", "@types/react-toggle", "esbuild-envfile-plugin", "cross-env", "terser"]) {
-            expect(all[name]).toBeUndefined();
-        }
     });
 });

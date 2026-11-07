@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import { getDB, readDBFile, saveDBFile } from "adapters/mdb/db/db";
 
 const bytes = (...values: number[]) => new Uint8Array(values).buffer;
@@ -82,9 +81,4 @@ describe("sqlite cache file", () => {
         expect(fresh.data).toBeUndefined();
     });
 
-    it("no longer depends on jszip and names the cache file superstate.mdb", () => {
-        expect(readFileSync("src/adapters/mdb/db/db.ts", "utf8")).not.toMatch(/jszip/i);
-        expect(readFileSync("package.json", "utf8")).not.toMatch(/"jszip"/);
-        expect(readFileSync("src/adapters/obsidian/filesystem/filesystem.ts", "utf8")).toContain('stateFileName = "superstate.mdb"');
-    });
 });

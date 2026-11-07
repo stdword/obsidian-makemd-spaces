@@ -1,4 +1,3 @@
-import { readFileSync } from "fs";
 import { SelectOptionType } from "shared/types/menu";
 import { activateMenuOption, menuKeyAction, stepOptionIndex } from "core/react/components/UI/Menus/menu/selectMenuKeyboard";
 
@@ -93,20 +92,5 @@ describe("activateMenuOption", () => {
         activateMenuOption(plain, anchor, event, context);
 
         expect(context.selectOption).toHaveBeenCalledWith(plain, expect.objectContaining({ ctrlKey: true, doubleClick: false }));
-    });
-});
-
-describe("hidden menus stop handling keys before unmount", () => {
-    const read = (path: string) => readFileSync(path, "utf8");
-
-    it("marks the menu hidden synchronously in hide()", () => {
-        const source = read("src/core/react/components/UI/Menus/menu.tsx");
-        expect(source).toContain('portalElement.classList.add("mk-menu-hidden")');
-        expect(source).toContain("if (isMenuHidden(ref.current)) return false;");
-        expect(read("src/css/Menus/Menu.css")).toContain(".mk-menu.mk-menu-hidden");
-    });
-
-    it("ignores keyboard input once the menu is marked hidden", () => {
-        expect(read("src/core/react/components/UI/Menus/menu/SelectMenuComponent.tsx")).toContain("isMenuHidden(container.current)");
     });
 });

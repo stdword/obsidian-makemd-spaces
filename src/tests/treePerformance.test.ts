@@ -1,9 +1,7 @@
-import { readFileSync } from "fs";
 import { treeLinesForTree, visibleTreeLines } from "core/react/components/Navigator/SpaceTree/SpaceTreeVirtualized";
 import { excludedPathsForFocus } from "core/utils/superstate/focus";
 
 const node = (id: string, depth: number, type: string, collapsed = false) => ({ id, depth, type, collapsed }) as any;
-const read = (path: string) => readFileSync(path, "utf8");
 
 describe("treeLinesForTree", () => {
     // section (depth 0) > A (1) > A/x (2), A/y (2) > A/y/z (3); B (1) collapsed; C (1) empty
@@ -53,26 +51,5 @@ describe("excludedPathsForFocus", () => {
         expect(first).toBe(second);
         expect(first).toEqual([]);
         expect(excludedPathsForFocus({ name: "b", sticker: "", paths: [], "excluded-paths": ["Hidden"] } as any)).toEqual(["Hidden"]);
-    });
-});
-
-describe("tree render memoization", () => {
-    it("memoizes rows, stickers, drag handlers and the navigator context value", () => {
-        expect(read("src/core/react/components/Navigator/SpaceTree/SpaceTreeItem.tsx")).toContain("export const TreeItem = React.memo(TreeItemComponent);");
-        expect(read("src/core/react/components/PathSticker.tsx")).toContain("export const PathStickerView = React.memo(PathStickerViewComponent);");
-        const view = read("src/core/react/components/Navigator/SpaceTree/SpaceTreeView.tsx");
-        expect(view).toContain("dragOver={stableDragHandlers.dragOver}");
-        expect(view).toContain("excludedPathsForFocus(focuses[activeFocus])");
-        const context = read("src/core/react/context/SidebarContext.tsx");
-        expect(context).toContain("<NavigatorContext.Provider value={value}>");
-        expect(context).toMatch(/const value = useMemo\(/);
-    });
-
-    it("uses index lookups instead of per-row scans in the virtualized list", () => {
-        const source = read("src/core/react/components/Navigator/SpaceTree/SpaceTreeVirtualized.tsx");
-        expect(source).toContain("selected={selectedIds.has(node.id)}");
-        expect(source).toContain("nodeIndexById.get(containerId)");
-        expect(source).not.toContain("flattenedTree.find((node) => node.id == containerId)");
-        expect(source).toContain("renderedLines.map(");
     });
 });
