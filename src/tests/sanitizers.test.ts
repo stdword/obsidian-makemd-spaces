@@ -14,7 +14,7 @@ import { uniqueFileName, uniqueFolderName } from "adapters/obsidian/utils/file";
 
 describe("file and folder name sanitizing", () => {
     it("strips illegal characters, control characters and trailing dots or spaces", () => {
-        expect(sanitizeFileName('Re:port/<draft>*?"|')).toBe("Report");
+        expect(sanitizeFileName('Re:port/<draft>*?"|')).toBe("Reportdraft");
         expect(sanitizeFileName("Notes... ")).toBe("Notes");
         expect(sanitizeFileName("tab\there")).toBe("tabhere");
     });
@@ -44,6 +44,12 @@ describe("unique names after sanitizing", () => {
 
     it("falls back to Untitled instead of producing a bare extension", () => {
         expect(uniqueFileName("Old.md", "...", "md", folder)).toBe("Untitled 2.md");
+    });
+
+    it("numbers from the base name instead of stacking suffixes", () => {
+        const crowded = { children: [{ name: "Plan" }, { name: "Plan 1" }, { name: "Plan 2" }] } as any;
+        expect(uniqueFolderName("Other", "Plan", crowded)).toBe("Plan 3");
+        expect(uniqueFolderName("Plan 1", "Plan", crowded)).toBe("Plan 1");
     });
 
     it("keeps a folder name instead of renaming the folder into its parent", () => {

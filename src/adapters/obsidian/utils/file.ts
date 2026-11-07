@@ -77,36 +77,25 @@ export const defaultConfigFile = async (plugin: MakeMDPlugin) => {
 export const fileExtensionForFile = (path: string) => (path?.indexOf(".") > 0 ? path.split(".").pop() : "md");
 export const fileNameForFile = (path: string) => (path?.indexOf("/") > 0 ? path.split("/").pop().split(".").shift() : path.split(".").shift());
 
+// "Plan", "Plan 1", "Plan 2", ... until the name is free in the folder (the old name of a
+// renamed item does not count as taken).
 export const uniqueFileName = (oldName: string, name: string, extension: string, folder: TFolder) => {
-    let newName = sanitizeFileName(name);
+    const baseName = sanitizeFileName(name);
     const suffix = fileSuffixForExtension(extension);
+    const taken = (candidate: string) => folder.children.some((f) => f.name == fileNameWithExtension(candidate, suffix) && f.name != oldName);
 
-    let uniqueName = false;
-    let append = 1;
-    while (!uniqueName) {
-        if (!folder.children.some((f) => f.name == fileNameWithExtension(newName, suffix) && f.name != oldName)) {
-            uniqueName = true;
-        } else {
-            newName = `${newName} ${append}`;
-            append += 1;
-        }
-    }
+    let newName = baseName;
+    for (let append = 1; taken(newName); append++) newName = `${baseName} ${append}`;
     return fileNameWithExtension(newName, suffix);
 };
 
 export const uniqueFolderName = (oldName: string, name: string, folder: TFolder) => {
-    let newName = sanitizeFolderName(name);
-    let uniqueName = false;
-    let append = 1;
-    while (!uniqueName) {
-        if (!folder.children.some((f) => f.name == `${newName}` && f.name != oldName)) {
-            uniqueName = true;
-        } else {
-            newName = `${newName} ${append}`;
-            append += 1;
-        }
-    }
-    return `${newName}`;
+    const baseName = sanitizeFolderName(name);
+    const taken = (candidate: string) => folder.children.some((f) => f.name == candidate && f.name != oldName);
+
+    let newName = baseName;
+    for (let append = 1; taken(newName); append++) newName = `${baseName} ${append}`;
+    return newName;
 };
 
 export const renameFile = async (plugin: MakeMDPlugin, file: TAbstractFile, newName: string) => {
