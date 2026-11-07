@@ -489,10 +489,15 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     }
 
     public childrenForSpace(path: string) {
-        return this.fileSystem
-            .allFiles()
-            .filter((f) => f.parent == path)
-            .map((f) => f.path);
+        // The folder's own children when the filesystem can list them directly; the
+        // full-vault scan only remains as a fallback for adapters without that lookup.
+        return (
+            this.fileSystem.childPathsForFolder?.(path) ??
+            this.fileSystem
+                .allFiles()
+                .filter((f) => f.parent == path)
+                .map((f) => f.path)
+        );
     }
 
     public pathsForTag(tag: string) {

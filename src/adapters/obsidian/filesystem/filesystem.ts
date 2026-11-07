@@ -1,9 +1,10 @@
-import { getAllFilesForTag, loadTags } from "adapters/obsidian/utils/tags";
+import { loadTags } from "adapters/obsidian/utils/tags";
+import { TagIndex } from "./tagIndex";
 import { getParentPathFromString, removeTrailingSlashFromFolder, nameWithoutExtension } from "utils/path";
 import _ from "lodash";
 import MakeMDPlugin from "main";
 import { AFile, FileSystemAdapter, FileTypeCache, FilesystemMiddleware } from "makemd-core";
-import { FileSystemAdapter as ObsidianFileSystemAdapter, TAbstractFile, TFile, TFolder, normalizePath } from "obsidian";
+import { FileSystemAdapter as ObsidianFileSystemAdapter, TAbstractFile, TFile, TFolder, getAllTags, normalizePath } from "obsidian";
 
 import { DEFAULT_SETTINGS } from "schemas/settings";
 import { DBRows } from "shared/types/mdb";
@@ -219,6 +220,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
     onMetadataChanged = async (file: TFile, _data: any, cache: any) => {
         if (!file || !this.cache.has(file.path))
             return;
+        if (this.tagIndex.built) this.tagIndex.setTags(file.path, getAllTags(cache) ?? []);
         const afile = tFileToAFile(file);
         for (const adapter of this.middleware.filetypeAdaptersForFile(afile)) {
             if (adapter.parseCache) await adapter.parseCache(afile, true);
@@ -229,6 +231,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         const cachedFile = this.cache.get(file.path)?.file;
         if (!cachedFile) return;
         this.cache.delete(file.path);
+        this.tagIndex.remove(file.path);
         this.middleware.onDelete(cachedFile);
     };
     onMetadataDeleted = async (file: TFile) => {
@@ -255,6 +258,7 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         });
 
         this.cache.delete(oldPath);
+        this.tagIndex.rename(oldPath, newFile.path);
         this.middleware.onRename(tFileToAFile(file), oldPath);
     };
 
@@ -436,8 +440,26 @@ export class ObsidianFileSystem implements FileSystemAdapter {
         // Honour Obsidian's own "Deleted files" setting (Files & Links) instead of a plugin option.
         return this.plugin.app.fileManager.trashFile(file);
     }
+    private tagIndex = new TagIndex();
+
+    private ensureTagIndex() {
+        if (this.tagIndex.built) return;
+        for (const file of this.plugin.app.vault.getMarkdownFiles()) {
+            const cache = this.plugin.app.metadataCache.getFileCache(file);
+            if (cache) this.tagIndex.setTags(file.path, getAllTags(cache) ?? []);
+        }
+        this.tagIndex.built = true;
+    }
+
     public filesForTag(tag: string) {
-        return getAllFilesForTag(this.plugin, tag);
+        this.ensureTagIndex();
+        return this.tagIndex.pathsFor(tag);
+    }
+
+    public childPathsForFolder(path: string): string[] | undefined {
+        const folder = path == "/" || path == "" ? this.plugin.app.vault.getRoot() : this.plugin.app.vault.getAbstractFileByPath(path);
+        if (!(folder instanceof TFolder)) return [];
+        return folder.children.map((child) => child.path);
     }
 
     public async childrenForFolder(path: string, type?: string) {

@@ -31,6 +31,8 @@ export abstract class FileSystemAdapter {
     public createFolder: (path: string) => Promise<AFile>;
     public fileExists: (path: string) => Promise<boolean>;
     public childrenForFolder: (path: string, type?: string) => Promise<string[]>;
+    /** Direct children of a folder from the in-memory tree; undefined when the adapter cannot answer without scanning. */
+    public childPathsForFolder?: (path: string) => string[] | undefined;
     public getFile: (path: string, source?: string) => Promise<AFile>;
     public getFileCache: (path: string, source?: string) => PathCache & { file?: AFile };
     public deleteFile: (path: string) => Promise<void>;
@@ -181,6 +183,10 @@ export class FilesystemMiddleware {
     public async createFolder(path: string) {
         return this.adapterForPath(path).createFolder(path);
     }
+    public childPathsForFolder(path: string): string[] | undefined {
+        return this.adapterForPath(path).childPathsForFolder?.(path);
+    }
+
     public async childrenForFolder(path: string, type?: string) {
         return this.adapterForPath(path).childrenForFolder(path, type);
     }

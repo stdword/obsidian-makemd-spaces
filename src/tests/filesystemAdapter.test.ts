@@ -427,3 +427,34 @@ describe("FilesystemSpaceAdapter", () => {
         );
     });
 });
+
+describe("FilesystemSpaceAdapter.childrenForSpace", () => {
+    const { FilesystemSpaceAdapter: Adapter } = jest.requireActual("core/spaceManager/filesystemAdapter/filesystemAdapter");
+    const files = [
+        { path: "Projects", parent: "", isFolder: true, extension: "" },
+        { path: "Projects/Plan.md", parent: "Projects", isFolder: false, extension: "md" },
+        { path: "Projects/Sub", parent: "Projects", isFolder: true, extension: "" },
+        { path: "Projects/Sub/Deep.md", parent: "Projects/Sub", isFolder: false, extension: "md" },
+    ];
+
+    it("asks the filesystem for the folder's children instead of scanning every file", () => {
+        const fileSystem = {
+            eventDispatch: { addListener: jest.fn() },
+            allFiles: jest.fn(() => files),
+            childPathsForFolder: jest.fn((path: string) => files.filter((f) => f.parent == path).map((f) => f.path)),
+        };
+        const adapter = new Adapter(fileSystem as any, ".obsidian/plugins/make-md-spaces");
+
+        expect(adapter.childrenForSpace("Projects")).toEqual(["Projects/Plan.md", "Projects/Sub"]);
+        expect(fileSystem.childPathsForFolder).toHaveBeenCalledWith("Projects");
+        expect(fileSystem.allFiles).not.toHaveBeenCalled();
+    });
+
+    it("falls back to scanning when the filesystem has no direct lookup", () => {
+        const fileSystem = { eventDispatch: { addListener: jest.fn() }, allFiles: jest.fn(() => files) };
+        const adapter = new Adapter(fileSystem as any, ".obsidian/plugins/make-md-spaces");
+
+        expect(adapter.childrenForSpace("Projects/Sub")).toEqual(["Projects/Sub/Deep.md"]);
+        expect(fileSystem.allFiles).toHaveBeenCalled();
+    });
+});
