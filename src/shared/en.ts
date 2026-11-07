@@ -76,6 +76,10 @@ export const en = {
         revealInSpaces: "Reveal in Spaces",
         revealInDefault: "Reveal in Finder",
         revealInExplorer: "Reveal in Explorer",
+        copyPath: "Copy path",
+        copyPathAsUrl: "As Obsidian URL",
+        copyPathFromVault: "From vault folder",
+        copyPathFromRoot: "From system root",
     },
 
     buttons: {
@@ -170,6 +174,7 @@ export const en = {
     notice: {
         notFound: "Not found",
         fileExists: "File Already Exists",
+        pathCopied: "Path copied",
         copyError: "Copy Error",
         reload: "Reload",
 

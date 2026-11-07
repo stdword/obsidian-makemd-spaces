@@ -682,6 +682,54 @@ describe("showPathContextMenu", () => {
     });
 });
 
+describe("copy path placement", () => {
+    const names = (options: any[]) => options.map((option) => option.name);
+
+    it("puts Copy path right above Pin to Top in the file menu", () => {
+        const openMenu = jest.fn();
+        const parent = { path: "Trips", type: "space", subtype: "folder", metadata: {}, space: { folderPath: "Trips" } };
+        const pathState = { path: "Trips/Norway.md", parent: "Trips", type: "file", subtype: "md", spaces: [] as string[] };
+        const superstate = {
+            pathsIndex: new Map([[pathState.path, pathState]]),
+            spacesIndex: new Map([[parent.path, parent]]),
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false) },
+        };
+
+        showPathContextMenu(superstate as any, pathState.path, parent.path, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, undefined, undefined, 1);
+
+        const optionNames = names(openMenu.mock.calls[0][1].options);
+        const copyIndex = optionNames.indexOf(i18n.menu.copyPath);
+        expect(copyIndex).toBeGreaterThan(-1);
+        expect(optionNames[copyIndex + 1]).toBe(i18n.menu.pinToTop);
+    });
+
+    it("puts Copy path right above Pin to Top in the folder menu and hides it for tag spaces", () => {
+        const openMenu = jest.fn();
+        const parent = { path: "/", type: "space", subtype: "folder", metadata: {}, space: { folderPath: "/" } };
+        const pathState = { path: "Trips", parent: "/", type: "space", subtype: "folder", spaces: [] as string[] };
+        const space = { path: "Trips", name: "Trips", type: "folder", metadata: {}, space: { folderPath: "Trips" } };
+        const superstate = {
+            settings: {},
+            pathsIndex: new Map([[pathState.path, pathState]]),
+            spacesIndex: new Map<string, any>([[space.path, space], [parent.path, parent]]),
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false), isPluginEnabled: jest.fn(() => false) },
+        };
+
+        showSpaceContextMenu(superstate as any, pathState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window, parent.path, undefined, 1);
+
+        const optionNames = names(openMenu.mock.calls[0][1].options);
+        const copyIndex = optionNames.indexOf(i18n.menu.copyPath);
+        expect(copyIndex).toBeGreaterThan(-1);
+        expect(optionNames[copyIndex + 1]).toBe(i18n.menu.pinToTop);
+
+        const tagState = { path: "spaces://#trips", parent: "", type: "space", subtype: "tag", spaces: [] as string[] };
+        const tagSpace = { path: "spaces://#trips", name: "#trips", type: "tag", metadata: {}, space: { folderPath: "/#trips" } };
+        const tagSuperstate = { ...superstate, pathsIndex: new Map([[tagState.path, tagState]]), spacesIndex: new Map([[tagSpace.path, tagSpace]]) };
+        showSpaceContextMenu(tagSuperstate as any, tagState as any, { x: 0, y: 0, width: 0, height: 0 } as any, {} as Window);
+        expect(names(openMenu.mock.calls[1][1].options)).not.toContain(i18n.menu.copyPath);
+    });
+});
+
 describe("showSpaceContextMenu", () => {
     it("shows New Note before New and keeps New Folder in its submenu", () => {
         const openMenu = jest.fn();

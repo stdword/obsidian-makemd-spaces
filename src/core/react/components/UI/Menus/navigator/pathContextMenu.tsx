@@ -13,6 +13,7 @@ import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
 import { validateWrapFolderName, wrapEachPathInOwnFolder, wrapFolderPathForName, wrapPathsInFolder } from "core/utils/superstate/wrapToFolder";
 
 import { SelectOption, SelectOptionType, Superstate } from "makemd-core";
+import { copyPathMenuOption } from "./copyPathMenu";
 import { default as i18n } from "shared/i18n";
 import { Anchors, Rect } from "shared/types/Pos";
 import { windowFromDocument } from "utils/dom";
@@ -343,6 +344,9 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     });
 
     menuOptions.push(menuSeparator);
+
+    // copy path
+    menuOptions.push(copyPathMenuOption(superstate, path, win));
 
     // pin / unpin
     if (hasParent && !isSection) {

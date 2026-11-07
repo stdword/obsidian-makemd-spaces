@@ -37,6 +37,8 @@ export interface IUIManager {
     openPopover: (position: Pos, popover: JSX.Element) => void;
     openPath: (path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) => void;
     getOS: () => string;
+    appUrlForPath: (path: string) => string;
+    systemPathForPath: (path: string) => string;
     getSticker: (icon: string, options?: Record<string, any>) => string;
     getPlaceholderImage: (icon: string) => string;
     allStickers: () => Sticker[];
@@ -60,6 +62,8 @@ export interface UIAdapter {
     openPath: (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => void;
     openPopover: (position: Pos, popover: JSX.Element) => void;
     getOS: () => string;
+    appUrlForPath: (path: string) => string;
+    systemPathForPath: (path: string) => string;
     getSticker: (icon: string, options?: Record<string, any>) => string;
     allStickers: () => Sticker[];
     getUIPath: (path: string) => string;

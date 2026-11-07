@@ -136,6 +136,12 @@ export class UIManager implements IUIManager {
     public getOS() {
         return this.mainFrame.getOS();
     }
+    public appUrlForPath(path: string) {
+        return this.mainFrame.appUrlForPath(path);
+    }
+    public systemPathForPath(path: string) {
+        return this.mainFrame.systemPathForPath(path);
+    }
     public getSticker(icon: string, options?: Record<string, any>) {
         return this.mainFrame.getSticker(icon, options);
     }

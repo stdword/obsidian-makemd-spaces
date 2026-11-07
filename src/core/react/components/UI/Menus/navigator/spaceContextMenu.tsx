@@ -21,6 +21,7 @@ import { defaultMenu, menuSeparator } from "../menu/SelectionMenu";
 import { showColorPickerMenu } from "../modals/colorPickerMenu";
 import { showFoldersMenu, showTagsMenu } from "../modals/selectSpaceMenu";
 import { showApplyItemsMenu } from "./showApplyItemsMenu";
+import { copyPathMenuOption } from "./copyPathMenu";
 import { newNoteMenuOption, showSpaceAddMenu } from "./showSpaceAddMenu";
 
 
@@ -168,6 +169,9 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
     }
 
     menuOptions.push(menuSeparator);
+
+    // copy path
+    if (!isTag) menuOptions.push(copyPathMenuOption(superstate, space.path, win));
 
     // pin / unpin
     if (hasParent && !isSection) {

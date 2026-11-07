@@ -1,7 +1,7 @@
 import MakeMDPlugin from "main";
 import { Sticker, Superstate, UIAdapter, UIManager } from "makemd-core";
 import i18n from "shared/i18n";
-import { Menu, Notice, Platform, TFile, getIcon } from "obsidian";
+import { FileSystemAdapter, Menu, Notice, Platform, TFile, getIcon } from "obsidian";
 import React from "react";
 
 import { Container } from "react-dom";
@@ -111,6 +111,17 @@ export class ObsidianUI implements UIAdapter {
 
     public getOS = () => {
         return Platform.isMacOS ? "mac" : Platform.isWin ? "windows" : Platform.isLinux ? "linux" : Platform.isIosApp ? "ios" : Platform.isAndroidApp ? "android" : "unknown";
+    };
+    // Same shape as Obsidian's own "Copy Obsidian URL": markdown notes lose their extension.
+    public appUrlForPath = (path: string) => {
+        const file = path.endsWith(".md") ? path.slice(0, -3) : path;
+        return `obsidian://open?vault=${encodeURIComponent(this.plugin.app.vault.getName())}&file=${encodeURIComponent(file)}`;
+    };
+    public systemPathForPath = (path: string) => {
+        const adapter = this.plugin.app.vault.adapter;
+        const base = adapter instanceof FileSystemAdapter ? adapter.getBasePath() : "";
+        if (!path || path == "/") return base;
+        return base ? `${base}/${path}` : path;
     };
     public openToast = (content: string) => {
         new Notice(content);
