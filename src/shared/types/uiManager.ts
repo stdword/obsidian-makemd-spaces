@@ -4,10 +4,9 @@ import { EventDispatcher } from "utils/dispatcher";
 import { InputManager } from "utils/inputManager";
 import { MenuObject } from "./menu";
 import { TargetLocation } from "./path";
-import { SpaceState } from "./PathState";
 import { Anchors, Pos, Rect } from "./Pos";
 import { ISuperstate } from "./superstate";
-import { Sticker } from "./ui";
+import { Sticker } from "./stickers";
 
 export interface IUIManager {
     inputManager: InputManager;

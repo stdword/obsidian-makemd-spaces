@@ -14,7 +14,7 @@ export { UIManager } from "core/middleware/ui";
 export { default as SelectMenu } from "core/react/components/UI/Menus/menu/SelectMenu";
 export { SelectOptionType } from "shared/types/menu";
 export type { SelectMenuProps, SelectOption, SelectSection } from "shared/types/menu";
-export type { Sticker } from "shared/types/ui";
+export type { Sticker } from "shared/types/stickers";
 export type { UIAdapter } from "shared/types/uiManager";
 
 //Views

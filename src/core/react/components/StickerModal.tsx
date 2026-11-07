@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Sticker } from "shared/types/ui";
+import { Sticker } from "shared/types/stickers";
 import { emojiFromString } from "utils/stickers";
 import { default as i18n } from "shared/i18n";
 import { IUIManager as UIManager } from "shared/types/uiManager";
