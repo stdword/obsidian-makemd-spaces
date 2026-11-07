@@ -1,5 +1,3 @@
-import { DndContext, KeyboardSensor, MeasuringStrategy, MouseSensor, closestCenter, useSensor, useSensors } from "@dnd-kit/core";
-import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { calculateBoundsBasedOnPosition } from "core/utils/ui/menu";
 import React, { cloneElement, useEffect } from "react";
 import { MenuObject } from "shared/types/menu";
@@ -10,16 +8,6 @@ import { IUIManager } from "shared/types/uiManager";
 export const isMenuHidden = (el: Element | null | undefined): boolean => Boolean(el?.closest?.(".mk-menu-hidden"));
 
 export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors; hide: (supress?: boolean) => void; children: any }) => {
-    const sensors = useSensors(
-        useSensor(MouseSensor, {
-            activationConstraint: {
-                distance: 10,
-            },
-        }),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        }),
-    );
     const ref = React.useRef(null);
     // const [rect, setRect] = React.useState<Rect>(props.rect);
     useEffect(() => {
@@ -61,19 +49,9 @@ export const MenuWrapper = (props: { rect: Rect; ui: IUIManager; anchor: Anchors
     }, [props.hide]);
 
     return (
-        <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            measuring={{
-                droppable: {
-                    strategy: MeasuringStrategy.Always,
-                },
-            }}
-        >
-            <div className="mk-menu-wrapper mk-ready" ref={ref}>
-                {props.children}
-            </div>
-        </DndContext>
+        <div className="mk-menu-wrapper mk-ready" ref={ref}>
+            {props.children}
+        </div>
     );
 };
 

@@ -60,3 +60,12 @@ export const orderArrayByArrayWithKey = (array: any[], order: string[], key: str
         }
     });
 };
+
+/** Returns a copy with the item at `from` moved to `to` (indexes clamped to the array). */
+export const arrayMove = <T>(array: T[], from: number, to: number): T[] => {
+    const result = [...array];
+    if (from < 0 || from >= result.length) return result;
+    const [item] = result.splice(from, 1);
+    result.splice(Math.max(0, Math.min(to, result.length)), 0, item);
+    return result;
+};

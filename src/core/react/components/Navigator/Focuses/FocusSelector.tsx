@@ -1,13 +1,9 @@
-import { DragOverlay, Modifier } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { DragProjection } from "core/utils/dnd/dragPath";
 import { addPathsToFocus } from "core/utils/superstate/focus";
 import { Superstate } from "makemd-core";
 import React, { useContext, useEffect, useState, useRef } from "react";
-import { createPortal } from "react-dom";
+import { arrayMove } from "utils/array";
 import { SortablePinnedSpaceItem } from "./Focus";
 
 export const FocusSelector = (props: { superstate: Superstate }) => {
@@ -61,14 +57,6 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
             dragCounter.current = 0;
         }
     };
-    const adjustTranslate: Modifier = ({ transform }) => {
-        return {
-            ...transform,
-            x: transform.x,
-            y: transform.y - 10,
-        };
-    };
-
     const dragStarted = (id: number) => {
         setActiveId(id);
     };
@@ -127,14 +115,7 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                             id={i}
                             superstate={props.superstate}
                             highlighted={overId == i && projected && projected.insert && projected.droppable}
-                            style={{
-                                transform: CSS.Translate.toString({
-                                    x: calcXOffset(i),
-                                    y: 0,
-                                    scaleX: 0,
-                                    scaleY: 0,
-                                }),
-                            }}
+                            style={{ transform: `translate3d(${calcXOffset(i)}px, 0, 0)` }}
                             index={i}
                             pin={pin}
                             key={i}
@@ -156,12 +137,6 @@ export const FocusSelector = (props: { superstate: Superstate }) => {
                         __html: props.superstate.ui.getSticker("lucide//more-vertical"),
                     }}
                 ></div>
-                {createPortal(
-                    <DragOverlay dropAnimation={null} modifiers={[adjustTranslate]} zIndex={1600}>
-                        {activeId !== null ? <SortablePinnedSpaceItem id={-1} superstate={props.superstate} highlighted={false} clone index={activeId} indicator={false} pin={focuses[activeId]}></SortablePinnedSpaceItem> : null}
-                    </DragOverlay>,
-                    document.body,
-                )}
             </div>
         </>
     );

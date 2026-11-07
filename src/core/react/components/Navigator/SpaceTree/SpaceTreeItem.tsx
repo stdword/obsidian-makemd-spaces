@@ -155,8 +155,8 @@ const TreeItemComponent = (props: TreeItemProps) => {
         dragOver(e, data.id, position);
     };
     const onDragEnded = (e: React.DragEvent<HTMLDivElement>) => {
-        // An OS-file drop must reach react-dropzone: its file parsing is async
-        // and bails out silently when it later finds propagation stopped, so
+        // An OS-file drop must reach Obsidian's own drop handler: its file import is
+        // async and bails out silently when it later finds propagation stopped, so
         // stopping here would swallow the copy and leave the highlight stuck.
         if (isExternalFileDrag(e)) return;
         e.stopPropagation();

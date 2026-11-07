@@ -1,4 +1,3 @@
-import { UniqueIdentifier } from "@dnd-kit/core";
 import classNames from "classnames";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { SelectOption, Superstate } from "makemd-core";
@@ -13,7 +12,7 @@ import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
 
 export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {
-    id: UniqueIdentifier;
+    id: number;
 }
 
 export const SortablePinnedSpaceItem = ({ id: _id, index, ...props }: SortablePinnedSpaceItemProps) => {
@@ -29,8 +28,8 @@ type PinnedSpaceProps = {
     style?: React.CSSProperties;
     highlighted: boolean;
     indicator?: boolean;
-    dragStart?: (id: UniqueIdentifier) => void;
-    dragOver?: (id: UniqueIdentifier, x: number) => void;
+    dragStart?: (id: number) => void;
+    dragOver?: (id: number, x: number) => void;
     dragEnded?: () => void;
     dragActive?: boolean;
 };

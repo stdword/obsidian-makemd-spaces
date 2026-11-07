@@ -1,6 +1,5 @@
-import { UniqueIdentifier } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
 
+import { arrayMove } from "utils/array";
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
 import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
 import { nodeIsAncestorOfTarget } from "core/utils/tree";
@@ -10,7 +9,7 @@ import { PathState } from "shared/types/PathState";
 
 import { DragProjection } from "./dragPath";
 
-const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath: string, parentId: UniqueIdentifier, overIndex: number, rank: number, flattenedTree: TreeNode[]) => {
+const rankAfterPinnedZone = (superstate: Superstate, path: string, newSpacePath: string, parentId: string, overIndex: number, rank: number, flattenedTree: TreeNode[]) => {
     const space = superstate.spacesIndex.get(newSpacePath);
     if (!space || isPathPinnedInSpace(space, path)) return rank;
 
@@ -50,14 +49,14 @@ export const rankForDropPositionInSpace = (superstate: Superstate, path: string,
     return insertionRank;
 };
 
-const nodeContainsTarget = (nodeId: UniqueIdentifier, targetId: UniqueIdentifier) => {
+const nodeContainsTarget = (nodeId: string, targetId: string) => {
     if (!nodeId || !targetId) return false;
     const node = nodeId.toString();
     const target = targetId.toString();
     return target == node || target.startsWith(`${node}/`);
 };
 
-export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
+export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: string, over: string, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (paths.length == 1) {
         await dropPathInTree(superstate, paths[0], active, over, projected, flattenedTree, activeSpaces, modifier);
         return;
@@ -86,7 +85,7 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
     }
 };
-export const dropPathInTree = async (superstate: Superstate, path: string, active: UniqueIdentifier, over: UniqueIdentifier, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
+export const dropPathInTree = async (superstate: Superstate, path: string, active: string, over: string, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (projected) {
         const targetId = projected.overId ?? over;
         if (nodeContainsTarget(active, targetId) || nodeContainsTarget(active, projected.parentId)) {

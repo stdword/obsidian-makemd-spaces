@@ -1,4 +1,3 @@
-import { useDndMonitor, useDroppable } from "@dnd-kit/core";
 import { UIManager } from "makemd-core";
 import React, { useEffect, useTransition } from "react";
 import { Transition } from "react-transition-group";
@@ -9,21 +8,8 @@ export const ModalWrapper = (props: {
   children: any;
   className?: string;
 }) => {
-    const { setNodeRef, isOver } = useDroppable({
-        id: "_modal",
-        data: { id: "_modal" },
-    });
-
-    useDndMonitor({
-        onDragOver: () => {
-            if (isOver) {
-                props.hide();
-            }
-        },
-    });
-
     return (
-        <div className={`mk-modal-container`} ref={setNodeRef}>
+        <div className={`mk-modal-container`}>
             <ModalInner ui={props.ui} hide={props.hide} className={props.className}>
                 {props.children}
             </ModalInner>
@@ -40,10 +26,6 @@ export const ModalInner = (
 ) => {
     const ref = React.useRef(null);
     const disableTransition = props.className?.includes("mk-no-transition");
-    const { setNodeRef } = useDroppable({
-        id: "_modalInner",
-        data: { id: "_modalInner" },
-    });
     const [, startTransition] = useTransition();
     useEffect(() => {
         startTransition(() => null);
@@ -111,10 +93,7 @@ export const ModalInner = (
                         transform: "translateY(0px)",
                         ...transitionStyles[state],
                     }}
-                    ref={(el) => {
-                        setNodeRef(el);
-                        ref.current = el;
-                    }}
+                    ref={ref}
                 >
                     {props.children}
                 </div>
