@@ -35,7 +35,7 @@ export interface IUIManager {
     openPalette: (modal: JSX.Element, win: Window, className?: string) => MenuObject;
     openModal: (title: string, modal: JSX.Element, win: Window, className?: string, props?: any) => MenuObject;
     openPopover: (position: Pos, popover: JSX.Element) => void;
-    openPath: (path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) => void;
+    openPath: (path: string, newLeaf?: TargetLocation) => void;
     getOS: () => string;
     appUrlForPath: (path: string) => string;
     systemPathForPath: (path: string) => string;
@@ -49,6 +49,8 @@ export interface IUIManager {
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
     isPluginEnabled: (id: string) => boolean;
+    /** Settings object of another installed plugin, or null when it is not loaded. */
+    pluginSettings: (id: string) => Record<string, unknown> | null;
     createExcalidrawDrawing: (folder?: string, location?: TargetLocation) => Promise<void>;
 }
 
@@ -59,7 +61,7 @@ export interface UIAdapter {
     openToast: (content: string) => void;
     openModal: (title: string, modal: JSX.Element, win: Window, className?: string, props?: any) => MenuObject;
     openPalette: (modal: JSX.Element, win: Window, className?: string) => MenuObject;
-    openPath: (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => void;
+    openPath: (path: string, newLeaf: TargetLocation) => void;
     openPopover: (position: Pos, popover: JSX.Element) => void;
     getOS: () => string;
     appUrlForPath: (path: string) => string;
@@ -73,6 +75,8 @@ export interface UIAdapter {
     hasNativePathMenu: (path: string) => boolean;
     nativePathMenu: (e: React.MouseEvent, path: string) => void;
     isPluginEnabled: (id: string) => boolean;
+    /** Settings object of another installed plugin, or null when it is not loaded. */
+    pluginSettings: (id: string) => Record<string, unknown> | null;
     createExcalidrawDrawing: (folder?: string, location?: TargetLocation) => Promise<void>;
     mainMenu: (el: HTMLElement, superstate: ISuperstate) => void;
 }

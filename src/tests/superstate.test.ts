@@ -314,19 +314,11 @@ describe("Superstate tag initialization", () => {
 
     it("stores the detected folder note path when a folder space is cached", async () => {
         const { superstate, spaceManager } = createSuperstate();
-        (superstate.ui as any).plugin = {
-            app: {
-                plugins: {
-                    getPlugin: jest.fn(() => ({
-                        settings: {
-                            folderNoteName: "{{folder_name}}",
-                            supportedFileTypes: ["md"],
-                            hideFolderNote: true,
-                        },
-                    })),
-                },
-            },
-        };
+        (superstate.ui as any).pluginSettings = jest.fn(() => ({
+            folderNoteName: "{{folder_name}}",
+            supportedFileTypes: ["md"],
+            hideFolderNote: true,
+        }));
         spaceManager.childrenForSpace = jest.fn(() => ["Atlas/Atlas.md", "Atlas/Notes.md"]);
         spaceManager.uriByString = jest.fn(() => ({}));
         spaceManager.spaceTypeByString = jest.fn(() => "folder");

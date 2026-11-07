@@ -7,7 +7,7 @@ import { canonicalTagSpacePath, isTagSpacePath, sameTagSpaceLink, tagSpacePathFr
 import { excludePathPredicate } from "utils/hide";
 import { pathToString } from "utils/path";
 import { tagPathToTag } from "utils/tags";
-import { iconForSpace, pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { iconForSpace, pathDisplayInfo } from "core/utils/pathDisplay";
 
 const stripExtension = (fileName: string) => {
     const dotIndex = fileName.lastIndexOf(".");

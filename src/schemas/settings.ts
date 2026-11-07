@@ -7,7 +7,6 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
 
     hiddenExtensions: [".mdb"],
     hiddenFiles: [],
-    skipFolderNames: [],
 
     newFileFolderPath: "",
     newFileLocation: "root",

@@ -170,13 +170,7 @@ export const openURL = async (url: string, app: App, location?: TargetLocation) 
         window.open(url, "_blank");
         return;
     }
-    const leaf = getLeaf(app, location);
-    if (url.endsWith(".mdb")) {
-        const file = getAbstractFileAtPath(app, url);
-        if (file instanceof TFile) await openTFile(leaf, file, app);
-    } else {
-        window.open(url, "_blank");
-    }
+    window.open(url, "_blank");
 };
 
 export function getAllFoldersInVault(app: App): TFolder[] {

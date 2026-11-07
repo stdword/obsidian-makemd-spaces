@@ -21,30 +21,11 @@ const item = (path: string, type = "file"): PathStateWithRank =>
 const superstateWithFolderNotes = (settings?: Record<string, unknown>) =>
     ({
         ui: {
-            plugin: {
-                app: {
-                    plugins: {
-                        getPlugin: jest.fn(() => (settings ? { settings } : null)),
-                    },
-                },
-            },
+            pluginSettings: jest.fn((id: string) => (id == "folder-notes" && settings ? settings : null)),
         },
     }) as any;
 
-const superstateWithFolderNotesInMainFrame = (settings?: Record<string, unknown>) =>
-    ({
-        ui: {
-            mainFrame: {
-                plugin: {
-                    app: {
-                        plugins: {
-                            getPlugin: jest.fn(() => (settings ? { settings } : null)),
-                        },
-                    },
-                },
-            },
-        },
-    }) as any;
+const superstateWithFolderNotesInMainFrame = superstateWithFolderNotes;
 
 describe("FolderNotesPluginIntegration", () => {
     it("returns all folder items when the folder-notes plugin is not installed", () => {

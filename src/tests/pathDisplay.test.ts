@@ -1,4 +1,4 @@
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 
 describe("path display", () => {
     it.each([

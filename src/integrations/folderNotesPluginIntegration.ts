@@ -7,16 +7,8 @@ type FolderNotesSettings = {
     hideFolderNote: boolean;
 };
 
-const getApp = (superstate: ISuperstate) => {
-    const ui = (superstate as any)?.ui;
-    return ui?.mainFrame?.plugin?.app ?? ui?.plugin?.app;
-};
-
-const getSettings = (superstate: ISuperstate): FolderNotesSettings | null => {
-    const app = getApp(superstate);
-    const plugin = app?.plugins?.getPlugin?.("folder-notes");
-    return plugin?.settings ?? null;
-};
+const getSettings = (superstate: ISuperstate): FolderNotesSettings | null =>
+    (superstate.ui?.pluginSettings?.("folder-notes") as FolderNotesSettings | null) ?? null;
 
 const getFolderNoteName = (settings: FolderNotesSettings, folderPath: string) => {
     const folderName = folderPath.split("/").filter(Boolean).pop() ?? folderPath;

@@ -13,7 +13,7 @@ import { windowFromDocument } from "utils/dom";
 import { canOpenTreeItemPath, isTagTreeItemPath, isTagSpacePath } from "schemas/builtin";
 import { CollapseToggle } from "../../UI/Toggles/CollapseToggle";
 import { treeItemActiveColorVariables, treeItemColorVariables, treeItemDisplayColor, treeItemDisplayName } from "./treeItemStyles";
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 import { isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
 
 export type DropModifiers = "copy" | "link" | "move";

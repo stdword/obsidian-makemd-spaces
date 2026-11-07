@@ -26,7 +26,7 @@ import { JSONFiletypeAdapter } from "adapters/obsidian/filetypes/jsonAdapter";
 
 import { attachCommands } from "commands";
 import { Superstate } from "core/superstate/superstate";
-import { IMakeMDPlugin } from "shared/types/makemd";
+import { IMakeMDPlugin } from "adapters/obsidian/types/makemd";
 import "css/DefaultVibe.css";
 import "css/Menus/ColorPicker.css";
 import "css/Menus/MainMenu.css";
@@ -255,9 +255,6 @@ export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
 
     async loadSettings() {
         this.superstate.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
-        if (this.superstate.settings.hiddenExtensions.length == 1 && this.superstate.settings.hiddenExtensions[0] == ".mdb") {
-            this.superstate.settings.hiddenExtensions = DEFAULT_SETTINGS.hiddenExtensions;
-        }
         const userConfig = safelyParseJSON(await defaultConfigFile(this));
         this.superstate.settings.newFileFolderPath = userConfig.newFileFolderPath;
         this.superstate.settings.newFileLocation = userConfig.newFileLocation;

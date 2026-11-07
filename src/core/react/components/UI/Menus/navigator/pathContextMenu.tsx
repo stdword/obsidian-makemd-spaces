@@ -5,7 +5,7 @@ import { TreeNode, duplicatePathNextToOriginal, movePathToNewSpaceAtIndex, remov
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import { deletePath, movePathToSpace } from "core/utils/superstate/path";
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 
 import { Superstate } from "makemd-core";
 import { default as i18n } from "shared/i18n";

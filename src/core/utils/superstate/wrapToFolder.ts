@@ -1,5 +1,5 @@
 import { Superstate } from "makemd-core";
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 import i18n from "shared/i18n";
 import { createSpace } from "./spaces";
 

@@ -15,8 +15,7 @@ export const excludePathPredicate = (settings: MakeMDSettings, path: string) =>
         (settings?.hiddenFiles ?? []).some((e) => path.startsWith(e));
 
 export const excludeSpacesPredicate = (settings: MakeMDSettings, path: string) =>
-    (settings?.skipFolderNames ?? []).some((e) => path.endsWith(e)) ||
-        isSpaceInternalPath(path) ||
+    isSpaceInternalPath(path) ||
         path.startsWith("/#") ||
         path.startsWith("/$") ||
         (settings?.hiddenFiles ?? []).some((e) => path.startsWith(e));

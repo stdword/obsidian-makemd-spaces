@@ -130,8 +130,8 @@ export class UIManager implements IUIManager {
     public openPopover(position: Pos, popover: JSX.Element) {
         this.mainFrame.openPopover(position, popover);
     }
-    public openPath(path: string, newLeaf?: TargetLocation, source?: any, props?: Record<string, any>) {
-        return this.mainFrame.openPath(path, newLeaf, source, props);
+    public openPath(path: string, newLeaf?: TargetLocation) {
+        return this.mainFrame.openPath(path, newLeaf);
     }
     public getOS() {
         return this.mainFrame.getOS();
@@ -173,6 +173,9 @@ export class UIManager implements IUIManager {
     }
     public isPluginEnabled(id: string) {
         return this.mainFrame.isPluginEnabled(id);
+    }
+    public pluginSettings(id: string) {
+        return this.mainFrame.pluginSettings(id);
     }
     public createExcalidrawDrawing(folder?: string, location?: TargetLocation) {
         return this.mainFrame.createExcalidrawDrawing(folder, location);

@@ -268,7 +268,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
             this.spaceManager.onPathPropertyChanged(changedSpacePath);
             return;
         }
-        if (!payload.file.isFolder && payload.file.extension != "mdb") {
+        if (!payload.file.isFolder && !isSpaceInternalPath(payload.file.path)) {
             this.spaceManager.onPathDeleted(payload.file.path);
         } else if (payload.file.isFolder) {
             const now = Date.now();
@@ -293,7 +293,7 @@ export class FilesystemSpaceAdapter implements SpaceAdapter {
     onRename = (payload: { file: AFile; oldPath: string }) => {
         if (!payload.file) return;
         if (payload.file.isFolder) this.recentlyCreatedFolders.delete(payload.file.path);
-        if (!payload.file.isFolder && payload.file.extension != "mdb") {
+        if (!payload.file.isFolder && !isSpaceInternalPath(payload.file.path)) {
             this.spaceManager.onPathChanged(payload.file.path, payload.oldPath);
         } else if (payload.file.isFolder) {
             this.spaceManager.onSpaceRenamed(payload.file.path, payload.oldPath);

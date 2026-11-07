@@ -6,7 +6,7 @@ import i18n from "shared/i18n";
 import React, { createContext, useEffect, useMemo, useRef, useState } from "react";
 import { Focus } from "shared/types/focus";
 import { PathState, SpaceState } from "shared/types/PathState";
-import { iconForSpace } from "../components/UI/pathDisplay";
+import { iconForSpace } from "core/utils/pathDisplay";
 import { isSpaceSeparatorPath, tagSpaceParentPath } from "schemas/builtin";
 
 type NavigatorContextProps = {

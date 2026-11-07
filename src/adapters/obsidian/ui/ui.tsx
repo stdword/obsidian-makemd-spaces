@@ -7,17 +7,15 @@ import React from "react";
 import { Container } from "react-dom";
 import { Root, createRoot } from "react-dom/client";
 import { emojis } from "shared/assets/emoji";
-import { Pos, Rect } from "shared/types/Pos";
+import { Pos } from "shared/types/Pos";
 import { EmojiData } from "shared/types/emojis";
 import { TargetLocation } from "shared/types/path";
 import { MenuObject } from "shared/types/menu";
-import { openPathInElement } from "adapters/obsidian/utils/openPathInElement";
 import { getParentPathFromString } from "utils/path";
 import { urlRegex } from "utils/regex";
 import { ConfirmationModal, formatMessage } from "core/react/components/UI/Modals/ConfirmationModal";
 import { removeSpace } from "core/utils/superstate/spaces";
 import { deletePath } from "core/utils/superstate/path";
-import { getLineRangeFromRef } from "utils/obsidian";
 import { getAbstractFileAtPath, getLeaf } from "../utils/file";
 import { modifyTabSticker } from "../utils/modifyTabSticker";
 import { WindowManager } from "./WindowManager";
@@ -26,7 +24,7 @@ import { showModal } from "./modal";
 import { showMainMenu } from "./showMainMenu";
 import { stickerFromString } from "./sticker";
 import { isTagSpacePath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 
 export class ObsidianUI implements UIAdapter {
     public manager: UIManager;
@@ -76,6 +74,7 @@ export class ObsidianUI implements UIAdapter {
     };
 
     public isPluginEnabled = (id: string) => Boolean(this.plugin.app.plugins.getPlugin(id));
+    public pluginSettings = (id: string): Record<string, unknown> | null => this.plugin.app.plugins.getPlugin(id)?.settings ?? null;
     public createExcalidrawDrawing = async (folder?: string, location?: TargetLocation) => {
         const excalidraw = this.plugin.app.plugins.getPlugin("obsidian-excalidraw-plugin");
         if (!excalidraw?.createAndOpenDrawing) return;
@@ -284,45 +283,9 @@ export class ObsidianUI implements UIAdapter {
         }
         return [];
     };
-    public openPath = async (path: string, newLeaf: TargetLocation, source?: any, props?: Record<string, any>) => {
+    public openPath = async (path: string, newLeaf: TargetLocation) => {
         if (newLeaf == "system") {
             this.plugin.app.showInFolder(path);
-            return;
-        }
-
-        if (source) {
-            const uri = this.plugin.superstate.spaceManager.uriByString(path);
-            openPathInElement(
-                this.plugin.app,
-                this.plugin.app.workspace.getLeaf(), // workspaceLeafForDom(this.plugin.app, source),
-                source,
-                null,
-                async (editor) => {
-                    const leaf = editor.attachLeaf();
-                    if (this.plugin.app.vault.getAbstractFileByPath(uri.basePath) instanceof TFile) {
-                        await leaf.openFile(this.plugin.app.vault.getAbstractFileByPath(uri.basePath) as TFile);
-
-                        const selectiveRange = getLineRangeFromRef(uri.basePath, uri.refStr, this.plugin.app);
-                        if (!leaf.view?.editor) {
-                            return;
-                        }
-                        if (props?.readOnly) {
-                            leaf.setViewState({
-                                type: "markdown",
-                                state: { mode: "preview" },
-                            });
-                        } else {
-                            if (selectiveRange[0] && selectiveRange[1]) {
-                                leaf.view.editor?.cm.dispatch({
-                                    // annotations: [editableRange.of(selectiveRange)],
-                                });
-                            }
-                        }
-                    } else {
-                        await this.plugin.openPath(leaf, path);
-                    }
-                },
-            );
             return;
         }
         const leaf = getLeaf(this.plugin.app, newLeaf);

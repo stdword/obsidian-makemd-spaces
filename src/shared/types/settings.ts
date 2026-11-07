@@ -7,7 +7,6 @@ export interface MakeMDSettings {
 
     hiddenExtensions: string[];
     hiddenFiles: string[];
-    skipFolderNames: string[];
 
     newFileFolderPath: string;
     newFileLocation: string;

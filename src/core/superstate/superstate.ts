@@ -25,7 +25,7 @@ import { Indexer } from "./workers/indexer/indexer";
 import { SuperstateEvent, SpaceType } from "shared/types/PathState";
 import { ISuperstate, PathStateWithRank } from "shared/types/superstate";
 import { ensureArray } from "core/utils/schema";
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 import { getFolderNotePath } from "integrations/folderNotesPluginIntegration";
 
 

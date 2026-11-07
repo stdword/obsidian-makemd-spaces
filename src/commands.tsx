@@ -5,7 +5,7 @@ import { ExcludedFiles } from "core/react/components/UI/Modals/ExcludedFiles";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "utils/dom";
 import MakeMDPlugin from "main";
-import { pathDisplayInfo } from "core/react/components/UI/pathDisplay";
+import { pathDisplayInfo } from "core/utils/pathDisplay";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 
 export const attachCommands = (plugin: MakeMDPlugin) => {
