@@ -47,6 +47,12 @@ export const dragModifierForActiveItem = (activeItem: TreeNode | null, event: Pi
     return event.altKey ? "copy" : event.shiftKey ? "link" : "move";
 };
 
+// Cmd/Ctrl at pointerdown runs the gesture as native HTML5 DnD so the row can be
+// dropped outside the tree (Excalidraw, canvas, editor). macOS: Cmd must be
+// released once the drag is up, otherwise AppKit narrows the operation mask and
+// Chromium refuses the drop (`dropEffect: "none"`).
+export const isNativeDragGesture = (event: Pick<React.PointerEvent | PointerEvent, "metaKey" | "ctrlKey" | "button">): boolean => event.button == 0 && (event.metaKey || event.ctrlKey);
+
 export const resolveDragModifier = (activeItem: TreeNode | null, projection: DragProjection | null, requestedModifier: DropModifiers): DropModifiers => {
     if (isTagTreeItemPath(activeItem?.item)) return projection?.reorder ? "move" : "link";
     if (isLinkedTreeItem(activeItem)) return projection?.reorder ? "move" : "link";
@@ -62,16 +68,9 @@ const ENABLE_DRAG_ACTION_LABEL = true;
 // note in dragOver). Native drop handling stays in place for external drags
 // INTO the tree (Finder files, other Obsidian panes).
 //
-// Deliberately sacrificed (a native drag session cannot be started from the
-// middle of a pointer gesture, only from a dragstart event): dragging rows OUT
-// of the navigator —
-//   - into an editor pane (link insert), the tab bar, a pane split target
-//   - onto a canvas
-//   - into another Obsidian window (popout)
-//   - into Finder / other applications
-// If any of these come back, the viable hybrid is choosing the native path at
-// gesture start (e.g. Cmd-drag sets row.draggable before the browser decides),
-// not a mid-gesture switch.
+// A pointer gesture cannot become a native drag session mid-way, so dragging
+// rows OUT of the navigator (editor, tab bar, canvas, popouts, Finder) is only
+// available via Cmd-drag — see `isNativeDragGesture`.
 const ENABLE_POINTER_DND = true;
 
 export const constrainSeparatorProjection = (activeItem: TreeNode | null, projection: DragProjection | null): DragProjection | null => {
@@ -664,7 +663,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         // label must be re-applied each event — do not dedupe this call. In
         // pointer mode there is no dragManager ghost; the label renders on the
         // pointer ghost instead.
-        if (nextDragAction?.label && !ENABLE_POINTER_DND && !isExternalDrag) {
+        if (nextDragAction?.label && !pointerDragRef.current?.active && !isExternalDrag) {
             superstate.ui.setDragLabel(nextDragAction.label);
         }
         if (currentDragPaths.length > 1) {
@@ -894,6 +893,20 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         const node = flattenedTree.find((f) => f.id == id);
         if (!node || node.type == "new") return;
         const doc = row.ownerDocument;
+        if (isNativeDragGesture(e)) {
+            // Native dragstart then fires SpaceTreeItem's onDragStart (Obsidian
+            // dragManager). React never re-touches `draggable`, so restore it
+            // by hand after the drag (dragend) or a plain cmd-click (pointerup).
+            row.draggable = true;
+            const restore = () => {
+                row.draggable = false;
+                row.removeEventListener("dragend", restore);
+                doc.removeEventListener("pointerup", restore);
+            };
+            row.addEventListener("dragend", restore);
+            doc.addEventListener("pointerup", restore);
+            return;
+        }
         const win = doc.defaultView;
         // The virtualized scroller (overflow-y: auto ancestor) for edge
         // auto-scroll during the drag.
