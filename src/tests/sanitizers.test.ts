@@ -1,3 +1,14 @@
+jest.mock("main", () => jest.fn());
+jest.mock(
+    "obsidian",
+    () => ({
+        normalizePath: (path: string) => path,
+        TFile: class TFile {},
+        TFolder: class TFolder {},
+    }),
+    { virtual: true },
+);
+
 import { sanitizeFileName, sanitizeFolderName, UNNAMED_FILE } from "utils/sanitizers";
 import { uniqueFileName, uniqueFolderName } from "adapters/obsidian/utils/file";
 
