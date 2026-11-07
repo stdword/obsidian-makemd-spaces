@@ -23,6 +23,16 @@ const getFolderNoteName = (settings: FolderNotesSettings, folderPath: string) =>
     return settings.folderNoteName.replace(/\{\{folder_name\}\}/g, folderName);
 };
 
+const FOLDER_NOTE_FILE_TYPE_PRIORITY = ["md", "canvas", "excalidraw", "base"];
+const folderNoteFileTypeRank = (extension: string) => {
+    const index = FOLDER_NOTE_FILE_TYPE_PRIORITY.indexOf(extension);
+    return index == -1 ? FOLDER_NOTE_FILE_TYPE_PRIORITY.length : index;
+};
+
+// Returns a new array: the input is the live settings object of the Folder Notes plugin.
+export const prioritizeFolderNoteFileTypes = (fileTypes: string[]): string[] =>
+    [...fileTypes].sort((a, b) => folderNoteFileTypeRank(a) - folderNoteFileTypeRank(b));
+
 export const getFolderNotePath = (superstate: ISuperstate, folderPath: string, childPaths: string[]): string => {
     if (isTagSpacePath(folderPath)) return "";
 
@@ -31,9 +41,7 @@ export const getFolderNotePath = (superstate: ISuperstate, folderPath: string, c
         return "";
 
     const folderNoteName = getFolderNoteName(settings, folderPath);
-    const fileTypesPriority = ['md', 'canvas', 'excalidraw', 'base'];
-    const possibleFolderNotesNames = settings.supportedFileTypes
-        .sort((a, b) => fileTypesPriority.indexOf(a) > fileTypesPriority.indexOf(b) ? 1 : -1)
+    const possibleFolderNotesNames = prioritizeFolderNoteFileTypes(settings.supportedFileTypes)
         .map((extension) => `${folderPath}/${folderNoteName}.${extension}`);
 
     return possibleFolderNotesNames.find((path) => childPaths.includes(path)) ?? "";

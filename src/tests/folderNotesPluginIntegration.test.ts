@@ -131,3 +131,17 @@ describe("FolderNotesPluginIntegration", () => {
         expect(navigatorActivePathForPath(superstate, "Recipes/Soups/Borscht.md")).toBe("Recipes/Soups/Borscht.md");
     });
 });
+
+describe("prioritizeFolderNoteFileTypes", () => {
+    const { prioritizeFolderNoteFileTypes } = jest.requireActual("integrations/folderNotesPluginIntegration");
+
+    it("orders md first and unknown types last without touching the input", () => {
+        const supported = ["base", "pdf", "canvas", "md"];
+        expect(prioritizeFolderNoteFileTypes(supported)).toEqual(["md", "canvas", "base", "pdf"]);
+        expect(supported).toEqual(["base", "pdf", "canvas", "md"]);
+    });
+
+    it("is stable for equal ranks", () => {
+        expect(prioritizeFolderNoteFileTypes(["pdf", "txt"])).toEqual(["pdf", "txt"]);
+    });
+});

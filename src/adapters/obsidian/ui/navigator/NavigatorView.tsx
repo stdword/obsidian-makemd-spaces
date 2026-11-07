@@ -45,13 +45,10 @@ export class FileTreeView extends ItemView {
     return ICON;
   }
 
+  // Closing the panel must not recreate it: that made the view impossible to close and
+  // spawned a fresh leaf during plugin unload (detachFileTreeLeaves -> leaf.detach -> onClose)
+  // while the view factory was still registered. "Open Spaces" brings it back on demand.
   async onClose() {
-    const leafs = this.app.workspace.getLeavesOfType(FILE_TREE_VIEW_TYPE);
-    if (leafs.length == 0) {
-      const leaf = this.app.workspace.getLeftLeaf(false) ||
-                   this.app.workspace.getRightLeaf(false);
-      await leaf.setViewState({ type: FILE_TREE_VIEW_TYPE });
-    }
     this.destroy();
   }
 
