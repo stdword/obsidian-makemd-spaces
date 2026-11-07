@@ -3,6 +3,7 @@
     flex-direction: column;
     gap: 4px;
 }
+
 .mk-ui-color-picker-selector {
     border-bottom: thin solid var(--mk-ui-divider);
 }
@@ -12,9 +13,11 @@
     display: flex;
     flex-direction: column;
 }
+
 .mk-ui-color-picker .mk-color {
     margin: 4px;
 }
+
 .mk-ui-color-picker-palette > div {
     display: flex;
     flex-direction: row;
@@ -22,6 +25,7 @@
 }
 
 /* Enhanced Color Picker Styles */
+
 .mk-ui-color-picker-enhanced {
     width: 260px;
     padding: 12px;
@@ -103,66 +107,9 @@
 }
 
 /* Gradient Editor */
-.mk-gradient-editor {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.mk-gradient-preview {
-    position: relative;
-    height: 40px;
-    border-radius: 6px;
-    border: 1px solid var(--background-modifier-border);
-    cursor: pointer;
-}
-
-.mk-gradient-stop {
-    position: absolute;
-    top: -4px;
-    width: 12px;
-    height: 48px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transform: translateX(-50%);
-    transition: all 0.2s ease;
-}
-
-.mk-gradient-stop:hover {
-    transform: translateX(-50%) scale(1.1);
-}
-
-.mk-gradient-stop.active {
-    border-color: var(--interactive-accent);
-}
-
-.mk-gradient-controls {
-    display: flex;
-    gap: 8px;
-}
-
-.mk-gradient-controls button {
-    flex: 1;
-    padding: 6px 12px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background: var(--background-secondary);
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.mk-gradient-controls button:hover:not(:disabled) {
-    background: var(--background-modifier-hover);
-}
-
-.mk-gradient-controls button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
 
 /* Color Palette Selector */
+
 .mk-color-palette-selector {
     max-height: 420px;
     overflow-y: auto;
@@ -196,6 +143,7 @@
 }
 
 /* None Mode Display */
+
 .mk-color-none-display {
     display: none !important;
 }
@@ -212,6 +160,7 @@
 }
 
 /* Enhanced Color Swatch */
+
 .mk-color-swatch {
     position: relative;
     display: inline-block;
@@ -277,53 +226,7 @@
 }
 
 /* Gradient Swatch Styles */
-.mk-gradient-swatch .mk-color-swatch-inner {
-    background-size: cover !important;
-    background-position: center;
-    background-repeat: no-repeat;
-    border: 1px solid var(--background-modifier-border);
-}
-
-.mk-gradient-swatch:hover .mk-color-swatch-inner {
-    border-color: var(--interactive-accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.mk-gradient-swatch .mk-color-swatch-overlay {
-    background: rgba(0, 0, 0, 0.8);
-}
-
-.mk-gradient-swatch .mk-color-swatch-overlay .mk-color-swatch-value {
-    color: white;
-    font-weight: 500;
-}
 
 /* Circular Angle Selector */
-.mk-circular-angle-selector {
-    position: relative;
-    user-select: none;
-}
-
-.mk-circular-angle-selector:active {
-    cursor: grabbing !important;
-}
 
 /* Gradient Controls Row */
-.mk-gradient-controls-row {
-    align-items: center;
-    justify-content: space-between;
-}
-
-.mk-gradient-controls-row button {
-    transition: all 0.15s ease;
-}
-
-.mk-gradient-controls-row button:hover:not(:disabled) {
-    background-color: var(--mk-ui-background-hover);
-    border-color: var(--mk-ui-border-hover);
-    transform: scale(1.05);
-}
-
-.mk-gradient-controls-row button:active:not(:disabled) {
-    transform: scale(0.95);
-}

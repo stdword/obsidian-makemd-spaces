@@ -1,6 +1,7 @@
 .workspace .mod-root .workspace-tab-header[data-type="markdown"] .workspace-tab-header-inner-icon {
     display: flex;
 }
+
 .workspace .mod-root .workspace-tab-header[data-type="markdown"] .workspace-tab-header-inner-icon svg {
     width: 18px;
     height: 18px;
@@ -44,6 +45,7 @@
 .nav-file {
     overflow-y: inherit !important;
 }
+
 .nav-file-tag {
     font-size: 7px;
     color: var(--nav-tag-color-hover);
@@ -62,10 +64,12 @@
 .mk-focuses {
     position: relative;
 }
+
 .mk-focuses > .mk-indicator {
     border-radius: 8px;
     outline: 2px solid var(--mk-ui-active);
 }
+
 .mk-focuses > .mk-focuses-item {
     transition: transform 0.2s ease;
 }
@@ -120,6 +124,7 @@
 .drag-ghost .mk-path-icon {
     margin-top: 2px;
 }
+
 .drag-ghost .mk-path-icon svg,
 .drag-ghost .mk-path-icon img {
     color: inherit !important;
@@ -198,7 +203,6 @@
     --spacing: var(--indicator-spacing, 36px) !important;
 }
 
-
 .mk-tree-wrapper .mk-indicator-row.mk-indicator-row-box {
     border-radius: 8px;
     outline: 2px solid var(--mk-ui-active);
@@ -213,6 +217,7 @@
     height: var(--spaceRowHeight);
     padding-left: 4px;
 }
+
 .mk-tree-section .is-active.mk-tree-item,
 .mk-tree-section .mk-tree-item:hover {
     opacity: 1;
@@ -225,18 +230,22 @@
 .mk-tree-section .mk-collapse {
     --icon-size: 12px;
 }
+
 .mk-tree-section .mk-tree-text {
     font-size: 14px;
     display: flex;
     gap: 4px;
     flex-grow: 0 !important;
 }
+
 .mk-tree-tag .mk-tree-item {
     padding-left: 4px;
 }
+
 .mk-tree-tag .mk-collapse {
     --icon-size: 12px;
 }
+
 .mk-tree-tag .mk-tree-text {
     font-size: 14px;
     display: flex;
@@ -251,10 +260,12 @@
 body .mk-tree-new {
     opacity: 0;
 }
+
 .mod-rtl .mk-tree-item {
     margin-left: 0 !important;
     margin-right: var(--spacing) !important;
 }
+
 .mk-tree-item {
     --icon-size: 16px;
     color: var(--mk-ui-text-secondary);
@@ -289,16 +300,6 @@ body .mk-tree-new {
     opacity: 0.45;
 }
 
-.mk-inline-button {
-    background: none;
-    border: 0;
-    box-shadow: none;
-    margin: 0;
-    height: 24px;
-    width: 24px;
-    padding: 0 !important;
-}
-
 .mk-path-icon {
     width: var(--icon-size);
     height: var(--icon-size);
@@ -306,12 +307,14 @@ body .mk-tree-new {
     font-family: emoji;
     align-items: center;
 }
+
 .mk-linked-item-icon {
     margin-top: 4px;
     width: var(--icon-size);
     height: var(--icon-size);
     pointer-events: none;
 }
+
 .mk-linked-item-icon > .mk-path-icon > div > svg {
     color: var(--mk-ui-text-secondary) !important;
 }
@@ -322,6 +325,7 @@ body .mk-tree-new {
     height: var(--icon-size);
     pointer-events: none;
 }
+
 .mk-pinned-item-icon > .mk-path-icon > div > svg {
     color: var(--mk-ui-text-secondary) !important;
 }
@@ -329,12 +333,14 @@ body .mk-tree-new {
 .nav-file-title > .mk-path-icon {
     flex: 0 0 var(--icon-size);
 }
+
 .mk-path-icon svg,
 .mk-path-icon img {
     width: var(--icon-size);
     height: var(--icon-size);
     color: var(--icon-color) !important;
 }
+
 .mk-path-icon > button {
     border: 0;
     border-radius: 4px;
@@ -351,9 +357,11 @@ body .mk-tree-new {
 .nav-file-title > .mk-path-icon > button {
     background: none;
 }
+
 .nav-file-title > .mk-path-icon > button > svg {
     color: var(--icon-color) !important;
 }
+
 .nav-file-title.is-active > .mk-path-icon > button > svg {
     color: var(--icon-color) !important;
 }
@@ -362,6 +370,7 @@ body .mk-tree-new {
     padding-top: 1px;
     color: var(--label-color);
 }
+
 .mk-tree-text.nav-folder-title-content {
     padding-bottom: 1px;
 
@@ -370,6 +379,7 @@ body .mk-tree-new {
 
 /* Keep Folder Notes styling without using its DOM-managed `has-folder-note`
    class, which the Folder Notes plugin removes from custom explorer rows. */
+
 .folder-note-cursive .mk-has-folder-note .nav-folder-title-content {
     font-style: italic;
 }
@@ -389,15 +399,6 @@ body .mk-tree-new {
     padding-left: 3px;
 }
 
-
-body .mk-tree-wrapper .mk-drag-handle {
-    visibility: hidden;
-    margin-right: 4px;
-}
-body .mk-tree-wrapper:hover .mk-drag-handle {
-    visibility: visible;
-}
-
 body .mk-tree-wrapper .mk-path-link {
     opacity: 0;
 }
@@ -415,6 +416,7 @@ body .mk-tree-wrapper:hover .mk-path-link {
     display: inline-block;
     overflow-wrap: anywhere;
 }
+
 .mk-tree-span {
     flex: 1 !important;
 }
@@ -422,19 +424,13 @@ body .mk-tree-wrapper:hover .mk-path-link {
 .mk-path-link {
     vertical-align: middle;
 }
+
 .mk-path-link svg {
     width: 12px;
     height: 10px;
     transform: rotate(45deg);
 }
-.mk-disable-interaction {
-    pointer-events: none;
-}
 
-.mk-disable-selection {
-    user-select: none;
-    -webkit-user-select: none;
-}
 .workspace-leaf-content[data-type="mk-path-view"] > .view-content {
     padding: 0 !important;
 }
@@ -451,10 +447,12 @@ body .mk-tree-wrapper:hover .mk-path-link {
     margin-right: 2px;
     margin-top: 2px;
 }
+
 .mk-collapse:hover {
     background: none !important;
     opacity: 1;
 }
+
 .mk-collapse svg {
     transform: rotate(90deg);
     transition: transform 250ms ease;
@@ -470,9 +468,6 @@ body .mk-tree-wrapper:hover .mk-path-link {
 .mk-collapse.mk-collapsed svg {
     transform: rotate(0deg);
 }
-.mk-collapse.mk-collapsed-plus svg {
-    transform: rotate(45deg);
-}
 
 .mk-tree-item.is-active:not(.clone) {
     --icon-color: var(--nav-item-color-active);
@@ -483,6 +478,7 @@ body .mk-tree-wrapper:hover .mk-path-link {
 
 /* The active row must still show whether it is part of the selection, otherwise
    alt-clicking it looks like a no-op (Obsidian's .tree-item-self.is-selected loses on specificity). */
+
 .mk-tree-item.is-active.is-selected:not(.clone) {
     color: var(--nav-item-color-selected);
     background: var(--nav-item-background-selected);
@@ -492,6 +488,7 @@ body .mk-tree-wrapper:hover .mk-path-link {
     transform: translate3d(-500px, 0px, 0px);
     z-index: var(--layer-menu);
 }
+
 .mk-icon-menu .menu {
     position: static !important;
     padding: 0 !important;

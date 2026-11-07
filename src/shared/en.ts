@@ -4,11 +4,6 @@ export const en = {
         dragDropLinkModifierKey: "Hold Shift to link",
     },
 
-    defaults: {
-        spaceNote: "Current Note",
-        spaceContext: "Current Space",
-    },
-
     commandPalette: {
         openSpaces: "Open Spaces",
         revealFile: "Reveal File in Spaces",
@@ -83,7 +78,6 @@ export const en = {
     },
 
     buttons: {
-        close: "Close",
         add: "Add",
         cancel: "Cancel",
 
@@ -125,7 +119,6 @@ export const en = {
         createNote: "New Note",
 
         findStickers: "Enter sticker keyword",
-        findStickersButton: "Find",
 
         manageHiddenFiles: "Manage Hidden Items",
         hiddenItems: "Hidden Items",
@@ -143,7 +136,6 @@ export const en = {
         linkItemInputPlaceholder: "Enter search text here…",
         optionItemSelectPlaceholder: "Select Option",
 
-        saveView: "Save View",
         reorderIn: "Reorder in",
 
         archiveFocus: "Archive \"${1}\" Focus?",
@@ -183,7 +175,6 @@ export const en = {
         cannotLinkToOwnFolder: "Item is already in this folder",
         cannotCopyToVirtualSpace: "Can't copy files here, this space has no folder",
         copyFileFailed: "Couldn't copy file",
-        noPropertyName: "No Property Name",
 
         somethingWentWrong: "Something Went Wrong",
         itemJustHidden: "Item is now hidden. You can manage hidden items in the Spaces menu",
@@ -254,8 +245,6 @@ export const en = {
         base50: "Base50",
         base60: "Base60",
         base70: "Base70",
-        base80: "Base80",
-        base90: "Base90",
         base100: "Base100",
 
         red: "Red",

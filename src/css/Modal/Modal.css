@@ -35,22 +35,21 @@
     border-radius: 0;
 }
 
-.mk-border-bottom {
-    border-bottom: 1px solid var(--mk-ui-divider);
-}
-
 .mk-input-large[data-placeholder]:empty::before {
     content: attr(data-placeholder);
     color: var(--mk-ui-text-tertiary);
 }
+
 .mk-input-large {
     padding: 16px 20px;
     font-size: 14px;
 }
+
 .mk-modal-header {
     display: flex;
     justify-content: space-between;
 }
+
 .mk-modal-title {
     font-size: var(--font-ui-large);
     margin-bottom: 0.75em;
@@ -60,6 +59,7 @@
 }
 
 /* Title input for context create modal */
+
 .mk-modal-title-container {
     width: 100%;
     margin-bottom: 8px;
@@ -92,6 +92,7 @@
     color: var(--mk-ui-text-tertiary);
     font-weight: normal;
 }
+
 .mk-modal:before,
 .mk-palette:before {
     content: "";
@@ -104,9 +105,11 @@
     backdrop-filter: blur(10px) saturate(2);
     z-index: -1;
 }
+
 .mk-palette.mk-ready,
 .mk-modal.mk-ready {
 }
+
 .mk-palette,
 .mk-modal {
     display: flex;
@@ -126,6 +129,7 @@
     overflow: hidden;
     position: absolute;
 }
+
 .mk-modal {
     padding: var(--size-4-4);
     position: relative;
@@ -141,6 +145,7 @@
     gap: 8px;
     padding: 12px;
 }
+
 .mk-palette-search input {
     border: none;
     background: none;
@@ -159,6 +164,7 @@
     top: 0;
     left: 0;
 }
+
 .mk-modal-container {
     width: 100%;
     height: 100%;
@@ -207,12 +213,6 @@
     gap: 8px;
 }
 
-.mk-tab-group {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 8px;
-}
-
 .mk-tab {
     padding: 4px 12px;
     border-radius: 8px;
@@ -225,6 +225,7 @@
     width: var(--icon-size);
     height: var(--icon-size);
 }
+
 .mk-tab:hover {
     background: var(--mk-ui-background-hover);
 }
@@ -283,91 +284,11 @@
 }
 
 /* Onboarding Settings Styles */
-.mk-onboarding-settings {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 400px;
-    margin: 0 auto;
-}
-
-.mk-setting-item {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.mk-setting-label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text-normal);
-}
-
-.mk-setting-label input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-}
-
-.mk-setting-label span {
-    user-select: none;
-}
-
-.mk-setting-input {
-    padding: 8px 12px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    background: var(--background-primary);
-    color: var(--text-normal);
-    font-size: 14px;
-    transition: border-color 0.2s;
-}
-
-.mk-setting-input:focus {
-    outline: none;
-    border-color: var(--text-accent);
-}
-
-.mk-setting-description {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin: 0;
-    line-height: 1.4;
-}
 
 /* Asset Settings Tabs */
-.mk-setting-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.mk-setting-tab {
-    padding: 8px 16px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--text-muted);
-    transition: all 0.2s ease;
-}
-
-.mk-setting-tab:hover {
-    color: var(--text-normal);
-}
-
-.mk-setting-tab.active {
-    color: var(--text-normal);
-    border-bottom-color: var(--interactive-accent);
-}
 
 /* Color Palette Manager */
+
 .mk-color-palette-manager {
     display: flex;
     flex-direction: column;
@@ -574,6 +495,7 @@
 }
 
 /* Icon Set Manager */
+
 .mk-icon-set-manager {
     display: flex;
     flex-direction: column;
@@ -607,96 +529,6 @@
 }
 
 /* Edit Options Modal Styles */
-.mk-options-modal {
-    min-width: 400px;
-    max-width: 600px;
-    width: 100%;
-}
-
-.mk-options-header h3 {
-    margin: 0 0 16px 0;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.mk-options-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 16px;
-    max-height: 400px;
-    overflow-y: auto;
-    width: 100%;
-}
-
-.mk-option-item {
-    background: transparent;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 0;
-    transition: all 0.2s ease;
-    width: 100%;
-}
-
-.mk-option-item-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.mk-option-drag-handle {
-    cursor: grab;
-    color: var(--mk-ui-text-tertiary);
-    display: flex;
-    align-items: center;
-}
-
-.mk-option-drag-handle:active {
-    cursor: grabbing;
-}
-
-.mk-option-color {
-    flex-shrink: 0;
-}
-
-.mk-option-label {
-    flex: 1;
-    padding: 4px 8px;
-    border-radius: 4px;
-}
-
-.mk-option-label:hover {
-    background: var(--mk-ui-background-hover);
-}
-
-.mk-option-remove {
-    flex-shrink: 0;
-    background: none;
-    border: none;
-    color: var(--mk-ui-text-tertiary);
-    font-size: 20px;
-    line-height: 1;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.mk-option-remove:hover {
-    background: var(--mk-ui-background-error);
-    color: var(--mk-ui-text);
-}
-
-.mk-option-add {
-    display: flex;
-    width: 100%;
-    margin-bottom: 16px;
-}
 
 .mk-color-scheme-selector {
     display: flex;
@@ -732,66 +564,7 @@
     border-color: var(--mk-ui-border-active);
 }
 
-.mk-add-existing-button {
-    padding: 8px 16px;
-    background: var(--mk-ui-background-secondary);
-    border: 1px solid var(--mk-ui-divider);
-    border-radius: 6px;
-    color: var(--mk-ui-text-primary);
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
-    width: fit-content;
-}
-
-.mk-add-existing-button:hover {
-    background: var(--mk-ui-background-hover);
-    border-color: var(--mk-ui-border);
-}
-
 /* Context Create Item Modal Styles */
-.mk-context-create-item-modal .mk-form-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px; /* Add gaps between form fields */
-    width: 100%;
-}
-
-.mk-context-create-item-modal .mk-form-field {
-    width: 100%;
-    margin-bottom: 0; /* Keep margin removed since we use gap */
-}
-
-.mk-context-create-item-modal .mk-modal-title-input {
-    border: none; /* Remove border from title input */
-    border-radius: 0;
-    border-bottom: 1px solid var(--mk-ui-border);
-    padding: 12px 0;
-    background: transparent;
-}
-
-.mk-context-create-item-modal .mk-modal-title-input:focus {
-    border-color: var(--mk-ui-border-active);
-    background: transparent;
-}
-
-.mk-form-container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.mk-form-field {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.mk-form-container .mk-path-context-field {
-    width: 100%;
-    min-width: 300px;
-}
 
 .mk-field-error {
     color: var(--text-error);
@@ -805,6 +578,7 @@
     display: ruby;
     overflow: auto;
 }
+
 .mk-palette > .mk-layout-row > .mk-hover {
     margin: 4px;
 }

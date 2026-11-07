@@ -12,6 +12,7 @@
     justify-content: center;
     height: 100%;
 }
+
 .mk-path-tree-focus .mk-focuses-item {
     background: var(--mk-ui-background);
 }
@@ -23,6 +24,7 @@
     border-radius: 4px;
     text-align: center;
 }
+
 .mk-button-group {
     display: flex;
     gap: 8px;
@@ -52,17 +54,4 @@
 .mk-path-tree {
     flex: 1;
     overflow: hidden;
-}
-.mk-context-tree .tree-item {
-    padding: 4px;
-}
-
-.mk-context-tree .tree-item-self {
-    margin-left: var(--spacing);
-    align-items: center;
-    padding: 2px 2px;
-}
-
-.mk-context-tree .mk-tree-wrapper {
-    padding: 0px !important;
 }

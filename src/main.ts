@@ -37,7 +37,6 @@ import "css/Modal/Modal.css";
 import "css/Panels/Navigator/FileTree.css";
 import "css/Panels/Navigator/Focuses.css";
 import "css/Panels/Navigator/Navigator.css";
-import "css/UI/Buttons.css";
 
 export default class MakeMDPlugin extends Plugin implements IMakeMDPlugin {
     app: App;
