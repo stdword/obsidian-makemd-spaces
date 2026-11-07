@@ -14,7 +14,7 @@ import SelectMenuSuggestions from "./SelectMenuSuggestions";
 import { focusNextElement } from "./concerns/focusNextElement";
 import { matchAny, matchExact } from "./concerns/matchers";
 import { applySectionLimits, escapeActionForQuery, prioritizeSearchMatches } from "./selectMenuLimits";
-import { activateMenuOption, menuKeyAction, stepOptionIndex } from "./selectMenuKeyboard";
+import { activateMenuOption, backspaceDeletesTag, menuKeyAction, stepOptionIndex } from "./selectMenuKeyboard";
 import { isMenuHidden } from "../menu";
 const KEYS = {
     ENTER: "Enter",
@@ -337,7 +337,7 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
             handled = true;
         }
 
-        if (e.key === KEYS.BACKSPACE) {
+        if (e.key === KEYS.BACKSPACE && backspaceDeletesTag(query, props.tags.length)) {
             pressBackspaceKey();
             handled = true;
         }
@@ -433,8 +433,9 @@ const SelectMenuComponent = React.forwardRef((_props: SelectMenuComponentProps, 
     };
 
     function pressBackspaceKey() {
-        // when backspace key is pressed and query is blank, delete the last tag
-        if (!query.length) {
+        // In single-select menus there are no tags: Backspace must not fire a delete that
+        // the callers would read as a selection of nothing.
+        if (backspaceDeletesTag(query, props.tags.length)) {
             deleteTag(props.tags.length - 1);
         }
     }

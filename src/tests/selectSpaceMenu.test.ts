@@ -281,4 +281,23 @@ describe("showOpenMenu", () => {
         expect(menuConfig.getOptionsForModifiers({ shiftKey: true })).toEqual(expect.arrayContaining([expect.objectContaining({ value: "Workspace/HiddenFolder/ChildFolder.md" })]));
         expect(menuConfig.getOptionsForModifiers({ shiftKey: false })).not.toEqual(expect.arrayContaining([expect.objectContaining({ value: "Workspace/HiddenFolder/ChildFolder.md" })]));
     });
+
+    it("does not report a selection when the menu saves an empty value", async () => {
+        const openMenu = jest.fn();
+        const saveLink = jest.fn();
+        const superstate = {
+            allSpaces: jest.fn((): any[] => []),
+            spaceManager: { readTags: jest.fn((): string[] => []) },
+            spacesIndex: new Map(),
+            pathsIndex: new Map(),
+            settings: {},
+            ui: { openMenu },
+        } as any;
+
+        await showOpenMenu({ x: 0, y: 0, width: 0, height: 0 } as any, {} as any, superstate, saveLink, false);
+        const menuConfig = openMenu.mock.calls[0][1];
+        menuConfig.saveOptions([], [], false);
+
+        expect(saveLink).not.toHaveBeenCalled();
+    });
 });

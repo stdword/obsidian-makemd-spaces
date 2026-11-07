@@ -1,5 +1,5 @@
 import { SelectOptionType } from "shared/types/menu";
-import { activateMenuOption, menuKeyAction, stepOptionIndex } from "core/react/components/UI/Menus/menu/selectMenuKeyboard";
+import { activateMenuOption, backspaceDeletesTag, menuKeyAction, stepOptionIndex } from "core/react/components/UI/Menus/menu/selectMenuKeyboard";
 
 const separator = { name: "", type: SelectOptionType.Separator, disabled: true };
 const option = (name: string, extra: Record<string, unknown> = {}) => ({ name, value: name, ...extra });
@@ -92,5 +92,13 @@ describe("activateMenuOption", () => {
         activateMenuOption(plain, anchor, event, context);
 
         expect(context.selectOption).toHaveBeenCalledWith(plain, expect.objectContaining({ ctrlKey: true, doubleClick: false }));
+    });
+});
+
+describe("backspaceDeletesTag", () => {
+    it("only removes a tag when the query is empty and a tag exists", () => {
+        expect(backspaceDeletesTag("", 2)).toBe(true);
+        expect(backspaceDeletesTag("", 0)).toBe(false);
+        expect(backspaceDeletesTag("plan", 2)).toBe(false);
     });
 });

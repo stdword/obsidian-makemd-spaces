@@ -41,6 +41,7 @@ const SelectMenu = React.forwardRef((props: SelectMenuProps & { hide?: (suppress
 
     const onDelete = useCallback(
         (tagIndex: number) => {
+            if (tagIndex < 0 || tagIndex >= tags.length) return;
             const newTags = tags.filter((_, i) => i !== tagIndex);
             setTags(newTags);
             if (props.saveOptions)

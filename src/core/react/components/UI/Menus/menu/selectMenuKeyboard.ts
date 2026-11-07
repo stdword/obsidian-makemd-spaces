@@ -17,6 +17,9 @@ export const stepOptionIndex = (options: SelectOption[], index: number, directio
     return -1;
 };
 
+/** Backspace removes the last selected tag only when there is one and the query is empty. */
+export const backspaceDeletesTag = (query: string, tagCount: number): boolean => query.length == 0 && tagCount > 0;
+
 export type MenuKeyAction = "activate" | "open-submenu" | "close-submenu";
 
 export const menuKeyAction = (key: string, options: SelectOption[], index: number, isSubmenu: boolean): MenuKeyAction | null => {

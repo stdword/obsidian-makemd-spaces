@@ -21,6 +21,7 @@ export const showOpenMenu = (
         tabs,
         placeholder: i18n.labels.openItemInputPlaceholder,
         saveOptions: (_: string[], value: string[], isNew?: boolean, section?: string) => {
+            if (value.length == 0) return;
             saveLink(value[0], isNew, section);
         },
         selectProps: {
@@ -54,6 +55,7 @@ export const showFoldersMenu = (
         tabs,
         placeholder: i18n.labels.openItemInputPlaceholder,
         saveOptions: (_: string[], value: string[], isNew?: boolean, section?: string) => {
+            if (value.length == 0) return;
             saveLink(value[0], isNew, section);
         },
         selectProps: {
@@ -77,6 +79,7 @@ export const showTagsMenu = (
         tabs: ["tags"],
         placeholder: i18n.labels.openItemInputPlaceholder,
         saveOptions: (_: string[], value: string[], isNew?: boolean, section?: string) => {
+            if (value.length == 0) return;
             saveLink(value[0], isNew, section);
         },
         selectProps: {

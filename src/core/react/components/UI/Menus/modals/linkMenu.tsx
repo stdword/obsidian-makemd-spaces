@@ -20,6 +20,7 @@ export const showLinkMenu = (
         tabs,
         placeholder: i18n.labels.linkItemInputPlaceholder,
         saveOptions: (_: string[], value: string[]) => {
+            if (value.length == 0) return;
             saveLink(value[0]);
         },
         hidden,
