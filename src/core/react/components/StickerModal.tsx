@@ -108,7 +108,7 @@ const StickerModal: React.FC<StickerModalProps> = (props) => {
                             props.selectedSticker(stickers[i].type + "//" + stickers[i].value);
                             props.hide();
                         }}
-                        className={selectedSticker === i ? "selected mk-padding-4 mk-border-radius-4 mk-hover" : "mk-padding-4 mk-border-radius-4 mk-hover"}
+                        className={selectedSticker === i ? "selected mk-padding-2 mk-border-radius-4 mk-hover" : "mk-padding-2 mk-border-radius-4 mk-hover"}
                     >
                         <div dangerouslySetInnerHTML={{ __html: htmlFromSticker(icon) }} className={"mk-sticker"} />
                     </div>
