@@ -784,7 +784,7 @@ export class Superstate implements ISuperstate {
         if (await this.keepHiddenPathOnDelete(path)) return;
 
         // A regular focus keeps a dangling path; Focus Mode must notice it ran empty and close.
-        await removeFocusModePath(this, path);
+        if (this.focusMode) await removeFocusModePath(this, path);
 
         this.spacesMap.delete(path);
         this.persister.remove(path, "path");
