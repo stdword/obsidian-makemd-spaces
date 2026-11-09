@@ -2,7 +2,7 @@ import { LocalCachePersister } from "shared/types/persister";
 
 import { MakeMDSettings } from "shared/types/settings";
 import { EventDispatcher } from "utils/dispatcher";
-import { Focus } from "./focus";
+import { Focus, FocusModeState } from "./focus";
 import { IndexMap } from "./indexMap";
 import { PathState, SpaceState, SuperstateEvent } from "./PathState";
 import { SpaceDefinition } from "./spaceDef";
@@ -25,6 +25,7 @@ export abstract class ISuperstate {
     tagsMap: IndexMap;
     liveSpaceLinkMap: IndexMap;
     focuses: Focus[];
+    focusMode: FocusModeState | null;
     persister: LocalCachePersister;
 
     initializeIndex: () => Promise<void>;

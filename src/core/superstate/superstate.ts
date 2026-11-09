@@ -10,7 +10,7 @@ import { parsePathState } from "core/utils/superstate/parser";
 import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
 import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
-import { Focus, renameFocusExcludedPaths } from "shared/types/focus";
+import { Focus, FocusModeState, renameFocusExcludedPaths } from "shared/types/focus";
 import { IndexMap } from "shared/types/indexMap";
 import { FilesystemSpaceInfo, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
@@ -186,6 +186,8 @@ export class Superstate implements ISuperstate {
     private pendingParentSpaceIndexing: Map<string, Promise<void>> = new Map();
 
     public focuses: Focus[];
+    /** Temporary in-memory focus (Focus Mode); never saved to focuses.json. */
+    public focusMode: FocusModeState | null = null;
 
     private constructor(
         public indexVersion: string,

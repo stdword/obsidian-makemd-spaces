@@ -22,6 +22,7 @@ export const DEFAULT_SETTINGS: MakeMDSettings = {
     openSpacesOnLaunch: true,
     overrideNativeMenu: false,
     revealActiveFile: false,
+    focusModeKeepExpanded: false,
     spaceRowHeight: 29,
     searchMenuFoldersLimit: 75,
     searchMenuFilesLimit: 75,

@@ -19,6 +19,7 @@ export interface MakeMDSettings {
     openSpacesOnLaunch: boolean;
     overrideNativeMenu: boolean;
     revealActiveFile: boolean;
+    focusModeKeepExpanded: boolean;
     spaceRowHeight: number;
     searchMenuTagsLimit?: number;
     searchMenuFoldersLimit?: number;
