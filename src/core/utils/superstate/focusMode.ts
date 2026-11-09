@@ -107,7 +107,8 @@ export const renameFocusModePath = (superstate: Superstate, oldPath: string, new
     const state = superstate.focusMode;
     if (!state) return;
     const renamePath = (path: string) => (isUnder(path, oldPath) ? newPath + path.slice(oldPath.length) : path);
-    const renameId = (id: string) => renameExpandedSpacePaths([id], oldPath, newPath)[0];
+    // renameExpandedSpacePaths drops ids that already contain the new path; an origin must survive that.
+    const renameId = (id: string) => renameExpandedSpacePaths([id], oldPath, newPath)[0] ?? id;
 
     const next: FocusModeState = {
         focus: {
@@ -130,10 +131,14 @@ export const removeFocusModePath = async (superstate: Superstate, path: string):
     await updateFocusAtIndex(superstate, FOCUS_MODE_INDEX, (focus) => ({ ...focus, paths: focus.paths.filter((item) => item != path) }));
 };
 
+/** True for presses that open a context menu rather than activate the tab: any non-left button, and Ctrl+click on macOS. */
+export const isFocusTabContextClick = (superstate: Superstate, e: { button: number; ctrlKey: boolean }): boolean =>
+    e.button != 0 || (e.ctrlKey && superstate.ui.getOS?.() == "mac");
+
 /** A press on a regular focus tab. A plain left press leaves Focus Mode for that focus right away. */
 export const focusTabPointerDown = (superstate: Superstate, index: number, e: { button: number; ctrlKey: boolean }): boolean => {
-    // Ctrl+click is a right click on macOS; right clicks are handled by focusTabContextMenu.
-    if (!superstate.focusMode || e.button != 0 || e.ctrlKey) return false;
+    // Right clicks are handled by focusTabContextMenu.
+    if (!superstate.focusMode || isFocusTabContextClick(superstate, e)) return false;
     exitFocusMode(superstate, index);
     return true;
 };

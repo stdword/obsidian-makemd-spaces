@@ -25,7 +25,9 @@ export const revealPathInSpaces = async (superstate: Superstate, path: string) =
             .map((availablePath) => ({ focusIndex, searchOrder, specificity: availablePath.length })) ?? [],
     );
     matches.sort((a, b) => b.specificity - a.specificity || a.searchOrder - b.searchOrder);
-    const foundFocusIndex = matches[0]?.focusIndex;
+    // Focus Mode is left only when the file is not in it at all, however specific another focus's section is.
+    const stayInFocusMode = isFocusModeActive(superstate) && matches.some((match) => match.focusIndex == activeFocusIndex);
+    const foundFocusIndex = stayInFocusMode ? activeFocusIndex : matches[0]?.focusIndex;
 
     if (foundFocusIndex !== undefined && foundFocusIndex !== activeFocusIndex) {
         if (isFocusModeActive(superstate)) {

@@ -6,6 +6,7 @@ import {
     exitFocusMode,
     focusTabContextMenu,
     focusTabPointerDown,
+    isFocusTabContextClick,
     isFocusModeActive,
     removeFocusModePath,
     renameFocusModePath,
@@ -195,6 +196,15 @@ describe("focus mode", () => {
         expect(s.spaceManager.saveFocuses).not.toHaveBeenCalled();
     });
 
+    it("keeps a section's place in the regular tree when an unrelated folder takes a matching name", () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Work/Notes", originId: "Work/Work/Notes" }]);
+
+        renameFocusModePath(s, "Archive", "Notes");
+
+        expect(s.focusMode.origins).toEqual([{ path: "Work/Notes", originId: "Work/Work/Notes" }]);
+    });
+
     it("renaming a parent folder keeps a nested temporary section", () => {
         const s = makeFocusSuperstate();
         enterFocusMode(s, [{ path: "Recipes/Soups/Hot" }]);
@@ -242,8 +252,32 @@ describe("focus mode", () => {
             expect(isFocusModeActive(s)).toBe(true);
         });
 
+        it("ctrl+click outside macOS is an ordinary press that switches focus", () => {
+            const s = makeFocusSuperstate();
+            s.ui.getOS = () => "windows";
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            expect(focusTabPointerDown(s, 1, { button: 0, ctrlKey: true })).toBe(true);
+
+            expect(isFocusModeActive(s)).toBe(false);
+            expect(s.settings.currentFocus).toBe(1);
+        });
+
+        it("tells a macOS ctrl+click apart from a plain click", () => {
+            const mac = makeFocusSuperstate();
+            mac.ui.getOS = () => "mac";
+            const windows = makeFocusSuperstate();
+            windows.ui.getOS = () => "windows";
+
+            expect(isFocusTabContextClick(mac, { button: 0, ctrlKey: true })).toBe(true);
+            expect(isFocusTabContextClick(mac, { button: 0, ctrlKey: false })).toBe(false);
+            expect(isFocusTabContextClick(mac, { button: 2, ctrlKey: false })).toBe(true);
+            expect(isFocusTabContextClick(windows, { button: 0, ctrlKey: true })).toBe(false);
+        });
+
         it("ctrl+click is a right click, not a switch", () => {
             const s = makeFocusSuperstate();
+            s.ui.getOS = () => "mac";
             enterFocusMode(s, [{ path: "Recipes/Soups" }]);
 
             expect(focusTabPointerDown(s, 1, { button: 0, ctrlKey: true })).toBe(false);

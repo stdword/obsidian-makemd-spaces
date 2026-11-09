@@ -10,7 +10,7 @@ import { ConfirmationModal } from "../../UI/Modals/ConfirmationModal";
 import { ExcludedFiles } from "../../UI/Modals/ExcludedFiles";
 import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
-import { focusTabContextMenu, focusTabPointerDown, isFocusModeActive } from "core/utils/superstate/focusMode";
+import { focusTabContextMenu, focusTabPointerDown, isFocusModeActive, isFocusTabContextClick } from "core/utils/superstate/focusMode";
 
 export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {
     id: number;
@@ -123,7 +123,9 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             data-focus-index={index}
             // Leaves Focus Mode on press, before a click or a tab drag can begin.
             onPointerDown={(e) => focusTabPointerDown(superstate, index, e)}
-            onClick={() => {
+            onClick={(e) => {
+                // A macOS Ctrl+click is a right click: it must not also switch to this focus.
+                if (isFocusTabContextClick(superstate, e)) return;
                 superstate.settings.currentFocus = index;
                 superstate.saveSettings();
             }}

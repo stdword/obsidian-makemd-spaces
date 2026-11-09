@@ -93,6 +93,17 @@ describe("revealPathInSpaces", () => {
             expect(s.ui.notify).not.toHaveBeenCalled();
         });
 
+        it("stays in focus mode even when a regular focus has a more specific section", async () => {
+            const s = makeFocusSuperstate({ currentFocus: 0 });
+            s.focuses[1].paths = ["Recipes/Soups"];
+            enterFocusMode(s, [{ path: "Recipes" }]);
+
+            await revealPathInSpaces(s, "Recipes/Soups/Borscht.md");
+
+            expect(isFocusModeActive(s)).toBe(true);
+            expect(s.settings.currentFocus).toBe(0);
+        });
+
         it("leaves focus mode when the file is only in a regular focus", async () => {
             const s = makeFocusSuperstate({ currentFocus: 0 });
             enterFocusMode(s, [{ path: "Recipes/Soups" }]);
