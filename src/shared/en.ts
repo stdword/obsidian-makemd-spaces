@@ -47,6 +47,8 @@ export const en = {
 
         hide: "Hide",
         excludeFromFocus: "Exclude from Focus",
+        focusMode: "Focus Mode",
+        exitFocusMode: "Exit Focus Mode",
         unhide: "Unhide",
 
         removeFromSpace: 'Unlink',
@@ -234,6 +236,10 @@ export const en = {
         revealActiveFile: {
             name: "Reveal Active File",
             desc: "Automatically reveal the active file in Spaces",
+        },
+        focusModeKeepExpanded: {
+            name: "Keep Focus Mode Folding",
+            desc: "After leaving Focus Mode, keep folders expanded or collapsed the way you left them",
         },
     },
 

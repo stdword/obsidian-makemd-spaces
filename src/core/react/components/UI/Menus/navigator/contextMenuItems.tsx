@@ -2,6 +2,7 @@ import React from "react";
 import { InputModal } from "core/react/components/UI/Modals/InputModal";
 import { openStickerPalette } from "core/react/components/PathSticker";
 import { excludePathsFromCurrentFocus } from "core/utils/superstate/focus";
+import { FocusModeSource, enterFocusMode } from "core/utils/superstate/focusMode";
 import { isPathPinnedInSpace, setPathPinnedInSpace } from "core/utils/superstate/spaces";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 import { validateWrapFolderName, wrapEachPathInOwnFolder, wrapFolderPathForName, wrapPathsInFolder } from "core/utils/superstate/wrapToFolder";
@@ -49,6 +50,8 @@ export type ContextMenuTarget = {
     nativeMenuPath?: string;
     unlink?: () => unknown;
     excludeFromFocus?: boolean;
+    /** Tree rows that become the sections of a temporary focus. */
+    focusMode?: FocusModeSource[];
     remove?: { title: string; message: React.ReactNode; action: () => unknown };
 };
 
@@ -85,6 +88,14 @@ export const menuItems = {
             onClick: async () => {
                 for (const path of t.paths) await t.superstate.ui.openPath(path, "tab");
             },
+        }),
+    },
+    focusMode: {
+        when: (t) => !!t.focusMode?.length,
+        build: (t) => ({
+            name: i18n.menu.focusMode,
+            icon: "lucide//focus",
+            onClick: () => enterFocusMode(t.superstate, t.focusMode),
         }),
     },
     changeColor: {

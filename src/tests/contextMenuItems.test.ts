@@ -58,4 +58,9 @@ describe("menu items", () => {
         const item = menuItems.revealInSystem.build({ ...baseTarget(), systemPath: "Projects" }) as any;
         expect(item.name).toBe(i18n.menu.revealInDefault);
     });
+
+    it("leaves Focus Mode out when the target has nothing to focus on", () => {
+        expect(buildContextMenu({ ...baseTarget(), focusMode: undefined }, [[menuItems.focusMode]])).toEqual([]);
+        expect(buildContextMenu({ ...baseTarget(), focusMode: [] }, [[menuItems.focusMode]])).toEqual([]);
+    });
 });

@@ -27,7 +27,7 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
             if (!focus) return;
 
             plugin.superstate.ui.openModal(
-                i18n.labels.excludedItems.replace("${1}", focusIndex == FOCUS_MODE_INDEX ? "Focus Mode" : focus.name),
+                i18n.labels.excludedItems.replace("${1}", focusIndex == FOCUS_MODE_INDEX ? i18n.menu.focusMode : focus.name),
                 <ExcludedFiles superstate={plugin.superstate} focusIndex={focusIndex} />,
                 windowFromDocument(plugin.app.workspace.getLeaf()?.containerEl.ownerDocument),
             );

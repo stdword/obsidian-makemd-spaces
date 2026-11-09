@@ -113,7 +113,7 @@ const mergeIntoMenuOption = (superstate: Superstate, space: SpaceState, win: Win
     },
 });
 
-export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0) => {
+export const showSpaceContextMenu = (superstate: Superstate, path: PathState, rect: Rect, win: Window, parentSpace?: string, onClose?: () => void, depth = 0, nodeId?: string) => {
     const space = superstate.spacesIndex.get(path.path);
     if (!space)
         return;
@@ -151,6 +151,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
         nativeMenuPath: !isTag ? space.path : undefined,
         unlink: isLink && parent.type != "tag" ? () => removePathsFromSpace(superstate, parent.path, [space.path]) : undefined,
         excludeFromFocus: !isSection && !isLink,
+        focusMode: [{ path: space.path, originId: nodeId }],
         remove:
             !isLink && !isHome
                 ? {
@@ -190,7 +191,7 @@ export const showSpaceContextMenu = (superstate: Superstate, path: PathState, re
             : null;
 
     const menuOptions = buildContextMenu(target, [
-        newItems,
+        [...newItems, menuItems.focusMode],
         [menuItems.changeColor, menuItems.changeSticker],
         [
             sortMenuOption(superstate, space, win, isTag),

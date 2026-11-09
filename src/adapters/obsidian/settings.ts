@@ -128,6 +128,11 @@ export class MakeMDPluginSettingsTab extends PluginSettingTab {
                     category: "system",
                     type: "boolean",
                 },
+                {
+                    name: "focusModeKeepExpanded",
+                    category: "system",
+                    type: "boolean",
+                },
             ],
         };
 

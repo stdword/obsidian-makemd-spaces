@@ -1308,3 +1308,111 @@ describe("showSpaceContextMenu", () => {
         );
     });
 });
+
+describe("Focus Mode menu item", () => {
+    const rect = { x: 0, y: 0, width: 0, height: 0 } as any;
+    const event = { target: { getBoundingClientRect: () => rect }, view: { document: { defaultView: {} } } } as any;
+    const makeSuperstate = () => {
+        const openMenu = jest.fn();
+        const folder = (path: string) => ({ path, parent: path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "/", type: "space", subtype: "folder", spaces: [] as string[] });
+        const space = (path: string, type = "folder") => ({ path, name: path.split("/").pop(), type, metadata: {}, space: { folderPath: path } });
+        const tagPath = "spaces://#brass";
+        const superstate = {
+            settings: { currentFocus: 0, expandedSpaces: [] as string[] },
+            focuses: [{ name: "Workshop", sticker: "", paths: ["Benches"] }],
+            focusMode: null as any,
+            dispatchEvent: jest.fn(),
+            saveSettings: jest.fn(() => Promise.resolve()),
+            spaceManager: { saveFocuses: jest.fn(() => Promise.resolve()) },
+            pathsIndex: new Map<string, any>([
+                ["Benches/Lathe.md", { path: "Benches/Lathe.md", parent: "Benches", type: "file", subtype: "md", name: "Lathe" }],
+                ["Benches/Jigs", folder("Benches/Jigs")],
+                [tagPath, { path: tagPath, parent: "", type: "space", subtype: "tag", spaces: [] }],
+            ]),
+            spacesIndex: new Map<string, any>([
+                ["Benches", space("Benches")],
+                ["Benches/Jigs", space("Benches/Jigs")],
+                [tagPath, space(tagPath, "tag")],
+            ]),
+            ui: { openMenu, getOS: jest.fn(() => "mac"), hasNativePathMenu: jest.fn(() => false), isPluginEnabled: jest.fn(() => false) },
+        };
+        const names = () => (openMenu.mock.calls[0][1].options as any[]).map((option) => option.name);
+        const click = (name: string) => (openMenu.mock.calls[0][1].options as any[]).find((option) => option.name == name).onClick(event);
+        return { superstate: superstate as any, names, click, tagPath };
+    };
+    const focusMode = "Focus Mode";
+
+    it("a single file gets Focus Mode as its own group above Color", () => {
+        const { superstate, names } = makeSuperstate();
+
+        showPathContextMenu(superstate, "Benches/Lathe.md", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Benches/Lathe.md");
+
+        expect(names().slice(0, 3)).toEqual([focusMode, "", i18n.menu.changeColor]);
+    });
+
+    it("a folder gets Focus Mode last in the New group", () => {
+        const { superstate, names } = makeSuperstate();
+
+        showPathContextMenu(superstate, "Benches/Jigs", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Benches/Jigs");
+
+        expect(names().slice(0, 5)).toEqual([i18n.labels.createNote, i18n.menu.new, focusMode, "", i18n.menu.changeColor]);
+    });
+
+    it("a tag space gets Focus Mode right after New Separator", () => {
+        const { superstate, names, tagPath } = makeSuperstate();
+
+        showPathContextMenu(superstate, tagPath, null, rect, {} as Window, undefined, undefined, 0, tagPath);
+
+        expect(names().slice(0, 4)).toEqual([i18n.buttons.createSeparator, focusMode, "", i18n.menu.changeColor]);
+    });
+
+    it("multi-select gets Focus Mode right after Open in Tabs", () => {
+        const { superstate, names } = makeSuperstate();
+        const selected = [
+            { id: "Benches/Benches/Lathe.md", item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: "Benches", depth: 1 },
+            { id: "Benches/Benches/Jigs", item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: "Benches", depth: 1 },
+        ];
+
+        triggerMultiPathMenu(superstate, selected as any, event);
+
+        expect(names().slice(0, 3)).toEqual([i18n.menu.openInATab, focusMode, ""]);
+    });
+
+    it("multi-select inside a tag space gets Focus Mode right after Open in Tabs", () => {
+        const { superstate, names, tagPath } = makeSuperstate();
+        const selected = [
+            { id: `${tagPath}/Benches/Lathe.md`, item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: tagPath, depth: 1 },
+            { id: `${tagPath}/Benches/Jigs`, item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: tagPath, depth: 1 },
+        ];
+
+        triggerMultiPathMenu(superstate, selected as any, event);
+
+        expect(names().slice(0, 3)).toEqual([i18n.menu.openInATab, focusMode, ""]);
+    });
+
+    it("Focus Mode on a selection uses tree order, not click order", () => {
+        const { superstate, click } = makeSuperstate();
+        const selected = [
+            { id: "Benches/Benches/Lathe.md", item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: "Benches", depth: 1 },
+            { id: "Benches/Benches/Jigs", item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: "Benches", depth: 1 },
+        ];
+
+        triggerMultiPathMenu(superstate, selected as any, event, ["Benches", "Benches/Benches/Jigs", "Benches/Benches/Lathe.md"]);
+        click(focusMode);
+
+        expect(superstate.focusMode.focus.paths).toEqual(["Benches/Jigs", "Benches/Lathe.md"]);
+        expect(superstate.spaceManager.saveFocuses).not.toHaveBeenCalled();
+    });
+
+    it("Focus Mode on a single nested folder makes it a section with its folding kept", () => {
+        const { superstate, click } = makeSuperstate();
+        superstate.settings.expandedSpaces = ["Benches", "Benches/Benches/Jigs"];
+
+        showPathContextMenu(superstate, "Benches/Jigs", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Benches/Jigs");
+        click(focusMode);
+
+        expect(superstate.focusMode.focus.paths).toEqual(["Benches/Jigs"]);
+        expect(superstate.focusMode.expandedSpaces).toEqual(["Benches/Jigs"]);
+        expect(superstate.spaceManager.saveFocuses).not.toHaveBeenCalled();
+    });
+});

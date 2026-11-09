@@ -1,6 +1,7 @@
 import { defaultMenu, menuSeparator } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { ExcludedFiles } from "core/react/components/UI/Modals/ExcludedFiles";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
+import { FOCUS_MODE_INDEX, currentFocus, currentFocusIndex, exitFocusMode, focusAtIndex, isFocusModeActive, setCurrentExpandedSpaces } from "core/utils/superstate/focusMode";
 import MakeMDPlugin from "main";
 import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
@@ -17,23 +18,25 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
     }
 
     const toggleSections = (collapse: boolean) => {
-        const spaces = superstate.focuses[superstate.settings.currentFocus].paths;
-        const newSections = collapse ? [] : spaces;
-        superstate.settings.expandedSpaces = newSections;
-        superstate.saveSettings();
+        setCurrentExpandedSpaces(superstate, collapse ? [] : currentFocus(superstate)?.paths ?? [], true);
     };
 
     const menuOptions: SelectOption[] = [];
 
-    menuOptions.push({
-        name: "New Focus",
-        icon: "ui//plus",
-        onClick: () => {
-            const newFocuses = [...superstate.focuses, { sticker: "ui//spaces", name: "", paths: [] }];
-            superstate.settings.currentFocus = newFocuses.length - 1;
-            superstate.spaceManager.saveFocuses(newFocuses);
-        },
-    });
+    // The temporary focus is left, not added to: Exit Focus Mode takes the place of New Focus.
+    menuOptions.push(
+        isFocusModeActive(superstate)
+            ? { name: i18n.menu.exitFocusMode, icon: "ui//close", onClick: () => exitFocusMode(superstate) }
+            : {
+                  name: "New Focus",
+                  icon: "ui//plus",
+                  onClick: () => {
+                      const newFocuses = [...superstate.focuses, { sticker: "ui//spaces", name: "", paths: [] }];
+                      superstate.settings.currentFocus = newFocuses.length - 1;
+                      superstate.spaceManager.saveFocuses(newFocuses);
+                  },
+              },
+    );
 
     menuOptions.push(menuSeparator);
 
@@ -54,15 +57,15 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
     });
 
     // Per-focus exclusions get their own group above the vault-wide hidden items.
-    const focusIndex = superstate.settings.currentFocus;
-    const focus = superstate.focuses[focusIndex];
+    const focusIndex = currentFocusIndex(superstate);
+    const focus = focusAtIndex(superstate, focusIndex);
     if (focus) {
         menuOptions.push(menuSeparator);
         menuOptions.push({
             name: i18n.labels.manageExcludedFromCurrentFocus,
             icon: "lucide//filter-x",
             onClick: (e) => {
-                superstate.ui.openModal(i18n.labels.excludedItems.replace("${1}", focus.name), <ExcludedFiles superstate={superstate} focusIndex={focusIndex} />, windowFromDocument(e.view.document));
+                superstate.ui.openModal(i18n.labels.excludedItems.replace("${1}", focusIndex == FOCUS_MODE_INDEX ? i18n.menu.focusMode : focus.name), <ExcludedFiles superstate={superstate} focusIndex={focusIndex} />, windowFromDocument(e.view.document));
             },
         });
     }

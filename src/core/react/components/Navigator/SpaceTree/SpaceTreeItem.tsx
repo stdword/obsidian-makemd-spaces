@@ -85,7 +85,7 @@ export const folderClickPlan = (selected: boolean, selectedCount: number, folder
 
 const TreeItemComponent = (props: TreeItemProps) => {
     const { id: _id, data, depth, dragActive, active, indentationWidth, indicator, indicatorVariant = "line-top", indicatorDepth = null, collapsed, selected, highlighted, dimmed, onCollapse, onSelectRange, style, superstate, disabled: _disabled, enableObsidianDragGhost, dragStarted, dragOver, dragEnded } = props;
-    const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace } = useContext(NavigatorContext);
+    const { setActivePath: setActivePath, selectedPaths: selectedPaths, setSelectedPaths: setSelectedPaths, closeActiveSpace, treeOrderRef } = useContext(NavigatorContext);
 
     const innerRef = useRef(null);
     const [, refreshPathState] = useState(0);
@@ -164,7 +164,7 @@ const TreeItemComponent = (props: TreeItemProps) => {
     };
     const handleRightClick = (e: React.MouseEvent) => {
         if (selectedPaths.length > 1 && selectedPaths.some((f) => f.id == (data.id as string))) {
-            triggerMultiPathMenu(superstate, selectedPaths, e);
+            triggerMultiPathMenu(superstate, selectedPaths, e, treeOrderRef.current);
             return;
         }
         // Select the item like a left click would, but without opening it or its folder note.
@@ -180,7 +180,7 @@ const TreeItemComponent = (props: TreeItemProps) => {
             return superstate.ui.nativePathMenu(e, pathState.path);
         }
 
-        showPathContextMenu(superstate, data.path, data.type == "group" ? null : data.space, (e.target as HTMLElement).getBoundingClientRect(), windowFromDocument(e.view.document), "right", data.type == "group" ? () => closeActiveSpace(data.path) : null, data.depth);
+        showPathContextMenu(superstate, data.path, data.type == "group" ? null : data.space, (e.target as HTMLElement).getBoundingClientRect(), windowFromDocument(e.view.document), "right", data.type == "group" ? () => closeActiveSpace(data.path) : null, data.depth, data.id);
     };
     const pathStateUpdated = (payload: { path: string }) => {
         if (superstate.spaceManager.isRenaming) return;

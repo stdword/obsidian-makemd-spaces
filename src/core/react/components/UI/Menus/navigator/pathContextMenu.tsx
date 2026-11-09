@@ -17,6 +17,7 @@ import { defaultMenu } from "../menu/SelectionMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
 import { PathStateWithRank } from "shared/types/superstate";
 import { ContextMenuTarget, buildContextMenu, menuItems } from "./contextMenuItems";
+import { FocusModeSource } from "core/utils/superstate/focusMode";
 
 function isLinkedFileMenuItem(item: PathStateWithRank, space?: string) {
     return (
@@ -26,12 +27,21 @@ function isLinkedFileMenuItem(item: PathStateWithRank, space?: string) {
 
 const deleteManyMessage = <><div>{i18n.descriptions.deleteFiles}</div><div>{i18n.descriptions.deleteTags}</div></>;
 
-export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
+// Focus Mode sections follow the order the tree shows, not the order the rows were clicked in.
+const focusModeSources = (selectedPaths: TreeNode[], treeOrder?: string[]): FocusModeSource[] => {
+    const position = new Map((treeOrder ?? []).map((id, index) => [id, index]));
+    return selectedPaths
+        .map((node, index) => ({ node, order: position.get(node.id) ?? treeOrder?.length ?? index, index }))
+        .sort((a, b) => a.order - b.order || a.index - b.index)
+        .map(({ node }) => ({ path: node.item.path, originId: node.id }));
+};
+
+export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent, treeOrder?: string[]) => {
     const paths = selectedPaths.map((s) => s.item.path);
 
     const allUnderTagSpace = selectedPaths.every((s) => isTagSpacePath(s.space));
     if (allUnderTagSpace) {
-        triggerMultiPathMenuForTagSpace(superstate, selectedPaths, e);
+        triggerMultiPathMenuForTagSpace(superstate, selectedPaths, e, treeOrder);
         return;
     }
 
@@ -60,6 +70,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         },
         linkTo: (link) => dropPathsInSpaceAtIndex(superstate, selectedPaths.map((f) => f.path), link, -1, "link"),
         excludeFromFocus: selectedPaths.every((item) => item.depth > 0),
+        focusMode: focusModeSources(selectedPaths, treeOrder),
         remove: {
             title: i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
             message: deleteManyMessage,
@@ -72,7 +83,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     };
 
     const menuOptions = buildContextMenu(target, [
-        [menuItems.openInTab],
+        [menuItems.openInTab, menuItems.focusMode],
         [menuItems.changeColor, menuItems.changeSticker],
         [menuItems.pin, menuItems.wrapToFolder, menuItems.wrapEachToFolder],
         [menuItems.moveTo, menuItems.linkTo],
@@ -85,7 +96,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
     return false;
 };
 
-export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent) => {
+export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent, treeOrder?: string[]) => {
     const paths = selectedPaths.map((s) => s.item.path);
     const win = windowFromDocument(e.view.document);
 
@@ -96,6 +107,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
         saveColor: (value) => saveColorForPaths(superstate, paths, value),
         linkTo: (link) => dropPathsInSpaceAtIndex(superstate, selectedPaths.map((f) => f.path), link, -1, "link"),
         excludeFromFocus: selectedPaths.every((item) => item.depth > 0),
+        focusMode: focusModeSources(selectedPaths, treeOrder),
         remove: {
             title: i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
             message: deleteManyMessage,
@@ -104,7 +116,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
     };
 
     const menuOptions = buildContextMenu(target, [
-        [menuItems.openInTab],
+        [menuItems.openInTab, menuItems.focusMode],
         [menuItems.changeColor],
         [menuItems.linkTo],
         // hide (disabled in favor of per-focus exclusions).
@@ -116,12 +128,12 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
     return false;
 };
 
-export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void, depth = 0) => {
+export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void, depth = 0, nodeId?: string) => {
     const pathCache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
 
     if (!pathCache) return;
     if (pathCache.type == "space") {
-        showSpaceContextMenu(superstate, pathCache, rect, win, space, onClose, depth);
+        showSpaceContextMenu(superstate, pathCache, rect, win, space, onClose, depth, nodeId);
         return;
     }
 
@@ -156,6 +168,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         nativeMenuPath: path,
         unlink: isLink && !parentIsTag ? () => removePathsFromSpace(superstate, parent.path, [path]) : undefined,
         excludeFromFocus: !isSection && !isLink,
+        focusMode: [{ path, originId: nodeId }],
         remove: !isLink
             ? {
                   title: i18n.labels.deleteFile,
@@ -166,6 +179,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
     };
 
     const menuOptions = buildContextMenu(target, [
+        [menuItems.focusMode],
         [menuItems.changeColor],
         [menuItems.copyPath, menuItems.pin, menuItems.wrapToFolder],
         [menuItems.duplicate, menuItems.rename, menuItems.moveTo, menuItems.linkTo],
