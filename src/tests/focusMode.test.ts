@@ -5,6 +5,8 @@ import {
     enterFocusMode,
     exitFocusMode,
     isFocusModeActive,
+    removeFocusModePath,
+    renameFocusModePath,
     setCurrentExpandedSpaces,
     updateCurrentFocus,
 } from "core/utils/superstate/focusMode";
@@ -175,5 +177,46 @@ describe("focus mode", () => {
         await exitFocusMode(s);
 
         expect(s.settings.expandedSpaces).not.toContain("Tools");
+    });
+
+    it("renaming a temporary section keeps it in the tree", async () => {
+        const s = makeFocusSuperstate({ expandedSpaces: ["Recipes/Recipes/Soups"] });
+        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
+        await updateCurrentFocus(s, (focus) => ({ ...focus, "excluded-paths": ["Recipes/Soups/Cold"] }));
+
+        renameFocusModePath(s, "Recipes/Soups", "Recipes/Broths");
+
+        expect(currentFocus(s).paths).toEqual(["Recipes/Broths"]);
+        expect(currentFocus(s)["excluded-paths"]).toEqual(["Recipes/Broths/Cold"]);
+        expect(currentExpandedSpaces(s)).toEqual(["Recipes/Broths"]);
+        expect(s.focusMode.origins).toEqual([{ path: "Recipes/Broths", originId: "Recipes/Recipes/Broths" }]);
+        expect(s.spaceManager.saveFocuses).not.toHaveBeenCalled();
+    });
+
+    it("renaming a parent folder keeps a nested temporary section", () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Recipes/Soups/Hot" }]);
+
+        renameFocusModePath(s, "Recipes/Soups", "Recipes/Broths");
+
+        expect(currentFocus(s).paths).toEqual(["Recipes/Broths/Hot"]);
+    });
+
+    it("deleting the only temporary section closes focus mode", async () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+        await removeFocusModePath(s, "Recipes/Soups");
+
+        expect(isFocusModeActive(s)).toBe(false);
+    });
+
+    it("deleting one of several temporary sections keeps the rest", async () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Recipes/Soups" }, { path: "Tools/Saw.md" }]);
+
+        await removeFocusModePath(s, "Tools/Saw.md");
+
+        expect(currentFocus(s).paths).toEqual(["Recipes/Soups"]);
     });
 });

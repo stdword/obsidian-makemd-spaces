@@ -6,6 +6,7 @@ import { ensureArray } from "core/utils/schema";
 import { ensureTag } from "utils/tags";
 import { renameFocusExcludedPaths } from "shared/types/focus";
 import { uniqueRankOrder } from "./spaces";
+import { removeFocusModePath, renameFocusModePath } from "./focusMode";
 
 
 export const addTag = (superstate: Superstate, tag: string, initialized = true) => {
@@ -93,6 +94,9 @@ export const mergeTagSpaceMetadata = async (superstate: Superstate, sourcePath: 
     });
     if (focusesChanged)
         await superstate.spaceManager.saveFocuses(superstate.focuses);
+    // A merged tag that is a Focus Mode section becomes its target, unless the target is already one.
+    if (superstate.focusMode?.focus.paths.includes(targetPath)) await removeFocusModePath(superstate, sourcePath);
+    else renameFocusModePath(superstate, sourcePath, targetPath);
 
     await superstate.onSpaceDeleted(sourcePath);
 

@@ -147,6 +147,33 @@ describe("Superstate tag initialization", () => {
         expect(superstate.dispatchEvent).toHaveBeenCalledWith("spaceDeleted", { path });
     });
 
+    it("closes focus mode when its only file section is deleted", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.focuses = [{ name: "Garage", sticker: "", paths: ["Bikes"] }] as any;
+        superstate.settings = { currentFocus: 0, expandedSpaces: [] };
+        superstate.saveSettings = jest.fn(() => Promise.resolve());
+        superstate.dispatchEvent = jest.fn();
+        superstate.pathsIndex.set("Bikes/Chain.md", { path: "Bikes/Chain.md", name: "Chain", type: "file", subtype: "md", parent: "Bikes", metadata: {}, tags: [], spaces: [], hidden: false });
+        superstate.focusMode = { focus: { name: "", sticker: "", paths: ["Bikes/Chain.md"] }, expandedSpaces: [], origins: [] };
+
+        await superstate.onPathDeleted("Bikes/Chain.md");
+
+        expect(superstate.focusMode).toBeNull();
+        expect(spaceManager.saveFocuses).not.toHaveBeenCalled();
+    });
+
+    it("drops a deleted folder from focus mode sections without saving them", async () => {
+        const { superstate, spaceManager } = createSuperstate();
+        superstate.focuses = [{ name: "Garage", sticker: "", paths: ["Bikes"] }] as any;
+        superstate.dispatchEvent = jest.fn();
+        superstate.focusMode = { focus: { name: "", sticker: "", paths: ["Bikes/Old", "Bikes/New"] }, expandedSpaces: [], origins: [] };
+
+        await superstate.onSpaceDeleted("Bikes/Old");
+
+        expect(superstate.focusMode.focus.paths).toEqual(["Bikes/New"]);
+        expect(spaceManager.saveFocuses).not.toHaveBeenCalled();
+    });
+
     it("refreshes the old loaded tag space when metadata removes a file tag", async () => {
         const { superstate } = createSuperstate();
         const path = "Notes/Untagged.md";

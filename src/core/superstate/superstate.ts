@@ -11,6 +11,7 @@ import { serializePathState } from "core/utils/superstate/serializer";
 import _ from "lodash";
 import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
 import { Focus, FocusModeState, renameFocusExcludedPaths } from "shared/types/focus";
+import { removeFocusModePath, renameFocusModePath } from "core/utils/superstate/focusMode";
 import { IndexMap } from "shared/types/indexMap";
 import { FilesystemSpaceInfo, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
@@ -543,6 +544,7 @@ export class Superstate implements ISuperstate {
                 focusChanged = true;
             }
         });
+        renameFocusModePath(this, oldPath, newSpaceInfo.path);
         const expandedSpacesChanged = this.renameExpandedSpaces(oldPath, newSpaceInfo.path);
         const focusesSave = focusChanged ? this.spaceManager.saveFocuses(this.focuses) : Promise.resolve();
         const settingsSave = expandedSpacesChanged && this.saveSettings ? this.saveSettings(false) : Promise.resolve();
@@ -578,6 +580,7 @@ export class Superstate implements ISuperstate {
         }));
         if (!_.isEqual(nextFocuses, this.focuses))
             await this.spaceManager.saveFocuses(nextFocuses);
+        await removeFocusModePath(this, tagPath);
 
         await this.onSpaceDeleted(tagPath);
     }
@@ -715,6 +718,7 @@ export class Superstate implements ISuperstate {
                 focusChanged = true;
             }
         });
+        renameFocusModePath(this, oldPath, newPath);
         const expandedSpacesChanged = this.renameExpandedSpaces(oldPath, newPath);
         const focusesSave = focusChanged ? this.spaceManager.saveFocuses(this.focuses) : Promise.resolve();
         const settingsSave = expandedSpacesChanged && this.saveSettings ? this.saveSettings(false) : Promise.resolve();
@@ -778,6 +782,9 @@ export class Superstate implements ISuperstate {
 
     public async onPathDeleted(path: string) {
         if (await this.keepHiddenPathOnDelete(path)) return;
+
+        // A regular focus keeps a dangling path; Focus Mode must notice it ran empty and close.
+        await removeFocusModePath(this, path);
 
         this.spacesMap.delete(path);
         this.persister.remove(path, "path");
@@ -858,6 +865,7 @@ export class Superstate implements ISuperstate {
             focusChanged = true;
         });
         if (focusChanged) await this.spaceManager.saveFocuses(this.focuses);
+        renameFocusModePath(this, oldPath, newSpaceInfo.path);
     }
     public async onSpaceDeleted(space: string) {
         if (this.spacesIndex.has(space)) {
@@ -872,6 +880,7 @@ export class Superstate implements ISuperstate {
             paths: focus.paths.filter((path) => path != space),
         }));
         if (!_.isEqual(nextFocuses, this.focuses)) await this.spaceManager.saveFocuses(nextFocuses);
+        await removeFocusModePath(this, space);
 
         this.dispatchEvent("spaceDeleted", { path: space });
     }

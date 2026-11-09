@@ -4,6 +4,7 @@ import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTr
 import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
 import { isNodeOrDescendant } from "core/utils/tree";
 import { Superstate } from "makemd-core";
+import { updateCurrentFocus } from "core/utils/superstate/focusMode";
 import i18n from "shared/i18n";
 import { PathState } from "shared/types/PathState";
 
@@ -134,25 +135,16 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
 };
 
 const reorderOpenSpace = (superstate: Superstate, path: string, index: number) => {
-    const newFocus = superstate.focuses[superstate.settings.currentFocus] ?? { sticker: "", name: i18n.labels.focus, paths: [] as string[] };
-    const currentIndex = newFocus.paths.findIndex((f) => f == path);
-    if (currentIndex == -1) {
-        const nextPaths = [...newFocus.paths];
-        nextPaths.splice(Math.max(0, index ?? nextPaths.length), 0, path);
-        newFocus.paths = nextPaths;
-    } else {
+    updateCurrentFocus(superstate, (focus) => {
+        const currentIndex = focus.paths.findIndex((f) => f == path);
+        if (currentIndex == -1) {
+            const nextPaths = [...focus.paths];
+            nextPaths.splice(Math.max(0, index ?? nextPaths.length), 0, path);
+            return { ...focus, paths: nextPaths };
+        }
         const newIndex = currentIndex < index ? Math.max(0, index - 1) : index;
-        newFocus.paths = arrayMove(
-            newFocus.paths,
-            newFocus.paths.findIndex((f) => f == path),
-            newIndex,
-        );
-    }
-    if (superstate.settings.currentFocus > superstate.focuses.length) {
-        superstate.spaceManager.saveFocuses([...superstate.focuses, newFocus]);
-    }
-    const newFocuses = superstate.focuses.map((f, i) => (i == superstate.settings.currentFocus ? newFocus : f));
-    superstate.spaceManager.saveFocuses(newFocuses);
+        return { ...focus, paths: arrayMove(focus.paths, currentIndex, newIndex) };
+    });
 };
 
 export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: string, oldSpacePath: string | null, newSpacePath: string, index: number | false, modifier?: DropModifiers) => {

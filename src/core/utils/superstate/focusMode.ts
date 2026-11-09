@@ -1,6 +1,8 @@
+import _ from "lodash";
 import { Superstate } from "makemd-core";
 import { isSpaceSeparatorPath } from "schemas/builtin";
-import { Focus } from "shared/types/focus";
+import { Focus, FocusModeState, renameFocusExcludedPaths } from "shared/types/focus";
+import { renameExpandedSpacePaths } from "shared/types/settings";
 import { ExpandedIdMapping, translateExpandedIds, writeBackExpandedIds } from "./expandedIds";
 
 // Focus Mode is a temporary focus that lives only in memory: it is kept apart from
@@ -97,4 +99,32 @@ export const setCurrentExpandedSpaces = (superstate: Superstate, ids: string[]):
     }
     superstate.settings.expandedSpaces = ids;
     superstate.saveSettings(false);
+};
+
+/** Follows a renamed or moved path inside the temporary focus. Saves nothing. */
+export const renameFocusModePath = (superstate: Superstate, oldPath: string, newPath: string): void => {
+    const state = superstate.focusMode;
+    if (!state) return;
+    const renamePath = (path: string) => (isUnder(path, oldPath) ? newPath + path.slice(oldPath.length) : path);
+    const renameId = (id: string) => renameExpandedSpacePaths([id], oldPath, newPath)[0];
+
+    const next: FocusModeState = {
+        focus: {
+            ...state.focus,
+            paths: state.focus.paths.map(renamePath),
+            ...(state.focus["excluded-paths"] ? { "excluded-paths": renameFocusExcludedPaths(state.focus["excluded-paths"], oldPath, newPath) } : {}),
+        },
+        expandedSpaces: renameExpandedSpacePaths(state.expandedSpaces, oldPath, newPath),
+        origins: state.origins.map((origin) => ({ path: renamePath(origin.path), originId: renameId(origin.originId) })),
+    };
+    if (_.isEqual(next, state)) return;
+    superstate.focusMode = next;
+    superstate.dispatchEvent("focusesChanged", null);
+    superstate.dispatchEvent("settingsChanged", null);
+};
+
+/** Drops a deleted path from the temporary sections; Focus Mode closes once nothing is left. */
+export const removeFocusModePath = async (superstate: Superstate, path: string): Promise<void> => {
+    if (!superstate.focusMode?.focus.paths.includes(path)) return;
+    await updateFocusAtIndex(superstate, FOCUS_MODE_INDEX, (focus) => ({ ...focus, paths: focus.paths.filter((item) => item != path) }));
 };

@@ -840,3 +840,32 @@ describe("dropPathInSpaceAtIndex", () => {
         ]);
     });
 });
+
+describe("dropping onto the focus level in focus mode", () => {
+    const { enterFocusMode, currentFocus } = jest.requireActual("core/utils/superstate/focusMode");
+    const { makeFocusSuperstate } = jest.requireActual("./focusModeStub");
+
+    it("adds a temporary section without saving the focus list", async () => {
+        const s = makeFocusSuperstate();
+        s.pathsIndex = new Map([["Tools", { path: "Tools" }]]);
+        enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+        await dropPathInSpaceAtIndex(s, "Tools", null, null, 0);
+
+        expect(currentFocus(s).paths).toEqual(["Tools", "Recipes/Soups"]);
+        expect(s.spaceManager.saveFocuses).not.toHaveBeenCalled();
+        expect(s.focuses[0].paths).toEqual(["Recipes"]);
+    });
+
+    it("reorders a regular focus without mutating the previous focus object", async () => {
+        const s = makeFocusSuperstate();
+        s.focuses[0].paths = ["Recipes", "Pantry"];
+        s.pathsIndex = new Map([["Pantry", { path: "Pantry" }]]);
+        const before = s.focuses[0];
+
+        await dropPathInSpaceAtIndex(s, "Pantry", null, null, 0);
+
+        expect(s.focuses[0].paths).toEqual(["Pantry", "Recipes"]);
+        expect(before.paths).toEqual(["Recipes", "Pantry"]);
+    });
+});

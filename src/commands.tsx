@@ -7,6 +7,7 @@ import { windowFromDocument } from "utils/dom";
 import MakeMDPlugin from "main";
 import { pathDisplayInfo } from "core/utils/pathDisplay";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
+import { FOCUS_MODE_INDEX, currentFocus, currentFocusIndex, focusAtIndex, updateCurrentFocus } from "core/utils/superstate/focusMode";
 
 export const attachCommands = (plugin: MakeMDPlugin) => {
     plugin.addCommand({
@@ -21,12 +22,12 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
         id: "mk-open-excluded",
         name: i18n.labels.manageExcludedFiles,
         callback: () => {
-            const focusIndex = plugin.superstate.settings.currentFocus;
-            const focus = plugin.superstate.focuses[focusIndex];
+            const focusIndex = currentFocusIndex(plugin.superstate);
+            const focus = focusAtIndex(plugin.superstate, focusIndex);
             if (!focus) return;
 
             plugin.superstate.ui.openModal(
-                i18n.labels.excludedItems.replace("${1}", focus.name),
+                i18n.labels.excludedItems.replace("${1}", focusIndex == FOCUS_MODE_INDEX ? "Focus Mode" : focus.name),
                 <ExcludedFiles superstate={plugin.superstate} focusIndex={focusIndex} />,
                 windowFromDocument(plugin.app.workspace.getLeaf()?.containerEl.ownerDocument),
             );
@@ -64,17 +65,10 @@ export const attachCommands = (plugin: MakeMDPlugin) => {
                 return;
             }
 
-            const currentFocusIndex = plugin.superstate.settings.currentFocus;
-            const currentFocus = plugin.superstate.focuses[currentFocusIndex];
-            if (currentFocus.paths.includes(file))
+            if (currentFocus(plugin.superstate)?.paths.includes(file))
                 return;
 
-            const nextFocuses = plugin.superstate.focuses.map((focus, index) => (
-                (index == currentFocusIndex)
-                    ? { ...focus, paths: [...focus.paths, file] }
-                    : focus
-            ));
-            plugin.superstate.spaceManager.saveFocuses(nextFocuses);
+            updateCurrentFocus(plugin.superstate, (focus) => ({ ...focus, paths: [...focus.paths, file] }));
         },
     });
 

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import i18n from "shared/i18n";
 import { windowFromDocument } from "utils/dom";
 import { excludePathsFromFocus, removeExcludedPathFromFocus } from "core/utils/superstate/focus";
+import { focusAtIndex } from "core/utils/superstate/focusMode";
 import { showSearchMenu } from "../Menus/modals/searchMenu";
 import { isTagSpacePath, tagSpaceNameFromPath } from "schemas/builtin";
 
@@ -11,10 +12,10 @@ export const excludedPathDisplayName = (path: string) =>
 
 export const ExcludedFiles = (props: { superstate: Superstate; focusIndex: number }) => {
     const { superstate } = props;
-    const [focus, setFocus] = useState(superstate.focuses[props.focusIndex]);
+    const [focus, setFocus] = useState(focusAtIndex(superstate, props.focusIndex));
 
     useEffect(() => {
-        const focusesChanged = () => setFocus(superstate.focuses[props.focusIndex]);
+        const focusesChanged = () => setFocus(focusAtIndex(superstate, props.focusIndex));
         superstate.eventsDispatcher.addListener("focusesChanged", focusesChanged);
         return () => superstate.eventsDispatcher.removeListener("focusesChanged", focusesChanged);
     }, [superstate, props.focusIndex]);

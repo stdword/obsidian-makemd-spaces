@@ -1,4 +1,5 @@
 import { Superstate } from "makemd-core";
+import { currentFocusIndex, exitFocusMode, focusAtIndex, isFocusModeActive } from "core/utils/superstate/focusMode";
 import { eventTypes } from "schemas/event";
 import i18n from "shared/i18n";
 import { folderPathForHiddenFolderNote } from "integrations/folderNotesPluginIntegration";
@@ -8,16 +9,16 @@ export const revealPathInSpaces = async (superstate: Superstate, path: string) =
         return;
     const revealPath = folderPathForHiddenFolderNote(superstate, path) ?? path;
 
-    const currentFocusIndex = superstate.settings.currentFocus;
+    const activeFocusIndex = currentFocusIndex(superstate);
 
     // order of search
     const focusIndexes = [
-        currentFocusIndex,
-        ...superstate.focuses.map((_, index) => index).filter((index) => index !== currentFocusIndex),
+        activeFocusIndex,
+        ...superstate.focuses.map((_, index) => index).filter((index) => index !== activeFocusIndex),
     ];
 
     const matches = focusIndexes.flatMap((focusIndex, searchOrder) =>
-        superstate.focuses[focusIndex]?.paths
+        focusAtIndex(superstate, focusIndex)?.paths
             .filter((availablePath) =>
                 revealPath === availablePath || availablePath === "/" || revealPath.startsWith(`${availablePath}/`),
             )
@@ -26,9 +27,14 @@ export const revealPathInSpaces = async (superstate: Superstate, path: string) =
     matches.sort((a, b) => b.specificity - a.specificity || a.searchOrder - b.searchOrder);
     const foundFocusIndex = matches[0]?.focusIndex;
 
-    if (foundFocusIndex !== undefined && foundFocusIndex !== currentFocusIndex) {
-        superstate.settings.currentFocus = foundFocusIndex;
-        await superstate.saveSettings();
+    if (foundFocusIndex !== undefined && foundFocusIndex !== activeFocusIndex) {
+        if (isFocusModeActive(superstate)) {
+            // The file lives only in a regular focus: Focus Mode gives way to it.
+            await exitFocusMode(superstate, foundFocusIndex);
+        } else {
+            superstate.settings.currentFocus = foundFocusIndex;
+            await superstate.saveSettings();
+        }
 
         // Let React commit the new focus so the navigator reads its updated spaces.
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));

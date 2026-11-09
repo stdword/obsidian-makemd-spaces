@@ -101,3 +101,41 @@ describe("focus exclusions", () => {
         ], "Atlas/Applications", "Atlas/Applications1")).toEqual(["Atlas/AI"]);
     });
 });
+
+describe("focus exclusions inside focus mode", () => {
+    const { enterFocusMode, exitFocusMode, currentFocus, FOCUS_MODE_INDEX } = jest.requireActual("core/utils/superstate/focusMode");
+    const { makeFocusSuperstate } = jest.requireActual("./focusModeStub");
+
+    it("excluding inside focus mode affects only the temporary focus", async () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+        await excludePathsFromCurrentFocus(s, ["Recipes/Soups/Cold"]);
+
+        expect(currentFocus(s)["excluded-paths"]).toEqual(["Recipes/Soups/Cold"]);
+        expect(s.spaceManager.saveFocuses).not.toHaveBeenCalled();
+        expect(s.focuses[0]["excluded-paths"]).toBeUndefined();
+    });
+
+    it("an exclusion made in focus mode can be removed", async () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+        await excludePathsFromFocus(s, FOCUS_MODE_INDEX, ["Recipes/Soups/Cold"]);
+
+        await removeExcludedPathFromFocus(s, FOCUS_MODE_INDEX, "Recipes/Soups/Cold");
+
+        expect(currentFocus(s)["excluded-paths"]).toEqual([]);
+        expect(s.spaceManager.saveFocuses).not.toHaveBeenCalled();
+    });
+
+    it("exclusions are gone after leaving and re-entering", async () => {
+        const s = makeFocusSuperstate();
+        enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+        await excludePathsFromCurrentFocus(s, ["Recipes/Soups/Cold"]);
+
+        await exitFocusMode(s);
+        enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+        expect(currentFocus(s)["excluded-paths"]).toBeUndefined();
+    });
+});

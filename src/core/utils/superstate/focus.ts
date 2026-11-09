@@ -1,36 +1,27 @@
 import { Superstate } from "makemd-core";
 import { Focus } from "shared/types/focus";
+import { currentFocusIndex, updateFocusAtIndex } from "./focusMode";
 
 export const isPathExcludedFromFocus = (path: string, excludedPaths: string[] = []) =>
     excludedPaths.includes(path);
 
 export const excludePathsFromCurrentFocus = async (superstate: Superstate, paths: string[]) => {
-    return excludePathsFromFocus(superstate, superstate.settings.currentFocus, paths);
+    return excludePathsFromFocus(superstate, currentFocusIndex(superstate), paths);
 };
 
+// `focusIndex` may be FOCUS_MODE_INDEX: the temporary focus keeps its exclusions in memory only.
 export const excludePathsFromFocus = async (superstate: Superstate, focusIndex: number, paths: string[]) => {
-    const focus = superstate.focuses[focusIndex];
-    if (!focus) return;
-
-    const excludedPaths = Array.from(new Set([...(focus["excluded-paths"] ?? []), ...paths]));
-    const focuses = superstate.focuses.map((item, index) =>
-        index == focusIndex ? { ...item, "excluded-paths": excludedPaths } : item,
-    );
-
-    await superstate.spaceManager.saveFocuses(focuses);
+    await updateFocusAtIndex(superstate, focusIndex, (focus) => ({
+        ...focus,
+        "excluded-paths": Array.from(new Set([...(focus["excluded-paths"] ?? []), ...paths])),
+    }));
 };
 
 export const removeExcludedPathFromFocus = async (superstate: Superstate, focusIndex: number, path: string) => {
-    const focus = superstate.focuses[focusIndex];
-    if (!focus) return;
-
-    const focuses = superstate.focuses.map((item, index) =>
-        index == focusIndex
-            ? { ...item, "excluded-paths": (item["excluded-paths"] ?? []).filter((excludedPath) => excludedPath != path) }
-            : item,
-    );
-
-    await superstate.spaceManager.saveFocuses(focuses);
+    await updateFocusAtIndex(superstate, focusIndex, (focus) => ({
+        ...focus,
+        "excluded-paths": (focus["excluded-paths"] ?? []).filter((excludedPath) => excludedPath != path),
+    }));
 };
 
 // Drop target for paths dragged onto a focus tab: appends the new paths to that focus only.

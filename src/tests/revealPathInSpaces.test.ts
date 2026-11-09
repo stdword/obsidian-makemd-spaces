@@ -78,4 +78,39 @@ describe("revealPathInSpaces", () => {
 
         expect(notify).toHaveBeenCalledWith(i18n.notice.notFound);
     });
+    describe("inside focus mode", () => {
+        const { enterFocusMode, isFocusModeActive } = jest.requireActual("core/utils/superstate/focusMode");
+        const { makeFocusSuperstate } = jest.requireActual("./focusModeStub");
+
+        it("finds the file in the temporary focus without leaving it", async () => {
+            const s = makeFocusSuperstate({ currentFocus: 1 });
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            await revealPathInSpaces(s, "Recipes/Soups/Borscht.md");
+
+            expect(isFocusModeActive(s)).toBe(true);
+            expect(s.settings.currentFocus).toBe(1);
+            expect(s.ui.notify).not.toHaveBeenCalled();
+        });
+
+        it("leaves focus mode when the file is only in a regular focus", async () => {
+            const s = makeFocusSuperstate({ currentFocus: 0 });
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            await revealPathInSpaces(s, "Tools/Saw.md");
+
+            expect(isFocusModeActive(s)).toBe(false);
+            expect(s.settings.currentFocus).toBe(1);
+        });
+
+        it("leaves focus mode for the origin focus when the file is only there", async () => {
+            const s = makeFocusSuperstate({ currentFocus: 0 });
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            await revealPathInSpaces(s, "Recipes/Salads/Greek.md");
+
+            expect(isFocusModeActive(s)).toBe(false);
+            expect(s.settings.currentFocus).toBe(0);
+        });
+    });
 });
