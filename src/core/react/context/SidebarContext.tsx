@@ -8,6 +8,7 @@ import { Focus } from "shared/types/focus";
 import { PathState, SpaceState } from "shared/types/PathState";
 import { iconForSpace } from "core/utils/pathDisplay";
 import { isSpaceSeparatorPath, tagSpaceParentPath } from "schemas/builtin";
+import { FOCUS_MODE_INDEX, currentFocus as currentFocusOf, currentFocusIndex, updateCurrentFocus } from "core/utils/superstate/focusMode";
 
 type NavigatorContextProps = {
     dragPaths: string[];
@@ -17,8 +18,15 @@ type NavigatorContextProps = {
     activePath: string;
     setActivePath: React.Dispatch<React.SetStateAction<string>>;
     activeViewSpaces: PathState[];
+    /** Index of the focus on screen; FOCUS_MODE_INDEX while Focus Mode is on. */
     activeFocus: number;
     setActiveFocus: React.Dispatch<React.SetStateAction<number>>;
+    /** The focus on screen: a regular one or the temporary Focus Mode one. */
+    currentFocus: Focus | undefined;
+    /** Changes the focus on screen; a temporary focus changes in memory only. */
+    updateCurrentFocus: (update: (focus: Focus) => Focus) => void;
+    /** Row ids of the tree in display order, kept current by the tree. */
+    treeOrderRef: React.MutableRefObject<string[]>;
     focuses: Focus[];
     setFocuses: (paths: Focus[]) => void;
     saveActiveSpace: (path: string) => void;
@@ -39,6 +47,9 @@ export const NavigatorContext = createContext<NavigatorContextProps>({
     activeFocus: 0,
     setActiveFocus: _.noop,
     activeViewSpaces: [],
+    currentFocus: undefined,
+    updateCurrentFocus: _.noop,
+    treeOrderRef: { current: [] },
     focuses: [],
     setFocuses: _.noop,
     saveActiveSpace: _.noop,
@@ -57,7 +68,9 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
     const [editFocus, setEditFocus] = useState<number | null>(null);
     const [focuses, setFocuses] = useState<Focus[]>(props.superstate.focuses);
 
-    const [activeFocus, setActiveFocus] = useState<number>(props.superstate.settings.currentFocus);
+    const [activeFocus, setActiveFocus] = useState<number>(currentFocusIndex(props.superstate));
+    const [focusModeFocus, setFocusModeFocus] = useState<Focus | null>(props.superstate.focusMode?.focus ?? null);
+    const treeOrderRef = useRef<string[]>([]);
 
     const pathStateForFocusPath = (path: string) => {
         if (isSpaceSeparatorPath(path)) {
@@ -114,34 +127,18 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
         return fallbackPath;
     };
 
-    const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>((props.superstate.focuses[activeFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
+    const [activeViewSpaces, setActiveViewSpaces] = useState<PathState[]>((currentFocusOf(props.superstate)?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
+
+    const updateActiveFocus = (update: (focus: Focus) => Focus) => {
+        updateCurrentFocus(props.superstate, update);
+    };
 
     const setActiveViewSpaceByPath = (path: string) => {
-        const newFocus = props.superstate.focuses[activeFocus] ?? {
-            sticker: "",
-            name: i18n.labels.focus,
-            paths: [] as string[],
-        };
-        newFocus.paths = [...newFocus.paths.filter((f) => f != path), path];
-        if (activeFocus > props.superstate.focuses.length) {
-            props.superstate.spaceManager.saveFocuses([...props.superstate.focuses, newFocus]);
-        }
-        const newFocuses = props.superstate.focuses.map((f, i) => (i == activeFocus ? newFocus : f));
-        props.superstate.spaceManager.saveFocuses(newFocuses.filter((f) => f));
+        updateActiveFocus((focus) => ({ ...focus, paths: [...focus.paths.filter((f) => f != path), path] }));
     };
 
     const closeActiveViewSpace = (path: string) => {
-        const newFocus = props.superstate.focuses[activeFocus] ?? {
-            sticker: "",
-            name: i18n.labels.focus,
-            paths: [] as string[],
-        };
-        newFocus.paths = [...newFocus.paths.filter((f) => f != path)];
-        if (activeFocus > props.superstate.focuses.length) {
-            props.superstate.spaceManager.saveFocuses([...props.superstate.focuses, newFocus]);
-        }
-        const newFocuses = props.superstate.focuses.map((f, i) => (i == activeFocus ? newFocus : f));
-        props.superstate.spaceManager.saveFocuses(newFocuses.filter((f) => f));
+        updateActiveFocus((focus) => ({ ...focus, paths: focus.paths.filter((f) => f != path) }));
     };
 
     const saveFocuses = (paths: Focus[]) => {
@@ -150,16 +147,16 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
 
     const refreshSpaces = (payload: { path: string }) => {
         if (props.superstate.spaceManager.isRenaming) return;
-        if (props.superstate.focuses[props.superstate.settings.currentFocus]?.paths?.includes(payload.path)) {
-            setActiveViewSpaces((props.superstate.focuses[props.superstate.settings.currentFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
+        if (currentFocusOf(props.superstate)?.paths?.includes(payload.path)) {
+            setActiveViewSpaces((currentFocusOf(props.superstate)?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
         }
     };
     const reloadPaths = () => {
         if (props.superstate.spaceManager.isRenaming) return;
         setFocuses(props.superstate.focuses);
-        const _activeFocus = props.superstate.settings.currentFocus;
-        setActiveFocus(_activeFocus);
-        setActiveViewSpaces((props.superstate.focuses[_activeFocus]?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
+        setActiveFocus(currentFocusIndex(props.superstate));
+        setFocusModeFocus(props.superstate.focusMode?.focus ?? null);
+        setActiveViewSpaces((currentFocusOf(props.superstate)?.paths ?? []).map(pathStateForFocusPath).filter((f) => f));
     };
 
     useEffect(() => {
@@ -177,13 +174,14 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
     // The handlers above close over the latest state, so they get a new identity every
     // render; expose stable wrappers so the context value only changes with its data and
     // memoized consumers (tree rows) are not re-rendered for nothing.
-    const latestHandlers = useRef({ saveFocuses, setActiveViewSpaceByPath, closeActiveViewSpace });
-    latestHandlers.current = { saveFocuses, setActiveViewSpaceByPath, closeActiveViewSpace };
+    const latestHandlers = useRef({ saveFocuses, setActiveViewSpaceByPath, closeActiveViewSpace, updateActiveFocus });
+    latestHandlers.current = { saveFocuses, setActiveViewSpaceByPath, closeActiveViewSpace, updateActiveFocus };
     const stableHandlers = useMemo(
         () => ({
             setFocuses: (paths: Focus[]) => latestHandlers.current.saveFocuses(paths),
             saveActiveSpace: (path: string) => latestHandlers.current.setActiveViewSpaceByPath(path),
             closeActiveSpace: (path: string) => latestHandlers.current.closeActiveViewSpace(path),
+            updateCurrentFocus: (update: (focus: Focus) => Focus) => latestHandlers.current.updateActiveFocus(update),
         }),
         [],
     );
@@ -198,6 +196,9 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
             setActiveFocus,
             setActivePath,
             activeViewSpaces,
+            currentFocus: activeFocus == FOCUS_MODE_INDEX ? focusModeFocus ?? undefined : focuses[activeFocus],
+            updateCurrentFocus: stableHandlers.updateCurrentFocus,
+            treeOrderRef,
             focuses,
             setFocuses: stableHandlers.setFocuses,
             saveActiveSpace: stableHandlers.saveActiveSpace,
@@ -207,7 +208,7 @@ export const SidebarProvider: React.FC<React.PropsWithChildren<{ superstate: Sup
             editFocus,
             setEditFocus,
         }),
-        [dragPaths, activeFocus, selectedPaths, activePath, activeViewSpaces, focuses, modifier, editFocus, stableHandlers],
+        [dragPaths, activeFocus, focusModeFocus, selectedPaths, activePath, activeViewSpaces, focuses, modifier, editFocus, stableHandlers],
     );
     return <NavigatorContext.Provider value={value}>{props.children}</NavigatorContext.Provider>;
 };

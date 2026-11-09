@@ -91,14 +91,15 @@ export const updateCurrentFocus = (superstate: Superstate, update: (focus: Focus
 export const currentExpandedSpaces = (superstate: Superstate): string[] =>
     superstate.focusMode ? superstate.focusMode.expandedSpaces : superstate.settings.expandedSpaces ?? [];
 
-export const setCurrentExpandedSpaces = (superstate: Superstate, ids: string[]): void => {
+/** `refresh` re-renders the navigator from the stored state; the tree itself passes false because it already holds the new state. */
+export const setCurrentExpandedSpaces = (superstate: Superstate, ids: string[], refresh = false): void => {
     if (superstate.focusMode) {
         superstate.focusMode = { ...superstate.focusMode, expandedSpaces: ids };
-        superstate.dispatchEvent("settingsChanged", null);
+        if (refresh) superstate.dispatchEvent("settingsChanged", null);
         return;
     }
     superstate.settings.expandedSpaces = ids;
-    superstate.saveSettings(false);
+    superstate.saveSettings(refresh);
 };
 
 /** Follows a renamed or moved path inside the temporary focus. Saves nothing. */
@@ -127,4 +128,19 @@ export const renameFocusModePath = (superstate: Superstate, oldPath: string, new
 export const removeFocusModePath = async (superstate: Superstate, path: string): Promise<void> => {
     if (!superstate.focusMode?.focus.paths.includes(path)) return;
     await updateFocusAtIndex(superstate, FOCUS_MODE_INDEX, (focus) => ({ ...focus, paths: focus.paths.filter((item) => item != path) }));
+};
+
+/** A press on a regular focus tab. A plain left press leaves Focus Mode for that focus right away. */
+export const focusTabPointerDown = (superstate: Superstate, index: number, e: { button: number; ctrlKey: boolean }): boolean => {
+    // Ctrl+click is a right click on macOS; right clicks are handled by focusTabContextMenu.
+    if (!superstate.focusMode || e.button != 0 || e.ctrlKey) return false;
+    exitFocusMode(superstate, index);
+    return true;
+};
+
+/** A right click on a regular focus tab only closes Focus Mode; returns true when the tab menu must not open. */
+export const focusTabContextMenu = (superstate: Superstate): boolean => {
+    if (!superstate.focusMode) return false;
+    exitFocusMode(superstate);
+    return true;
 };

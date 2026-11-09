@@ -21,6 +21,7 @@ import { DropModifiers, shouldShowLinkedItemIcon } from "./SpaceTreeItem";
 import { VirtualizedList } from "./SpaceTreeVirtualized";
 import { isFilter, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 import { isPathExcludedFromFocus, addPathsToFocus, excludedPathsForFocus } from "core/utils/superstate/focus";
+import { currentExpandedSpaces, isFocusModeActive, setCurrentExpandedSpaces } from "core/utils/superstate/focusMode";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
@@ -309,7 +310,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const { superstate } = props;
     const indentationWidth = 16;
 
-    const [expandedSpaces, setExpandedSpaces] = useState<string[]>(superstate.settings.expandedSpaces);
+    const [expandedSpaces, setExpandedSpaces] = useState<string[]>(currentExpandedSpaces(superstate));
 
     const {
         activePath: activePath,
@@ -318,6 +319,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         selectedPaths: selectedPaths,
         setSelectedPaths: setSelectedPaths,
         activeFocus: activeFocus,
+        currentFocus,
+        updateCurrentFocus,
+        treeOrderRef,
         focuses: focuses,
         setFocuses: setFocuses,
         dragPaths,
@@ -343,7 +347,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const dragPathsRef = useRef<string[]>([]);
     const dragActionRef = useRef<DragActionModel | null>(null);
     const hideSectionChildren = active != null && active.parentId == null;
-    const excludedPaths = excludedPathsForFocus(focuses[activeFocus]);
+    const excludedPaths = excludedPathsForFocus(currentFocus);
     const computedFlattenedTree = useMemo(
         () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths),
         [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths, treeVersion],
@@ -351,6 +355,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const stableFlattenedTree = useRef<TreeNode[]>(computedFlattenedTree);
     if (!superstate.spaceManager.isRenaming) stableFlattenedTree.current = computedFlattenedTree;
     const flattenedTree = superstate.spaceManager.isRenaming ? stableFlattenedTree.current : computedFlattenedTree;
+    // Lets context menus order a multi-selection the way the tree shows it.
+    treeOrderRef.current = flattenedTree.map((node) => node.id);
     const listRef = useRef<{
         scrollToIndex: (index: number, options: { align: "start" | "center" | "end" | "auto" }) => void;
     }>(null);
@@ -391,7 +397,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     useEffect(() => {
         const settingsChanged = () => {
-            setExpandedSpaces(superstate.settings.expandedSpaces);
+            setExpandedSpaces(currentExpandedSpaces(superstate));
             setPresetRowHeight(props.superstate.settings.spaceRowHeight);
         };
         superstate.eventsDispatcher.addListener("settingsChanged", settingsChanged);
@@ -411,10 +417,9 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 ...route.openPaths.slice(0, -1),
             ];
 
-            superstate.settings.expandedSpaces = newOpenFolders;
             setExpandedSpaces(newOpenFolders);
+            setCurrentExpandedSpaces(superstate, newOpenFolders);
             nextTreeScrollPath.current = route.targetId;
-            superstate.saveSettings(false);
             return true;
         },
         [expandedSpaces, activeViewSpaces],
@@ -559,7 +564,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         document.body.style.setProperty("cursor", "grabbing");
     };
 
-    const focusName = focuses?.[activeFocus]?.name || "Spaces";
+    const focusName = currentFocus?.name || "Spaces";
     const containerName = (containerId: string | null) => (containerId ? flattenedTree.find((f) => f.id == containerId)?.item?.name : null) ?? focusName;
     const dragActionLabel = (action: DragAction) => {
         if (action.type == "reorder") return `${i18n.labels.reorderIn} ${containerName(action.containerId)}`;
@@ -757,25 +762,23 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             } else if (!currentActive.space && newSpacePath) {
                 await addSpaceSeparator(superstate, newSpacePath, newRank);
                 if (actionModifier != "copy") {
-                    setFocuses(focuses.map((focus, index) => index == activeFocus ? { ...focus, paths: focus.paths.filter((_path, pathIndex) => pathIndex != currentActive.rank) } : focus));
+                    updateCurrentFocus((focus) => ({ ...focus, paths: focus.paths.filter((_path, pathIndex) => pathIndex != currentActive.rank) }));
                 }
             } else if (currentActive.space && projection.parentId == null) {
-                setFocuses(focuses.map((focus, index) => {
-                    if (index != activeFocus) return focus;
+                updateCurrentFocus((focus) => {
                     const paths = [...focus.paths];
                     paths.splice(Math.max(0, Math.min(newRank, paths.length)), 0, separatorPath);
                     return { ...focus, paths };
-                }));
+                });
                 if (actionModifier != "copy") await removeSpaceSeparator(superstate, currentActive.space, currentActive.rank);
             } else if (projection.parentId == null) {
-                setFocuses(focuses.map((focus, index) => {
-                    if (index != activeFocus) return focus;
+                updateCurrentFocus((focus) => {
                     const paths = [...focus.paths];
                     if (actionModifier != "copy") paths.splice(currentActive.rank, 1);
                     const adjustedRank = actionModifier != "copy" && currentActive.rank < newRank ? newRank - 1 : newRank;
                     paths.splice(Math.max(0, Math.min(adjustedRank, paths.length)), 0, separatorPath);
                     return { ...focus, paths };
-                }));
+                });
             }
         } else {
             await dropPathsInTree(superstate, dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths, currentActive?.id, projection.overId ?? overId, projection, flattenedTree, activeViewSpaces, actionModifier);
@@ -804,8 +807,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             const folderOpen = expandedSpaces?.includes(folder.id);
             const newOpenFolders: string[] = !folderOpen || open ? ([...expandedSpaces, folder.id] as string[]) : (expandedSpaces.filter((openFolder) => folder.id !== openFolder) as string[]);
             setExpandedSpaces(newOpenFolders);
-            superstate.settings.expandedSpaces = newOpenFolders;
-            superstate.saveSettings(false);
+            setCurrentExpandedSpaces(superstate, newOpenFolders);
         },
         [superstate, expandedSpaces],
     );
@@ -1114,7 +1116,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 }
             }}
         >
-            {flattenedTree.length == 1 || editFocus != null ? (
+            {!isFocusModeActive(superstate) && (flattenedTree.length == 1 || editFocus != null) ? (
                 <FocusEditor
                     superstate={superstate}
                     focus={focuses[editFocus ?? activeFocus]}

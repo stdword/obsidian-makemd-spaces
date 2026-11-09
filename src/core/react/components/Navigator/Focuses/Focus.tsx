@@ -10,6 +10,7 @@ import { ConfirmationModal } from "../../UI/Modals/ConfirmationModal";
 import { ExcludedFiles } from "../../UI/Modals/ExcludedFiles";
 import { defaultMenu, menuSeparator } from "../../UI/Menus/menu/SelectionMenu";
 import { eventToModifier } from "../SpaceTree/SpaceTreeItem";
+import { focusTabContextMenu, focusTabPointerDown, isFocusModeActive } from "core/utils/superstate/focusMode";
 
 export interface SortablePinnedSpaceItemProps extends PinnedSpaceProps {
     id: number;
@@ -112,12 +113,16 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
         <div
             onContextMenu={(e) => {
                 e.preventDefault();
+                // In Focus Mode a right click only closes it; the tab menu opens on the next one.
+                if (focusTabContextMenu(superstate)) return;
                 const rect = (e.target as HTMLElement).getBoundingClientRect();
                 openContextMenu(rect);
             }}
             ref={innerRef}
             className="mk-focus"
             data-focus-index={index}
+            // Leaves Focus Mode on press, before a click or a tab drag can begin.
+            onPointerDown={(e) => focusTabPointerDown(superstate, index, e)}
             onClick={() => {
                 superstate.settings.currentFocus = index;
                 superstate.saveSettings();
@@ -141,7 +146,7 @@ export const FocusItem = forwardRef<HTMLDivElement, PinnedSpaceProps>(({ pin, in
             <div
                 ref={ref}
                 aria-label={pin.name}
-                className={classNames("mk-focuses-item", "clickable-icon", "nav-action-button", (superstate.settings.currentFocus == index || highlighted) && "mk-active", indicator && "mk-indicator", clone && "mk-clone", ghost && "mk-ghost")}
+                className={classNames("mk-focuses-item", "clickable-icon", "nav-action-button", ((superstate.settings.currentFocus == index && !isFocusModeActive(superstate)) || highlighted) && "mk-active", indicator && "mk-indicator", clone && "mk-clone", ghost && "mk-ghost")}
                 style={{
                     ...style,
                 }}

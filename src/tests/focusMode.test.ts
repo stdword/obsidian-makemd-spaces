@@ -4,6 +4,8 @@ import {
     currentFocusIndex,
     enterFocusMode,
     exitFocusMode,
+    focusTabContextMenu,
+    focusTabPointerDown,
     isFocusModeActive,
     removeFocusModePath,
     renameFocusModePath,
@@ -218,5 +220,56 @@ describe("focus mode", () => {
         await removeFocusModePath(s, "Tools/Saw.md");
 
         expect(currentFocus(s).paths).toEqual(["Recipes/Soups"]);
+    });
+
+    describe("regular focus tabs", () => {
+        it("pressing a regular focus tab leaves focus mode for that focus", () => {
+            const s = makeFocusSuperstate();
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            expect(focusTabPointerDown(s, 1, { button: 0, ctrlKey: false })).toBe(true);
+
+            expect(isFocusModeActive(s)).toBe(false);
+            expect(s.settings.currentFocus).toBe(1);
+        });
+
+        it("a right-button press does not switch focus", () => {
+            const s = makeFocusSuperstate();
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            expect(focusTabPointerDown(s, 1, { button: 2, ctrlKey: false })).toBe(false);
+
+            expect(isFocusModeActive(s)).toBe(true);
+        });
+
+        it("ctrl+click is a right click, not a switch", () => {
+            const s = makeFocusSuperstate();
+            enterFocusMode(s, [{ path: "Recipes/Soups" }]);
+
+            expect(focusTabPointerDown(s, 1, { button: 0, ctrlKey: true })).toBe(false);
+
+            expect(isFocusModeActive(s)).toBe(true);
+        });
+
+        it("right click only closes focus mode", () => {
+            const s = makeFocusSuperstate({ currentFocus: 0 });
+            enterFocusMode(s, [{ path: "Tools/Saw.md" }]);
+
+            expect(focusTabContextMenu(s)).toBe(true);
+
+            expect(isFocusModeActive(s)).toBe(false);
+            expect(s.settings.currentFocus).toBe(0);
+            expect(focusTabContextMenu(s)).toBe(false);
+        });
+
+        it("tab presses outside focus mode are left alone", () => {
+            const s = makeFocusSuperstate();
+
+            expect(focusTabPointerDown(s, 1, { button: 0, ctrlKey: false })).toBe(false);
+            expect(focusTabContextMenu(s)).toBe(false);
+
+            expect(s.settings.currentFocus).toBe(0);
+            expect(s.saveSettings).not.toHaveBeenCalled();
+        });
     });
 });

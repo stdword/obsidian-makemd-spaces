@@ -159,24 +159,23 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
         previousRowHeights.current = rowHeights;
     }, [rowHeights, rowVirtualizer]);
     vRef.current = rowVirtualizer;
-    const { saveActiveSpace, activeFocus, focuses, setFocuses } = useContext(NavigatorContext);
+    const { saveActiveSpace, updateCurrentFocus } = useContext(NavigatorContext);
     const updateFocusSeparator = (rank: number, duplicate: boolean) => {
-        setFocuses(focuses.map((focus, index) => {
-            if (index != activeFocus) return focus;
+        updateCurrentFocus((focus) => {
             const paths = [...focus.paths];
             if (!isSpaceSeparatorPath(paths[rank])) return focus;
             if (duplicate) paths.splice(rank + 1, 0, paths[rank]);
             else paths.splice(rank, 1);
             return { ...focus, paths };
-        }));
+        });
     };
     const setFocusSeparatorVisible = (rank: number, visible: boolean) => {
-        setFocuses(focuses.map((focus, index) => {
-            if (index != activeFocus || !isSpaceSeparatorPath(focus.paths[rank])) return focus;
+        updateCurrentFocus((focus) => {
+            if (!isSpaceSeparatorPath(focus.paths[rank])) return focus;
             const paths = [...focus.paths];
             paths[rank] = visible ? SPACE_SEPARATOR_PATH : SPACE_HIDDEN_SEPARATOR_PATH;
             return { ...focus, paths };
-        }));
+        });
     };
     const dropIndicatorVariant = (index: number): "line-top" | "line-bottom" | "box" | null => {
         if (dragAction?.visual.kind == "box" && flattenedTree[index]?.id == dragAction.visual.containerId) return "box";
