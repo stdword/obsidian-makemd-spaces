@@ -41,6 +41,8 @@ export type ContextMenuTarget = {
     saveSticker?: (emoji: string) => unknown;
     copyPath?: boolean;
     wrap?: { parentPath: string; initialName: string; each?: PathStateWithRank[] };
+    /** Reorders the selected items among themselves by name (custom-ordered spaces only). */
+    sortInPlace?: (asc: boolean) => unknown;
     duplicate?: () => unknown;
     rename?: { value: string; save: (value: string) => unknown };
     moveTo?: (link: string) => unknown;
@@ -153,6 +155,13 @@ export const menuItems = {
             icon: "lucide//folder-symlink",
             onClick: () => wrapEachPathInOwnFolder(t.superstate, t.wrap.each),
         }),
+    },
+    sortSelected: {
+        when: (t) => !!t.sortInPlace,
+        build: (t) => [
+            { name: i18n.menu.sortSelectedAsc, icon: "lucide//arrow-down-wide-narrow", onClick: () => t.sortInPlace(true) },
+            { name: i18n.menu.sortSelectedDesc, icon: "lucide//arrow-up-narrow-wide", onClick: () => t.sortInPlace(false) },
+        ],
     },
     duplicate: {
         when: (t) => !!t.duplicate,

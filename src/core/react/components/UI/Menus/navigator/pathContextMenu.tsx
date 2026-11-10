@@ -1,7 +1,7 @@
 import React from "react";
 import { savePathColor } from "core/utils/superstate/label";
 import { renamePathByName } from "core/utils/superstate/path";
-import { TreeNode, duplicatePathNextToOriginal, movePathToNewSpaceAtIndex, removePathsFromSpace, removeSpace } from "core/utils/superstate/spaces";
+import { TreeNode, duplicatePathNextToOriginal, isSpaceSortable, movePathToNewSpaceAtIndex, removePathsFromSpace, removeSpace, sortPathsInPlaceInSpace } from "core/utils/superstate/spaces";
 import { dropPathsInSpaceAtIndex } from "core/utils/dnd/dropPath";
 import { saveColorForPaths, saveIconsForPaths } from "core/utils/emoji";
 import { deletePath, movePathToSpace } from "core/utils/superstate/path";
@@ -36,6 +36,14 @@ const focusModeSources = (selectedPaths: TreeNode[], treeOrder?: string[]): Focu
         .map(({ node }) => ({ path: node.item.path, originKey: node.expandKey }));
 };
 
+// Offered when several rows of one custom-ordered space are selected.
+const sortInPlaceFor = (superstate: Superstate, selectedPaths: TreeNode[]): ContextMenuTarget["sortInPlace"] => {
+    const space = selectedPaths[0]?.space;
+    if (selectedPaths.length < 2 || !space || !selectedPaths.every((node) => node.space == space && node.depth > 0)) return undefined;
+    if (!isSpaceSortable(superstate.spacesIndex?.get(space), superstate.settings)) return undefined;
+    return (asc) => sortPathsInPlaceInSpace(superstate, space, selectedPaths.map((node) => node.item), asc);
+};
+
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent, treeOrder?: string[]) => {
     const paths = selectedPaths.map((s) => s.item.path);
 
@@ -62,6 +70,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         parent: displaySpaceCache,
         saveColor: hasLinkedFile ? undefined : (value) => saveColorForPaths(superstate, selectedPaths.map((s) => ({ path: s.item.path, space: s.space })), value),
         saveSticker: folderPaths.length > 0 ? (emoji) => saveIconsForPaths(superstate, folderPaths, emoji) : undefined,
+        sortInPlace: sortInPlaceFor(superstate, selectedPaths),
         wrap: sameParent ? { parentPath, initialName: "", each: selectedPaths.map((s) => s.item) } : undefined,
         moveTo: (link) => {
             paths.forEach((f) => {
@@ -86,6 +95,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         [menuItems.openInTab, menuItems.focusMode],
         [menuItems.changeColor, menuItems.changeSticker],
         [menuItems.pin, menuItems.wrapToFolder, menuItems.wrapEachToFolder],
+        [menuItems.sortSelected],
         [menuItems.moveTo, menuItems.linkTo],
         // hide (disabled in favor of per-focus exclusions).
         [menuItems.excludeFromFocus, menuItems.delete],
@@ -105,6 +115,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
         win,
         paths,
         saveColor: (value) => saveColorForPaths(superstate, paths, value),
+        sortInPlace: sortInPlaceFor(superstate, selectedPaths),
         linkTo: (link) => dropPathsInSpaceAtIndex(superstate, selectedPaths.map((f) => f.path), link, -1, "link"),
         excludeFromFocus: selectedPaths.every((item) => item.depth > 0),
         focusMode: focusModeSources(selectedPaths, treeOrder),
@@ -118,6 +129,7 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
     const menuOptions = buildContextMenu(target, [
         [menuItems.openInTab, menuItems.focusMode],
         [menuItems.changeColor],
+        [menuItems.sortSelected],
         [menuItems.linkTo],
         // hide (disabled in favor of per-focus exclusions).
         [menuItems.excludeFromFocus, menuItems.delete],

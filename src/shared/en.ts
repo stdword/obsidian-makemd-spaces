@@ -31,6 +31,8 @@ export const en = {
         moveFile: "Move to...",
         wrapToFolder: "Wrap to Folder",
         wrapEachToFolder: "Wrap Each to Folder",
+        sortSelectedAsc: "Sort A-Z",
+        sortSelectedDesc: "Sort Z-A",
         pinToTop: "Pin to Top",
         unpin: "Unpin",
         useAsFilter: "Use as Filter",

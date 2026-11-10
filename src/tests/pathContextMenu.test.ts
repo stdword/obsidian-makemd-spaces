@@ -1417,3 +1417,76 @@ describe("Focus Mode menu item", () => {
         expect(superstate.spaceManager.saveFocuses).not.toHaveBeenCalled();
     });
 });
+
+describe("sort selected items in place", () => {
+    const shelf = (sort: Record<string, any>, order: string[]) => {
+        const openMenu = jest.fn();
+        const saved: Record<string, any>[] = [];
+        const names = ["Walnut.md", "Fir.md", "Glue.md", "birch.md", "Clamps"];
+        const items = names.map((name) => ({ path: `Shelf/${name}`, name: name.replace(/\.md$/, ""), parent: "Shelf", type: name.includes(".") ? "file" : "space" }));
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map([["Shelf", { path: "Shelf", type: "folder", metadata: { sort, "rank-order": order, pinned: [] as string[] } }]]),
+            pathsIndex: new Map(),
+            getSpaceItems: jest.fn(() => items),
+            spaceManager: {
+                saveSpace: jest.fn((_path: string, update: (metadata: Record<string, any>) => Record<string, any>) => {
+                    saved.push(update({}));
+                    return Promise.resolve();
+                }),
+            },
+            updateSpaceMetadata: jest.fn(() => Promise.resolve()),
+            ui: { openMenu, openModal: jest.fn(), notify: jest.fn() },
+        };
+        const select = (...selected: string[]) =>
+            selected.map((name) => ({ item: items.find((item) => item.name == name), path: `Shelf/${name}`, space: "Shelf", depth: 1 }));
+        const event = { target: { getBoundingClientRect: jest.fn(() => ({})) }, view: { document: { defaultView: {} } } };
+        const open = (selection: any[]) => {
+            triggerMultiPathMenu(superstate as any, selection as any, event as any);
+            return openMenu.mock.calls[openMenu.mock.calls.length - 1][1].options as any[];
+        };
+        return { superstate, saved, select, open, event };
+    };
+    const customOrder = ["Shelf/Walnut.md", "Shelf/Fir.md", "Shelf/Glue.md", "Shelf/birch.md", "Shelf/Clamps"];
+
+    it("gathers a scattered selection at the first selected row, sorted Z to A", async () => {
+        const { saved, select, open, event } = shelf({ field: "rank" }, customOrder);
+        const options = open(select("birch", "Walnut", "Fir"));
+
+        await options.find((option) => option.name == i18n.menu.sortSelectedDesc).onClick(event);
+
+        expect(saved[0]["rank-order"]).toEqual(["Shelf/Walnut.md", "Shelf/Fir.md", "Shelf/birch.md", "Shelf/Glue.md", "Shelf/Clamps"]);
+    });
+
+    it("sorts A to Z ignoring case and leaves unselected rows where they were", async () => {
+        const { saved, select, open, event } = shelf({ field: "rank" }, customOrder);
+        const options = open(select("Clamps", "Fir", "birch"));
+
+        await options.find((option) => option.name == i18n.menu.sortSelectedAsc).onClick(event);
+
+        expect(saved[0]["rank-order"]).toEqual(["Shelf/Walnut.md", "Shelf/birch.md", "Shelf/Clamps", "Shelf/Fir.md", "Shelf/Glue.md"]);
+    });
+
+    it("places rows missing from the stored order after the stored ones before sorting", async () => {
+        const { saved, select, open, event } = shelf({ field: "rank" }, ["Shelf/Glue.md", "Shelf/Walnut.md"]);
+        const options = open(select("Walnut", "Clamps"));
+
+        await options.find((option) => option.name == i18n.menu.sortSelectedAsc).onClick(event);
+
+        expect(saved[0]["rank-order"]).toEqual(["Shelf/Glue.md", "Shelf/Clamps", "Shelf/Walnut.md", "Shelf/Fir.md", "Shelf/birch.md"]);
+    });
+
+    it("is offered only for a custom-ordered space and a selection within one space", () => {
+        const byName = shelf({ field: "name", asc: true }, customOrder);
+        const namesByName = byName.open(byName.select("Fir", "Glue")).map((option) => option.name);
+        expect(namesByName).not.toContain(i18n.menu.sortSelectedAsc);
+        expect(namesByName).not.toContain(i18n.menu.sortSelectedDesc);
+
+        const custom = shelf({ field: "rank" }, customOrder);
+        const mixed = [...custom.select("Fir"), { item: { path: "Attic/Rope.md", name: "Rope", parent: "Attic", type: "file" }, path: "Attic/Rope.md", space: "Attic", depth: 1 }];
+        expect(custom.open(mixed).map((option) => option.name)).not.toContain(i18n.menu.sortSelectedAsc);
+
+        const names = custom.open(custom.select("Fir", "Glue")).map((option) => option.name);
+        expect(names.indexOf(i18n.menu.sortSelectedDesc)).toBe(names.indexOf(i18n.menu.sortSelectedAsc) + 1);
+    });
+});
