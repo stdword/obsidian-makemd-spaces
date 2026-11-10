@@ -1,4 +1,5 @@
 import { constrainLinkedItemProjection, constrainSeparatorProjection, constrainTagSpaceProjection, dragModifierForActiveItem, isParentDropNoOp, isProjectionParentNoOp, resolveDragModifier, retrieveData, revealTreePath, separatorDropRank } from "core/react/components/Navigator/SpaceTree/SpaceTreeView";
+import { sectionExpandKey } from "core/utils/superstate/expandKeys";
 import { SPACE_HIDDEN_SEPARATOR_PATH, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 
 describe("focus-excluded navigator items", () => {
@@ -163,8 +164,8 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn(() => [child]),
         }) as any;
 
-        const manualTree = retrieveData(createSuperstate("rank"), [sectionPath], false, [sectionPath.path], []);
-        const alphabeticalTree = retrieveData(createSuperstate("name"), [sectionPath], false, [sectionPath.path], []);
+        const manualTree = retrieveData(createSuperstate("rank"), [sectionPath], false, [sectionExpandKey("", sectionPath.path)], []);
+        const alphabeticalTree = retrieveData(createSuperstate("name"), [sectionPath], false, [sectionExpandKey("", sectionPath.path)], []);
 
         expect(manualTree.find((node) => node.type == "separator")).toEqual(expect.objectContaining({
             path: SPACE_SEPARATOR_PATH,
@@ -196,7 +197,7 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn(() => [first, pinned]),
         } as any;
 
-        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], []);
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionExpandKey("", sectionPath.path)], []);
 
         expect(tree.filter((node) => node.parentId == sectionPath.path).map((node) => node.path)).toEqual([
             pinned.path,
@@ -255,7 +256,7 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn((path: string) => path == sectionPath.path ? children : []),
         } as any;
 
-        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], []);
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionExpandKey("", sectionPath.path)], []);
 
         expect(tree.filter((node) => node.parentId == sectionPath.path).map((node) => node.rank)).toEqual([0, 1, 2]);
     });
@@ -277,7 +278,7 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn(() => [child]),
         } as any;
 
-        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], []);
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionExpandKey("", sectionPath.path)], []);
         const separators = tree.filter((node) => node.type == "separator");
 
         expect(separators.map((node) => node.rank)).toEqual([1, 4]);
@@ -327,12 +328,68 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn((path: string) => path == parentPath.path ? [excludedPath] : path == excludedPath.path || path == linkedRootPath.path ? [child] : []),
         } as any;
 
-        const tree = retrieveData(superstate, [parentPath, linkedRootPath], false, [parentPath.path, excludedPath.path, linkedRootPath.path], [excludedPath.path]);
+        const tree = retrieveData(superstate, [parentPath, linkedRootPath], false, [sectionExpandKey("", parentPath.path), sectionExpandKey("", excludedPath.path), sectionExpandKey("", linkedRootPath.path)], [excludedPath.path]);
 
         expect(tree.some((node) => node.path == excludedPath.path)).toBe(false);
         expect(tree.filter((node) => node.path == child.path)).toEqual([
             expect.objectContaining({ space: linkedRootPath.path }),
         ]);
+    });
+
+    describe("expanded state of one folder shown three ways", () => {
+        const folder = (path: string, parent: string) => ({ path, name: path.split("/").pop(), parent, type: "space", subtype: "folder" }) as any;
+        const studio = folder("Studio", "");
+        const board = folder("Board", "");
+        const poems = folder("Studio/Poems", "Studio");
+        const haiku = folder("Studio/Poems/Haiku", "Studio/Poems");
+        const all = [studio, board, poems, haiku];
+        const children: Record<string, any[]> = { Studio: [poems], Board: [poems], "Studio/Poems": [haiku] };
+        const superstate = {
+            settings: {},
+            spacesIndex: new Map(all.map((item) => [item.path, { path: item.path, name: item.name, type: "folder", metadata: {}, space: {} }])),
+            pathStateForPath: jest.fn((path: string) => all.find((item) => item.path == path)),
+            getSpaceItems: jest.fn((path: string) => children[path] ?? []),
+        } as any;
+        const sections = [studio, board, poems];
+        const openSections = [sectionExpandKey("Writing", "Studio"), sectionExpandKey("Writing", "Board")];
+        const poemsRows = (expanded: string[]) =>
+            retrieveData(superstate, sections, false, [...openSections, ...expanded], [], "Writing")
+                .filter((node) => node.path == poems.path)
+                .map((node) => ({ under: node.parentId, collapsed: node.collapsed }));
+
+        it("starts with every appearance collapsed", () => {
+            expect(poemsRows([])).toEqual([
+                { under: "Studio", collapsed: true },
+                { under: "Board", collapsed: true },
+                { under: null, collapsed: true },
+            ]);
+        });
+
+        it("expands the folder itself without expanding its link or its section", () => {
+            expect(poemsRows(["Studio/Poems"]).map((row) => row.collapsed)).toEqual([false, true, true]);
+        });
+
+        it("expands the link without expanding the folder or its section", () => {
+            expect(poemsRows(["Board/?link=Studio/Poems"]).map((row) => row.collapsed)).toEqual([true, false, true]);
+        });
+
+        it("expands the section only in the focus it belongs to", () => {
+            expect(poemsRows([sectionExpandKey("Writing", "Studio/Poems")]).map((row) => row.collapsed)).toEqual([true, true, false]);
+            expect(poemsRows([sectionExpandKey("Reading", "Studio/Poems")]).map((row) => row.collapsed)).toEqual([true, true, true]);
+        });
+
+        it("shares the state of a folder below the link with that folder everywhere", () => {
+            const tree = retrieveData(superstate, sections, false, [...openSections, "Studio/Poems", "Board/?link=Studio/Poems", "Studio/Poems/Haiku"], [], "Writing");
+
+            expect(tree.filter((node) => node.path == haiku.path).map((node) => node.collapsed)).toEqual([false, false]);
+        });
+
+        it("gives every row its own id while the same folder keeps one path", () => {
+            const rows = retrieveData(superstate, sections, false, openSections, [], "Writing").filter((node) => node.path == poems.path);
+
+            expect(new Set(rows.map((node) => node.id)).size).toBe(3);
+            expect(new Set(rows.map((node) => node.expandKey)).size).toBe(3);
+        });
     });
 
     it("keeps a child of an excluded folder when a tag space displays it", () => {
@@ -350,7 +407,7 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn((path: string) => path == parentPath.path ? [excludedPath] : path == excludedPath.path || path == tagPath.path ? [child] : []),
         } as any;
 
-        const tree = retrieveData(superstate, [parentPath, tagPath], false, [parentPath.path, excludedPath.path, tagPath.path], [excludedPath.path]);
+        const tree = retrieveData(superstate, [parentPath, tagPath], false, [sectionExpandKey("", parentPath.path), sectionExpandKey("", excludedPath.path), sectionExpandKey("", tagPath.path)], [excludedPath.path]);
 
         expect(tree.filter((node) => node.path == child.path)).toEqual([
             expect.objectContaining({ space: tagPath.path }),
@@ -368,7 +425,7 @@ describe("focus-excluded navigator items", () => {
             getSpaceItems: jest.fn(() => [child]),
         } as any;
 
-        const tree = retrieveData(superstate, [sectionPath], false, [sectionPath.path], [sectionPath.path]);
+        const tree = retrieveData(superstate, [sectionPath], false, [sectionExpandKey("", sectionPath.path)], [sectionPath.path]);
 
         expect(tree).toEqual(expect.arrayContaining([
             expect.objectContaining({ path: sectionPath.path, depth: 0, type: "group" }),
@@ -382,11 +439,20 @@ describe("focus-excluded navigator items", () => {
             "Archive",
             "Dashboard",
             "spaces://#reading",
-        ]);
+        ], "Reading");
 
         expect(route).toEqual({
-            openPaths: ["Archive/Novels", "Archive/Novels/Archive/Novels/Example Book.md"],
+            openKeys: [sectionExpandKey("Reading", "Archive/Novels")],
             targetId: "Archive/Novels/Archive/Novels/Example Book.md",
+        });
+    });
+
+    it("opens every folder on the way to a path deep inside the vault root section", () => {
+        const route = revealTreePath("Archive/Novels/Example Book.md", ["/", "Dashboard"], "Reading");
+
+        expect(route).toEqual({
+            openKeys: [sectionExpandKey("Reading", "/"), "Archive", "Archive/Novels"],
+            targetId: "//Archive/Archive/Novels/Archive/Novels/Example Book.md",
         });
     });
 });

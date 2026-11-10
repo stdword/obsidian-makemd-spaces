@@ -15,7 +15,8 @@ import { removeFocusModePath, renameFocusModePath } from "core/utils/superstate/
 import { IndexMap } from "shared/types/indexMap";
 import { FilesystemSpaceInfo, PathState, SpaceState } from "shared/types/PathState";
 import { LocalCachePersister } from "shared/types/persister";
-import { MakeMDSettings, renameExpandedSpacePaths } from "shared/types/settings";
+import { MakeMDSettings } from "shared/types/settings";
+import { renameExpandKeys, renameFocusInExpandKeys, sectionExpandKey } from "core/utils/superstate/expandKeys";
 import { SpaceDefinition } from "shared/types/spaceDef";
 import { orderArrayByArrayWithKey, uniq } from "utils/array";
 import { EventDispatcher } from "utils/dispatcher";
@@ -153,6 +154,27 @@ const replacePathInFileColors = (fileColors: Record<string, string> = {}, oldPat
         };
     }, {});
 
+const pathIsUnder = (path: string, root: string) => path == root || path.startsWith(`${root}/`);
+const movePathUnder = (path: string, oldRoot: string, newRoot: string) => (pathIsUnder(path, oldRoot) ? newRoot + path.slice(oldRoot.length) : path);
+
+/** Stored paths of the renamed folder and of everything inside it; null when the space holds none. */
+const spaceMetadataAfterFolderRename = (space: SpaceState, oldPath: string, newPath: string): Partial<SpaceDefinition> | null => {
+    const metadata = space.metadata ?? {};
+    const move = (path: string) => movePathUnder(path, oldPath, newPath);
+    const links = ensureArray(metadata.links);
+    const rankOrder = ensureArray(metadata["rank-order"]);
+    const pinned = ensureArray(metadata.pinned);
+    const fileColors = metadata["file-colors"] ?? {};
+    const next = {
+        links: uniq(links.map((link: string) => (sameTagSpaceLink(link, oldPath) ? replaceTagSpaceLinkPath(link, newPath) : move(link)))),
+        "rank-order": uniqueRankOrder(rankOrder.map(move)),
+        pinned: replaceOrUnpinMovedPath(pinned, oldPath, newPath, space.path).map(move),
+        "file-colors": Object.keys(fileColors).reduce<Record<string, string>>((acc, key) => ({ ...acc, [move(key)]: fileColors[key] }), {}),
+    };
+    const changed = !_.isEqual(next.links, links) || !_.isEqual(next["rank-order"], rankOrder) || !_.isEqual(next.pinned, pinned) || !_.isEqual(next["file-colors"], fileColors);
+    return changed ? next : null;
+};
+
 export class Superstate implements ISuperstate {
     private initializing = false;
     public static create(indexVersion: string, onChange: () => void, spaceManager: SpaceManager, uiManager: UIManager): Superstate {
@@ -166,9 +188,30 @@ export class Superstate implements ISuperstate {
 
     public ui: UIManager;
 
+    private appliedExpandedRenames: { from: string; to: string }[] = [];
+
+    public onRenameBurstStart() {
+        this.appliedExpandedRenames = [];
+    }
+
+    // A folder rename moves the state of its whole subtree at once, then the burst reports every
+    // descendant too. Replaying those would drop the moved state as stale leftovers at the destination.
+    private expandedRenameAlreadyApplied(oldPath: string, newPath: string) {
+        if (this.appliedExpandedRenames.some(({ from, to }) => pathIsUnder(oldPath, from) && movePathUnder(oldPath, from, to) == newPath)) return true;
+        this.appliedExpandedRenames.push({ from: oldPath, to: newPath });
+        return false;
+    }
+
+    /** True when the saved expanded rows changed. */
+    private renameTreeState(oldPath: string, newPath: string) {
+        if (this.expandedRenameAlreadyApplied(oldPath, newPath)) return false;
+        renameFocusModePath(this, oldPath, newPath);
+        return this.renameExpandedSpaces(oldPath, newPath);
+    }
+
     private renameExpandedSpaces(oldPath: string, newPath: string) {
         if (!this.settings) return false;
-        const expandedSpaces = renameExpandedSpacePaths(this.settings.expandedSpaces ?? [], oldPath, newPath);
+        const expandedSpaces = renameExpandKeys(this.settings.expandedSpaces ?? [], oldPath, newPath);
         if (expandedSpaces === this.settings.expandedSpaces) return false;
         this.settings.expandedSpaces = expandedSpaces;
         return true;
@@ -222,6 +265,18 @@ export class Superstate implements ISuperstate {
 
     public async initializeIndex() {
         await this.loadFromCache();
+    }
+
+    // Section expand keys carry the focus name.
+    public onFocusesSaved(previous: Focus[], next: Focus[]) {
+        if (!this.settings || previous.length != next.length) return;
+        const renamed = previous
+            .map((focus, index) => ({ from: focus.name, to: next[index].name }))
+            .filter(({ from, to }) => from != to && !next.some((focus) => focus.name == from) && !previous.some((focus) => focus.name == to));
+        if (renamed.length == 0) return;
+        this.settings.expandedSpaces = renamed.reduce((keys, { from, to }) => renameFocusInExpandKeys(keys, from, to), this.settings.expandedSpaces ?? []);
+        this.saveSettings?.(false);
+        this.dispatchEvent("settingsChanged", null);
     }
     public unload() {
         this.indexer.terminate();
@@ -311,6 +366,8 @@ export class Superstate implements ISuperstate {
         const spaceState = this.spacesIndex.get(spacePath);
         const currentOrder = ensureArray(spaceState?.metadata?.["rank-order"]);
         if (this.initializing) return currentOrder;
+        // Mid-burst the items mix old and new paths; trimming against them would drop the stored order.
+        if (this.spaceManager.isRenaming) return currentOrder;
         if (!spaceState || !["tag", "folder", "vault"].includes(spaceState.type)) return currentOrder;
         if (spaceState.type != "tag" && effectiveSpaceSort(spaceState.metadata?.sort, this.settings).field != "rank") return currentOrder;
         if (spaceState.type != "tag" && currentOrder.length == 0) return currentOrder;
@@ -488,6 +545,7 @@ export class Superstate implements ISuperstate {
         const allFocuses = await this.spaceManager.readFocuses();
         if (allFocuses.length == 0) {
             const display = pathDisplayInfo("/");
+            if (this.settings) this.settings.expandedSpaces = [...(this.settings.expandedSpaces ?? []), sectionExpandKey(display.title, "/")];
             this.spaceManager.saveFocuses([{
                     name: display.title,
                     sticker: display.icon,
@@ -718,8 +776,7 @@ export class Superstate implements ISuperstate {
                 focusChanged = true;
             }
         });
-        renameFocusModePath(this, oldPath, newPath);
-        const expandedSpacesChanged = this.renameExpandedSpaces(oldPath, newPath);
+        const expandedSpacesChanged = this.renameTreeState(oldPath, newPath);
         const focusesSave = focusChanged ? this.spaceManager.saveFocuses(this.focuses) : Promise.resolve();
         const settingsSave = expandedSpacesChanged && this.saveSettings ? this.saveSettings(false) : Promise.resolve();
         if (expandedSpacesChanged) this.dispatchEvent("settingsChanged", null);
@@ -823,22 +880,16 @@ export class Superstate implements ISuperstate {
 
     public async onSpaceRenamed(oldPath: string, newSpaceInfo: SpaceState) {
         if (this.spacesIndex.has(oldPath)) {
-            const referencingSpaces = [...this.spacesIndex.values()].filter((space) =>
-                space.path != oldPath && (
-                    ensureArray(space.metadata?.links).some((link) => sameTagSpaceLink(link, oldPath)) ||
-                    ensureArray(space.metadata?.["rank-order"]).includes(oldPath) ||
-                    ensureArray(space.metadata?.pinned).includes(oldPath) ||
-                    Object.prototype.hasOwnProperty.call(space.metadata?.["file-colors"] ?? {}, oldPath)
-                )
-            );
-            for (const space of referencingSpaces) {
-                const metadata = {
-                    ...space.metadata,
-                    links: ensureArray(space.metadata?.links).map((link) => sameTagSpaceLink(link, oldPath) ? replaceTagSpaceLinkPath(link, newSpaceInfo.path) : link),
-                    "rank-order": replacePathInRankOrder(space.metadata?.["rank-order"], oldPath, newSpaceInfo.path),
-                    pinned: replaceOrUnpinMovedPath(space.metadata?.pinned, oldPath, newSpaceInfo.path, space.path),
-                    "file-colors": replacePathInFileColors(space.metadata?.["file-colors"], oldPath, newSpaceInfo.path),
-                };
+            for (const space of [...this.spacesIndex.values()]) {
+                const changes = spaceMetadataAfterFolderRename(space, oldPath, newSpaceInfo.path);
+                if (!changes) continue;
+                const metadata = { ...space.metadata, ...changes };
+                if (pathIsUnder(space.path, oldPath)) {
+                    // Already at the new location on disk, but indexed under the old path until its own event.
+                    this.spacesIndex.set(space.path, { ...space, metadata });
+                    await this.spaceManager.saveSpace(movePathUnder(space.path, oldPath, newSpaceInfo.path), (stored) => ({ ...stored, ...changes }));
+                    continue;
+                }
                 const folderPath = space.space?.folderPath ?? space.path;
                 if (space.type == "tag" || await this.spaceManager.pathExists(folderPath))
                     await saveSpaceCache(this, space, metadata);
@@ -865,7 +916,10 @@ export class Superstate implements ISuperstate {
             focusChanged = true;
         });
         if (focusChanged) await this.spaceManager.saveFocuses(this.focuses);
-        renameFocusModePath(this, oldPath, newSpaceInfo.path);
+        if (this.renameTreeState(oldPath, newSpaceInfo.path)) {
+            this.dispatchEvent("settingsChanged", null);
+            await this.saveSettings?.(false);
+        }
     }
     public async onSpaceDeleted(space: string) {
         if (this.spacesIndex.has(space)) {

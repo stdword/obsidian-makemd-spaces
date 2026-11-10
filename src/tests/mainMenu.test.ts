@@ -2,6 +2,7 @@ jest.mock("main", () => jest.fn());
 jest.mock("obsidian", () => ({}), { virtual: true });
 
 import { showMainMenu } from "adapters/obsidian/ui/showMainMenu";
+import { sectionExpandKey } from "core/utils/superstate/expandKeys";
 import i18n from "shared/i18n";
 import { SelectOptionType } from "shared/types/menu";
 
@@ -98,7 +99,7 @@ describe("showMainMenu", () => {
 
             click(i18n.menu.expandAllSections);
 
-            expect(superstate.focusMode.expandedSpaces).toEqual(["Wine/Red", "Boxes/Toys"]);
+            expect(superstate.focusMode.expandedSpaces).toEqual([sectionExpandKey("", "Wine/Red"), sectionExpandKey("", "Boxes/Toys")]);
             expect(superstate.settings.expandedSpaces).toEqual(["Wine"]);
         });
     });

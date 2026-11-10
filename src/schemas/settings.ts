@@ -3,7 +3,7 @@ import { MakeMDSettings } from "shared/types/settings";
 export const DEFAULT_SETTINGS: MakeMDSettings = {
     // state, not settings
     currentFocus: 0,
-    expandedSpaces: ["/"],
+    expandedSpaces: [],
 
     hiddenExtensions: [".mdb"],
     hiddenFiles: [],

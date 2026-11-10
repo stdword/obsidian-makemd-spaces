@@ -1,7 +1,8 @@
 import { defaultMenu, menuSeparator } from "core/react/components/UI/Menus/menu/SelectionMenu";
 import { ExcludedFiles } from "core/react/components/UI/Modals/ExcludedFiles";
 import { HiddenPaths } from "core/react/components/UI/Modals/HiddenFiles";
-import { FOCUS_MODE_INDEX, currentFocus, currentFocusIndex, exitFocusMode, focusAtIndex, isFocusModeActive, setCurrentExpandedSpaces } from "core/utils/superstate/focusMode";
+import { sectionExpandKey } from "core/utils/superstate/expandKeys";
+import { FOCUS_MODE_INDEX, currentFocus, currentFocusIndex, exitFocusMode, focusAtIndex, isFocusModeActive, currentExpandedSpaces, setCurrentExpandedSpaces } from "core/utils/superstate/focusMode";
 import MakeMDPlugin from "main";
 import { SelectOption, Superstate } from "makemd-core";
 import React from "react";
@@ -18,7 +19,10 @@ export const showMainMenu = (el: HTMLElement, superstate: Superstate, _plugin: M
     }
 
     const toggleSections = (collapse: boolean) => {
-        setCurrentExpandedSpaces(superstate, collapse ? [] : currentFocus(superstate)?.paths ?? [], true);
+        const focus = currentFocus(superstate);
+        const sectionKeys = (focus?.paths ?? []).map((path) => sectionExpandKey(focus.name, path));
+        const others = currentExpandedSpaces(superstate).filter((key) => !sectionKeys.includes(key));
+        setCurrentExpandedSpaces(superstate, collapse ? others : [...others, ...sectionKeys], true);
     };
 
     const menuOptions: SelectOption[] = [];

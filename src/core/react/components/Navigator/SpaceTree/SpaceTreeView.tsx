@@ -22,6 +22,7 @@ import { VirtualizedList } from "./SpaceTreeVirtualized";
 import { isFilter, isSpaceSeparatorPath, isTagTreeItemPath, SPACE_SEPARATOR_PATH } from "schemas/builtin";
 import { isPathExcludedFromFocus, addPathsToFocus, excludedPathsForFocus } from "core/utils/superstate/focus";
 import { currentExpandedSpaces, isFocusModeActive, setCurrentExpandedSpaces } from "core/utils/superstate/focusMode";
+import { childExpandKey, sectionExpandKey } from "core/utils/superstate/expandKeys";
 
 interface SpaceTreeComponentProps {
     superstate: Superstate;
@@ -122,12 +123,12 @@ export const separatorDropRank = (projection: DragProjection, target: TreeNode |
     return Math.max(0, baseRank + (projection.linePosition == "bottom" ? 1 : 0));
 };
 
-const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], excludedPaths: string[], pinned?: boolean, inheritedFilterFolderPath?: string) => {
+const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, depth: number, parentId: string, hideSectionChildren: boolean, sortable: boolean, section: boolean, parentPath: string, sort: SpaceSort, expandedSpaces: string[], excludedPaths: string[], pinned?: boolean, inheritedFilterFolderPath?: string, focusName = "") => {
     const tree: TreeNode[] = [];
-    const id = parentId ? parentId + "/" + space.path : space.path;
+    const expandKey = section ? sectionExpandKey(focusName, space.path) : childExpandKey(parentPath, space.path);
     // Only check expandedSpaces - don't force collapse based on activeId
     // This fixes the issue where folders with folder notes couldn't be expanded
-    const spaceCollapsed = !expandedSpaces.includes(id);
+    const spaceCollapsed = !expandedSpaces.includes(expandKey);
     const parentSort = effectiveSpaceSort(sort, superstate.settings);
     const spaceSort = childSpaceSort(space.metadata?.sort, parentSort, superstate.settings);
     const childrenSortable = isSpaceSortable(space, superstate.settings);
@@ -158,6 +159,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
                 item: pathIndex,
                 rank: null,
                 collapsed: spaceCollapsed,
+                expandKey,
                 sortable: childrenSortable,
                 childrenCount: children.length,
                 folderCount,
@@ -170,6 +172,7 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     } else {
         tree.push({
             ...spaceToTreeNode(path, spaceCollapsed, sortable, depth, parentId, parentPath, children.length, spaceSort, pinned),
+            expandKey,
             folderCount,
             fileCount,
             folderNotePath,
@@ -224,8 +227,9 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
             const pinned = isPathPinnedInSpace(space, item.path);
             const rankedItem = { ...item, rank: rankIndex };
             if (item.type != "space") {
-                const itemCollapsed = section ? !expandedSpaces.includes(_parentId + "/" + item.path) : true;
-                tree.push(pathStateToTreeNode(superstate, rankedItem, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned));
+                const itemExpandKey = childExpandKey(space.path, item.path);
+                const itemCollapsed = section ? !expandedSpaces.includes(itemExpandKey) : true;
+                tree.push({ ...pathStateToTreeNode(superstate, rankedItem, space.path, item.path, depth + 1, 0, itemCollapsed, childrenSortable, 0, _parentId, pinned), expandKey: itemExpandKey });
             } else {
                 if (superstate.spacesIndex.has(item.path)) {
                     tree.push(...treeForSpace(superstate, superstate.spacesIndex.get(item.path), rankedItem, depth + 1, _parentId, hideSectionChildren, childrenSortable, false, space.path, spaceSort, expandedSpaces, excludedPaths, pinned, filterFolderPath));
@@ -236,12 +240,12 @@ const treeForSpace = (superstate: Superstate, space: SpaceState, path: PathState
     return tree;
 };
 
-const treeForSection = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, hideSectionChildren: boolean, expandedSpaces: string[], excludedPaths: string[]) => {
+const treeForSection = (superstate: Superstate, space: SpaceState, path: PathStateWithRank, hideSectionChildren: boolean, expandedSpaces: string[], excludedPaths: string[], focusName: string) => {
     const spaceSort = effectiveSpaceSort(space.metadata?.sort, superstate.settings);
-    return treeForSpace(superstate, space, path, 0, null, hideSectionChildren, false, true, space.path, spaceSort, expandedSpaces, excludedPaths);
+    return treeForSpace(superstate, space, path, 0, null, hideSectionChildren, false, true, space.path, spaceSort, expandedSpaces, excludedPaths, undefined, undefined, focusName);
 };
 
-export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[], excludedPaths: string[]) => {
+export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState[], hideSectionChildren: boolean, expandedSpaces: string[], excludedPaths: string[], focusName = "") => {
     const tree: TreeNode[] = [];
     activeViewSpaces
         .filter((f) => f)
@@ -261,7 +265,7 @@ export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState
                     type: "separator",
                 });
             } else if (superstate.spacesIndex.has(item.path)) {
-                tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, hideSectionChildren, expandedSpaces, excludedPaths));
+                tree.push(...treeForSection(superstate, superstate.spacesIndex.get(item.path), item, hideSectionChildren, expandedSpaces, excludedPaths, focusName));
             } else {
                 tree.push({
                     ...pathStateToTreeNode(superstate, item, null, item.path, 0, 0, false, false, 0, null),
@@ -285,7 +289,7 @@ export const retrieveData = (superstate: Superstate, activeViewSpaces: PathState
     return tree;
 };
 
-export const revealTreePath = (path: string, sectionPaths: string[]) => {
+export const revealTreePath = (path: string, sectionPaths: string[], focusName = "") => {
     const sectionPath = sectionPaths
         .filter((candidate) => candidate == "/" || path === candidate || path.startsWith(`${candidate}/`))
         .sort((a, b) => b.length - a.length)[0];
@@ -293,17 +297,14 @@ export const revealTreePath = (path: string, sectionPaths: string[]) => {
 
     const folders = path.split("/");
     const pathLevel = sectionPath.split("/").filter((part) => part.length > 0).length;
-    const openPaths = folders.reduce(
-        (paths, _part, index) => [
-            ...paths,
-            ...(index < pathLevel
-                ? []
-                : [index == 0 ? `//${folders[0]}` : `${paths[paths.length - 1]}/${folders.slice(0, index + 1).join("/")}`]),
-        ],
-        [sectionPath],
-    );
+    const walked = folders.slice(pathLevel).map((_part, index) => folders.slice(0, pathLevel + index + 1).join("/"));
+    const rowIds = walked.reduce((ids, folder) => [...ids, `${ids[ids.length - 1]}/${folder}`], [sectionPath]);
 
-    return { openPaths, targetId: openPaths[openPaths.length - 1] };
+    return {
+        // The target row itself stays as it was.
+        openKeys: [sectionExpandKey(focusName, sectionPath), ...walked].slice(0, -1),
+        targetId: rowIds[rowIds.length - 1],
+    };
 };
 
 export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
@@ -349,8 +350,8 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
     const hideSectionChildren = active != null && active.parentId == null;
     const excludedPaths = excludedPathsForFocus(currentFocus);
     const computedFlattenedTree = useMemo(
-        () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths),
-        [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths, treeVersion],
+        () => retrieveData(superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths, currentFocus?.name),
+        [superstate, activeViewSpaces, hideSectionChildren, expandedSpaces, excludedPaths, treeVersion, currentFocus?.name],
     );
     const stableFlattenedTree = useRef<TreeNode[]>(computedFlattenedTree);
     if (!superstate.spaceManager.isRenaming) stableFlattenedTree.current = computedFlattenedTree;
@@ -409,12 +410,12 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const revealPath = useCallback(
         (path: string) => {
-            const route = revealTreePath(path, activeViewSpaces.map((space) => space.path));
+            const route = revealTreePath(path, activeViewSpaces.map((space) => space.path), currentFocus?.name);
             if (!route) return false;
 
             const newOpenFolders = [
-                ...expandedSpaces.filter((expandedPath) => !route.openPaths.includes(expandedPath)),
-                ...route.openPaths.slice(0, -1),
+                ...expandedSpaces.filter((expandedKey) => !route.openKeys.includes(expandedKey)),
+                ...route.openKeys,
             ];
 
             setExpandedSpaces(newOpenFolders);
@@ -422,7 +423,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
             nextTreeScrollPath.current = route.targetId;
             return true;
         },
-        [expandedSpaces, activeViewSpaces],
+        [expandedSpaces, activeViewSpaces, currentFocus?.name],
     );
 
     useEffect(() => {
@@ -804,8 +805,10 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
 
     const handleCollapse = useCallback(
         (folder: TreeNode, open: boolean) => {
-            const folderOpen = expandedSpaces?.includes(folder.id);
-            const newOpenFolders: string[] = !folderOpen || open ? ([...expandedSpaces, folder.id] as string[]) : (expandedSpaces.filter((openFolder) => folder.id !== openFolder) as string[]);
+            const key = folder.expandKey;
+            if (!key) return;
+            const folderOpen = expandedSpaces?.includes(key);
+            const newOpenFolders: string[] = !folderOpen || open ? Array.from(new Set([...expandedSpaces, key])) : expandedSpaces.filter((openKey) => key !== openKey);
             setExpandedSpaces(newOpenFolders);
             setCurrentExpandedSpaces(superstate, newOpenFolders);
         },

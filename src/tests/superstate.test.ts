@@ -10,6 +10,7 @@ import { isSpaceSortable, spaceSortFn } from "core/utils/superstate/spaces";
 import { saveColorForPaths } from "core/utils/emoji";
 import { addTag, mergeTagSpaceMetadata, syncTagSpacesFromObsidian } from "core/utils/superstate/tags";
 import { SPACE_SEPARATOR_PATH, tagSpacePathFromTag } from "schemas/builtin";
+import { linkExpandKey, sectionExpandKey } from "core/utils/superstate/expandKeys";
 
 const createSuperstate = () => {
     const spaceManager = {
@@ -1835,6 +1836,210 @@ describe("Superstate tag initialization", () => {
 
         expect(superstate.spaceManager.saveSpace).not.toHaveBeenCalledWith(staleParent.path, expect.any(Function));
         expect(superstate.spacesIndex.get(staleParent.path).metadata["rank-order"]).toEqual([newPath]);
+    });
+
+    describe("expand keys in settings", () => {
+        it("opens the only section of the focus created for a fresh vault", async () => {
+            const { superstate, spaceManager } = createSuperstate();
+            (spaceManager as any).saveFocuses = jest.fn((focuses: any[]) => { superstate.focuses = focuses; });
+            superstate.settings = { expandedSpaces: [] };
+
+            await superstate.initializeFocuses();
+
+            expect(superstate.settings.expandedSpaces).toEqual([sectionExpandKey(superstate.focuses[0].name, "/")]);
+        });
+
+        it("keeps sections expanded when their focus is renamed, and ignores a reorder", () => {
+            const { superstate } = createSuperstate();
+            const keys = [sectionExpandKey("Writing", "Studio"), sectionExpandKey("Reading", "Shelf")];
+            superstate.settings = { expandedSpaces: keys };
+            superstate.saveSettings = jest.fn(() => Promise.resolve());
+            const writing = { name: "Writing", sticker: "", paths: ["Studio"] };
+            const reading = { name: "Reading", sticker: "", paths: ["Shelf"] };
+
+            superstate.onFocusesSaved([writing, reading], [reading, writing]);
+            expect(superstate.settings.expandedSpaces).toEqual(keys);
+
+            superstate.onFocusesSaved([writing, reading], [{ ...writing, name: "Drafting" }, reading]);
+            expect(superstate.settings.expandedSpaces).toEqual([sectionExpandKey("Drafting", "Studio"), sectionExpandKey("Reading", "Shelf")]);
+        });
+    });
+
+    describe("folder move keeps stored paths", () => {
+        const folderSpace = (path: string, metadata: Record<string, any>) => ({
+            type: "folder",
+            name: path.split("/").pop(),
+            path,
+            metadata: { links: [], "rank-order": [], pinned: [], "file-colors": {}, ...metadata },
+            space: { folderPath: path, defPath: `${path}/.space/context.json`, notePath: "" },
+        }) as any;
+        const movedInfo = (space: any, path: string) => ({
+            ...space,
+            name: path.split("/").pop(),
+            path,
+            space: { ...space.space, folderPath: path, defPath: `${path}/.space/context.json` },
+        });
+        // Applies the updater the plugin handed to saveSpace for `path`, as the adapter would on disk.
+        const savedDefinition = (superstate: any, path: string, stored: Record<string, any>) =>
+            superstate.spaceManager.saveSpace.mock.calls
+                .filter(([savedPath]: [string]) => savedPath == path)
+                .reduce((definition: Record<string, any>, [, update]: [string, (def: any) => any]) => update(definition), stored);
+        const setup = (spaces: any[]) => {
+            const { superstate } = createSuperstate();
+            spaces.forEach((space) => superstate.spacesIndex.set(space.path, space));
+            superstate.spaceManager.pathExists.mockResolvedValue(true);
+            superstate.reloadSpace = jest.fn(async (space: any, metadata: any) => {
+                const next = { ...space, metadata: metadata ?? space.metadata };
+                superstate.spacesIndex.set(space.path, next);
+                return next;
+            });
+            superstate.onSpaceDefinitionChanged = jest.fn(() => Promise.resolve());
+            return superstate;
+        };
+
+        it("rewrites the moved folder's own manual order, pins and colors", async () => {
+            const stored = {
+                sort: { field: "rank", asc: true },
+                "rank-order": ["Garden/Beds/Tulips.md", SPACE_SEPARATOR_PATH, "Garden/Beds/Roses.md", "Garden/Beds/Herbs"],
+                pinned: ["Garden/Beds/Roses.md"],
+                "file-colors": { "Garden/Beds/Tulips.md": "red" },
+            };
+            const beds = folderSpace("Garden/Beds", stored);
+            const superstate = setup([folderSpace("Garden", {}), folderSpace("Shed", {}), beds]);
+
+            await superstate.onSpaceRenamed("Garden/Beds", movedInfo(beds, "Shed/Beds"));
+
+            const expected = {
+                "rank-order": ["Shed/Beds/Tulips.md", SPACE_SEPARATOR_PATH, "Shed/Beds/Roses.md", "Shed/Beds/Herbs"],
+                pinned: ["Shed/Beds/Roses.md"],
+                "file-colors": { "Shed/Beds/Tulips.md": "red" },
+            };
+            expect(superstate.spacesIndex.get("Shed/Beds").metadata).toMatchObject(expected);
+            expect(savedDefinition(superstate, "Shed/Beds", stored)).toMatchObject(expected);
+            expect(superstate.spaceManager.saveSpace).not.toHaveBeenCalledWith("Garden/Beds", expect.any(Function));
+        });
+
+        it("rewrites the order of nested folders through the whole rename burst", async () => {
+            const beds = folderSpace("Garden/Beds", { "rank-order": ["Garden/Beds/Herbs", "Garden/Beds/Tulips.md"] });
+            const herbsStored = { "rank-order": ["Garden/Beds/Herbs/Mint.md", "Garden/Beds/Herbs/Basil.md"] };
+            const herbs = folderSpace("Garden/Beds/Herbs", herbsStored);
+            const superstate = setup([folderSpace("Garden", {}), beds, herbs]);
+
+            await superstate.onSpaceRenamed("Garden/Beds", movedInfo(beds, "Garden/Plots"));
+            await superstate.onSpaceRenamed("Garden/Beds/Herbs", movedInfo(herbs, "Garden/Plots/Herbs"));
+
+            expect(superstate.spacesIndex.get("Garden/Plots").metadata["rank-order"]).toEqual(["Garden/Plots/Herbs", "Garden/Plots/Tulips.md"]);
+            expect(superstate.spacesIndex.get("Garden/Plots/Herbs").metadata["rank-order"]).toEqual(["Garden/Plots/Herbs/Mint.md", "Garden/Plots/Herbs/Basil.md"]);
+            expect(savedDefinition(superstate, "Garden/Plots/Herbs", herbsStored)["rank-order"]).toEqual(["Garden/Plots/Herbs/Mint.md", "Garden/Plots/Herbs/Basil.md"]);
+        });
+
+        it("rewrites links, pins and colors that other spaces hold for items inside the moved folder", async () => {
+            const beds = folderSpace("Garden/Beds", {});
+            const stored = {
+                links: ["Garden/Beds/Tulips.md", "Garden/Beds/Herbs", "Kitchen/Recipe.md"],
+                "rank-order": ["Garden/Beds/Herbs", "Kitchen/Recipe.md", "Garden/Beds/Tulips.md"],
+                pinned: ["Garden/Beds/Tulips.md"],
+                "file-colors": { "Garden/Beds/Herbs": "green" },
+            };
+            const superstate = setup([folderSpace("Garden", {}), folderSpace("Shed", {}), beds, folderSpace("Kitchen", stored)]);
+
+            await superstate.onSpaceRenamed("Garden/Beds", movedInfo(beds, "Shed/Beds"));
+
+            const expected = {
+                links: ["Shed/Beds/Tulips.md", "Shed/Beds/Herbs", "Kitchen/Recipe.md"],
+                "rank-order": ["Shed/Beds/Herbs", "Kitchen/Recipe.md", "Shed/Beds/Tulips.md"],
+                pinned: ["Shed/Beds/Tulips.md"],
+                "file-colors": { "Shed/Beds/Herbs": "green" },
+            };
+            expect(superstate.spacesIndex.get("Kitchen").metadata).toMatchObject(expected);
+            expect(savedDefinition(superstate, "Kitchen", stored)).toMatchObject(expected);
+        });
+
+        it("keeps the manual order of a folder moved out to the vault root", async () => {
+            const stored = {
+                sort: { field: "rank", asc: true },
+                "rank-order": ["Архив/Заметки/Третья.md", "Архив/Заметки/Первая.md", "Архив/Заметки/Черновики"],
+            };
+            const notes = folderSpace("Архив/Заметки", stored);
+            const superstate = setup([folderSpace("/", { "rank-order": ["Архив", "Заметки"] }), folderSpace("Архив", { "rank-order": ["Архив/Заметки"] }), notes]);
+
+            await superstate.onSpaceRenamed("Архив/Заметки", movedInfo(notes, "Заметки"));
+
+            const expected = ["Заметки/Третья.md", "Заметки/Первая.md", "Заметки/Черновики"];
+            expect(superstate.spacesIndex.get("Заметки").metadata["rank-order"]).toEqual(expected);
+            expect(savedDefinition(superstate, "Заметки", stored)["rank-order"]).toEqual(expected);
+            expect(superstate.spacesIndex.get("/").metadata["rank-order"]).toEqual(["Архив", "Заметки"]);
+        });
+
+        it("keeps the moved folder and its subfolders expanded through the whole rename burst", async () => {
+            const drafts = folderSpace("Studio/Drafts", {});
+            const poems = folderSpace("Studio/Drafts/Poems", {});
+            const haiku = folderSpace("Studio/Drafts/Poems/Haiku", {});
+            const superstate = setup([folderSpace("Studio", {}), drafts, poems, haiku]);
+            superstate.settings = {
+                expandedSpaces: [
+                    sectionExpandKey("Writing", "Studio"),
+                    "Studio/Drafts",
+                    "Studio/Drafts/Poems",
+                    "Studio/Drafts/Poems/Haiku",
+                    linkExpandKey("Board", "Studio/Drafts/Poems/Haiku"),
+                ],
+            };
+            superstate.saveSettings = jest.fn(() => Promise.resolve());
+            // Obsidian reports the folder first, then every descendant; each folder event reaches both handlers.
+            const renameFolder = async (space: any, newPath: string) => {
+                await superstate.onSpaceRenamed(space.path, movedInfo(space, newPath));
+                await superstate.onPathRename(space.path, newPath);
+            };
+
+            await renameFolder(poems, "Studio/Poems");
+            await renameFolder(haiku, "Studio/Poems/Haiku");
+            await superstate.onPathRename("Studio/Drafts/Poems/Haiku/Frog.md", "Studio/Poems/Haiku/Frog.md");
+
+            expect(superstate.settings.expandedSpaces).toEqual([
+                sectionExpandKey("Writing", "Studio"),
+                "Studio/Drafts",
+                "Studio/Poems",
+                "Studio/Poems/Haiku",
+                linkExpandKey("Board", "Studio/Poems/Haiku"),
+            ]);
+        });
+
+        it("drops stale expanded state of the destination when a later burst renames onto it", async () => {
+            const drafts = folderSpace("Studio/Drafts", {});
+            const superstate = setup([folderSpace("Studio", {}), drafts]);
+            superstate.settings = { expandedSpaces: ["Studio", "Studio/Plans"] };
+            superstate.saveSettings = jest.fn(() => Promise.resolve());
+
+            await superstate.onSpaceRenamed("Studio/Drafts", movedInfo(drafts, "Studio/Plans"));
+            await superstate.onPathRename("Studio/Drafts", "Studio/Plans");
+
+            expect(superstate.settings.expandedSpaces).toEqual(["Studio"]);
+        });
+
+        it("leaves sibling folders sharing the name prefix untouched", async () => {
+            const beds = folderSpace("Garden/Beds", {});
+            const superstate = setup([folderSpace("Garden", { "rank-order": ["Garden/Beds", "Garden/Beds 2", "Garden/Beds 2/Lily.md"] }), beds]);
+
+            await superstate.onSpaceRenamed("Garden/Beds", movedInfo(beds, "Garden/Plots"));
+
+            expect(superstate.spacesIndex.get("Garden").metadata["rank-order"]).toEqual(["Garden/Plots", "Garden/Beds 2", "Garden/Beds 2/Lily.md"]);
+        });
+
+        it("does not trim a folder's manual order while a rename burst is still in flight", () => {
+            const superstate = setup([
+                folderSpace("Shed/Beds", { sort: { field: "rank", asc: true }, "rank-order": ["Shed/Beds/Tulips.md", "Shed/Beds/Roses.md"] }),
+            ]);
+            // Roses.md has not received its own rename event yet.
+            superstate.spacesMap.set("Shed/Beds/Tulips.md", new Set(["Shed/Beds"]));
+            superstate.spacesMap.set("Garden/Beds/Roses.md", new Set(["Shed/Beds"]));
+            superstate.spaceManager.isRenaming = true;
+
+            superstate.getSpaceItems("Shed/Beds");
+
+            expect(superstate.spacesIndex.get("Shed/Beds").metadata["rank-order"]).toEqual(["Shed/Beds/Tulips.md", "Shed/Beds/Roses.md"]);
+            expect(superstate.spaceManager.saveSpace).not.toHaveBeenCalled();
+        });
     });
 });
 

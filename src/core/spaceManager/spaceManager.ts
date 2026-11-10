@@ -17,6 +17,7 @@ type RenameQueueState = {
 const renameQueues = new WeakMap<SpaceManager, RenameQueueState>();
 const enqueueRename = (manager: SpaceManager, task: () => Promise<void>): Promise<void> => {
     const state = renameQueues.get(manager) ?? { queue: Promise.resolve(), pending: 0 };
+    if (state.pending == 0 && !state.settleTimer) manager.superstate.onRenameBurstStart?.();
     if (state.settleTimer) clearTimeout(state.settleTimer);
     state.settleTimer = undefined;
     state.pending += 1;
@@ -238,6 +239,7 @@ export class SpaceManager implements ISpaceManager {
         return this.primarySpaceAdapter.readFocuses();
     }
     public saveFocuses(focuses: Focus[]) {
+        this.superstate.onFocusesSaved?.(this.superstate.focuses ?? [], focuses);
         this.superstate.focuses = focuses;
         this.superstate.dispatchEvent("focusesChanged", null);
         return this.primarySpaceAdapter.saveFocuses(focuses);

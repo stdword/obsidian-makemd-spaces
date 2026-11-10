@@ -14,13 +14,18 @@ import {
     updateCurrentFocus,
 } from "core/utils/superstate/focusMode";
 import { SPACE_SEPARATOR_PATH } from "schemas/builtin";
+import { linkExpandKey, sectionExpandKey } from "core/utils/superstate/expandKeys";
 import { makeFocusSuperstate } from "./focusModeStub";
+
+// The temporary focus has no name.
+const tempSection = (path: string) => sectionExpandKey("", path);
+const kitchen = sectionExpandKey("Kitchen", "Recipes");
 
 describe("focus mode", () => {
     it("enters focus mode with the selected paths as sections", () => {
         const s = makeFocusSuperstate();
 
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }, { path: "Recipes/Soups" }, { path: "Tools/Saw.md" }]);
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }, { path: "Recipes/Soups" }, { path: "Tools/Saw.md" }]);
 
         expect(currentFocus(s).paths).toEqual(["Recipes/Soups", "Tools/Saw.md"]);
         expect(currentFocus(s)["excluded-paths"]).toBeUndefined();
@@ -38,12 +43,29 @@ describe("focus mode", () => {
     });
 
     it("keeps the collapsed state the items had before entry", () => {
-        const s = makeFocusSuperstate({ expandedSpaces: ["Recipes", "Recipes/Recipes/Soups"] });
+        const saved = [kitchen, "Recipes/Soups", "Recipes/Soups/Cold", linkExpandKey("Recipes/Soups", "Tools"), "Recipes/Salads"];
+        const s = makeFocusSuperstate({ expandedSpaces: saved });
 
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
 
-        expect(currentExpandedSpaces(s)).toEqual(["Recipes/Soups"]);
-        expect(s.settings.expandedSpaces).toEqual(["Recipes", "Recipes/Recipes/Soups"]);
+        expect(currentExpandedSpaces(s)).toEqual([tempSection("Recipes/Soups"), "Recipes/Soups/Cold", linkExpandKey("Recipes/Soups", "Tools")]);
+        expect(s.settings.expandedSpaces).toEqual(saved);
+    });
+
+    it("opens a section collapsed when its row was collapsed", () => {
+        const s = makeFocusSuperstate({ expandedSpaces: [kitchen, "Recipes/Soups/Cold"] });
+
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
+
+        expect(currentExpandedSpaces(s)).toEqual(["Recipes/Soups/Cold"]);
+    });
+
+    it("takes the state of the row that was picked, not of the same folder shown elsewhere", () => {
+        const s = makeFocusSuperstate({ expandedSpaces: ["Tools"] });
+
+        enterFocusMode(s, [{ path: "Tools", originKey: linkExpandKey("Recipes", "Tools") }]);
+
+        expect(currentExpandedSpaces(s)).toEqual([]);
     });
 
     it("changes inside focus mode never reach saveFocuses", async () => {
@@ -127,23 +149,34 @@ describe("focus mode", () => {
     });
 
     it("discards collapse changes on exit by default", async () => {
-        const s = makeFocusSuperstate({ expandedSpaces: ["Recipes", "Recipes/Recipes/Soups"] });
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
+        const s = makeFocusSuperstate({ expandedSpaces: [kitchen, "Recipes/Soups"] });
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
 
         setCurrentExpandedSpaces(s, []);
         await exitFocusMode(s);
 
-        expect(s.settings.expandedSpaces).toEqual(["Recipes", "Recipes/Recipes/Soups"]);
+        expect(s.settings.expandedSpaces).toEqual([kitchen, "Recipes/Soups"]);
     });
 
     it("writes collapse changes back when the setting is on", async () => {
-        const s = makeFocusSuperstate({ expandedSpaces: ["Recipes"], keepExpanded: true });
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
+        const s = makeFocusSuperstate({ expandedSpaces: [kitchen, "Recipes/Soups/Hot", "Recipes/Salads"], keepExpanded: true });
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
 
-        setCurrentExpandedSpaces(s, ["Recipes/Soups", "Recipes/Soups/Recipes/Soups/Cold"]);
+        setCurrentExpandedSpaces(s, [tempSection("Recipes/Soups"), "Recipes/Soups/Cold"]);
         await exitFocusMode(s);
 
-        expect(s.settings.expandedSpaces).toEqual(["Recipes", "Recipes/Recipes/Soups", "Recipes/Recipes/Soups/Recipes/Soups/Cold"]);
+        expect(s.settings.expandedSpaces).toEqual([kitchen, "Recipes/Salads", "Recipes/Soups", "Recipes/Soups/Cold"]);
+    });
+
+    it("writes a section's state back to the link it was picked from", async () => {
+        const link = linkExpandKey("Recipes", "Tools");
+        const s = makeFocusSuperstate({ expandedSpaces: ["Tools"], keepExpanded: true });
+        enterFocusMode(s, [{ path: "Tools", originKey: link }]);
+
+        setCurrentExpandedSpaces(s, [tempSection("Tools")]);
+        await exitFocusMode(s);
+
+        expect(s.settings.expandedSpaces).toEqual(["Tools", link]);
     });
 
     it("replacing focus mode keeps the original origin", async () => {
@@ -161,48 +194,59 @@ describe("focus mode", () => {
 
     it("carries collapse state through a replaced focus mode back to the regular tree", async () => {
         const s = makeFocusSuperstate({ keepExpanded: true });
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
-        enterFocusMode(s, [{ path: "Recipes/Soups/Hot", originId: "Recipes/Soups/Recipes/Soups/Hot" }]);
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
+        enterFocusMode(s, [{ path: "Recipes/Soups/Hot", originKey: "Recipes/Soups/Hot" }]);
 
-        setCurrentExpandedSpaces(s, ["Recipes/Soups/Hot"]);
+        setCurrentExpandedSpaces(s, [tempSection("Recipes/Soups/Hot")]);
         await exitFocusMode(s);
 
-        expect(s.settings.expandedSpaces).toEqual(["Recipes/Recipes/Soups/Recipes/Soups/Hot"]);
+        expect(s.settings.expandedSpaces).toEqual(["Recipes/Soups/Hot"]);
+    });
+
+    it("resolves a temporary section picked again to the row it first came from", async () => {
+        const s = makeFocusSuperstate({ keepExpanded: true });
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }, { path: "Tools", originKey: linkExpandKey("Recipes", "Tools") }]);
+        enterFocusMode(s, [{ path: "Tools", originKey: tempSection("Tools") }]);
+
+        setCurrentExpandedSpaces(s, [tempSection("Tools")]);
+        await exitFocusMode(s);
+
+        expect(s.settings.expandedSpaces).toEqual([linkExpandKey("Recipes", "Tools")]);
     });
 
     it("an item with no origin place leaves no collapse state behind", async () => {
         const s = makeFocusSuperstate({ keepExpanded: true });
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
         await updateCurrentFocus(s, (focus) => ({ ...focus, paths: [...focus.paths, "Tools"] }));
-        enterFocusMode(s, [{ path: "Tools", originId: "Tools" }]);
+        enterFocusMode(s, [{ path: "Tools", originKey: tempSection("Tools") }]);
 
-        setCurrentExpandedSpaces(s, ["Tools"]);
+        setCurrentExpandedSpaces(s, [tempSection("Tools")]);
         await exitFocusMode(s);
 
-        expect(s.settings.expandedSpaces).not.toContain("Tools");
+        expect(s.settings.expandedSpaces).toEqual([]);
     });
 
     it("renaming a temporary section keeps it in the tree", async () => {
-        const s = makeFocusSuperstate({ expandedSpaces: ["Recipes/Recipes/Soups"] });
-        enterFocusMode(s, [{ path: "Recipes/Soups", originId: "Recipes/Recipes/Soups" }]);
+        const s = makeFocusSuperstate({ expandedSpaces: ["Recipes/Soups"] });
+        enterFocusMode(s, [{ path: "Recipes/Soups", originKey: "Recipes/Soups" }]);
         await updateCurrentFocus(s, (focus) => ({ ...focus, "excluded-paths": ["Recipes/Soups/Cold"] }));
 
         renameFocusModePath(s, "Recipes/Soups", "Recipes/Broths");
 
         expect(currentFocus(s).paths).toEqual(["Recipes/Broths"]);
         expect(currentFocus(s)["excluded-paths"]).toEqual(["Recipes/Broths/Cold"]);
-        expect(currentExpandedSpaces(s)).toEqual(["Recipes/Broths"]);
-        expect(s.focusMode.origins).toEqual([{ path: "Recipes/Broths", originId: "Recipes/Recipes/Broths" }]);
+        expect(currentExpandedSpaces(s)).toEqual([tempSection("Recipes/Broths")]);
+        expect(s.focusMode.origins).toEqual([{ path: "Recipes/Broths", originKey: "Recipes/Broths" }]);
         expect(s.spaceManager.saveFocuses).not.toHaveBeenCalled();
     });
 
     it("keeps a section's place in the regular tree when an unrelated folder takes a matching name", () => {
         const s = makeFocusSuperstate();
-        enterFocusMode(s, [{ path: "Work/Notes", originId: "Work/Work/Notes" }]);
+        enterFocusMode(s, [{ path: "Work/Notes", originKey: "Work/Notes" }]);
 
         renameFocusModePath(s, "Archive", "Notes");
 
-        expect(s.focusMode.origins).toEqual([{ path: "Work/Notes", originId: "Work/Work/Notes" }]);
+        expect(s.focusMode.origins).toEqual([{ path: "Work/Notes", originKey: "Work/Notes" }]);
     });
 
     it("renaming a parent folder keeps a nested temporary section", () => {

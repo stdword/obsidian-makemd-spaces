@@ -33,7 +33,7 @@ const focusModeSources = (selectedPaths: TreeNode[], treeOrder?: string[]): Focu
     return selectedPaths
         .map((node, index) => ({ node, order: position.get(node.id) ?? treeOrder?.length ?? index, index }))
         .sort((a, b) => a.order - b.order || a.index - b.index)
-        .map(({ node }) => ({ path: node.item.path, originId: node.id }));
+        .map(({ node }) => ({ path: node.item.path, originKey: node.expandKey }));
 };
 
 export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: TreeNode[], e: React.MouseEvent | React.TouchEvent, treeOrder?: string[]) => {
@@ -128,12 +128,12 @@ export const triggerMultiPathMenuForTagSpace = (superstate: Superstate, selected
     return false;
 };
 
-export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void, depth = 0, nodeId?: string) => {
+export const showPathContextMenu = (superstate: Superstate, path: string, space: string, rect: Rect, win: Window, anchor?: Anchors, onClose?: () => void, depth = 0, expandKey?: string) => {
     const pathCache = superstate.pathStateForPath?.(path) ?? superstate.pathsIndex.get(path);
 
     if (!pathCache) return;
     if (pathCache.type == "space") {
-        showSpaceContextMenu(superstate, pathCache, rect, win, space, onClose, depth, nodeId);
+        showSpaceContextMenu(superstate, pathCache, rect, win, space, onClose, depth, expandKey);
         return;
     }
 
@@ -168,7 +168,7 @@ export const showPathContextMenu = (superstate: Superstate, path: string, space:
         nativeMenuPath: path,
         unlink: isLink && !parentIsTag ? () => removePathsFromSpace(superstate, parent.path, [path]) : undefined,
         excludeFromFocus: !isSection && !isLink,
-        focusMode: [{ path, originId: nodeId }],
+        focusMode: [{ path, originKey: expandKey }],
         remove: !isLink
             ? {
                   title: i18n.labels.deleteFile,

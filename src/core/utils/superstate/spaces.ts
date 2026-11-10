@@ -134,6 +134,7 @@ export interface TreeNode {
     folderCount?: number;
     fileCount?: number;
     collapsed: boolean;
+    expandKey?: string;
     rank: number;
     sort?: SpaceSort;
     pinned?: boolean;

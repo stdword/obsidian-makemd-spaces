@@ -3,6 +3,7 @@ import { SpaceSort } from "./spaceDef";
 export interface MakeMDSettings {
     // state, not settings
     currentFocus: number;
+    /** Expand keys, see core/utils/superstate/expandKeys. */
     expandedSpaces: string[];
 
     hiddenExtensions: string[];
@@ -26,18 +27,3 @@ export interface MakeMDSettings {
     searchMenuFilesLimit?: number;
     searchMenuRefsLimit?: number;
 }
-
-const escapedPathPattern = (path: string) => path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const expandedSpacePathPattern = (path: string) => new RegExp(`(^|/)${escapedPathPattern(path)}(?=$|/)`, "g");
-
-export const renameExpandedSpacePaths = (expandedSpaces: string[], oldPath: string, newPath: string) => {
-    const sourceEntries = expandedSpaces.filter((id) => expandedSpacePathPattern(oldPath).test(id));
-    const unaffectedEntries = expandedSpaces.filter((id) =>
-        !expandedSpacePathPattern(oldPath).test(id) && !expandedSpacePathPattern(newPath).test(id),
-    );
-    if (sourceEntries.length == 0 && unaffectedEntries.length == expandedSpaces.length) return expandedSpaces;
-
-    const oldPattern = expandedSpacePathPattern(oldPath);
-    const renamedEntries = sourceEntries.map((id) => id.replace(oldPattern, (_match, prefix) => `${prefix}${newPath}`));
-    return Array.from(new Set([...unaffectedEntries, ...renamedEntries]));
-};

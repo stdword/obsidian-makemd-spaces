@@ -2,16 +2,15 @@ import _ from "lodash";
 import { Superstate } from "makemd-core";
 import { isSpaceSeparatorPath } from "schemas/builtin";
 import { Focus, FocusModeState, renameFocusExcludedPaths } from "shared/types/focus";
-import { renameExpandedSpacePaths } from "shared/types/settings";
-import { ExpandedIdMapping, translateExpandedIds, writeBackExpandedIds } from "./expandedIds";
+import { expandKeysInside, parseExpandKey, renameExpandKeys, sectionExpandKey } from "./expandKeys";
 
 // Focus Mode is a temporary focus that lives only in memory: it is kept apart from
 // `superstate.focuses` (which is saved to focuses.json as a whole) and is addressed by this
 // sentinel index. `settings.currentFocus` keeps pointing at the regular focus to return to.
 export const FOCUS_MODE_INDEX = -1;
 
-/** A selected tree row: its path and, when known, the row id it had in the tree it was picked from. */
-export type FocusModeSource = { path: string; originId?: string };
+/** A selected tree row: its path and, when known, the expand key it had in the tree it was picked from. */
+export type FocusModeSource = { path: string; originKey?: string };
 
 const isUnder = (id: string, root: string) => id == root || id.startsWith(`${root}/`);
 
@@ -25,10 +24,20 @@ export const focusAtIndex = (superstate: Superstate, index: number): Focus | und
 
 export const currentFocus = (superstate: Superstate): Focus | undefined => focusAtIndex(superstate, currentFocusIndex(superstate));
 
+// A regular focus cannot be shown unnamed, so these section keys never collide with one.
+const FOCUS_MODE_NAME = "";
+const focusModeSectionKey = (path: string) => sectionExpandKey(FOCUS_MODE_NAME, path);
+
 const keepExpandedState = (superstate: Superstate) => {
     const { expandedSpaces, origins } = superstate.focusMode;
-    const mappings: ExpandedIdMapping[] = origins.map((origin) => ({ from: origin.path, to: origin.originId }));
-    superstate.settings.expandedSpaces = writeBackExpandedIds(superstate.settings.expandedSpaces ?? [], expandedSpaces, mappings);
+    const untouched = (superstate.settings.expandedSpaces ?? []).filter(
+        (key) => !origins.some((origin) => key == origin.originKey || expandKeysInside([key], origin.path).length > 0),
+    );
+    const carried = origins.flatMap((origin) => [
+        ...(expandedSpaces.includes(focusModeSectionKey(origin.path)) ? [origin.originKey] : []),
+        ...expandKeysInside(expandedSpaces, origin.path),
+    ]);
+    superstate.settings.expandedSpaces = Array.from(new Set([...untouched, ...carried]));
 };
 
 export const enterFocusMode = (superstate: Superstate, sources: FocusModeSource[]): void => {
@@ -36,17 +45,23 @@ export const enterFocusMode = (superstate: Superstate, sources: FocusModeSource[
     if (unique.length == 0) return;
 
     const previous = superstate.focusMode;
-    const placed = unique.filter((source) => source.originId != null);
-    const expandedSpaces = translateExpandedIds(
-        currentExpandedSpaces(superstate),
-        placed.map((source) => ({ from: source.originId, to: source.path })),
+    const placed = unique.filter((source) => source.originKey != null);
+    const current = currentExpandedSpaces(superstate);
+    const expandedSpaces = Array.from(
+        new Set(
+            placed.flatMap((source) => [
+                ...(current.includes(source.originKey) ? [focusModeSectionKey(source.path)] : []),
+                ...expandKeysInside(current, source.path),
+            ]),
+        ),
     );
-    // Inside Focus Mode a row id belongs to the temporary tree; resolve it to the regular
-    // tree through the section it sits under. Rows with no regular place have no origin.
+    // A temporary section picked again resolves to the regular row it first came from; any other
+    // row is keyed the same in both trees.
     const origins = placed.flatMap((source) => {
-        if (!previous) return [{ path: source.path, originId: source.originId }];
-        const section = previous.origins.find((origin) => isUnder(source.originId, origin.path));
-        return section ? [{ path: source.path, originId: section.originId + source.originId.slice(section.path.length) }] : [];
+        const key = parseExpandKey(source.originKey);
+        if (!previous || key.kind != "section" || key.focusName != FOCUS_MODE_NAME) return [{ path: source.path, originKey: source.originKey }];
+        const section = previous.origins.find((origin) => origin.path == key.path);
+        return section ? [{ path: source.path, originKey: section.originKey }] : [];
     });
     if (previous && superstate.settings.focusModeKeepExpanded) keepExpandedState(superstate);
 
@@ -107,8 +122,8 @@ export const renameFocusModePath = (superstate: Superstate, oldPath: string, new
     const state = superstate.focusMode;
     if (!state) return;
     const renamePath = (path: string) => (isUnder(path, oldPath) ? newPath + path.slice(oldPath.length) : path);
-    // renameExpandedSpacePaths drops ids that already contain the new path; an origin must survive that.
-    const renameId = (id: string) => renameExpandedSpacePaths([id], oldPath, newPath)[0] ?? id;
+    // renameExpandKeys drops keys that already name the new path; an origin must survive that.
+    const renameKey = (key: string) => renameExpandKeys([key], oldPath, newPath)[0] ?? key;
 
     const next: FocusModeState = {
         focus: {
@@ -116,8 +131,8 @@ export const renameFocusModePath = (superstate: Superstate, oldPath: string, new
             paths: state.focus.paths.map(renamePath),
             ...(state.focus["excluded-paths"] ? { "excluded-paths": renameFocusExcludedPaths(state.focus["excluded-paths"], oldPath, newPath) } : {}),
         },
-        expandedSpaces: renameExpandedSpacePaths(state.expandedSpaces, oldPath, newPath),
-        origins: state.origins.map((origin) => ({ path: renamePath(origin.path), originId: renameId(origin.originId) })),
+        expandedSpaces: renameExpandKeys(state.expandedSpaces, oldPath, newPath),
+        origins: state.origins.map((origin) => ({ path: renamePath(origin.path), originKey: renameKey(origin.originKey) })),
     };
     if (_.isEqual(next, state)) return;
     superstate.focusMode = next;

@@ -1,6 +1,5 @@
 import { excludePathsFromCurrentFocus, excludePathsFromFocus, isPathExcludedFromFocus, removeExcludedPathFromFocus } from "core/utils/superstate/focus";
 import { renameFocusExcludedPaths } from "shared/types/focus";
-import { renameExpandedSpacePaths } from "shared/types/settings";
 
 describe("focus exclusions", () => {
     it("matches only the exact excluded path", () => {
@@ -77,28 +76,6 @@ describe("focus exclusions", () => {
             "spaces://#published",
             "spaces://#published/review",
         ]);
-    });
-
-    it("moves expanded state to the renamed path and removes stale destination state", () => {
-        expect(renameExpandedSpacePaths([
-            "Atlas/Applications",
-            "Atlas/Applications/Atlas/Applications/Notes",
-            "Atlas/Applications1",
-            "Atlas/Applications1/Atlas/Applications1/Legacy",
-            "Atlas/Applications2",
-        ], "Atlas/Applications", "Atlas/Applications1")).toEqual([
-            "Atlas/Applications2",
-            "Atlas/Applications1",
-            "Atlas/Applications1/Atlas/Applications1/Notes",
-        ]);
-    });
-
-    it("keeps a renamed folder collapsed when only the destination has stale expanded state", () => {
-        expect(renameExpandedSpacePaths([
-            "Atlas/Applications1",
-            "Atlas/Applications1/Atlas/Applications1/Legacy",
-            "Atlas/AI",
-        ], "Atlas/Applications", "Atlas/Applications1")).toEqual(["Atlas/AI"]);
     });
 });
 

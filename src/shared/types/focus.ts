@@ -9,10 +9,10 @@ export type Focus = {
 /** Focus Mode: a temporary focus that lives only in memory. */
 export type FocusModeState = {
     focus: Focus;
-    /** Collapse state of the temporary tree; never written to settings directly. */
+    /** Expand keys of the temporary tree; never written to settings directly. */
     expandedSpaces: string[];
-    /** Where each section sits in the regular tree, for carrying collapse state back. */
-    origins: { path: string; originId: string }[];
+    /** The expand key each section's row has in the regular tree, for carrying collapse state back. */
+    origins: { path: string; originKey: string }[];
 };
 
 export const renameFocusExcludedPaths = (excludedPaths: string[] | undefined, oldPath: string, newPath: string) => {

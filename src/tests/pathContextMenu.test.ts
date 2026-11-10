@@ -13,6 +13,7 @@ jest.mock("core/commands/revealPathInSpaces", () => ({
 import { showPathContextMenu, triggerMultiPathMenu } from "core/react/components/UI/Menus/navigator/pathContextMenu";
 import { showSpaceContextMenu } from "core/react/components/UI/Menus/navigator/spaceContextMenu";
 import { showFoldersMenu } from "core/react/components/UI/Menus/modals/selectSpaceMenu";
+import { sectionExpandKey } from "core/utils/superstate/expandKeys";
 import i18n from "shared/i18n";
 import { revealPathInSpaces } from "core/commands/revealPathInSpaces";
 
@@ -1345,7 +1346,7 @@ describe("Focus Mode menu item", () => {
     it("a single file gets Focus Mode as its own group above Color", () => {
         const { superstate, names } = makeSuperstate();
 
-        showPathContextMenu(superstate, "Benches/Lathe.md", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Benches/Lathe.md");
+        showPathContextMenu(superstate, "Benches/Lathe.md", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Lathe.md");
 
         expect(names().slice(0, 3)).toEqual([focusMode, "", i18n.menu.changeColor]);
     });
@@ -1353,7 +1354,7 @@ describe("Focus Mode menu item", () => {
     it("a folder gets Focus Mode last in the New group", () => {
         const { superstate, names } = makeSuperstate();
 
-        showPathContextMenu(superstate, "Benches/Jigs", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Benches/Jigs");
+        showPathContextMenu(superstate, "Benches/Jigs", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Jigs");
 
         expect(names().slice(0, 5)).toEqual([i18n.labels.createNote, i18n.menu.new, focusMode, "", i18n.menu.changeColor]);
     });
@@ -1369,8 +1370,8 @@ describe("Focus Mode menu item", () => {
     it("multi-select gets Focus Mode right after Open in Tabs", () => {
         const { superstate, names } = makeSuperstate();
         const selected = [
-            { id: "Benches/Benches/Lathe.md", item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: "Benches", depth: 1 },
-            { id: "Benches/Benches/Jigs", item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: "Benches", depth: 1 },
+            { id: "Benches/Benches/Lathe.md", expandKey: "Benches/Lathe.md", item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: "Benches", depth: 1 },
+            { id: "Benches/Benches/Jigs", expandKey: "Benches/Jigs", item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: "Benches", depth: 1 },
         ];
 
         triggerMultiPathMenu(superstate, selected as any, event);
@@ -1393,8 +1394,8 @@ describe("Focus Mode menu item", () => {
     it("Focus Mode on a selection uses tree order, not click order", () => {
         const { superstate, click } = makeSuperstate();
         const selected = [
-            { id: "Benches/Benches/Lathe.md", item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: "Benches", depth: 1 },
-            { id: "Benches/Benches/Jigs", item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: "Benches", depth: 1 },
+            { id: "Benches/Benches/Lathe.md", expandKey: "Benches/Lathe.md", item: { path: "Benches/Lathe.md", type: "file" }, path: "Benches/Lathe.md", space: "Benches", depth: 1 },
+            { id: "Benches/Benches/Jigs", expandKey: "Benches/Jigs", item: { path: "Benches/Jigs", type: "space" }, path: "Benches/Jigs", space: "Benches", depth: 1 },
         ];
 
         triggerMultiPathMenu(superstate, selected as any, event, ["Benches", "Benches/Benches/Jigs", "Benches/Benches/Lathe.md"]);
@@ -1406,13 +1407,13 @@ describe("Focus Mode menu item", () => {
 
     it("Focus Mode on a single nested folder makes it a section with its folding kept", () => {
         const { superstate, click } = makeSuperstate();
-        superstate.settings.expandedSpaces = ["Benches", "Benches/Benches/Jigs"];
+        superstate.settings.expandedSpaces = [sectionExpandKey("Workshop", "Benches"), "Benches/Jigs"];
 
-        showPathContextMenu(superstate, "Benches/Jigs", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Benches/Jigs");
+        showPathContextMenu(superstate, "Benches/Jigs", "Benches", rect, {} as Window, undefined, undefined, 1, "Benches/Jigs");
         click(focusMode);
 
         expect(superstate.focusMode.focus.paths).toEqual(["Benches/Jigs"]);
-        expect(superstate.focusMode.expandedSpaces).toEqual(["Benches/Jigs"]);
+        expect(superstate.focusMode.expandedSpaces).toEqual([sectionExpandKey("", "Benches/Jigs")]);
         expect(superstate.spaceManager.saveFocuses).not.toHaveBeenCalled();
     });
 });

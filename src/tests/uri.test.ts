@@ -1,4 +1,4 @@
-import { parseURI } from "utils/uri";
+import { movePath, parseURI } from "utils/uri";
 
 describe("parseURI", () => {
     it("keeps question marks and percent signs in plain vault paths", () => {
@@ -15,5 +15,16 @@ describe("parseURI", () => {
         const uri = parseURI("spaces://$tags/?q=99% of People");
 
         expect(uri.query).toEqual({ q: "99% of People" });
+    });
+});
+
+describe("movePath", () => {
+    it("moves a path into another folder", () => {
+        expect(movePath("Архив/Заметки", "Проекты/Важное")).toBe("Проекты/Важное/Заметки");
+    });
+
+    it("moves a path to the vault root without a leading slash", () => {
+        expect(movePath("Архив/Заметки", "/")).toBe("Заметки");
+        expect(movePath("Архив/План.md", "")).toBe("План.md");
     });
 });

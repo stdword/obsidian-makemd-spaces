@@ -119,9 +119,10 @@ export const parseURI = (uri: string): URI => {
 
 export const movePath = (path: string, newParent: string): string => {
     const parts = path.split("/");
-    const newPath = newParent + "/" + parts[parts.length - 1];
+    const name = parts[parts.length - 1];
+    const parent = removeTrailingSlashFromFolder(newParent ?? "");
 
-    return newPath;
+    return !parent || parent == "/" ? name : parent + "/" + name;
 };
 export const renamePathWithoutExtension = (path: string, newName: string): string => {
     const dir = path.substring(0, path.lastIndexOf("/"));

@@ -180,7 +180,7 @@ const TreeItemComponent = (props: TreeItemProps) => {
             return superstate.ui.nativePathMenu(e, pathState.path);
         }
 
-        showPathContextMenu(superstate, data.path, data.type == "group" ? null : data.space, (e.target as HTMLElement).getBoundingClientRect(), windowFromDocument(e.view.document), "right", data.type == "group" ? () => closeActiveSpace(data.path) : null, data.depth, data.id);
+        showPathContextMenu(superstate, data.path, data.type == "group" ? null : data.space, (e.target as HTMLElement).getBoundingClientRect(), windowFromDocument(e.view.document), "right", data.type == "group" ? () => closeActiveSpace(data.path) : null, data.depth, data.expandKey);
     };
     const pathStateUpdated = (payload: { path: string }) => {
         if (superstate.spaceManager.isRenaming) return;

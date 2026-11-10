@@ -44,6 +44,8 @@ export abstract class ISuperstate {
     onMetadataChange: (path: string) => Promise<void>;
     reloadSpaceByPath: (path: string, metadata?: SpaceDefinition) => Promise<SpaceState>;
     onPathRename: (oldPath: string, newPath: string) => Promise<void>;
+    onRenameBurstStart?: () => void;
+    onFocusesSaved?: (previous: Focus[], next: Focus[]) => void;
     onPathCreated: (path: string) => Promise<void>;
     onPathDeleted: (path: string) => Promise<void>;
     onSpaceRenamed: (oldPath: string, newSpaceInfo: SpaceState) => Promise<void>;
