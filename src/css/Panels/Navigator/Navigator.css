@@ -200,10 +200,11 @@
     box-shadow: inset 0 -2px 0 var(--mk-ui-active);
 }
 
-/* End of the focus, drawn from the Open row: the line hangs over the row's top
-   edge and bends upwards, exactly like a line under the last row would. */
+/* End of the focus, drawn from the Open row: the line bends upwards like a line
+   under the last row would, but sits a few pixels lower so it reads as a level
+   below the "end of the last folder" line of the row above. */
 .mk-tree-wrapper .mk-indicator-row.nav-folder-title.mk-tree-new:not(.mk-indicator-row-box)::after {
-    top: -9px;
+    top: -6px;
     border-radius: 0 0 4px 4px;
     box-shadow: inset 0 -2px 0 var(--mk-ui-active);
 }
@@ -239,7 +240,9 @@
     opacity: 1;
 }
 
-.mk-tree-new:hover {
+/* The Open row fades its content, not itself: a drop line drawn on the row
+   must stay at full strength. */
+.mk-tree-new:hover > * {
     opacity: 1;
 }
 
@@ -269,11 +272,11 @@
     flex-grow: 0 !important;
 }
 
-.mk-sidebar:hover .mk-tree-new {
+.mk-sidebar:hover .mk-tree-new > * {
     opacity: 0.5;
 }
 
-body .mk-tree-new {
+body .mk-tree-new > * {
     opacity: 0;
 }
 
@@ -312,7 +315,9 @@ body .mk-tree-new {
     background: var(--nav-item-background-active) !important;
 }
 
-.mk-tree-wrapper.is-dimmed .mk-tree-item {
+/* Dim the content of a dragged row, not the row: a drop line drawn on it must
+   stay at full strength. */
+.mk-tree-wrapper.is-dimmed .mk-tree-item > * {
     opacity: 0.45;
 }
 
