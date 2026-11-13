@@ -17,7 +17,7 @@ import { defaultMenu } from "../menu/SelectionMenu";
 import { showSpaceContextMenu } from "./spaceContextMenu";
 import { PathStateWithRank } from "shared/types/superstate";
 import { ContextMenuTarget, buildContextMenu, menuItems } from "./contextMenuItems";
-import { FocusModeSource } from "core/utils/superstate/focusMode";
+import { FocusModeSource, updateCurrentFocus } from "core/utils/superstate/focusMode";
 
 function isLinkedFileMenuItem(item: PathStateWithRank, space?: string) {
     return (
@@ -79,6 +79,10 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         },
         linkTo: (link) => dropPathsInSpaceAtIndex(superstate, selectedPaths.map((f) => f.path), link, -1, "link"),
         excludeFromFocus: selectedPaths.every((item) => item.depth > 0),
+        // Sections only: takes all of them out of the current focus at once.
+        onClose: selectedPaths.every((item) => item.type == "group")
+            ? () => updateCurrentFocus(superstate, (focus) => ({ ...focus, paths: focus.paths.filter((path) => !paths.includes(path)) }))
+            : undefined,
         focusMode: focusModeSources(selectedPaths, treeOrder),
         remove: {
             title: i18n.labels.deleteFiles.replace("${1}", paths.length.toString()),
@@ -98,7 +102,7 @@ export const triggerMultiPathMenu = (superstate: Superstate, selectedPaths: Tree
         [menuItems.sortSelected],
         [menuItems.moveTo, menuItems.linkTo],
         // hide (disabled in favor of per-focus exclusions).
-        [menuItems.excludeFromFocus, menuItems.delete],
+        [menuItems.closeSpace, menuItems.excludeFromFocus, menuItems.delete],
     ]);
 
     superstate.ui.openMenu((e.target as HTMLElement).getBoundingClientRect(), defaultMenu(superstate.ui, menuOptions), win);

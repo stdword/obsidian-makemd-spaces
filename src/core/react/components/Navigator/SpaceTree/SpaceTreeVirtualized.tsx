@@ -357,12 +357,13 @@ export const VirtualizedList = React.memo(function VirtualizedList(props: {
                             ) : node.type == "new" ? (
                                 <div
                                     className={"mk-tree-wrapper mk-tree-section"}
+                                    data-tree-id={node.id}
                                     onClick={(e) => {
                                         const rect = (e.target as HTMLElement).getBoundingClientRect();
                                         showOpenMenuInRect(rect, e.view.document, props.superstate, saveActiveSpace, e.shiftKey);
                                     }}
                                 >
-                                    <div className="mk-tree-item tree-item-self nav-folder-title mk-tree-new">
+                                    <div className={`mk-tree-item tree-item-self nav-folder-title mk-tree-new${indicatorVariant ? " mk-indicator-row" : ""}`}>
                                         <div
                                             className={`mk-path-icon mk-path-icon-placeholder`}
                                             dangerouslySetInnerHTML={{

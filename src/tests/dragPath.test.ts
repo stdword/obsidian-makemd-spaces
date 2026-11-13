@@ -292,7 +292,8 @@ describe("tag space drag projections", () => {
     });
 
     it("allows reordering multiple items already inside the same tag space", () => {
-        const projection = getMultiProjection([tagNode, alphaNode, betaNode], ["EntryOne.md", "EntryTwo.md"], 1, 0, "move");
+        const gammaNode: any = { ...betaNode, id: "spaces://#fixture/EntryThree.md", path: "EntryThree.md", item: { path: "EntryThree.md", type: "file" }, rank: 2 };
+        const projection = getMultiProjection([tagNode, alphaNode, betaNode, gammaNode], ["EntryOne.md", "EntryThree.md"], 2, 0, "move");
 
         expect(projection).toEqual(expect.objectContaining({
             parentId: "spaces://#fixture",

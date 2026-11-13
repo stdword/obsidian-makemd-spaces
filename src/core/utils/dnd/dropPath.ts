@@ -1,7 +1,7 @@
 
 import { arrayMove } from "utils/array";
 import { DropModifiers } from "core/react/components/Navigator/SpaceTree/SpaceTreeItem";
-import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace } from "core/utils/superstate/spaces";
+import { TreeNode, isPathPinnedInSpace, movePathToNewSpaceAtIndex, linkPathToSpaceAtIndex, pathIsAlreadyInFolderPath, removePathsFromSpace, updatePathRankInSpace, movePathsToRankInSpace } from "core/utils/superstate/spaces";
 import { isNodeOrDescendant } from "core/utils/tree";
 import { Superstate } from "makemd-core";
 import { updateCurrentFocus } from "core/utils/superstate/focusMode";
@@ -50,6 +50,38 @@ export const rankForDropPositionInSpace = (superstate: Superstate, path: string,
     return insertionRank;
 };
 
+// Gathers the dragged rows, in tree order, next to a row of the focus level:
+// sections already in the focus are reordered, other rows are added to it.
+// The Open row as `target` stands for the end of the focus.
+const dropPathsAtFocusLevel = (superstate: Superstate, paths: string[], target: TreeNode, position: "top" | "bottom", flattenedTree: TreeNode[]) => {
+    const treeIndex = (path: string) => flattenedTree.findIndex((node) => focusNodePath(node) == path);
+    const ordered = [...paths].sort((a, b) => treeIndex(a) - treeIndex(b));
+    return updateCurrentFocus(superstate, (focus) => {
+        // Separators share one path and the focus can list paths the tree does
+        // not show, so the target is located by walking both lists in order.
+        let cursor = 0;
+        let targetIndex = target.type == "new" ? focus.paths.length : -1;
+        for (const node of flattenedTree) {
+            if (target.type == "new") break;
+            if (node.parentId != null || node.type == "new") continue;
+            const index = focus.paths.indexOf(focusNodePath(node), cursor);
+            if (index == -1) continue;
+            cursor = index + 1;
+            if (node.id == target.id) {
+                targetIndex = index;
+                break;
+            }
+        }
+        if (targetIndex == -1) return focus;
+        const rank = targetIndex + (position == "bottom" && target.type != "new" ? 1 : 0);
+        const dragged = new Set(ordered);
+        const insertAt = rank - focus.paths.slice(0, rank).filter((path) => dragged.has(path)).length;
+        const nextPaths = focus.paths.filter((path) => !dragged.has(path));
+        nextPaths.splice(insertAt, 0, ...ordered);
+        return { ...focus, paths: nextPaths };
+    });
+};
+
 export const dropPathsInTree = async (superstate: Superstate, paths: string[], active: string, over: string, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
     if (paths.length == 1) {
         await dropPathInTree(superstate, paths[0], active, over, projected, flattenedTree, activeSpaces, modifier);
@@ -59,6 +91,14 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         const targetId = projected.overId ?? over;
         const overIndex = flattenedTree.findIndex(({ id }) => id === targetId);
         const overItem = flattenedTree[overIndex];
+        if (projected.parentId == null && !projected.insert) {
+            // A line that escaped a section hangs under one of its rows; the
+            // position is counted from the section itself.
+            let target = overItem;
+            while (target && target.parentId != null) target = flattenedTree.find(({ id }) => id === target.parentId);
+            if (target) await dropPathsAtFocusLevel(superstate, paths, target, projected.linePosition ?? "top", flattenedTree);
+            return;
+        }
         const dropTarget = overItem.type == "file" ? (overItem.depth == 0 ? null : flattenedTree.find((f) => f.id == overItem.parentId)?.item) : overItem.item;
 
         const droppable = paths.filter((f) => !isNodeOrDescendant(f, dropTarget?.path));
@@ -69,14 +109,27 @@ export const dropPathsInTree = async (superstate: Superstate, paths: string[], a
         newRank = rankForDropLinePosition(newRank, projected);
 
         if (!newSpace) return;
-        if (projected.sortable) {
-            if (parentId != overItem.id && droppable.length > 0) {
-                const storedRank = rankForDropPositionInSpace(superstate, droppable[0], newSpace, overItem, projected.linePosition ?? "top");
-                if (storedRank != null) newRank = storedRank;
+        if (projected.sortable && parentId != overItem.id && droppable.length > 0) {
+            const treeIndex = (path: string) => flattenedTree.findIndex((node) => node.item?.path == path);
+            const ordered = [...droppable].sort((a, b) => treeIndex(a) - treeIndex(b));
+            const space = superstate.spacesIndex.get(newSpace);
+            // A non-pinned selection cannot land inside the pinned zone.
+            const firstNonPinnedIndex = flattenedTree.findIndex((node) => node.parentId == parentId && !node.pinned && node.type != "new");
+            const clampToFirstNonPinned = firstNonPinnedIndex >= 0 && overIndex < firstNonPinnedIndex && ordered.some((path) => !isPathPinnedInSpace(space, path));
+            const rankTarget = clampToFirstNonPinned ? flattenedTree[firstNonPinnedIndex] : overItem;
+            const rankPosition = clampToFirstNonPinned ? "top" : (projected.linePosition ?? "top");
+            const storedRank = rankForDropPositionInSpace(superstate, null, newSpace, rankTarget, rankPosition);
+            if (storedRank != null) {
+                // Rows already shown in the target container are reordered in
+                // one write; the rest is moved or linked in right after them.
+                const inPlace = modifier == "link" || modifier == "copy" ? [] : ordered.filter((path) => flattenedTree.some((node) => node.parentId == parentId && node.item?.path == path));
+                const incoming = ordered.filter((path) => !inPlace.includes(path));
+                const landedAt = await movePathsToRankInSpace(superstate, newSpace, inPlace, storedRank);
+                if (incoming.length > 0) await dropPathsInSpaceAtIndex(superstate, incoming, newSpace, landedAt + inPlace.length, modifier);
+                return;
             }
-            newRank = Math.min(...droppable.map((path) => rankAfterPinnedZone(superstate, path, newSpace, parentId, overIndex, newRank, flattenedTree)));
         }
-        await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, projected.sortable && newRank, modifier);
+        await dropPathsInSpaceAtIndex(superstate, droppable, newSpace, false, modifier);
     }
 };
 export const dropPathInTree = async (superstate: Superstate, path: string, active: string, over: string, projected: DragProjection, flattenedTree: TreeNode[], activeSpaces: PathState[], modifier?: DropModifiers) => {
@@ -88,6 +141,10 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
         const clonedItems: TreeNode[] = flattenedTree;
         const overIndex = clonedItems.findIndex(({ id }) => id === targetId);
         const overItem = clonedItems[overIndex];
+        if (overItem?.type == "new") {
+            if (projected.parentId == null && superstate.pathsIndex.has(path)) await dropPathsAtFocusLevel(superstate, [path], overItem, "top", flattenedTree);
+            return;
+        }
 
         const parentId = projected.insert ? targetId : projected.parentId;
 
@@ -112,7 +169,7 @@ export const dropPathInTree = async (superstate: Superstate, path: string, activ
             const storedRank = rankForDropPositionInSpace(superstate, path, newSpace, rankTarget, rankPosition);
             newRank = storedRank ?? overItem.rank ?? -1;
         } else {
-            newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == focusNodePath(overItem)) : parentId == overItem.id ? -1 : (rankItem.rank ?? -1);
+            newRank = parentId == null ? activeSpaces.findIndex((f) => f?.path == focusNodePath(rankItem)) : parentId == overItem.id ? -1 : (rankItem.rank ?? -1);
             newRank = rankForDropLinePosition(newRank, projected, activeItem, oldSpace, newSpace);
             if (projected.sortable && newSpace) {
                 if (parentId != null && parentId != overItem.id) {
@@ -188,7 +245,7 @@ export const dropPathInSpaceAtIndex = async (superstate: Superstate, path: strin
         await removePathsFromSpace(superstate, oldSpacePath, [path]);
     }
 };
-export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: string[], newSpacePath: string, index: number, modifier?: DropModifiers) => {
+export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: string[], newSpacePath: string, index: number | false, modifier?: DropModifiers) => {
     if (modifier == "link" && paths.some((path) => pathIsAlreadyInFolderPath(superstate, path, newSpacePath))) {
         superstate.ui.notify(i18n.notice.cannotLinkToOwnFolder);
         return false;
@@ -196,12 +253,18 @@ export const dropPathsInSpaceAtIndex = async (superstate: Superstate, paths: str
     const newSpaceCache = superstate.spacesIndex.get(newSpacePath);
     if (!newSpaceCache) return;
     if (newSpaceCache.type == "folder" || newSpaceCache.type == "vault") {
-        await Promise.all(paths.map((path) => {
+        const dropOne = (path: string, targetIndex: number | false) => {
             if (modifier == "link" || isNodeOrDescendant(path, newSpaceCache.path)) {
-                return linkPathToSpaceAtIndex(superstate, newSpaceCache, path, index);
+                return linkPathToSpaceAtIndex(superstate, newSpaceCache, path, targetIndex as number);
             } else {
-                return movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, index, modifier == "copy");
+                return movePathToNewSpaceAtIndex(superstate, superstate.pathsIndex.get(path), newSpaceCache.path, targetIndex as number, modifier == "copy");
             }
-        }));
+        };
+        if (typeof index == "number" && Number.isFinite(index)) {
+            // Positional drops write the rank order one by one so the items keep their order.
+            for (let offset = 0; offset < paths.length; offset++) await dropOne(paths[offset], index + offset);
+        } else {
+            await Promise.all(paths.map((path) => dropOne(path, index)));
+        }
     }
 };

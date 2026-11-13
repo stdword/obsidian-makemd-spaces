@@ -319,6 +319,26 @@ export const sortPathsInPlaceInSpace = async (superstate: Superstate, space: str
     await saveSpaceMetadataValue(superstate, space, "rank-order", nextOrder);
 };
 
+// Gathers the given items of a custom-ordered space, in the given order, at `rank` — an index into the
+// current order (stored rank-order followed by displayed items missing from it); every other item keeps
+// its place. Returns the index the group landed at.
+export const movePathsToRankInSpace = async (superstate: Superstate, space: string, paths: string[], rank: number) => {
+    const spaceState = superstate.spacesIndex.get(space);
+    if (!spaceState || paths.length == 0 || !isSpaceSortable(spaceState, superstate.settings)) return rank;
+
+    const storedOrder = ensureArray(spaceState.metadata?.["rank-order"]);
+    const displayedPaths = (superstate.getSpaceItems?.(space) ?? []).map((item) => item.path);
+    const currentOrder = [...storedOrder, ...displayedPaths.filter((itemPath) => !storedOrder.includes(itemPath))];
+
+    const selected = new Set(paths);
+    const insertAt = Math.max(0, rank - currentOrder.slice(0, rank).filter((itemPath) => selected.has(itemPath)).length);
+    const nextOrder = currentOrder.filter((itemPath) => !selected.has(itemPath));
+    nextOrder.splice(insertAt, 0, ...paths);
+    if (nextOrder.length == storedOrder.length && nextOrder.every((itemPath, index) => itemPath == storedOrder[index])) return insertAt;
+    await saveSpaceMetadataValue(superstate, space, "rank-order", uniqueRankOrder(nextOrder));
+    return insertAt;
+};
+
 export const duplicatePathNextToOriginal =async (superstate: Superstate, path: string, destinationParent: string, newName?: string, rankSpace = destinationParent) => {
     const newPath = await superstate.spaceManager.copyPath(path, destinationParent, newName);
     if (!newPath) return newPath;

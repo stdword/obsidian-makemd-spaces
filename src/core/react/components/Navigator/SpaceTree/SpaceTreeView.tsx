@@ -5,7 +5,7 @@ import { PathStickerView } from "core/react/components/PathSticker";
 import { NavigatorContext } from "core/react/context/SidebarContext";
 import { TreeNode, addSpaceSeparator, childSpaceSort, effectiveSpaceSort, isPathPinnedInSpace, isSpaceSortable, linkedTagSpaceUri, moveSpaceSeparator, pathStateToTreeNode, pinnedItemsFirst, removeSpaceSeparator, spaceRowHeight, spaceToTreeNode } from "core/utils/superstate/spaces";
 import { CustomVaultChangeEvent, eventTypes } from "schemas/event";
-import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth, verticalInsertionZone, projectionContainerId } from "core/utils/dnd/dragPath";
+import { DragAction, DragActionModel, DragActionVisual, DragInsertPosition, DragProjection, getProjection, verticalInsertionDepth, verticalInsertionZone, projectionContainerId, selectionIdsAfterMove, dragSelectionForStart } from "core/utils/dnd/dragPath";
 import { dropPathsInTree } from "core/utils/dnd/dropPath";
 import { EXTERNAL_DRAG_NODE, dropExternalFilesAtProjection, isExternalFileDrag } from "core/utils/dnd/externalFileDrop";
 import { filterFolderNoteChildren, navigatorActivePathForPath } from "integrations/folderNotesPluginIntegration";
@@ -29,6 +29,9 @@ interface SpaceTreeComponentProps {
 }
 
 export const isLinkedTreeItem = (item: TreeNode | null) => Boolean(item && !isTagTreeItemPath(item.item) && shouldShowLinkedItemIcon(item));
+// Releasing over the dragged row itself does nothing, unless a drop line is
+// projected there: a multi-selection can be gathered next to the row it is dragged by.
+export const isSelfDropNoOp = (activeItem: TreeNode | null, overId: string, projection: DragProjection | null) => Boolean(activeItem && overId == activeItem.id && !projection);
 export const isParentDropNoOp = (activeItem: TreeNode | null, overId: string) => Boolean(activeItem && activeItem.parentId == overId);
 
 // A drop that would land the item back in its own parent is a no-op. Judged by
@@ -551,15 +554,13 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         setOverId(activeId);
 
         if (activeItem) {
-            if (selectedPaths.length > 1) {
-                const paths = selectedPaths.map((f) => f.path);
-                dragPathsRef.current = paths;
-                setDragPaths(paths);
-            } else {
-                const paths = [activeItem.path];
-                dragPathsRef.current = paths;
-                setDragPaths(paths);
-            }
+            const carried = dragSelectionForStart(activeItem, selectedPaths);
+            dragPathsRef.current = carried.paths;
+            setDragPaths(carried.paths);
+            // Dragging a row outside the selection moves the selection onto it
+            // (the open tab stays as it is).
+            const selectionKept = carried.selection.length == selectedPaths.length && carried.selection.every((node, index) => node.id == selectedPaths[index].id);
+            if (!selectionKept) setSelectedPaths(carried.selection);
         }
 
         document.body.style.setProperty("cursor", "grabbing");
@@ -711,7 +712,7 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         // In that case the target handler already owns completion.
         if (isDropping.current) return;
         const currentActive = activeRef.current ?? active;
-        if (currentActive && overId == currentActive.id) {
+        if (isSelfDropNoOp(currentActive, overId, dragActionRef.current?.action.projection ?? null)) {
             finishNoOpDrop(e);
             return;
         }
@@ -782,7 +783,18 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                 });
             }
         } else {
-            await dropPathsInTree(superstate, dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths, currentActive?.id, projection.overId ?? overId, projection, flattenedTree, activeViewSpaces, actionModifier);
+            const dropPaths = dragPathsRef.current.length > 0 ? dragPathsRef.current : dragPaths;
+            // Rows moved into another folder get new paths and tree ids; carry
+            // their selection over once the tree shows them in the new place.
+            const container = flattenedTree.find((node) => node.id == projectionContainerId(projection));
+            const movesIntoFolder = actionModifier == "move" && container?.item?.type == "space" && !isTagTreeItemPath(container.item);
+            const movedSelection = movesIntoFolder ? selectedPaths.filter((node) => node.item && dropPaths.includes(node.path) && node.parentId != container.id) : [];
+            const staleIds = new Set(movedSelection.map((node) => node.id));
+            if (movedSelection.length > 0) {
+                pendingSelection.current = { ids: selectionIdsAfterMove(movedSelection.map((node) => node.item.path), container), staleIds, expires: Date.now() + 3000 };
+            }
+            await dropPathsInTree(superstate, dropPaths, currentActive?.id, projection.overId ?? overId, projection, flattenedTree, activeViewSpaces, actionModifier);
+            if (staleIds.size > 0) setSelectedPaths((selection) => selection.filter((node) => !staleIds.has(node.id)));
         }
         if (pendingDropReload.current) {
             pendingDropReload.current = false;
@@ -833,6 +845,21 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
         modifierRef.current = null;
         document.body.style.setProperty("cursor", "");
     }
+
+    const pendingSelection = useRef<{ ids: string[]; staleIds: Set<string>; expires: number } | null>(null);
+    useEffect(() => {
+        const pending = pendingSelection.current;
+        if (!pending) return;
+        if (Date.now() > pending.expires) {
+            pendingSelection.current = null;
+            return;
+        }
+        const ids = new Set(pending.ids);
+        const moved = flattenedTree.filter((node) => ids.has(node.id));
+        if (moved.length != ids.size) return;
+        pendingSelection.current = null;
+        setSelectedPaths((selection) => [...selection.filter((node) => !pending.staleIds.has(node.id) && !ids.has(node.id)), ...moved]);
+    }, [flattenedTree]);
 
     const isDropping = useRef(false);
     const nativeDragFinished = useRef(false);
@@ -955,6 +982,12 @@ export const SpaceTreeComponent = (props: SpaceTreeComponentProps) => {
                     overRow.dataset.treeId,
                     { x: state.x - rect.left, y: state.y - rect.top },
                 );
+                return;
+            }
+            // The empty area below the Open row still is the end of the focus.
+            const openRow = treeRef.current?.querySelector<HTMLElement>('[data-tree-id="placeholder"]');
+            if (openRow && treeRef.current.contains(under) && state.y > openRow.getBoundingClientRect().bottom) {
+                pointerDragHandlersRef.current.dragOver({ altKey: state.altKey, shiftKey: state.shiftKey, dataTransfer: { dropEffect: "move" } } as unknown as React.DragEvent<HTMLDivElement>, "placeholder", { x: 0, y: 0 });
             }
         };
         // Edge auto-scroll: while the pointer hovers near the scroller's top or

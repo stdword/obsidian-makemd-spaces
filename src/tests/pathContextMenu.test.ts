@@ -71,6 +71,38 @@ describe("triggerMultiPathMenu", () => {
         await openAll;
     });
 
+    describe("removing several sections from the focus", () => {
+        const { makeFocusSuperstate } = jest.requireActual("./focusModeStub");
+        const { currentFocus } = jest.requireActual("core/utils/superstate/focusMode");
+        const event = {
+            target: { getBoundingClientRect: jest.fn(() => ({ x: 0, y: 0, width: 0, height: 0 })) },
+            view: { document: { defaultView: {} } as Document },
+        };
+        const sectionRow = (path: string) => ({ id: path, parentId: null as string | null, depth: 0, type: "group", path, space: null as string | null, item: { path, type: "space", parent: "" } });
+        const openMenuFor = (rows: any[]) => {
+            const superstate = makeFocusSuperstate();
+            superstate.focuses[0].paths = ["Recipes", "Pantry", "Garden"];
+            superstate.spacesIndex = new Map();
+            superstate.ui.openMenu = jest.fn();
+            triggerMultiPathMenu(superstate as any, rows as any, event as any);
+            return { superstate, options: superstate.ui.openMenu.mock.calls[0][1].options as any[] };
+        };
+
+        it("offers Remove from Focus and removes every selected section", async () => {
+            const { superstate, options } = openMenuFor([sectionRow("Recipes"), sectionRow("Garden")]);
+            const remove = options.find((option) => option.name == i18n.menu.closeSpace);
+            expect(remove).toBeDefined();
+            await remove.onClick({} as any);
+            expect(currentFocus(superstate).paths).toEqual(["Pantry"]);
+        });
+
+        it("does not offer it when a selected row is not a section", () => {
+            const nested = { id: "Recipes/Recipes/Soup.md", parentId: "Recipes", depth: 1, type: "file", path: "Recipes/Soup.md", space: "Recipes", item: { path: "Recipes/Soup.md", type: "file", parent: "Recipes" } };
+            const { options } = openMenuFor([sectionRow("Pantry"), nested]);
+            expect(options.some((option) => option.name == i18n.menu.closeSpace)).toBe(false);
+        });
+    });
+
     it("hides the color action when a selected file is linked", () => {
         const openMenu = jest.fn();
         const superstate = {
